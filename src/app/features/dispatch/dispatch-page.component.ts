@@ -5,10 +5,11 @@ import { map } from 'rxjs';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 import { TimelineViewComponent } from './timeline-view.component';
+import { CalendarViewComponent } from './calendar-view.component';
 
 @Component({
   selector: 'app-dispatch-page',
-  imports: [MatButtonToggleModule, TimelineViewComponent],
+  imports: [MatButtonToggleModule, TimelineViewComponent, CalendarViewComponent],
   template: `
     <div class="p-4">
       <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -21,7 +22,7 @@ import { TimelineViewComponent } from './timeline-view.component';
       @if (view() === 'timeline') {
         <app-timeline-view />
       } @else {
-        <p class="text-gray-500">calendar（Task 13）</p>
+        <app-calendar-view />
       }
     </div>
   `,
