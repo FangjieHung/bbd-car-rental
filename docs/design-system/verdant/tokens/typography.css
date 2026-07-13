@@ -1,0 +1,71 @@
+/* ============================================================
+   TYPE TOKENS — Verdant
+   Font substitution note: no webfont files were supplied with the
+   source screenshot. The reference UI uses a rounded/geometric
+   grotesk for display type and a plain grotesk for body/data.
+   Nearest Google Fonts matches used here — FLAGGED for the user:
+     display/headings -> Plus Jakarta Sans
+     body/UI text      -> Inter
+     tabular data/mono -> IBM Plex Mono
+   Ask the user for real brand font files to swap these in.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+SC:wght@400;500;700;800&display=swap');
+
+:root {
+  /* CJK: Noto Sans SC used first for Chinese display/heading text */
+  --font-display: 'Noto Sans SC', 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Type scale (px) */
+  --text-size-xs:   12px;
+  --text-size-sm:   13px;
+  --text-size-base: 15px;
+  --text-size-md:   17px;
+  --text-size-lg:   20px;
+  --text-size-xl:   26px;
+  --text-size-2xl:  34px;
+  --text-size-3xl:  44px;
+
+  --text-leading-tight: 1.1;
+  --text-leading-snug:  1.3;
+  --text-leading-normal: 1.5;
+
+  --text-weight-regular: 400;
+  --text-weight-medium: 500;
+  --text-weight-semibold: 600;
+  --text-weight-bold: 700;
+  --text-weight-extrabold: 800;
+
+  /* Semantic type roles */
+  --type-display-font: var(--font-display);
+  --type-display-weight: var(--text-weight-extrabold);
+  --type-display-size: var(--text-size-3xl);
+  --type-display-leading: var(--text-leading-tight);
+  --type-display-tracking: -0.02em;
+
+  --type-h2-font: var(--font-display);
+  --type-h2-weight: var(--text-weight-bold);
+  --type-h2-size: var(--text-size-xl);
+
+  --type-stat-font: var(--font-display);
+  --type-stat-weight: var(--text-weight-extrabold);
+  --type-stat-size: var(--text-size-2xl);
+  --type-stat-tracking: -0.02em;
+
+  --type-body-font: var(--font-body);
+  --type-body-weight: var(--text-weight-regular);
+  --type-body-size: var(--text-size-base);
+
+  --type-label-font: var(--font-body);
+  --type-label-weight: var(--text-weight-medium);
+  --type-label-size: var(--text-size-sm);
+
+  --type-caption-font: var(--font-body);
+  --type-caption-weight: var(--text-weight-regular);
+  --type-caption-size: var(--text-size-xs);
+
+  --type-data-font: var(--font-mono);
+  --type-data-weight: var(--text-weight-medium);
+}

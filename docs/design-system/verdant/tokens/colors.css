@@ -1,0 +1,93 @@
+/* ============================================================
+   COLOR TOKENS — Verdant
+   Base ramps + semantic aliases.
+   Derived from the reference dashboard: sage green primary,
+   deep teal/navy secondary, warm cream neutrals.
+   ============================================================ */
+
+:root {
+  /* ---- Base ramp: Sage (primary) ---- */
+  --sage-50:  #f1f8f1;
+  --sage-100: #e0efe1;
+  --sage-200: #c3dfc6;
+  --sage-300: #9dcaa3;
+  --sage-400: #7cb584;
+  --sage-500: #5fa06a; /* primary pill / progress fill from reference */
+  --sage-600: #4a8656;
+  --sage-700: #3b6b45;
+  --sage-800: #305537;
+  --sage-900: #26432c;
+
+  /* ---- Base ramp: Teal/Navy (secondary, "onsite" cards) ---- */
+  --teal-50:  #eef3f5;
+  --teal-100: #d7e3e8;
+  --teal-200: #aec5cf;
+  --teal-300: #7fa2b0;
+  --teal-400: #567f8f;
+  --teal-500: #3a6373;
+  --teal-600: #294c5a;
+  --teal-700: #1f3a48; /* deep card fill from reference (onsite/take-home cards) */
+  --teal-800: #172c37;
+  --teal-900: #101f27;
+
+  /* ---- Base ramp: Cream/Neutral ---- */
+  --cream-0:   #ffffff;
+  --cream-25:  #fcfbf8;
+  --cream-50:  #f7f5f0; /* app background from reference */
+  --cream-100: #efece4;
+  --cream-200: #e3dfd4;
+  --cream-300: #d0cbbd;
+  --cream-400: #aca795;
+  --cream-500: #8b8574;
+  --cream-600: #6d685a;
+  --cream-700: #534f45;
+  --cream-800: #3a3732;
+  --cream-900: #232220;
+
+  /* ---- Semantic status (extended from primary hues) ---- */
+  --status-success-bg: var(--sage-100);
+  --status-success-fg: var(--sage-700);
+  --status-success-dot: var(--sage-500);
+
+  --status-warning-bg: #fbf1dd;
+  --status-warning-fg: #8a6416;
+  --status-warning-dot: #e0a530;
+
+  --status-error-bg: #fbe8e6;
+  --status-error-fg: #a13f34;
+  --status-error-dot: #e2584a;
+
+  --status-info-bg: var(--teal-50);
+  --status-info-fg: var(--teal-700);
+  --status-info-dot: var(--teal-500);
+
+  /* ---- Semantic aliases: surfaces ---- */
+  --surface-app:      var(--cream-50);
+  --surface-card:     var(--cream-0);
+  --surface-card-alt: var(--cream-25);
+  --surface-sunken:   var(--cream-100);
+  --surface-inverse:  var(--teal-700);
+  --surface-brand:    var(--sage-500);
+  --surface-pill:     var(--cream-100);
+
+  /* ---- Semantic aliases: text ---- */
+  --text-primary:   var(--cream-900);
+  --text-secondary: var(--cream-600);
+  --text-tertiary:  var(--cream-500);
+  --text-on-brand:  #ffffff;
+  --text-on-inverse: #ffffff;
+  --text-on-inverse-muted: var(--teal-200);
+  --text-link: var(--teal-700);
+  --text-link-hover: var(--teal-800);
+
+  /* ---- Semantic aliases: borders ---- */
+  --border-subtle: var(--cream-200);
+  --border-default: var(--cream-300);
+  --border-inverse: rgba(255,255,255,0.14);
+
+  /* ---- Data viz (avg-hours bar chart dots) ---- */
+  --viz-1: var(--teal-700);
+  --viz-2: var(--teal-500);
+  --viz-3: var(--teal-300);
+  --viz-4: var(--cream-300);
+}
