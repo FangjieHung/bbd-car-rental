@@ -11,14 +11,14 @@ import { CustomerStore } from '../../stores/customer.store';
   selector: 'app-booking-detail-dialog',
   imports: [MatDialogModule, MatButtonModule],
   template: `
-    <div mat-dialog-content class="text-sm flex flex-col gap-1">
-      <p><b>{{ t.booking.vehicle }}</b>：{{ plate }}</p>
-      <p><b>{{ t.booking.customer }}</b>：{{ customerStore.nameOf(data.customerId) }}</p>
-      <p><b>{{ t.booking.startTime }}</b>：{{ fmt(data.startTime) }}</p>
-      <p><b>{{ t.booking.endTime }}</b>：{{ fmt(data.endTime) }}</p>
-      <p><b>{{ t.booking.pickupLocation }}</b>：{{ data.pickupLocation }}</p>
-      <p><b>{{ t.booking.returnLocation }}</b>：{{ data.returnLocation }}</p>
-      <p><b>{{ t.booking.status }}</b>：{{ t.booking.statusLabels[data.status] }}</p>
+    <div mat-dialog-content class="text-sm flex flex-col gap-1.5">
+      <p><b>{{ t.booking.vehicle }}</b>：<span style="color: var(--text-secondary)">{{ plate }}</span></p>
+      <p><b>{{ t.booking.customer }}</b>：<span style="color: var(--text-secondary)">{{ customerStore.nameOf(data.customerId) }}</span></p>
+      <p><b>{{ t.booking.startTime }}</b>：<span style="color: var(--text-secondary)">{{ fmt(data.startTime) }}</span></p>
+      <p><b>{{ t.booking.endTime }}</b>：<span style="color: var(--text-secondary)">{{ fmt(data.endTime) }}</span></p>
+      <p><b>{{ t.booking.pickupLocation }}</b>：<span style="color: var(--text-secondary)">{{ data.pickupLocation }}</span></p>
+      <p><b>{{ t.booking.returnLocation }}</b>：<span style="color: var(--text-secondary)">{{ data.returnLocation }}</span></p>
+      <p><b>{{ t.booking.status }}</b>：<span style="color: var(--text-secondary)">{{ t.booking.statusLabels[data.status] }}</span></p>
     </div>
     <div mat-dialog-actions align="end">
       <button mat-button mat-dialog-close>{{ t.common.confirm }}</button>

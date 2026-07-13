@@ -41,32 +41,33 @@ const DAYS = 14;
   selector: 'app-timeline-view',
   imports: [MatButtonModule],
   template: `
-    <div class="flex items-center gap-2 mb-2">
+    <div class="flex items-center gap-2">
       <button mat-button (click)="shift(-14)">{{ t.dispatch.prevRange }}</button>
       <button mat-button (click)="shift(14)">{{ t.dispatch.nextRange }}</button>
     </div>
-    <div class="overflow-x-auto">
+    <div class="v-card overflow-x-auto !p-0">
       <div class="min-w-[900px]">
         <!-- 表頭列 -->
         <div class="grid" [style.grid-template-columns]="gridCols">
-          <div class="text-xs font-bold p-1">{{ t.booking.vehicle }}</div>
+          <div class="text-xs font-bold p-2">{{ t.booking.vehicle }}</div>
           @for (d of days(); track $index) {
-            <div class="text-xs text-center p-1 border-l border-gray-100">{{ fmtDate(d) }}</div>
+            <div class="text-xs text-center p-2" style="color: var(--text-tertiary); border-left: 1px solid var(--border-subtle)">{{ fmtDate(d) }}</div>
           }
         </div>
         <!-- 每台車一列 -->
         @for (v of vehicleStore.vehicles(); track v.id) {
-          <div class="relative border-t border-gray-100">
+          <div class="relative" style="border-top: 1px solid var(--border-subtle)">
             <div class="grid" [style.grid-template-columns]="gridCols">
               <div class="text-sm p-2 whitespace-nowrap">
                 {{ v.plateNumber }}
                 @if (v.status === 'maintenance') {
-                  <span class="text-xs text-gray-500">（{{ t.dispatch.maintenanceBlock }}）</span>
+                  <span class="text-xs" style="color: var(--text-tertiary)">（{{ t.dispatch.maintenanceBlock }}）</span>
                 }
               </div>
               @for (d of days(); track $index) {
-                <div class="border-l border-gray-100 min-h-10"
-                     [class.bg-gray-200]="v.status === 'maintenance' && $index === todayIdx()"></div>
+                <div class="min-h-10"
+                     style="border-left: 1px solid var(--border-subtle)"
+                     [style.background]="v.status === 'maintenance' && $index === todayIdx() ? 'var(--cream-300)' : null"></div>
               }
             </div>
             <!-- 色塊層 -->
@@ -74,9 +75,9 @@ const DAYS = 14;
               <div></div>
               @for (block of blocksOf(v.id); track block.bookingId) {
                 <button
-                  class="pointer-events-auto self-center h-6 rounded text-white text-xs truncate px-1 cursor-pointer"
-                  [class.bg-blue-400]="block.kind === 'confirmed'"
-                  [class.bg-blue-700]="block.kind === 'in_progress'"
+                  class="pointer-events-auto self-center h-6 rounded text-xs truncate px-1.5 cursor-pointer font-semibold"
+                  style="color: #fff"
+                  [style.background]="block.kind === 'confirmed' ? 'var(--teal-500)' : 'var(--sage-500)'"
                   [style.grid-column]="(block.startCol + 1) + ' / span ' + block.span"
                   [style.grid-row]="1"
                   (click)="openDetail(block.bookingId)">

@@ -36,16 +36,17 @@ export function dayStats(
       <span class="font-bold">{{ monthLabel() }}</span>
       <button mat-button (click)="shiftMonth(1)">{{ t.dispatch.nextMonth }}</button>
     </div>
-    <div class="grid grid-cols-7 gap-px bg-gray-200 text-xs">
+    <div class="grid grid-cols-7 gap-px text-xs rounded-lg overflow-hidden" style="background: var(--border-subtle)">
       @for (d of monthDays(); track d.getTime()) {
         <button
-          class="bg-white p-2 min-h-16 text-left cursor-pointer hover:bg-blue-50"
+          class="p-2 min-h-16 text-left cursor-pointer transition-colors hover:[background:var(--surface-pill)]"
+          style="background: var(--surface-card)"
           [class.opacity-40]="d.getMonth() !== month().getMonth()"
-          [class.ring-2]="selected() && isSameDay(d, selected()!)"
+          [style.background]="selected() && isSameDay(d, selected()!) ? 'var(--sage-100)' : null"
           (click)="selected.set(d)">
-          <div class="font-bold">{{ d.getDate() }}</div>
-          <div>{{ t.dispatch.pickups }}{{ statsOf(d).pickups }} {{ t.dispatch.returns }}{{ statsOf(d).returns }}</div>
-          <div>{{ t.dispatch.available }} {{ statsOf(d).available }}</div>
+          <div class="font-bold" [style.color]="isSameDay(d, todayDate) ? 'var(--sage-600)' : null">{{ d.getDate() }}</div>
+          <div style="color: var(--text-secondary)">{{ t.dispatch.pickups }}{{ statsOf(d).pickups }} {{ t.dispatch.returns }}{{ statsOf(d).returns }}</div>
+          <div style="color: var(--text-tertiary)">{{ t.dispatch.available }} {{ statsOf(d).available }}</div>
         </button>
       }
     </div>
@@ -53,11 +54,11 @@ export function dayStats(
       <div class="mt-4">
         <h2 class="font-bold mb-2">{{ t.dispatch.dayDetail }}（{{ sel.getMonth() + 1 }}/{{ sel.getDate() }}）</h2>
         @if (dayBookings(sel).length === 0) {
-          <p class="text-gray-500">{{ t.common.empty }}</p>
+          <p class="text-sm" style="color: var(--text-tertiary)">{{ t.common.empty }}</p>
         } @else {
           <ul class="text-sm flex flex-col gap-1">
             @for (b of dayBookings(sel); track b.id) {
-              <li class="border rounded p-2">
+              <li class="v-card !p-3">
                 {{ plateOf(b.vehicleId) }}｜{{ customerStore.nameOf(b.customerId) }}｜
                 {{ fmt(b.startTime) }} → {{ fmt(b.endTime) }}｜{{ t.booking.statusLabels[b.status] }}
               </li>
@@ -78,6 +79,7 @@ export class CalendarViewComponent {
 
   readonly month = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   readonly selected = signal<Date | null>(null);
+  readonly todayDate = new Date();
 
   readonly monthLabel = computed(() => `${this.month().getFullYear()} / ${this.month().getMonth() + 1}`);
 

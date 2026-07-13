@@ -14,20 +14,18 @@ import { MaintenanceRecordDialogComponent, RecordFormResult } from './maintenanc
   selector: 'app-maintenance-page',
   imports: [MatButtonModule],
   template: `
-    <div class="p-4 flex flex-col gap-6">
+    <div class="pt-6 flex flex-col gap-6">
       <!-- 提醒 -->
-      <section>
-        <h1 class="text-xl font-bold mb-2">{{ t.maintenance.alerts }}</h1>
+      <section class="flex flex-col gap-3">
+        <h1 class="v-page-title">{{ t.maintenance.alerts }}</h1>
         @if (store.alerts().length === 0) {
-          <p class="text-gray-500">{{ t.maintenance.noAlerts }}</p>
+          <p class="text-sm" style="color: var(--text-tertiary)">{{ t.maintenance.noAlerts }}</p>
         } @else {
           <div class="flex flex-col gap-2">
             @for (a of store.alerts(); track a.vehicleId + a.ruleType) {
-              <div class="rounded-md p-3 text-sm"
-                   [class.bg-red-50]="a.status === 'overdue'"
-                   [class.text-red-800]="a.status === 'overdue'"
-                   [class.bg-yellow-50]="a.status === 'upcoming'"
-                   [class.text-yellow-800]="a.status === 'upcoming'">
+              <div class="rounded-lg p-3 text-sm"
+                   [style.background]="a.status === 'overdue' ? 'var(--status-error-bg)' : 'var(--status-warning-bg)'"
+                   [style.color]="a.status === 'overdue' ? 'var(--status-error-fg)' : 'var(--status-warning-fg)'">
                 <b>{{ plateOf(a.vehicleId) }}</b>：
                 {{ a.status === 'overdue' ? t.maintenance.overdue : t.maintenance.upcoming }}
                 （{{ a.ruleType === 'mileage' ? t.maintenance.byMileage : t.maintenance.byDate }}
@@ -39,13 +37,13 @@ import { MaintenanceRecordDialogComponent, RecordFormResult } from './maintenanc
       </section>
 
       <!-- 車輛送修/完修 -->
-      <section>
-        <h2 class="font-bold mb-2">{{ t.vehicle.status }}</h2>
-        <div class="flex flex-col gap-1">
+      <section class="v-card flex flex-col gap-1">
+        <h2 class="v-card-label font-semibold text-base mb-1" style="color: var(--text-primary)">{{ t.vehicle.status }}</h2>
+        <div class="flex flex-col">
           @for (v of vehicleStore.vehicles(); track v.id) {
-            <div class="flex items-center gap-3 text-sm border-b py-1">
+            <div class="flex items-center gap-3 text-sm py-2 last:border-b-0" style="border-bottom: 1px solid var(--border-subtle)">
               <span class="w-28">{{ v.plateNumber }}</span>
-              <span class="w-20">{{ t.vehicle.statusLabels[v.status] }}</span>
+              <span class="w-20" style="color: var(--text-secondary)">{{ t.vehicle.statusLabels[v.status] }}</span>
               @if (v.status === 'available') {
                 <button mat-button (click)="send(v)">{{ t.maintenance.sendToMaintenance }}</button>
               }
@@ -58,31 +56,31 @@ import { MaintenanceRecordDialogComponent, RecordFormResult } from './maintenanc
       </section>
 
       <!-- 紀錄 -->
-      <section>
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="font-bold">{{ t.maintenance.records }}</h2>
+      <section class="flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h2 class="v-card-label font-semibold text-base" style="color: var(--text-primary)">{{ t.maintenance.records }}</h2>
           <button mat-flat-button (click)="addRecord()">{{ t.common.create }}</button>
         </div>
         @if (store.records().length === 0) {
-          <p class="text-gray-500">{{ t.common.empty }}</p>
+          <p class="text-sm" style="color: var(--text-tertiary)">{{ t.common.empty }}</p>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="v-card overflow-x-auto !p-0">
             <table class="w-full text-sm">
               <thead>
-                <tr class="text-left border-b">
-                  <th class="py-2">{{ t.booking.vehicle }}</th>
-                  <th>{{ t.maintenance.type }}</th>
-                  <th>{{ t.maintenance.performedAt }}</th>
-                  <th>{{ t.maintenance.mileageAtService }}</th>
-                  <th>{{ t.maintenance.nextDueMileage }}</th>
-                  <th>{{ t.maintenance.nextDueDate }}</th>
-                  <th>{{ t.maintenance.cost }}</th>
+                <tr class="text-left" style="border-bottom: 1px solid var(--border-subtle)">
+                  <th class="py-3 px-4" style="color: var(--text-tertiary)">{{ t.booking.vehicle }}</th>
+                  <th style="color: var(--text-tertiary)">{{ t.maintenance.type }}</th>
+                  <th style="color: var(--text-tertiary)">{{ t.maintenance.performedAt }}</th>
+                  <th style="color: var(--text-tertiary)">{{ t.maintenance.mileageAtService }}</th>
+                  <th style="color: var(--text-tertiary)">{{ t.maintenance.nextDueMileage }}</th>
+                  <th style="color: var(--text-tertiary)">{{ t.maintenance.nextDueDate }}</th>
+                  <th style="color: var(--text-tertiary)">{{ t.maintenance.cost }}</th>
                 </tr>
               </thead>
               <tbody>
                 @for (r of store.records(); track r.id) {
-                  <tr class="border-b">
-                    <td class="py-2">{{ plateOf(r.vehicleId) }}</td>
+                  <tr style="border-bottom: 1px solid var(--border-subtle)">
+                    <td class="py-3 px-4">{{ plateOf(r.vehicleId) }}</td>
                     <td>{{ t.maintenance.typeLabels[r.type] }}</td>
                     <td>{{ fmt(r.performedAt) }}</td>
                     <td>{{ r.mileageAtService }}</td>

@@ -19,16 +19,16 @@ const STATUS_TONE: Record<VehicleStatus, ChipTone> = {
   selector: 'app-vehicles-page',
   imports: [MatTableModule, MatButtonModule, StatusChipComponent],
   template: `
-    <div class="p-4">
-      <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-bold">{{ t.vehicle.title }}</h1>
+    <div class="pt-6 flex flex-col gap-5">
+      <div class="flex items-center justify-between">
+        <h1 class="v-page-title">{{ t.vehicle.title }}</h1>
         <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
       </div>
 
       @if (store.vehicles().length === 0) {
-        <p class="text-gray-500">{{ t.common.empty }}</p>
+        <p class="text-sm" style="color: var(--text-tertiary)">{{ t.common.empty }}</p>
       } @else {
-        <div class="overflow-x-auto">
+        <div class="v-card overflow-x-auto !p-0">
           <table mat-table [dataSource]="store.vehicles()" class="w-full">
             <ng-container matColumnDef="plateNumber">
               <th mat-header-cell *matHeaderCellDef>{{ t.vehicle.plateNumber }}</th>
@@ -60,7 +60,7 @@ const STATUS_TONE: Record<VehicleStatus, ChipTone> = {
               </td>
             </ng-container>
             <tr mat-header-row *matHeaderRowDef="columns"></tr>
-            <tr mat-row *matRowDef="let row; columns: columns"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns" style="border-color: var(--border-subtle)"></tr>
           </table>
         </div>
       }

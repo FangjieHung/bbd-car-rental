@@ -12,7 +12,7 @@ import { ZH_TW } from '../../core/i18n/zh-tw';
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   template: `
     <h2 mat-dialog-title>{{ data ? t.common.edit : t.common.create }}</h2>
-    <form [formGroup]="form" (ngSubmit)="save()" mat-dialog-content class="flex flex-col gap-2 !pt-2">
+    <form [formGroup]="form" (ngSubmit)="save()" mat-dialog-content class="flex flex-col gap-3 !pt-2">
       <mat-form-field><mat-label>{{ t.customer.name }}</mat-label><input matInput formControlName="name" /></mat-form-field>
       <mat-form-field><mat-label>{{ t.customer.phone }}</mat-label><input matInput formControlName="phone" /></mat-form-field>
       <mat-form-field><mat-label>{{ t.customer.idNumber }}</mat-label><input matInput formControlName="idNumber" /></mat-form-field>

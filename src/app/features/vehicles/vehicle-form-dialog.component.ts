@@ -20,7 +20,7 @@ export interface VehicleFormResult {
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   template: `
     <h2 mat-dialog-title>{{ data ? t.common.edit : t.common.create }}</h2>
-    <form [formGroup]="form" (ngSubmit)="save()" mat-dialog-content class="flex flex-col gap-2 !pt-2">
+    <form [formGroup]="form" (ngSubmit)="save()" mat-dialog-content class="flex flex-col gap-3 !pt-2">
       <mat-form-field>
         <mat-label>{{ t.vehicle.plateNumber }}</mat-label>
         <input matInput formControlName="plateNumber" />

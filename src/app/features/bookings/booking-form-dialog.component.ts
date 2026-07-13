@@ -32,7 +32,7 @@ function toLocalInputValue(iso: string): string {
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   template: `
     <h2 mat-dialog-title>{{ data ? t.common.edit : t.common.create }}</h2>
-    <form [formGroup]="form" (ngSubmit)="save()" mat-dialog-content class="flex flex-col gap-2 !pt-2">
+    <form [formGroup]="form" (ngSubmit)="save()" mat-dialog-content class="flex flex-col gap-3 !pt-2">
       <mat-form-field>
         <mat-label>{{ t.booking.vehicle }}</mat-label>
         <mat-select formControlName="vehicleId">
@@ -69,7 +69,7 @@ function toLocalInputValue(iso: string): string {
         <input matInput formControlName="returnLocation" />
       </mat-form-field>
       @if (error()) {
-        <p class="text-red-600 text-sm whitespace-pre-wrap">{{ error() }}</p>
+        <p class="text-sm whitespace-pre-wrap" style="color: var(--status-error-fg)">{{ error() }}</p>
       }
       <div class="flex justify-end gap-2">
         <button mat-button type="button" (click)="ref.close()">{{ t.common.cancel }}</button>

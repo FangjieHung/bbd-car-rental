@@ -22,33 +22,33 @@ const STATUS_TONE: Record<BookingStatus, ChipTone> = {
   selector: 'app-bookings-page',
   imports: [MatButtonModule, RouterLink, StatusChipComponent],
   template: `
-    <div class="p-4">
-      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h1 class="text-xl font-bold">{{ t.booking.title }}</h1>
+    <div class="pt-6 flex flex-col gap-5">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h1 class="v-page-title">{{ t.booking.title }}</h1>
         <div class="flex gap-2">
           <a mat-button routerLink="/bookings/customers">{{ t.booking.goCustomers }}</a>
           <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
         </div>
       </div>
       @if (store.bookings().length === 0) {
-        <p class="text-gray-500">{{ t.common.empty }}</p>
+        <p class="text-sm" style="color: var(--text-tertiary)">{{ t.common.empty }}</p>
       } @else {
-        <div class="overflow-x-auto">
+        <div class="v-card overflow-x-auto !p-0">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-left border-b">
-                <th class="py-2">{{ t.booking.vehicle }}</th>
-                <th>{{ t.booking.customer }}</th>
-                <th>{{ t.booking.startTime }}</th>
-                <th>{{ t.booking.endTime }}</th>
-                <th>{{ t.booking.status }}</th>
-                <th>{{ t.common.actions }}</th>
+              <tr class="text-left" style="border-bottom: 1px solid var(--border-subtle)">
+                <th class="py-3 px-4" style="color: var(--text-tertiary)">{{ t.booking.vehicle }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.booking.customer }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.booking.startTime }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.booking.endTime }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.booking.status }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.common.actions }}</th>
               </tr>
             </thead>
             <tbody>
               @for (b of store.bookings(); track b.id) {
-                <tr class="border-b">
-                  <td class="py-2">{{ plateOf(b.vehicleId) }}</td>
+                <tr style="border-bottom: 1px solid var(--border-subtle)">
+                  <td class="py-3 px-4">{{ plateOf(b.vehicleId) }}</td>
                   <td>{{ customerStore.nameOf(b.customerId) }}</td>
                   <td>{{ fmt(b.startTime) }}</td>
                   <td>{{ fmt(b.endTime) }}</td>

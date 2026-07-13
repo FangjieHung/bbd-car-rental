@@ -12,32 +12,32 @@ import { CustomerFormDialogComponent } from './customer-form-dialog.component';
   selector: 'app-customers-page',
   imports: [MatButtonModule],
   template: `
-    <div class="p-4">
-      <div class="flex items-center justify-between mb-4">
-        <h1 class="text-xl font-bold">{{ t.customer.title }}</h1>
+    <div class="pt-6 flex flex-col gap-5">
+      <div class="flex items-center justify-between">
+        <h1 class="v-page-title">{{ t.customer.title }}</h1>
         <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
       </div>
       @if (store.customers().length === 0) {
-        <p class="text-gray-500">{{ t.common.empty }}</p>
+        <p class="text-sm" style="color: var(--text-tertiary)">{{ t.common.empty }}</p>
       } @else {
-        <div class="overflow-x-auto">
+        <div class="v-card overflow-x-auto !p-0">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-left border-b">
-                <th class="py-2">{{ t.customer.name }}</th>
-                <th>{{ t.customer.phone }}</th>
-                <th>{{ t.customer.idNumber }}</th>
-                <th>{{ t.customer.note }}</th>
-                <th>{{ t.common.actions }}</th>
+              <tr class="text-left" style="border-bottom: 1px solid var(--border-subtle)">
+                <th class="py-3 px-4" style="color: var(--text-tertiary)">{{ t.customer.name }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.customer.phone }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.customer.idNumber }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.customer.note }}</th>
+                <th style="color: var(--text-tertiary)">{{ t.common.actions }}</th>
               </tr>
             </thead>
             <tbody>
               @for (c of store.customers(); track c.id) {
-                <tr class="border-b">
-                  <td class="py-2">{{ c.name }}</td>
-                  <td>{{ c.phone }}</td>
-                  <td>{{ c.idNumber ?? '—' }}</td>
-                  <td>{{ c.note ?? '' }}</td>
+                <tr style="border-bottom: 1px solid var(--border-subtle)">
+                  <td class="py-3 px-4">{{ c.name }}</td>
+                  <td style="color: var(--text-secondary)">{{ c.phone }}</td>
+                  <td style="color: var(--text-secondary)">{{ c.idNumber ?? '—' }}</td>
+                  <td style="color: var(--text-secondary)">{{ c.note ?? '' }}</td>
                   <td>
                     <button mat-button (click)="openForm(c)">{{ t.common.edit }}</button>
                     <button mat-button color="warn" (click)="remove(c)">{{ t.common.delete }}</button>

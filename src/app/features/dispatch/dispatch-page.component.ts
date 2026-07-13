@@ -11,9 +11,9 @@ import { CalendarViewComponent } from './calendar-view.component';
   selector: 'app-dispatch-page',
   imports: [MatButtonToggleModule, TimelineViewComponent, CalendarViewComponent],
   template: `
-    <div class="p-4">
-      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h1 class="text-xl font-bold">{{ t.dispatch.title }}</h1>
+    <div class="pt-6 flex flex-col gap-5">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h1 class="v-page-title">{{ t.dispatch.title }}</h1>
         <mat-button-toggle-group [value]="view()" (change)="setView($event.value)">
           <mat-button-toggle value="timeline">{{ t.dispatch.timeline }}</mat-button-toggle>
           <mat-button-toggle value="calendar">{{ t.dispatch.calendar }}</mat-button-toggle>
