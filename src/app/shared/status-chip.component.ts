@@ -2,22 +2,33 @@ import { Component, input } from '@angular/core';
 
 export type ChipTone = 'green' | 'blue' | 'gray' | 'red' | 'yellow';
 
-const TONE_CLASS: Record<ChipTone, string> = {
-  green: 'bg-green-100 text-green-800',
-  blue: 'bg-blue-100 text-blue-800',
-  gray: 'bg-gray-200 text-gray-700',
-  red: 'bg-red-100 text-red-800',
-  yellow: 'bg-yellow-100 text-yellow-800',
+// Verdant StatusPill：膠囊 + 色點（tone 對應 success/info/neutral/error/warning）
+const TONE_STYLE: Record<ChipTone, { bg: string; fg: string; dot: string }> = {
+  green: { bg: 'var(--status-success-bg)', fg: 'var(--status-success-fg)', dot: 'var(--status-success-dot)' },
+  blue: { bg: 'var(--status-info-bg)', fg: 'var(--status-info-fg)', dot: 'var(--status-info-dot)' },
+  gray: { bg: 'var(--surface-pill)', fg: 'var(--text-secondary)', dot: 'var(--cream-400)' },
+  red: { bg: 'var(--status-error-bg)', fg: 'var(--status-error-fg)', dot: 'var(--status-error-dot)' },
+  yellow: { bg: 'var(--status-warning-bg)', fg: 'var(--status-warning-fg)', dot: 'var(--status-warning-dot)' },
 };
 
 @Component({
   selector: 'app-status-chip',
-  template: `<span class="inline-block rounded-full px-2 py-0.5 text-xs font-medium {{ toneClass }}">{{ label() }}</span>`,
+  template: `
+    <span
+      class="inline-flex items-center gap-1.5 rounded-full font-semibold whitespace-nowrap"
+      style="padding: 5px 12px; font-size: 12px"
+      [style.background]="s.bg"
+      [style.color]="s.fg"
+    >
+      <span class="rounded-full shrink-0" style="width: 6px; height: 6px" [style.background]="s.dot"></span>
+      {{ label() }}
+    </span>
+  `,
 })
 export class StatusChipComponent {
   readonly label = input.required<string>();
   readonly tone = input.required<ChipTone>();
-  get toneClass(): string {
-    return TONE_CLASS[this.tone()];
+  get s(): { bg: string; fg: string; dot: string } {
+    return TONE_STYLE[this.tone()];
   }
 }

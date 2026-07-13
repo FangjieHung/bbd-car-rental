@@ -1,41 +1,283 @@
 @use "tailwindcss";
-
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
+/* ============================================================
+   Verdant design tokens（來源：docs/design-system/verdant/）
+   sage 主色、深 teal 輔色、暖 cream 底、大圓角、極軟陰影。
+   zh-TW 專案：CJK 字體以 Noto Sans TC 取代原 SC。
+   ============================================================ */
+:root {
+  /* ---- Sage（primary）---- */
+  --sage-50:  #f1f8f1;
+  --sage-100: #e0efe1;
+  --sage-200: #c3dfc6;
+  --sage-300: #9dcaa3;
+  --sage-400: #7cb584;
+  --sage-500: #5fa06a;
+  --sage-600: #4a8656;
+  --sage-700: #3b6b45;
+  --sage-800: #305537;
+  --sage-900: #26432c;
+
+  /* ---- Teal/Navy（secondary、hero 卡）---- */
+  --teal-50:  #eef3f5;
+  --teal-100: #d7e3e8;
+  --teal-200: #aec5cf;
+  --teal-300: #7fa2b0;
+  --teal-400: #567f8f;
+  --teal-500: #3a6373;
+  --teal-600: #294c5a;
+  --teal-700: #1f3a48;
+  --teal-800: #172c37;
+  --teal-900: #101f27;
+
+  /* ---- Cream/Neutral ---- */
+  --cream-0:   #ffffff;
+  --cream-25:  #fcfbf8;
+  --cream-50:  #f7f5f0;
+  --cream-100: #efece4;
+  --cream-200: #e3dfd4;
+  --cream-300: #d0cbbd;
+  --cream-400: #aca795;
+  --cream-500: #8b8574;
+  --cream-600: #6d685a;
+  --cream-700: #534f45;
+  --cream-800: #3a3732;
+  --cream-900: #232220;
+
+  /* ---- Semantic status ---- */
+  --status-success-bg: var(--sage-100);
+  --status-success-fg: var(--sage-700);
+  --status-success-dot: var(--sage-500);
+  --status-warning-bg: #fbf1dd;
+  --status-warning-fg: #8a6416;
+  --status-warning-dot: #e0a530;
+  --status-error-bg: #fbe8e6;
+  --status-error-fg: #a13f34;
+  --status-error-dot: #e2584a;
+  --status-info-bg: var(--teal-50);
+  --status-info-fg: var(--teal-700);
+  --status-info-dot: var(--teal-500);
+
+  /* ---- Surfaces / text / borders ---- */
+  --surface-app:      var(--cream-50);
+  --surface-card:     var(--cream-0);
+  --surface-card-alt: var(--cream-25);
+  --surface-sunken:   var(--cream-100);
+  --surface-inverse:  var(--teal-700);
+  --surface-brand:    var(--sage-500);
+  --surface-pill:     var(--cream-100);
+  --text-primary:   var(--cream-900);
+  --text-secondary: var(--cream-600);
+  --text-tertiary:  var(--cream-500);
+  --text-on-brand:  #ffffff;
+  --text-on-inverse: #ffffff;
+  --text-on-inverse-muted: var(--teal-200);
+  --border-subtle: var(--cream-200);
+  --border-default: var(--cream-300);
+  --border-inverse: rgba(255, 255, 255, 0.14);
+
+  /* ---- Viz（時間軸/圖表）---- */
+  --viz-1: var(--teal-700);
+  --viz-2: var(--teal-500);
+  --viz-3: var(--teal-300);
+  --viz-4: var(--cream-300);
+
+  /* ---- Type ---- */
+  --font-display: 'Plus Jakarta Sans', 'Noto Sans TC', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* ---- Radius / shadow / motion ---- */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+  --shadow-xs: 0 1px 2px rgba(35, 34, 32, 0.04);
+  --shadow-sm: 0 2px 8px rgba(35, 34, 32, 0.05);
+  --shadow-md: 0 8px 24px rgba(35, 34, 32, 0.07);
+  --shadow-lg: 0 16px 40px rgba(35, 34, 32, 0.10);
+  --shadow-focus: 0 0 0 3px rgba(95, 160, 106, 0.30);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+}
+
+/* Tailwind v4：把 Verdant 色票註冊成 utility（bg-sage-500、text-cream-600…） */
+@theme {
+  --color-sage-50:  #f1f8f1;
+  --color-sage-100: #e0efe1;
+  --color-sage-200: #c3dfc6;
+  --color-sage-300: #9dcaa3;
+  --color-sage-400: #7cb584;
+  --color-sage-500: #5fa06a;
+  --color-sage-600: #4a8656;
+  --color-sage-700: #3b6b45;
+  --color-sage-800: #305537;
+  --color-sage-900: #26432c;
+  --color-teal-50:  #eef3f5;
+  --color-teal-100: #d7e3e8;
+  --color-teal-200: #aec5cf;
+  --color-teal-300: #7fa2b0;
+  --color-teal-400: #567f8f;
+  --color-teal-500: #3a6373;
+  --color-teal-600: #294c5a;
+  --color-teal-700: #1f3a48;
+  --color-teal-800: #172c37;
+  --color-teal-900: #101f27;
+  --color-cream-0:   #ffffff;
+  --color-cream-25:  #fcfbf8;
+  --color-cream-50:  #f7f5f0;
+  --color-cream-100: #efece4;
+  --color-cream-200: #e3dfd4;
+  --color-cream-300: #d0cbbd;
+  --color-cream-400: #aca795;
+  --color-cream-500: #8b8574;
+  --color-cream-600: #6d685a;
+  --color-cream-700: #534f45;
+  --color-cream-800: #3a3732;
+  --color-cream-900: #232220;
+  --font-display: 'Plus Jakarta Sans', 'Noto Sans TC', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+}
+
+/* ============================================================
+   Angular Material：主題 + Verdant 系統變數覆寫
+   ============================================================ */
 html {
   height: 100%;
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
+        primary: mat.$green-palette,
+        tertiary: mat.$cyan-palette,
       ),
-      typography: Roboto,
+      typography: (
+        plain-family: 'Inter, "Noto Sans TC", system-ui, sans-serif',
+        brand-family: '"Plus Jakarta Sans", "Noto Sans TC", system-ui, sans-serif',
+      ),
       density: 0,
     )
   );
+
+  /* 覆寫 M3 系統變數對齊 Verdant 色票 */
+  --mat-sys-primary: var(--sage-600);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: var(--sage-100);
+  --mat-sys-on-primary-container: var(--sage-800);
+  --mat-sys-secondary: var(--teal-600);
+  --mat-sys-on-secondary: #ffffff;
+  --mat-sys-secondary-container: var(--teal-100);
+  --mat-sys-on-secondary-container: var(--teal-800);
+  --mat-sys-surface: var(--cream-0);
+  --mat-sys-surface-container-lowest: var(--cream-0);
+  --mat-sys-surface-container-low: var(--cream-25);
+  --mat-sys-surface-container: var(--cream-25);
+  --mat-sys-surface-container-high: var(--cream-50);
+  --mat-sys-surface-container-highest: var(--cream-100);
+  --mat-sys-on-surface: var(--cream-900);
+  --mat-sys-on-surface-variant: var(--cream-600);
+  --mat-sys-outline: var(--cream-300);
+  --mat-sys-outline-variant: var(--cream-200);
+  --mat-sys-error: #a13f34;
+  --mat-sys-on-error: #ffffff;
+  --mat-sys-error-container: var(--status-error-bg);
+  --mat-sys-on-error-container: var(--status-error-fg);
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
   color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
+  background-color: var(--surface-app);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
   margin: 0;
   height: 100%;
 }
-/* You can add global styles to this file, and also import other style files */
+
+/* ============================================================
+   Verdant 元件配方（recipes.md）
+   ============================================================ */
+
+/* 白底卡片：hairline 邊、近隱形陰影、大圓角 */
+.v-card {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  padding: 24px;
+}
+
+/* 深 teal hero 卡：無邊框無陰影 */
+.v-card-dark {
+  background: var(--surface-inverse);
+  color: var(--text-on-inverse);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+/* 頂部導覽膠囊 */
+.v-nav-pill {
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-secondary);
+  transition: background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+}
+.v-nav-pill:hover {
+  background: var(--surface-pill);
+  color: var(--text-primary);
+}
+.v-nav-pill.active {
+  background: var(--surface-brand);
+  color: var(--text-on-brand);
+}
+
+/* 大數字（StatCard 的 hero number） */
+.v-stat-number {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* 頁面大標 */
+.v-page-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* 卡片內小節標（quiet label + bold heading 的 quiet 半部） */
+.v-card-label {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* Material 元件微調對齊 Verdant */
+.mat-mdc-dialog-surface {
+  border-radius: var(--radius-xl) !important;
+}
+.mat-mdc-table {
+  background: transparent !important;
+}
+.mat-mdc-snack-bar-container .mdc-snackbar__surface {
+  border-radius: var(--radius-md) !important;
+}
+
+/* 互動手感：按下微縮 */
+.mat-mdc-unelevated-button:active,
+.mat-mdc-raised-button:active,
+.mat-mdc-outlined-button:active,
+.v-nav-pill:active {
+  transform: scale(0.97);
+}
