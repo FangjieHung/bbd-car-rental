@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+.page-shell {
+  padding-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+}
+
+.table-row {
+  border-color: var(--border-subtle);
+}

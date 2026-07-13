@@ -1,0 +1,169 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.app-shell {
+  height: 100%;
+  background: linear-gradient(135deg, var(--cream-25) 0%, var(--cream-50) 100%);
+}
+
+.sidenav-container {
+  height: 100%;
+}
+
+.app-sidenav {
+  width: 280px;
+  border: 0;
+  background: var(--teal-900);
+  color: var(--text-on-inverse);
+  padding: 24px 16px;
+  box-shadow: var(--shadow-lg);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--sage-400), var(--sage-600));
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.brand-copy h1 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.brand-copy p {
+  margin: 2px 0 0;
+  color: var(--teal-200);
+  font-size: 0.85rem;
+}
+
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--teal-100);
+  text-decoration: none;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.nav-icon {
+  width: 24px;
+  text-align: center;
+}
+
+.user-card {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--sage-500);
+  font-weight: 700;
+}
+
+.user-card strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.user-card p {
+  margin: 2px 0 0;
+  color: var(--teal-200);
+  font-size: 0.8rem;
+}
+
+.content-area {
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.topbar-title p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.topbar-title h2 {
+  margin: 2px 0 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.menu-toggle {
+  display: none;
+}
+
+.page-shell {
+  padding: 24px;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .app-sidenav {
+    width: min(86vw, 280px);
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .topbar {
+    padding: 16px 18px;
+  }
+
+  .page-shell {
+    padding: 16px;
+  }
+}

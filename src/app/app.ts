@@ -1,28 +1,75 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, inject, OnInit } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { NgFor } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs/operators';
 import { ZH_TW } from './core/i18n/zh-tw';
+
+interface NavItem {
+  route: string;
+  label: string;
+  icon: string;
+}
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
-  template: `
-    <header class="sticky top-0 z-10 bg-cream-50/95 backdrop-blur-sm">
-      <div class="max-w-6xl mx-auto flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <span class="font-display font-extrabold text-lg tracking-tight">{{ t.app.title }}</span>
-        <nav class="flex flex-wrap items-center gap-1.5">
-          <a class="v-nav-pill" routerLink="/dashboard" routerLinkActive="active">{{ t.nav.dashboard }}</a>
-          <a class="v-nav-pill" routerLink="/vehicles" routerLinkActive="active">{{ t.nav.vehicles }}</a>
-          <a class="v-nav-pill" routerLink="/dispatch" routerLinkActive="active">{{ t.nav.dispatch }}</a>
-          <a class="v-nav-pill" routerLink="/bookings" routerLinkActive="active">{{ t.nav.bookings }}</a>
-          <a class="v-nav-pill" routerLink="/maintenance" routerLinkActive="active">{{ t.nav.maintenance }}</a>
-        </nav>
-      </div>
-    </header>
-    <main class="max-w-6xl mx-auto px-4 pb-10">
-      <router-outlet />
-    </main>
-  `,
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    NgFor,
+    MatSidenavModule,
+    MatButtonModule,
+    MatIconModule,
+  ],
+  templateUrl: './app.html',
+  styleUrl: './app.scss',
 })
-export class App {
+export class App implements OnInit {
   protected readonly t = ZH_TW;
+
+  protected readonly navItems: NavItem[] = [
+    { route: '/dashboard', label: this.t.nav.dashboard, icon: '◉' },
+    { route: '/vehicles', label: this.t.nav.vehicles, icon: '◫' },
+    { route: '/dispatch', label: this.t.nav.dispatch, icon: '◌' },
+    { route: '/bookings', label: this.t.nav.bookings, icon: '◍' },
+    { route: '/maintenance', label: this.t.nav.maintenance, icon: '◎' },
+  ];
+
+  protected isMobile = false;
+  protected isSidenavOpen = true;
+  protected currentTitle = String(this.t.nav.dashboard);
+
+  private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.breakpointObserver.observe(['(max-width: 900px)']).subscribe(result => {
+      this.isMobile = result.matches;
+      this.isSidenavOpen = !result.matches;
+    });
+
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        map(event => event.urlAfterRedirects),
+      )
+      .subscribe(url => {
+        const active = this.navItems.find(item => item.route === url || url.startsWith(`${item.route}/`));
+        this.currentTitle = String(active?.label ?? this.t.nav.dashboard);
+      });
+  }
+
+  protected toggleSidenav(): void {
+    this.isSidenavOpen = !this.isSidenavOpen;
+  }
+
+  protected onNavClick(): void {
+    if (this.isMobile) {
+      this.isSidenavOpen = false;
+    }
+  }
 }

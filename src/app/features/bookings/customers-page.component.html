@@ -1,0 +1,38 @@
+<div class="page-shell">
+  <div class="page-header">
+    <h1 class="v-page-title">{{ t.customer.title }}</h1>
+    <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+  </div>
+
+  @if (store.customers().length === 0) {
+    <p class="empty-state">{{ t.common.empty }}</p>
+  } @else {
+    <div class="v-card overflow-x-auto !p-0">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="table-head">
+            <th class="table-cell">{{ t.customer.name }}</th>
+            <th class="table-cell">{{ t.customer.phone }}</th>
+            <th class="table-cell">{{ t.customer.idNumber }}</th>
+            <th class="table-cell">{{ t.customer.note }}</th>
+            <th class="table-cell">{{ t.common.actions }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of store.customers(); track c.id) {
+            <tr class="table-row">
+              <td class="table-cell table-cell--body">{{ c.name }}</td>
+              <td class="table-cell table-cell--body text-secondary">{{ c.phone }}</td>
+              <td class="table-cell table-cell--body text-secondary">{{ c.idNumber ?? '—' }}</td>
+              <td class="table-cell table-cell--body text-secondary">{{ c.note ?? '' }}</td>
+              <td class="table-cell table-cell--body">
+                <button mat-button (click)="openForm(c)">{{ t.common.edit }}</button>
+                <button mat-button color="warn" (click)="remove(c)">{{ t.common.delete }}</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

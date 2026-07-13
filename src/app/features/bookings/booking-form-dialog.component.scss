@@ -1,0 +1,22 @@
+:host {
+  display: block;
+}
+
+.form-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.error-message {
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  color: var(--status-error-fg);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

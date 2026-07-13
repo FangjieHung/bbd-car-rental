@@ -10,22 +10,8 @@ import { CalendarViewComponent } from './calendar-view.component';
 @Component({
   selector: 'app-dispatch-page',
   imports: [MatButtonToggleModule, TimelineViewComponent, CalendarViewComponent],
-  template: `
-    <div class="pt-6 flex flex-col gap-5">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <h1 class="v-page-title">{{ t.dispatch.title }}</h1>
-        <mat-button-toggle-group [value]="view()" (change)="setView($event.value)">
-          <mat-button-toggle value="timeline">{{ t.dispatch.timeline }}</mat-button-toggle>
-          <mat-button-toggle value="calendar">{{ t.dispatch.calendar }}</mat-button-toggle>
-        </mat-button-toggle-group>
-      </div>
-      @if (view() === 'timeline') {
-        <app-timeline-view />
-      } @else {
-        <app-calendar-view />
-      }
-    </div>
-  `,
+  templateUrl: './dispatch-page.component.html',
+  styleUrls: ['./dispatch-page.component.scss'],
 })
 export class DispatchPageComponent {
   protected readonly t = ZH_TW;

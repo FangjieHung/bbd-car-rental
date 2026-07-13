@@ -16,55 +16,8 @@ const TYPES: MaintenanceType[] = ['oil_change', 'tire', 'brake', 'inspection', '
 @Component({
   selector: 'app-maintenance-record-dialog',
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
-  template: `
-    <h2 mat-dialog-title>{{ t.common.create }}</h2>
-    <form [formGroup]="form" (ngSubmit)="save()" mat-dialog-content class="flex flex-col gap-3 !pt-2">
-      <mat-form-field>
-        <mat-label>{{ t.booking.vehicle }}</mat-label>
-        <mat-select formControlName="vehicleId">
-          @for (v of vehicleStore.vehicles(); track v.id) {
-            <mat-option [value]="v.id">{{ v.plateNumber }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ t.maintenance.type }}</mat-label>
-        <mat-select formControlName="type">
-          @for (mt of types; track mt) {
-            <mat-option [value]="mt">{{ t.maintenance.typeLabels[mt] }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ t.maintenance.performedAt }}</mat-label>
-        <input matInput type="date" formControlName="performedDate" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ t.maintenance.mileageAtService }}</mat-label>
-        <input matInput type="number" formControlName="mileageAtService" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ t.maintenance.nextDueMileage }}</mat-label>
-        <input matInput type="number" formControlName="nextDueMileage" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ t.maintenance.nextDueDate }}</mat-label>
-        <input matInput type="date" formControlName="nextDueDate" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ t.maintenance.cost }}</mat-label>
-        <input matInput type="number" formControlName="cost" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ t.maintenance.notes }}</mat-label>
-        <input matInput formControlName="notes" />
-      </mat-form-field>
-      <div class="flex justify-end gap-2">
-        <button mat-button type="button" (click)="ref.close()">{{ t.common.cancel }}</button>
-        <button mat-flat-button type="submit" [disabled]="form.invalid">{{ t.common.save }}</button>
-      </div>
-    </form>
-  `,
+  templateUrl: './maintenance-record-dialog.component.html',
+  styleUrls: ['./maintenance-record-dialog.component.scss'],
 })
 export class MaintenanceRecordDialogComponent {
   protected readonly t = ZH_TW;

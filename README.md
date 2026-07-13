@@ -2,6 +2,23 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.6.
 
+## Prerequisites
+
+Angular CLI 22 requires **Node.js >= 22.22.3 or 24.x**. This project pins Node 24 via `.nvmrc`:
+
+```bash
+nvm use   # switches to Node 24 (from .nvmrc)
+npm install
+```
+
+## Common commands
+
+```bash
+npm start        # dev server (ng serve), http://localhost:4200/
+npm run build    # production build (ng build), output in dist/
+npm test         # unit tests (vitest)
+```
+
 ## Development server
 
 To start a local development server, run:

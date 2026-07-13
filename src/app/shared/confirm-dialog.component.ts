@@ -7,13 +7,8 @@ import { ZH_TW } from '../core/i18n/zh-tw';
 @Component({
   selector: 'app-confirm-dialog',
   imports: [MatDialogModule, MatButtonModule],
-  template: `
-    <div mat-dialog-content>{{ message }}</div>
-    <div mat-dialog-actions align="end">
-      <button mat-button [mat-dialog-close]="false">{{ t.common.cancel }}</button>
-      <button mat-flat-button color="warn" [mat-dialog-close]="true">{{ t.common.confirm }}</button>
-    </div>
-  `,
+  templateUrl: './confirm-dialog.component.html',
+  styleUrls: ['./confirm-dialog.component.scss'],
 })
 export class ConfirmDialogComponent {
   protected readonly t = ZH_TW;

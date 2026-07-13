@@ -13,17 +13,8 @@ const TONE_STYLE: Record<ChipTone, { bg: string; fg: string; dot: string }> = {
 
 @Component({
   selector: 'app-status-chip',
-  template: `
-    <span
-      class="inline-flex items-center gap-1.5 rounded-full font-semibold whitespace-nowrap"
-      style="padding: 5px 12px; font-size: 12px"
-      [style.background]="s.bg"
-      [style.color]="s.fg"
-    >
-      <span class="rounded-full shrink-0" style="width: 6px; height: 6px" [style.background]="s.dot"></span>
-      {{ label() }}
-    </span>
-  `,
+  templateUrl: './status-chip.component.html',
+  styleUrls: ['./status-chip.component.scss'],
 })
 export class StatusChipComponent {
   readonly label = input.required<string>();
