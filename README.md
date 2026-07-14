@@ -17,6 +17,7 @@ npm install
 npm start        # dev server (ng serve), http://localhost:4200/
 npm run build    # production build (ng build), output in dist/
 npm test         # unit tests (vitest)
+npm run deploy   # build + publish to GitHub Pages (gh-pages branch)
 ```
 
 ## Development server
@@ -60,6 +61,18 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ```bash
 ng test
 ```
+
+## Deploying to GitHub Pages
+
+This app is hosted at https://fangjiehung.github.io/bbd-car-rental/. To deploy:
+
+```bash
+npm run deploy
+```
+
+This builds with the correct base href for the `/bbd-car-rental/` subpath and publishes
+`dist/penghu-rental-admin/browser` to the `gh-pages` branch via `angular-cli-ghpages`.
+Pages typically takes 1–2 minutes to update after the push completes.
 
 ## Running end-to-end tests
 
