@@ -1,4 +1,4 @@
-# 主題包架構設計（Theme-pack Architecture）
+# 雙軸主題系統設計（範式 Paradigm × 配色 Color-theme）
 
 日期：2026-07-15
 狀態：設計定案，待寫實作計畫
@@ -8,220 +8,256 @@
 
 ## 1. 背景與策略
 
-car-rental 這個 repo 定位為 **參考產品 / sandbox**：真實地把功能畫面做出來，
-未來的 ERP/CRM template 從這份可運作的產品「抽出來」，而不是現在就憑空建一個空殼 template。
-所以**現在不 fork、不另開 repo**，繼續在這裡做功能。
+car-rental 這個 repo 定位為 **參考產品 / sandbox**：真實把功能畫面做出來，未來的 ERP/CRM
+template 從這份可運作的產品「抽出來」，而不是憑空建空殼。所以**現在不 fork、不另開 repo**，
+繼續在這裡做。
 
-「之後再抽」的陷阱是：現在畫面做得隨便，之後抽 template 會變成重寫。本 spec 只處理其中一件
-「現在做最划算、拖越久越虧」的事——**換膚邊界**：它是使用者長期要重複做的事（一直增加 UI style），
-每多一個畫面就可能多欠一筆「顏色/尺寸寫死」的債。先把邊界立好，之後每個新畫面自動守規矩。
+本 spec 只處理「換膚邊界」——它是使用者長期要重複做的事（一直增加 UI style），每多一個畫面
+就可能多欠一筆「顏色/尺寸寫死」的債。先把邊界立好，之後每個新畫面自動守規矩。
 
-### 明確延後（各自另開 spec，不在本次範圍）
+### 明確延後（各自另開 spec）
 - 登入/登出、路由守衛、角色權限骨架
-- 通用 CRUD scaffold（把 vehicles/bookings 那套列表+篩選+表單抽成可複製範式）
+- 通用 CRUD scaffold
 - 把 car-rental 領域內容抽乾淨、變成純 template
-- `core/`＋`shared/` 不得引用 `features/` 的大範圍隔離規則（本 spec 只做其中「樣式」這一條）
+- `core`＋`shared` 不得引用 `features` 的大範圍隔離（本 spec 只做「樣式」這條）
 
 ---
 
-## 2. 核心決策（已與使用者確認）
+## 2. 核心模型：兩個正交的維度
 
-| 決策 | 選定 | 說明 |
-|---|---|---|
-| Token 權威 | **Material 3 sys token（`--mat-sys-*`）為單一權威** | 顏色/字體/圓角/陰影全部綁 M3 官方 token；連非 Material 元件（`.v-card`、外殼、時間軸）也吃同一組。除非 M3 天生沒有，否則不自創。 |
-| 間距 padding/gap | **交給 Tailwind 間距尺標**（`p-4`/`gap-3`…） | M3 沒有 spacing token；Tailwind 是 4px 網格＝對齊 M3 的 4dp，等於沿用同一尺標、零自創。 |
-| 元件綁「用途」還是「顏色本身」 | **綁用途（即綁 M3 token）** | 元件綁 `--mat-sys-surface` 等用途 token，換主題只改 token 的值。等同 Figma 語意變數 / mode。 |
-| 換膚時機 | **runtime 即時切 + project-time 可鎖** | 出貨可即時切換展示；複製到真專案時用「初始化」步驟鎖成單一主題。runtime 是 project-time 的超集。 |
-| 第二套證明主題 | **深色 Midnight** | 整個翻深色，最能驗出漏網。 |
+一個畫面的外觀 = **選一個範式 ＋ 選一個配色**。兩軸獨立、可自由組合：
 
----
+|  | Verdant 綠 | Midnight 深 | …（配色軸） |
+|---|---|---|---|
+| **Material** | ✓ | ✓ | |
+| **Glass**（未來） | ✓ | ✓ | |
+| **Neumorphism**（未來） | ✓ | ✓ | |
 
-## 3. Token 策略：M3 為單一權威
+N 個範式 ＋ M 個配色 = N×M 種樣子，只維護 N＋M 份。技術上就是最外層兩個獨立屬性：
+`<html data-paradigm="material" data-theme="verdant">`。
 
-換膚的本質＝**改 `--mat-sys-*` 這組官方 token 的值**。分兩層：
+### 兩軸各管什麼
 
-```
-┌─ 第 1 層：底層色 palette（主題私有，前綴底線標示，只在 themes/ 內出現）
-│    --_primary-50 … 900   --_accent-50 … 900   --_neutral-0 … 900
-│    （每套主題自己的色階，只拿來算出自己的 M3 token 值）
-│
-└─ 第 2 層：M3 sys token（＝契約，全站唯一能綁的東西）
-     顏色  --mat-sys-primary / on-primary / surface / surface-container-* /
-           on-surface / on-surface-variant / outline / outline-variant / error …
-     字體  --mat-sys-{display,headline,title,body,label}-{large,medium,small}
-           （及其 -size / -weight / -line-height / -font / -tracking 子 token）
-     圓角  --mat-sys-corner-{none,extra-small,small,medium,large,extra-large,full}
-     陰影  --mat-sys-level0 … level5
-```
+| | 管什麼 | 內容 | 例 |
+|---|---|---|---|
+| **配色包** color-theme（可獨立換） | **只管顏色** | 主色/表面/文字/邊線的顏色值、5–6 個狀態 tone 的顏色 | Verdant、Midnight |
+| **範式包** paradigm（可獨立換） | **管造型結構** | button/card/table/status/typography 的樣式規則 ＋ 造型 token（圓角/陰影/模糊/光邊/字體） | Material、Glass、Neumo |
 
-**契約的意義**：`--mat-sys-*` 那組名字是骨架與所有元件的唯一依賴。每套主題把要換的 token
-給新值（通常換顏色；想換圓角/字體風格也行，因為都是 token）。骨架只認 token 名、不認值。
+同一配色可套不同範式；同一範式可換不同配色。Material+Verdant 與 Material+Midnight 只差在顏色，
+造型（圓角/陰影/字體）一樣。
 
-底層 palette（第 1 層）是主題**私有**：只用來算自己那套 M3 token 值，元件/畫面/外殼一律不得直接引用，
-也不得寫死色碼。**間距不進 CSS 變數層——用 Tailwind utility（`p-4` 等）。**
+### 決策彙整（已與使用者確認）
 
-### 必要例外（M3 天生沒有，最小自創、明確標記為 app 擴充）
-- **狀態色 success / warning / info**：M3 只有 `error`。後台需要「可租借（綠）／保養（黃）／逾期（紅）」等，
-  建一小組 `--app-success-{bg,fg,dot}`、`--app-warning-*`、`--app-info-*`（命名與 `--mat-sys-` 區隔，不冒充官方）。
-  每套主題比照 M3 token 一起給值。
-- **時間軸/圖表色 viz**：優先用 M3 的 `primary/secondary/tertiary` 及其 container 變體充當；
-  真的不夠再最小自創 `--app-viz-*`（實作時盤點 timeline/calendar 用色後決定，能不創就不創）。
-
----
-
-## 4. 現有自創 token → M3 對應（改寫方向）
-
-現在 `styles.scss` 有一層自創語意名（`--surface-*`、`--text-*`、`--border-*`、`--radius-*`、`--shadow-*`、`--font-*`）。
-本次把它們**移除**，元件改綁對應的 M3 token：
-
-| 現有自創 | 改綁 M3 token |
+| 決策 | 選定 |
 |---|---|
-| `--surface-app` | `--mat-sys-background` |
-| `--surface-card` / `--surface-card-alt` | `--mat-sys-surface` / `--mat-sys-surface-container-low` |
-| `--surface-sunken` | `--mat-sys-surface-container` |
-| `--surface-inverse` | `--mat-sys-inverse-surface` |
-| `--surface-brand` | `--mat-sys-primary` |
-| `--surface-pill` | `--mat-sys-surface-container-high` |
-| `--text-primary` | `--mat-sys-on-surface` |
-| `--text-secondary` / `--text-tertiary` | `--mat-sys-on-surface-variant` |
-| `--text-on-brand` | `--mat-sys-on-primary` |
-| `--text-on-inverse(-muted)` | `--mat-sys-inverse-on-surface` |
-| `--border-subtle` / `--border-default` | `--mat-sys-outline-variant` / `--mat-sys-outline` |
-| `--radius-*` | `--mat-sys-corner-*`（sm→small、md→medium、lg→large、xl→extra-large、pill→full） |
-| `--shadow-*` | `--mat-sys-level1 … level4` |
-| `--font-display` / `--font-body` | M3 type role（標題→`headline`/`title`，內文→`body`；用 token 或 Material typography class） |
-| `--status-error-*` | `--mat-sys-error` / `--mat-sys-error-container` / `--mat-sys-on-error-container` |
-| `--status-{success,warning,info}-*` | **app 擴充** `--app-{success,warning,info}-*`（見 §3 例外） |
-| `--viz-*` | 優先 M3 container 色；不足才 `--app-viz-*`（見 §3 例外） |
-
-（`--surface-shell`、`--text-on-shell` 等我上一版自創的名字**取消**，改對到上表 M3 token。）
+| 主題結構 | 二維：範式 × 配色，兩獨立屬性切換 |
+| Token 詞彙 | Material 3 sys token（`--mat-sys-*`）為單一詞彙表；顏色值來自配色包、造型值來自範式包 |
+| 間距 | 交給 Tailwind（`p-4`/`gap-3`，4px 網格＝對齊 M3 4dp），不進 CSS 變數 |
+| 元件樣式歸屬 | 每範式一份（因跨範式結構本質不同）；但顏色/字體仍綁 token |
+| 換膚時機 | runtime 即時切（兩軸各一個下拉）＋ project-time 可鎖 |
+| 第一個計畫範圍 | 雙軸結構就位；範式軸先 Material 一個；配色軸做 Verdant＋Midnight 兩個 |
 
 ---
 
-## 5. 要修的「寫死 / 直綁底層色」清單（約 20 處）
+## 3. 契約：從「token 名」升級成「class 名單」（CSS Zen Garden 模型）
 
-grep 出、目前跳過 token、直接綁底層色或寫死色碼的地方。要改成綁 §4 的 M3 token。
-**這是本 spec 主要的一次性工作量，範圍明確可控。**
+因為元件樣式每範式一份，契約不只是 token，而是**骨架 HTML 用的一組固定 class**。
+每個範式包必須實作這同一組 class；骨架的 HTML 與功能永不動，變的是「哪一包 CSS 認這些 class」。
+如同 CSS Zen Garden：同一份 HTML，套不同 CSS，就是另一個世界。
 
-| 檔案 | 現況 | 改綁 |
-|---|---|---|
-| `app.scss`（外殼） | `--cream-25/50`（側欄底）、`--sage-400/500/600`、`--teal-100/200/900`、`#fff`×2 | `--mat-sys-surface-container-*`、`--mat-sys-primary`、`--mat-sys-on-*` |
-| `dispatch/timeline-view.component.ts` | inline `--teal-500` `--sage-500` `--cream-300` `#fff` | M3 container 色 / `--app-viz-*`、`--mat-sys-on-primary` |
-| `dispatch/calendar-view.component.ts` | `--sage-100` `--sage-600` | `--app-success-bg` / `--mat-sys-primary`（依用途，實作時定） |
-| `dashboard/dashboard-page.component.scss` | `--teal-700` | `--mat-sys-inverse-surface` 或 on-surface（依用途） |
-| `shared/status-chip.component.ts` | `--cream-400`（gray dot 預設） | `--mat-sys-outline` |
-| 現有 `styles.scss` 自創語意層 | `--surface-*`/`--text-*`/`--radius-*`… | 整層移除，改由 §4 對應 |
+Class 契約（初版，實作時定稿並寫進 `_contract.scss`）：
+- 卡片：`.v-card` `.v-card__header` `.v-card__body` `.v-card__actions`（可點卡片：`.v-card--clickable`）
+- 按鈕：`.v-btn` × 尺寸 `--sm/--md/--lg` × 樣式 `--solid/--outline/--ghost`
+- 表格：`.v-table` `.v-table__head` `.v-table__row` `.v-table__cell`
+- 狀態晶片：`.v-chip` + tone 修飾（見 §5）
+- 排版：`.v-text-{display,title,heading,body,label,caption}`
 
-修完後 `themes/` 以外應為 **0 處** 底層色/寫死色。
+**M3 token 仍是唯一詞彙表**：顏色 token（primary/surface/on-surface…）由配色包給值，
+造型 token（corner-*/level*/字體）由範式包給值。Glass/Neumo 需要 M3 沒有的東西
+（`backdrop-filter`、`inset` 陰影）——那些不是 token，是範式 recipe 裡的 CSS。
 
 ---
 
-## 6. 檔案結構
+## 4. 檔案結構
 
 ```
-src/styles.scss                 // 精簡入口：Material theme + skeleton + 主題註冊表
+src/styles.scss                    // 入口：mat.theme() 起底 + skeleton + 兩軸註冊表
 src/styles/
-  _skeleton.scss                // 主題無關：.v-card / .v-nav-pill / Material 結構性覆寫
-                                //   → 只綁 --mat-sys-* 與 --app-* 擴充，永不碰底層色、不寫死色
-  _contract.scss                // 文件性質：列出本專案用到的 M3 token + app 擴充 token 清單
-  themes/
-    _registry.scss              // 把每套主題掛到 :root[data-theme="x"]
-    verdant/
-      _palette.scss             // 主題私有底層色 --_primary/_accent/_neutral
-      _theme.scss               // 底層色 → 填 --mat-sys-* 與 --app-* 的值
-    midnight/
-      _palette.scss
-      _theme.scss
+  _skeleton.scss                   // 主題無關：CSS reset、layout 容器結構（用 Tailwind 間距）
+                                   //   幾乎不含視覺；不碰顏色、不寫死色
+  _contract.scss                   // 文件：class 名單契約 + 用到的 M3 token + --app-* 清單
+
+  paradigms/                       // 【範式軸】= 造型（recipe + 造型 token）
+    _registry.scss                 // 掛 :root[data-paradigm="x"]
+    material/
+      _tokens.scss                 // 造型 token 值：--mat-sys-corner-*、--mat-sys-level*、字體
+      buttons.scss card.scss table.scss status.scss typography.scss   // 吃顏色 token
+    (glass/ neumorphism/ 為未來插槽，本次不做)
+
+  color-themes/                    // 【配色軸】= 顏色 token 值（唯一允許出現色碼的地方）
+    _registry.scss                 // 掛 :root[data-theme="x"]
+    verdant/  _tokens.scss         // --mat-sys-primary/surface/on-surface…、--app-{tone}-*
+    midnight/ _tokens.scss
 
 src/app/core/theme/
-  theme.service.ts              // signal；設 html[data-theme]；存 localStorage；啟動時還原
-  theme.token.ts                // 主題清單常數（id + 顯示名）
+  theme.service.ts                 // 管 data-paradigm + data-theme 兩屬性；各存 localStorage；啟動還原
+  theme.token.ts                   // 範式清單 + 配色清單常數（id + 顯示名）
+  status-tone.ts                   // 狀態→tone 單一真相源（見 §5）
 src/app/shared/
-  theme-switcher.component.*     // 展示/開發用切換器（project-time 可刪）
+  theme-switcher.component.*        // 兩個下拉：範式、配色（project-time 可刪）
+  status-chip.component.*           // 改吃 StatusKey（見 §5）
 ```
 
-- 預設主題：`verdant`。
-- Tailwind `@theme` 的 `--color-*` 色票鏡像：畫面未使用（grep 零命中 `bg-sage-*`），**移除**以減少維護面；
-  字體鏡像視 `font-display` class 使用情況保留或移除（實作時確認）。
-- Material 仍以 `mat.theme()` 起底，再由各主題在 `[data-theme]` 下覆寫 `--mat-sys-*`。
+- 預設：`data-paradigm="material"`、`data-theme="verdant"`。
+- Tailwind `@theme` 的 `--color-*` 色票鏡像：畫面未使用，移除以減維護；字體鏡像視使用情況。
+- **本計畫範圍邊界**：不追求把每個元件都完美歸位。先做「雙軸骨架＋切換＋ 5 類核心元件 recipe（Material）＋ 2 配色」證明架構；其餘元件（外殼細節等）之後漸進搬入，本次只要求它們不寫死色、綁 token。
+
+---
+
+## 5. 狀態：型別安全的單一真相源（防同事亂引用）
+
+20+ 個業務狀態在視覺上收斂成 5–6 個 **tone**。不是定 20 種顏色，是定 5–6 個 tone
+（顏色是配色 token），每個狀態對應一個 tone。做成程式碼真相源——同事只能從清單選、打錯編譯不過，
+比註解強：
+
+```ts
+// core/theme/status-tone.ts —— 單一真相源
+export const STATUS_TONE = {
+  success:'positive', approved:'positive', completed:'positive', active:'positive', online:'positive',
+  info:'info', processing:'info', loading:'info', queued:'info', pending:'info',
+  draft:'neutral', inactive:'neutral', archived:'neutral', offline:'neutral', empty:'neutral', noResult:'neutral',
+  warning:'warning',
+  error:'danger', critical:'danger', rejected:'danger', cancelled:'danger',
+} as const;
+export type StatusKey = keyof typeof STATUS_TONE;   // 同事只能從這裡選
+export type Tone = typeof STATUS_TONE[StatusKey];   // positive|info|neutral|warning|danger
+```
+
+- **tone 的顏色值**（positive/info/neutral/warning/danger 各自的底/字/點）= **配色包**的 `--app-{tone}-*`
+  （M3 只有 danger≈error，其餘為必要的 app 擴充）。
+- **tone 的造型**（chip 圓角、是否有 dot、邊框）= **範式包**的 `status.scss`。
+- `status-chip` 元件輸入 `StatusKey`，內部查表得 tone，套 `.v-chip--{tone}`。
+
+---
+
+## 6. Typography：中英分軌
+
+字體 family 拆兩軌 token，**字級/行高/字重用 M3 type scale**：
+- `--font-zh`：中文固定 Noto Sans TC / Noto Serif TC。
+- `--font-en`：英文依**範式**換（Material 用一種、Glass/Neumo 各自風格）。
+- `typography.scss`（範式包內）定義 `.v-text-{display,title,heading,body,label,caption}` 綁 M3 type token
+  ＋ `font-family: var(--font-en), var(--font-zh), sans-serif`。
 
 ---
 
 ## 7. Runtime 換膚機制（設計師視角）
 
-把兩套主題想成 Figma 的兩個 **Mode**（像 Light / Dark mode）。每個用途 token 在兩個 mode 各有一個值。
+把兩軸想成 Figma 的**元件庫（範式）× 變數 Mode（配色）**。換膚＝在最外層改 `data-paradigm` /
+`data-theme` 兩張標籤之一，全站綁 token / class 的地方同時切到對應值，像把整個 frame 換一套元件庫或換一個 mode。
 
-- 「換膚」＝在畫面最外層貼一張標籤 `<html data-theme="midnight">`。貼上的瞬間，全站綁 token 的地方同時切到那個 mode 的值——如同在 Figma 把整個 frame 從 Light 切成 Dark。
-- 因為元件綁「用途 token」不綁「顏色本身」，切換一次到位、不用逐一改、**不會跑版**（尺寸/間距/圓角沒動，只有值換掉）。
-- 技術上：`ThemeService`（signal）設 `document.documentElement.dataset.theme`，並存 `localStorage('cr.theme')`；app 啟動時還原，無值用預設。
-- 換膚器元件：一個下拉，列 `theme.token.ts` 的主題，呼叫 `setTheme`。放在外殼（登出鈕旁）。
+- 因為元件綁「用途 token / 契約 class」不綁「顏色本身」，切換一次到位、不跑版（尺寸/間距沒動）。
+- `ThemeService`（signal）設 `document.documentElement.dataset.paradigm/theme`，各存 `localStorage`；
+  啟動時還原，無值用預設。
+- 換膚器：兩個下拉（範式、配色），放外殼（登出鈕旁）。
 
 ---
 
 ## 8. Project-time 鎖定（初始化步驟，寫進 README）
 
-複製到新專案後要收斂成單一主題時：
-1. 把 `ThemeService` 預設值設成要用的那套（或直接在 `<html>` 寫死 `data-theme`）。
-2. （可選）刪 `shared/theme-switcher.component` 與外殼上的引用。
-3. （可選）刪 `styles/themes/` 內用不到的主題資料夾，`_registry.scss` 移除對應 `@use`。
+複製到新專案要收斂時：
+1. `ThemeService` 預設值設死要用的範式＋配色（或直接寫死 `<html>` 兩屬性）。
+2. （可選）刪換膚器元件與外殼引用。
+3. （可選）刪用不到的 `paradigms/*`、`color-themes/*` 資料夾，各自 `_registry.scss` 移除 `@use`。
 
-runtime 能力隨時可加回來。這是「可減可加」，不是二選一。
-
----
-
-## 9. 防漏機制（讓邊界不會爛掉）
-
-新增 `npm run lint:theme`：零依賴 node 腳本，掃 `src/app/**` 與 `src/styles/**`，
-**只排除** `src/styles/themes/**`（底層色只准出現在這裡）。在其他地方若出現：
-- 底層色 `var(--_primary/_accent/_neutral-數字)`，或
-- 十六進位色碼（`#xxx`/`#xxxxxx`）
-
-即 **exit 1** 並列出檔案:行號。（掃描含 `_skeleton.scss`，確保骨架也不寫死色。`--mat-sys-*` 與 `--app-*` 是允許的。）
-納入 CI / commit 前檢查。這是「綁 token」規則能長期成立的關鍵。
+runtime 能力隨時可加回來。可減可加，不是二選一。
 
 ---
 
-## 10. 深色 Midnight 主題規格（證明用）
+## 9. 防漏機制
 
-| 用途 token | Verdant | Midnight |
+`npm run lint:theme`：零依賴 node 腳本，掃 `src/app/**` 與 `src/styles/**`，
+**只排除 `src/styles/color-themes/**`**（顏色值的唯一來源）與各範式的 `_tokens.scss`（造型 token 定義處）。
+其餘地方若出現十六進位色碼（`#xxx`/`#xxxxxx`）或底層色階變數，即 **exit 1** 並列檔案:行號。
+（`--mat-sys-*` 與 `--app-*` 允許。範式 recipe 只能用 token 表達顏色，不得寫死。）納入 CI / commit 前檢查。
+
+---
+
+## 10. 第一個計畫要做出的東西（範圍清單）
+
+1. 檔案結構 §4：`paradigms/material/`（5 個 recipe + `_tokens.scss`）、`color-themes/{verdant,midnight}/_tokens.scss`、兩個 `_registry.scss`、精簡 `styles.scss`、`_skeleton.scss`、`_contract.scss`。
+2. 把現有 `styles.scss` 自創語意層拆解：顏色 → 配色包；造型 → material 範式 `_tokens`；元件樣式 → material 範式 recipe。
+3. 修 §11 的寫死清單（約 20 處）改綁 token。
+4. `ThemeService` + `theme.token.ts` + 兩軸換膚器 + `status-tone.ts` + `status-chip` 改吃 `StatusKey`。
+5. **Midnight 配色包**：覆寫 §12 的顏色 token 深色值。
+6. `lint:theme` 腳本 + npm script。
+7. README 三段（§13）。
+
+---
+
+## 11. 要修的「寫死 / 直綁底層色」清單（約 20 處）
+
+grep 出、目前跳過 token 的地方，改綁對應 M3 token（顏色來自配色包）：
+
+| 檔案 | 現況 | 改綁 |
+|---|---|---|
+| `app.scss`（外殼） | `--cream-25/50`、`--sage-400/500/600`、`--teal-100/200/900`、`#fff`×2 | `--mat-sys-surface-container-*`、`--mat-sys-primary`、`--mat-sys-on-*` |
+| `dispatch/timeline-view.component.ts` | inline `--teal-500` `--sage-500` `--cream-300` `#fff` | M3 container 色 / `--app-viz-*`、`--mat-sys-on-primary` |
+| `dispatch/calendar-view.component.ts` | `--sage-100` `--sage-600` | `--app-success-bg` / `--mat-sys-primary`（依用途，實作時定） |
+| `dashboard/dashboard-page.component.scss` | `--teal-700` | `--mat-sys-inverse-surface` 或 on-surface |
+| `shared/status-chip.component.ts` | `--cream-400` | `--mat-sys-outline` |
+| 現有 `styles.scss` 自創語意層 | `--surface-*`/`--text-*`/`--radius-*`… | 拆進配色包 / material 範式（見 §10.2） |
+
+修完後 `color-themes/` 與範式 `_tokens.scss` 以外應為 **0 處** 底層色/寫死色。
+
+---
+
+## 12. Midnight 配色包規格（證明配色軸可換）
+
+只覆寫**顏色** token（造型沿用 Material 範式，不動）：
+
+| 顏色 token | Verdant | Midnight |
 |---|---|---|
 | `--mat-sys-background` | 米白 | 深靖藍 |
 | `--mat-sys-surface` | 白 | 深灰 |
 | `--mat-sys-primary` | 鼠尾草綠 | 冷藍 |
 | `--mat-sys-on-surface` | 深 | 亮（近白） |
-| `--mat-sys-outline(-variant)` | 淺灰 | 深色系中的可辨邊線 |
-| `--app-{success,warning,info}-*` | 亮底彩 | 深底、提高前景對比 |
+| `--mat-sys-outline(-variant)` | 淺灰 | 深色系可辨邊線 |
+| `--app-{positive,info,neutral,warning,danger}-*` | 亮底彩 | 深底、提高前景對比 |
 
-Midnight 要把用到的 M3 token + `--app-*` 給出深色版值。目標：切過去**只有顏色變、版面完全不動**。
-（字體/圓角 token 跨主題沿用同一組值，除非某主題刻意要改風格。）
-
----
-
-## 11. README 要寫什麼（回應「防漏腳本會在 README 嗎」）
-
-README 是這個 template 的使用說明書，本次補三段：
-1. **給開發者的樣式規則**：顏色/字體/圓角一律綁 `--mat-sys-*`（或 `--app-*` 擴充），間距用 Tailwind；
-   不准寫死色碼；存檔/送 CI 前跑 `npm run lint:theme`。
-2. **如何新增一套主題**：複製 `themes/verdant/` → 改 `_palette.scss` 底層色 → `_registry.scss` 註冊 → 加進 `theme.token.ts`。
-3. **鎖成單一主題（初始化步驟）**：即 §8。
+目標：`data-theme` 切 verdant↔midnight（範式維持 material），**只有顏色變、版面完全不動**。
 
 ---
 
-## 12. 驗收條件（逐條要有證據）
+## 13. README 要寫什麼
+
+1. **樣式規則**：顏色/字體/圓角綁 `--mat-sys-*`／`--app-*`，間距用 Tailwind；不准寫死色；存檔/CI 前跑 `npm run lint:theme`。
+2. **如何新增一套配色**：複製 `color-themes/verdant/` → 改顏色 token → `_registry.scss` 註冊 → 加進 `theme.token.ts`。
+3. **如何新增一個範式**：複製 `paradigms/material/` → 依 §3 class 契約重寫 recipe（可用 `backdrop-filter` 等自由 CSS）→ 註冊。
+4. **鎖成單一主題（初始化步驟）**：即 §8。
+
+---
+
+## 14. 驗收條件（逐條要有證據）
 
 1. `npm run build` exit 0。
 2. 既有測試全綠（目前 45 個）。
-3. `npm run lint:theme` 通過：`themes/` 以外 0 處底層色/寫死色。
-4. 兩套主題各自在 **vehicles、bookings、dashboard** 三頁、**桌機 + 390px** 目視對照：版面一致、只有配色不同、無破圖、無對比過低。
-5. 換膚器即時切換：切換前後無 layout shift（截圖對照）。
-6. 「鎖定」步驟照 README 走一遍：設死單一主題後畫面正常、切換器移除後無錯。
+3. `npm run lint:theme` 通過：允許區以外 0 處底層色/寫死色。
+4. **配色軸**：範式固定 material，`data-theme` 切 verdant↔midnight，vehicles/bookings/dashboard 三頁、桌機＋390px 目視：版面一致、只有配色變、無破圖、對比足夠。
+5. **範式軸插槽**：`data-paradigm` 屬性機制就位，切換器可選（雖只有 material 一個）；`_registry.scss` 結構可直接加第二個範式。
+6. 換膚即時、無 layout shift（截圖對照）。
+7. 「鎖定」步驟照 README 走一遍：設死後畫面正常、切換器移除後無錯。
 
 ---
 
-## 13. 非目標（YAGNI）
+## 15. 非目標（YAGNI）
 
+- 本次**不做** Glass / Neumorphism 範式（範式軸只做 Material，插槽預留）。
 - 不做 auth、權限、CRUD scaffold、domain 抽離（各自另開 spec）。
-- 不做 per-component 主題覆寫、不做主題編輯器 UI。
+- 不做主題編輯器 UI、不自動跟隨系統 light/dark。
 - 不引入重型主題庫 / CSS-in-JS。
-- 不自動跟隨系統 light/dark（Midnight 是手動選；日後要跟隨 `prefers-color-scheme` 再加）。
 - 不建自創間距/字級尺標（沿用 M3 type scale 與 Tailwind 間距）。
+
+### 未來範式軸的已知硬點（記錄，非本次範圍）
+做 Glass/Neumo 時，高頻視覺元件（button/card/table）要盡量用自訂 class、少依賴 Material 元件內部
+（深度覆寫 `mat-button` 內部脆弱、跟版本綁）。Material 留給複雜互動元件（日期選擇、下拉浮層）。
+本次 class 契約（§3）已為此鋪路——骨架用 `.v-*` 契約 class，未來範式可完全接管其樣式。
