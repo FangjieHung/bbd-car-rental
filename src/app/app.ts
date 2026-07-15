@@ -7,6 +7,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
 import { ZH_TW } from './core/i18n/zh-tw';
+import { ThemeSwitcherComponent } from './shared/theme-switcher.component';
 
 interface NavItem {
   route: string;
@@ -24,6 +25,7 @@ interface NavItem {
     MatSidenavModule,
     MatButtonModule,
     MatIconModule,
+    ThemeSwitcherComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -54,12 +56,12 @@ export class App implements OnInit {
 
     this.router.events
       .pipe(
-        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-        map(event => event.urlAfterRedirects),
+        filter(event => event.type === 1),
+        map(() => this.router.url),
       )
       .subscribe(url => {
         const active = this.navItems.find(item => item.route === url || url.startsWith(`${item.route}/`));
-        this.currentTitle = String(active?.label ?? this.t.nav.dashboard);
+        this.currentTitle = active?.label ?? this.t.nav.dashboard;
       });
   }
 

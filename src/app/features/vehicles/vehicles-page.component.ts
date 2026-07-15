@@ -6,15 +6,16 @@ import { MatTableModule } from '@angular/material/table';
 import { Vehicle, VehicleStatus, VehicleType } from '../../core/models';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 import { VehicleStore } from '../../stores/vehicle.store';
-import { StatusChipComponent, ChipTone } from '../../shared/status-chip.component';
+import { StatusChipComponent } from '../../shared/status-chip.component';
+import { StatusKey } from '../../core/theme/status-tone';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { ListToolbarComponent } from '../../shared/list-toolbar.component';
 import { FilterOption, FilterSelectComponent } from '../../shared/filter-select.component';
 import { VehicleFormDialogComponent, VehicleFormResult } from './vehicle-form-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
-const STATUS_TONE: Record<VehicleStatus, ChipTone> = {
-  available: 'green', rented: 'blue', maintenance: 'gray', reserved: 'yellow',
+const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
+  available: 'active', rented: 'processing', maintenance: 'inactive', reserved: 'warning',
 };
 
 @Component({
@@ -65,8 +66,8 @@ export class VehiclesPageComponent {
     this.statusFilter.set(null);
   }
 
-  toneOf(v: Vehicle): ChipTone {
-    return STATUS_TONE[v.status];
+  statusKeyOf(v: Vehicle): StatusKey {
+    return STATUS_KEY[v.status];
   }
 
   async openForm(vehicle: Vehicle | null): Promise<void> {

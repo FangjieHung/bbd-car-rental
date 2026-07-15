@@ -1,0 +1,12 @@
+// src/styles/_skeleton.scss
+// 主題無關：全域 reset 與 body 基礎。視覺造型交給範式包。
+body {
+  color-scheme: light;
+  background: var(--mat-sys-background);
+  color: var(--mat-sys-on-surface);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0;
+  height: 100%;
+}

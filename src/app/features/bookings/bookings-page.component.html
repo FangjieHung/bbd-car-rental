@@ -1,6 +1,6 @@
 <div class="page-shell">
   <div class="page-header">
-    <h1 class="v-page-title">{{ t.booking.title }}</h1>
+    <h1 class="ui-text-title">{{ t.booking.title }}</h1>
     <div class="page-actions">
       <a mat-button routerLink="/bookings/customers">{{ t.booking.goCustomers }}</a>
       <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
@@ -24,7 +24,7 @@
     @if (filteredBookings().length === 0) {
       <p class="empty-state">{{ t.common.noResults }}</p>
     } @else {
-    <div class="v-card overflow-x-auto !p-0">
+    <div class="ui-card overflow-x-auto !p-0">
       <table class="w-full text-sm">
         <thead>
           <tr class="table-head">
@@ -43,7 +43,7 @@
               <td class="table-cell table-cell--body">{{ customerStore.nameOf(b.customerId) }}</td>
               <td class="table-cell table-cell--body">{{ fmt(b.startTime) }}</td>
               <td class="table-cell table-cell--body">{{ fmt(b.endTime) }}</td>
-              <td class="table-cell table-cell--body"><app-status-chip [label]="t.booking.statusLabels[b.status]" [tone]="toneOf(b)" /></td>
+              <td class="table-cell table-cell--body"><app-status-chip [label]="t.booking.statusLabels[b.status]" [status]="statusKeyOf(b)" /></td>
               <td class="table-cell table-cell--body action-cell">
                 @if (b.status === 'confirmed') {
                   <button mat-button (click)="act(() => store.pickUp(b.id))">{{ t.booking.pickUp }}</button>

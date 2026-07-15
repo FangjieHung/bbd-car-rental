@@ -10,14 +10,15 @@ import { fmtDateTime } from '../../core/date-utils';
 import { BookingStore } from '../../stores/booking.store';
 import { VehicleStore } from '../../stores/vehicle.store';
 import { CustomerStore } from '../../stores/customer.store';
-import { StatusChipComponent, ChipTone } from '../../shared/status-chip.component';
+import { StatusChipComponent } from '../../shared/status-chip.component';
+import { StatusKey } from '../../core/theme/status-tone';
 import { confirm } from '../../shared/confirm-dialog.component';
 import { ListToolbarComponent } from '../../shared/list-toolbar.component';
 import { FilterOption, FilterSelectComponent } from '../../shared/filter-select.component';
 import { BookingFormDialogComponent, BookingFormResult } from './booking-form-dialog.component';
 
-const STATUS_TONE: Record<BookingStatus, ChipTone> = {
-  confirmed: 'yellow', in_progress: 'blue', completed: 'green', cancelled: 'gray',
+const STATUS_KEY: Record<BookingStatus, StatusKey> = {
+  confirmed: 'warning', in_progress: 'processing', completed: 'completed', cancelled: 'archived',
 };
 
 @Component({
@@ -66,8 +67,8 @@ export class BookingsPageComponent {
     return this.vehicleStore.vehicles().find(v => v.id === vehicleId)?.plateNumber ?? '—';
   }
 
-  toneOf(b: RentalBooking): ChipTone {
-    return STATUS_TONE[b.status];
+  statusKeyOf(b: RentalBooking): StatusKey {
+    return STATUS_KEY[b.status];
   }
 
   act(fn: () => void): void {
