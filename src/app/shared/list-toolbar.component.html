@@ -1,0 +1,21 @@
+<div class="list-toolbar">
+  <mat-form-field class="search-field" subscriptSizing="dynamic">
+    <mat-icon matPrefix>search</mat-icon>
+    <input
+      matInput
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+      [placeholder]="placeholder()"
+    />
+  </mat-form-field>
+
+  <div class="filters">
+    <ng-content select="[filters]" />
+
+    @if (activeFilterCount() > 0) {
+      <button mat-button class="clear-btn" type="button" (click)="clearAll.emit()">
+        {{ t.common.clearFilters }}
+      </button>
+    }
+  </div>
+</div>

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -12,6 +12,8 @@ import { VehicleStore } from '../../stores/vehicle.store';
 import { CustomerStore } from '../../stores/customer.store';
 import { StatusChipComponent, ChipTone } from '../../shared/status-chip.component';
 import { confirm } from '../../shared/confirm-dialog.component';
+import { ListToolbarComponent } from '../../shared/list-toolbar.component';
+import { FilterOption, FilterSelectComponent } from '../../shared/filter-select.component';
 import { BookingFormDialogComponent, BookingFormResult } from './booking-form-dialog.component';
 
 const STATUS_TONE: Record<BookingStatus, ChipTone> = {
@@ -20,7 +22,7 @@ const STATUS_TONE: Record<BookingStatus, ChipTone> = {
 
 @Component({
   selector: 'app-bookings-page',
-  imports: [MatButtonModule, RouterLink, StatusChipComponent],
+  imports: [MatButtonModule, RouterLink, StatusChipComponent, ListToolbarComponent, FilterSelectComponent],
   templateUrl: './bookings-page.component.html',
   styleUrls: ['./bookings-page.component.scss'],
 })
@@ -32,6 +34,33 @@ export class BookingsPageComponent {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   readonly fmt = fmtDateTime;
+
+  readonly searchQuery = signal('');
+  readonly statusFilter = signal<BookingStatus | null>(null);
+
+  readonly statusOptions: FilterOption<BookingStatus>[] = (
+    Object.entries(this.t.booking.statusLabels) as [BookingStatus, string][]
+  ).map(([value, label]) => ({ value, label }));
+
+  readonly activeFilterCount = computed(() => (this.statusFilter() ? 1 : 0));
+
+  readonly filteredBookings = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+    const status = this.statusFilter();
+    return this.store.bookings().filter(b => {
+      if (status && b.status !== status) return false;
+      if (query) {
+        const customerName = this.customerStore.nameOf(b.customerId).toLowerCase();
+        const plate = this.plateOf(b.vehicleId).toLowerCase();
+        if (!customerName.includes(query) && !plate.includes(query)) return false;
+      }
+      return true;
+    });
+  });
+
+  clearFilters(): void {
+    this.statusFilter.set(null);
+  }
 
   plateOf(vehicleId: string): string {
     return this.vehicleStore.vehicles().find(v => v.id === vehicleId)?.plateNumber ?? '—';

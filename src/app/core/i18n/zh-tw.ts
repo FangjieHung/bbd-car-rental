@@ -18,6 +18,10 @@ export const ZH_TW = {
     empty: '目前沒有資料',
     deleteConfirm: '確定要刪除嗎？',
     storageReset: '本機資料格式異常，已重設為示範資料',
+    search: '搜尋',
+    all: '全部',
+    clearFilters: '清除篩選',
+    noResults: '沒有符合條件的資料',
   },
   vehicle: {
     title: '車輛管理',

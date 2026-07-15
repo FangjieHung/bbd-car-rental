@@ -1,13 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
-import { Vehicle, VehicleStatus } from '../../core/models';
+import { Vehicle, VehicleStatus, VehicleType } from '../../core/models';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 import { VehicleStore } from '../../stores/vehicle.store';
 import { StatusChipComponent, ChipTone } from '../../shared/status-chip.component';
 import { confirm } from '../../shared/confirm-dialog.component';
+import { ListToolbarComponent } from '../../shared/list-toolbar.component';
+import { FilterOption, FilterSelectComponent } from '../../shared/filter-select.component';
 import { VehicleFormDialogComponent, VehicleFormResult } from './vehicle-form-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
@@ -17,7 +19,7 @@ const STATUS_TONE: Record<VehicleStatus, ChipTone> = {
 
 @Component({
   selector: 'app-vehicles-page',
-  imports: [MatTableModule, MatButtonModule, StatusChipComponent],
+  imports: [MatTableModule, MatButtonModule, StatusChipComponent, ListToolbarComponent, FilterSelectComponent],
   templateUrl: './vehicles-page.component.html',
   styleUrls: ['./vehicles-page.component.scss'],
 })
@@ -27,6 +29,41 @@ export class VehiclesPageComponent {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   readonly columns = ['plateNumber', 'type', 'model', 'status', 'mileage', 'actions'];
+
+  readonly searchQuery = signal('');
+  readonly typeFilter = signal<VehicleType | null>(null);
+  readonly statusFilter = signal<VehicleStatus | null>(null);
+
+  readonly typeOptions: FilterOption<VehicleType>[] = (
+    Object.entries(this.t.vehicle.typeLabels) as [VehicleType, string][]
+  ).map(([value, label]) => ({ value, label }));
+
+  readonly statusOptions: FilterOption<VehicleStatus>[] = (
+    Object.entries(this.t.vehicle.statusLabels) as [VehicleStatus, string][]
+  ).map(([value, label]) => ({ value, label }));
+
+  readonly activeFilterCount = computed(() => {
+    return (this.typeFilter() ? 1 : 0) + (this.statusFilter() ? 1 : 0);
+  });
+
+  readonly filteredVehicles = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+    const type = this.typeFilter();
+    const status = this.statusFilter();
+    return this.store.vehicles().filter(v => {
+      if (type && v.type !== type) return false;
+      if (status && v.status !== status) return false;
+      if (query && !v.plateNumber.toLowerCase().includes(query) && !v.model.toLowerCase().includes(query)) {
+        return false;
+      }
+      return true;
+    });
+  });
+
+  clearFilters(): void {
+    this.typeFilter.set(null);
+    this.statusFilter.set(null);
+  }
 
   toneOf(v: Vehicle): ChipTone {
     return STATUS_TONE[v.status];

@@ -10,6 +10,20 @@
   @if (store.bookings().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
+    <app-list-toolbar
+      [(query)]="searchQuery"
+      [placeholder]="t.common.search"
+      [activeFilterCount]="activeFilterCount()"
+      (clearAll)="clearFilters()"
+    >
+      <div filters>
+        <app-filter-select [label]="t.booking.status" [options]="statusOptions" [(value)]="statusFilter" />
+      </div>
+    </app-list-toolbar>
+
+    @if (filteredBookings().length === 0) {
+      <p class="empty-state">{{ t.common.noResults }}</p>
+    } @else {
     <div class="v-card overflow-x-auto !p-0">
       <table class="w-full text-sm">
         <thead>
@@ -23,7 +37,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (b of store.bookings(); track b.id) {
+          @for (b of filteredBookings(); track b.id) {
             <tr class="table-row">
               <td class="table-cell table-cell--body">{{ plateOf(b.vehicleId) }}</td>
               <td class="table-cell table-cell--body">{{ customerStore.nameOf(b.customerId) }}</td>
@@ -47,5 +61,6 @@
         </tbody>
       </table>
     </div>
+    }
   }
 </div>
