@@ -51,23 +51,23 @@ const DAYS = 14;
         <div class="grid" [style.grid-template-columns]="gridCols">
           <div class="text-xs font-bold p-2">{{ t.booking.vehicle }}</div>
           @for (d of days(); track $index) {
-            <div class="text-xs text-center p-2" style="color: var(--text-tertiary); border-left: 1px solid var(--border-subtle)">{{ fmtDate(d) }}</div>
+            <div class="text-xs text-center p-2" style="color: var(--mat-sys-on-surface-variant); border-left: 1px solid var(--mat-sys-outline-variant)">{{ fmtDate(d) }}</div>
           }
         </div>
         <!-- 每台車一列 -->
         @for (v of vehicleStore.vehicles(); track v.id) {
-          <div class="relative" style="border-top: 1px solid var(--border-subtle)">
+          <div class="relative" style="border-top: 1px solid var(--mat-sys-outline-variant)">
             <div class="grid" [style.grid-template-columns]="gridCols">
               <div class="text-sm p-2 whitespace-nowrap">
                 {{ v.plateNumber }}
                 @if (v.status === 'maintenance') {
-                  <span class="text-xs" style="color: var(--text-tertiary)">（{{ t.dispatch.maintenanceBlock }}）</span>
+                  <span class="text-xs" style="color: var(--mat-sys-on-surface-variant)">（{{ t.dispatch.maintenanceBlock }}）</span>
                 }
               </div>
               @for (d of days(); track $index) {
                 <div class="min-h-10"
-                     style="border-left: 1px solid var(--border-subtle)"
-                     [style.background]="v.status === 'maintenance' && $index === todayIdx() ? 'var(--cream-300)' : null"></div>
+                     style="border-left: 1px solid var(--mat-sys-outline-variant)"
+                     [style.background]="v.status === 'maintenance' && $index === todayIdx() ? 'var(--app-viz-4)' : null"></div>
               }
             </div>
             <!-- 色塊層 -->
@@ -76,8 +76,8 @@ const DAYS = 14;
               @for (block of blocksOf(v.id); track block.bookingId) {
                 <button
                   class="pointer-events-auto self-center h-6 rounded text-xs truncate px-1.5 cursor-pointer font-semibold"
-                  style="color: #fff"
-                  [style.background]="block.kind === 'confirmed' ? 'var(--teal-500)' : 'var(--sage-500)'"
+                  style="color: var(--mat-sys-on-primary)"
+                  [style.background]="block.kind === 'confirmed' ? 'var(--app-viz-2)' : 'var(--mat-sys-primary)'"
                   [style.grid-column]="(block.startCol + 1) + ' / span ' + block.span"
                   [style.grid-row]="1"
                   (click)="openDetail(block.bookingId)">

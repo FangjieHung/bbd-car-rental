@@ -36,17 +36,17 @@ export function dayStats(
       <span class="font-bold">{{ monthLabel() }}</span>
       <button mat-button (click)="shiftMonth(1)">{{ t.dispatch.nextMonth }}</button>
     </div>
-    <div class="grid grid-cols-7 gap-px text-xs rounded-lg overflow-hidden" style="background: var(--border-subtle)">
+    <div class="grid grid-cols-7 gap-px text-xs rounded-lg overflow-hidden" style="background: var(--mat-sys-outline-variant)">
       @for (d of monthDays(); track d.getTime()) {
         <button
-          class="p-2 min-h-16 text-left cursor-pointer transition-colors hover:[background:var(--surface-pill)]"
-          style="background: var(--surface-card)"
+          class="p-2 min-h-16 text-left cursor-pointer transition-colors hover:[background:var(--mat-sys-surface-container-high)]"
+          style="background: var(--mat-sys-surface)"
           [class.opacity-40]="d.getMonth() !== month().getMonth()"
-          [style.background]="selected() && isSameDay(d, selected()!) ? 'var(--sage-100)' : null"
+          [style.background]="selected() && isSameDay(d, selected()!) ? 'var(--app-positive-bg)' : null"
           (click)="selected.set(d)">
-          <div class="font-bold" [style.color]="isSameDay(d, todayDate) ? 'var(--sage-600)' : null">{{ d.getDate() }}</div>
-          <div style="color: var(--text-secondary)">{{ t.dispatch.pickups }}{{ statsOf(d).pickups }} {{ t.dispatch.returns }}{{ statsOf(d).returns }}</div>
-          <div style="color: var(--text-tertiary)">{{ t.dispatch.available }} {{ statsOf(d).available }}</div>
+          <div class="font-bold" [style.color]="isSameDay(d, todayDate) ? 'var(--mat-sys-primary)' : null">{{ d.getDate() }}</div>
+          <div style="color: var(--mat-sys-on-surface-variant)">{{ t.dispatch.pickups }}{{ statsOf(d).pickups }} {{ t.dispatch.returns }}{{ statsOf(d).returns }}</div>
+          <div style="color: var(--mat-sys-on-surface-variant)">{{ t.dispatch.available }} {{ statsOf(d).available }}</div>
         </button>
       }
     </div>
@@ -54,7 +54,7 @@ export function dayStats(
       <div class="mt-4">
         <h2 class="font-bold mb-2">{{ t.dispatch.dayDetail }}（{{ sel.getMonth() + 1 }}/{{ sel.getDate() }}）</h2>
         @if (dayBookings(sel).length === 0) {
-          <p class="text-sm" style="color: var(--text-tertiary)">{{ t.common.empty }}</p>
+          <p class="text-sm" style="color: var(--mat-sys-on-surface-variant)">{{ t.common.empty }}</p>
         } @else {
           <ul class="text-sm flex flex-col gap-1">
             @for (b of dayBookings(sel); track b.id) {

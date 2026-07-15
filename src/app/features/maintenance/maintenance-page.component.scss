@@ -17,7 +17,7 @@
 
 .empty-state {
   font-size: 0.875rem;
-  color: var(--text-tertiary);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .alert-list {
@@ -30,13 +30,13 @@
   border-radius: 0.75rem;
   padding: 0.75rem;
   font-size: 0.875rem;
-  background: var(--status-warning-bg);
-  color: var(--status-warning-fg);
+  background: var(--app-warning-bg);
+  color: var(--app-warning-fg);
 }
 
 .alert-item--overdue {
-  background: var(--status-error-bg);
-  color: var(--status-error-fg);
+  background: var(--app-danger-bg);
+  color: var(--app-danger-fg);
 }
 
 .section-header {
@@ -55,7 +55,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .vehicle-row:last-child {
@@ -68,16 +68,16 @@
 
 .vehicle-row__status {
   width: 5rem;
-  color: var(--text-secondary);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .table-head {
   text-align: left;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .table-cell {
-  color: var(--text-tertiary);
+  color: var(--mat-sys-on-surface-variant);
   padding: 0.75rem 1rem;
 }
 
@@ -86,7 +86,7 @@
 }
 
 .table-row {
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .table-row:last-child {

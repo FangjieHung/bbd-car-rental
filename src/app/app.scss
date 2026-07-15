@@ -5,7 +5,7 @@
 
 .app-shell {
   height: 100%;
-  background: linear-gradient(135deg, var(--cream-25) 0%, var(--cream-50) 100%);
+  background: linear-gradient(135deg, var(--mat-sys-surface-container-low) 0%, var(--mat-sys-surface-container-high) 100%);
 }
 
 .sidenav-container {
@@ -15,10 +15,10 @@
 .app-sidenav {
   width: 280px;
   border: 0;
-  background: var(--teal-900);
-  color: var(--text-on-inverse);
+  background: var(--mat-sys-inverse-surface);
+  color: var(--mat-sys-inverse-on-surface);
   padding: 24px 16px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--mat-sys-level4);
 }
 
 .brand {
@@ -34,8 +34,8 @@
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--sage-400), var(--sage-600));
-  color: #fff;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
   font-weight: 800;
   font-size: 1.1rem;
 }
@@ -48,7 +48,7 @@
 
 .brand-copy p {
   margin: 2px 0 0;
-  color: var(--teal-200);
+  color: var(--mat-sys-on-primary);
   font-size: 0.85rem;
 }
 
@@ -64,7 +64,7 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 14px;
-  color: var(--teal-100);
+  color: var(--mat-sys-on-primary);
   text-decoration: none;
   transition: background 180ms ease, color 180ms ease, transform 180ms ease;
 }
@@ -72,7 +72,7 @@
 .nav-link:hover,
 .nav-link.active {
   background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  color: var(--mat-sys-on-primary);
   transform: translateX(2px);
 }
 
@@ -97,7 +97,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--sage-500);
+  background: var(--mat-sys-primary);
   font-weight: 700;
 }
 
@@ -108,7 +108,7 @@
 
 .user-card p {
   margin: 2px 0 0;
-  color: var(--teal-200);
+  color: var(--mat-sys-on-primary);
   font-size: 0.8rem;
 }
 
@@ -124,14 +124,14 @@
   justify-content: space-between;
   gap: 16px;
   padding: 18px 24px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(10px);
 }
 
 .topbar-title p {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--mat-sys-on-surface-variant);
   font-size: 0.85rem;
 }
 

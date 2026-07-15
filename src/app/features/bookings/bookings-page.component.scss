@@ -24,16 +24,16 @@
 
 .empty-state {
   font-size: 0.875rem;
-  color: var(--text-tertiary);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .table-head {
   text-align: left;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .table-cell {
-  color: var(--text-tertiary);
+  color: var(--mat-sys-on-surface-variant);
   padding: 0.75rem 1rem;
 }
 
@@ -42,7 +42,7 @@
 }
 
 .table-row {
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .table-row:last-child {

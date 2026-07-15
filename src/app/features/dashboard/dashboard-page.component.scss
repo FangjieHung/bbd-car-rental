@@ -18,25 +18,25 @@
 .stat-card {
   border-radius: 1rem;
   padding: 1rem 1.1rem;
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-sm);
+  background: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--mat-sys-level2);
 }
 
 .stat-card--hero {
-  background: var(--teal-700);
-  color: var(--text-on-inverse);
+  background: var(--mat-sys-inverse-surface);
+  color: var(--mat-sys-inverse-on-surface);
   border-color: transparent;
 }
 
 .stat-card__label {
   margin-top: 0.35rem;
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .stat-card__label--hero {
-  color: var(--text-on-inverse-muted);
+  color: var(--mat-sys-inverse-on-surface);
 }
 
 .content-grid {
@@ -53,7 +53,7 @@
 
 .empty-state {
   font-size: 0.875rem;
-  color: var(--text-tertiary);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .list-stack {
@@ -68,7 +68,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .list-row:last-child {
@@ -76,13 +76,13 @@
 }
 
 .list-row__secondary {
-  color: var(--text-secondary);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .list-row__meta {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--text-tertiary);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .chip-list {
@@ -99,24 +99,24 @@
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
   font-weight: 600;
-  background: var(--status-warning-bg);
-  color: var(--status-warning-fg);
+  background: var(--app-warning-bg);
+  color: var(--app-warning-fg);
 }
 
 .alert-chip--overdue {
-  background: var(--status-error-bg);
-  color: var(--status-error-fg);
+  background: var(--app-danger-bg);
+  color: var(--app-danger-fg);
 }
 
 .alert-chip__dot {
   width: 0.375rem;
   height: 0.375rem;
   border-radius: 999px;
-  background: var(--status-warning-dot);
+  background: var(--app-warning-dot);
 }
 
 .alert-chip__dot--overdue {
-  background: var(--status-error-dot);
+  background: var(--app-danger-dot);
 }
 
 @media (min-width: 768px) {
