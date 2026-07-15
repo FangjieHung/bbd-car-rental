@@ -45,7 +45,7 @@ const DAYS = 14;
       <button mat-button (click)="shift(-14)">{{ t.dispatch.prevRange }}</button>
       <button mat-button (click)="shift(14)">{{ t.dispatch.nextRange }}</button>
     </div>
-    <div class="v-card overflow-x-auto !p-0">
+    <div class="ui-card overflow-x-auto !p-0">
       <div class="min-w-[900px]">
         <!-- 表頭列 -->
         <div class="grid" [style.grid-template-columns]="gridCols">

@@ -1,0 +1,21 @@
+// src/styles/paradigms/material/card.scss
+[data-paradigm='material'] {
+  /* 白底卡片：hairline 邊、近隱形陰影、大圓角 */
+  .ui-card {
+    background: var(--mat-sys-surface);
+    color: var(--mat-sys-on-surface);
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: var(--mat-sys-corner-large);
+    box-shadow: var(--mat-sys-level1);
+    padding: 24px;
+  }
+
+  /* 深 teal hero 卡：無邊框無陰影 */
+  .ui-card--inverse {
+    background: var(--mat-sys-inverse-surface);
+    color: var(--mat-sys-inverse-on-surface);
+    border: none;
+    border-radius: var(--mat-sys-corner-large);
+    padding: 24px;
+  }
+}

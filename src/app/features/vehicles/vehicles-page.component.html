@@ -1,6 +1,6 @@
 <div class="page-shell">
   <div class="page-header">
-    <h1 class="v-page-title">{{ t.vehicle.title }}</h1>
+    <h1 class="ui-text-title">{{ t.vehicle.title }}</h1>
     <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
   </div>
 
@@ -22,7 +22,7 @@
     @if (filteredVehicles().length === 0) {
       <p class="empty-state">{{ t.common.noResults }}</p>
     } @else {
-    <div class="v-card overflow-x-auto !p-0">
+    <div class="ui-card overflow-x-auto !p-0">
       <table mat-table [dataSource]="filteredVehicles()" class="w-full">
         <ng-container matColumnDef="plateNumber">
           <th mat-header-cell *matHeaderCellDef>{{ t.vehicle.plateNumber }}</th>

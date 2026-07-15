@@ -1,10 +1,10 @@
 <div class="page-shell">
-  <h1 class="v-page-title">{{ t.nav.dashboard }}</h1>
+  <h1 class="ui-text-title">{{ t.nav.dashboard }}</h1>
 
   <div class="stat-grid">
     @for (s of statusKeys; track s) {
       <div class="stat-card" [class.stat-card--hero]="s === 'available'">
-        <div class="v-stat-number text-3xl md:text-4xl">{{ vehicleStore.statusCounts()[s] }}</div>
+        <div class="ui-text-display text-3xl md:text-4xl">{{ vehicleStore.statusCounts()[s] }}</div>
         <div class="stat-card__label" [class.stat-card__label--hero]="s === 'available'">
           {{ t.vehicle.statusLabels[s] }}
         </div>
@@ -13,8 +13,8 @@
   </div>
 
   <div class="content-grid">
-    <section class="v-card">
-      <div class="v-card-label mb-0.5">{{ t.dashboard.todayPickups }}</div>
+    <section class="ui-card">
+      <div class="ui-text-caption mb-0.5">{{ t.dashboard.todayPickups }}</div>
       <div class="section-title">{{ todayPickups().length }} 筆</div>
       @if (todayPickups().length === 0) {
         <p class="empty-state">{{ t.dashboard.none }}</p>
@@ -31,8 +31,8 @@
       }
     </section>
 
-    <section class="v-card">
-      <div class="v-card-label mb-0.5">{{ t.dashboard.todayReturns }}</div>
+    <section class="ui-card">
+      <div class="ui-text-caption mb-0.5">{{ t.dashboard.todayReturns }}</div>
       <div class="section-title">{{ todayReturns().length }} 筆</div>
       @if (todayReturns().length === 0) {
         <p class="empty-state">{{ t.dashboard.none }}</p>
@@ -49,8 +49,8 @@
       }
     </section>
 
-    <section class="v-card md:col-span-2">
-      <div class="v-card-label mb-0.5">{{ t.dashboard.alerts }}</div>
+    <section class="ui-card md:col-span-2">
+      <div class="ui-text-caption mb-0.5">{{ t.dashboard.alerts }}</div>
       <div class="section-title">{{ maintenanceStore.alerts().length }} 筆</div>
       @if (maintenanceStore.alerts().length === 0) {
         <p class="empty-state">{{ t.maintenance.noAlerts }}</p>

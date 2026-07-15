@@ -2,6 +2,12 @@
 @use '@angular/material' as mat;
 @use 'styles/paradigms/registry' as *;
 @use 'styles/color-themes/registry' as *;
+@use 'styles/skeleton';
+@use 'styles/paradigms/material/card';
+@use 'styles/paradigms/material/buttons';
+@use 'styles/paradigms/material/table';
+@use 'styles/paradigms/material/status';
+@use 'styles/paradigms/material/typography';
 
 /* ============================================================
    Angular Material：主題（色彩/造型 token 由
@@ -23,100 +29,4 @@ html {
       density: 0,
     )
   );
-}
-
-body {
-  color-scheme: light;
-  background-color: var(--mat-sys-background);
-  color: var(--mat-sys-on-surface);
-  font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.5;
-  margin: 0;
-  height: 100%;
-}
-
-/* ============================================================
-   Verdant 元件配方（recipes.md）
-   ============================================================ */
-
-/* 白底卡片：hairline 邊、近隱形陰影、大圓角 */
-.v-card {
-  background: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--mat-sys-corner-large);
-  box-shadow: var(--mat-sys-level1);
-  padding: 24px;
-}
-
-/* 深 teal hero 卡：無邊框無陰影 */
-.v-card-dark {
-  background: var(--mat-sys-inverse-surface);
-  color: var(--mat-sys-inverse-on-surface);
-  border: none;
-  border-radius: var(--mat-sys-corner-large);
-  padding: 24px;
-}
-
-/* 頂部導覽膠囊 */
-.v-nav-pill {
-  padding: 10px 20px;
-  border-radius: var(--mat-sys-corner-full);
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--mat-sys-on-surface-variant);
-  transition: background 120ms cubic-bezier(0.4, 0, 0.2, 1),
-    color 120ms cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-}
-.v-nav-pill:hover {
-  background: var(--mat-sys-surface-container-high);
-  color: var(--mat-sys-on-surface);
-}
-.v-nav-pill.active {
-  background: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
-}
-
-/* 大數字（StatCard 的 hero number） */
-.v-stat-number {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-/* 頁面大標 */
-.v-page-title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 26px;
-  letter-spacing: -0.02em;
-  color: var(--mat-sys-on-surface);
-}
-
-/* 卡片內小節標（quiet label + bold heading 的 quiet 半部） */
-.v-card-label {
-  font-size: 13px;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-/* Material 元件微調對齊 Verdant */
-.mat-mdc-dialog-surface {
-  border-radius: var(--mat-sys-corner-extra-large) !important;
-}
-.mat-mdc-table {
-  background: transparent !important;
-}
-.mat-mdc-snack-bar-container .mdc-snackbar__surface {
-  border-radius: var(--mat-sys-corner-medium) !important;
-}
-
-/* 互動手感：按下微縮 */
-.mat-mdc-unelevated-button:active,
-.mat-mdc-raised-button:active,
-.mat-mdc-outlined-button:active,
-.v-nav-pill:active {
-  transform: scale(0.97);
 }

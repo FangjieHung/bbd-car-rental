@@ -58,7 +58,7 @@ export function dayStats(
         } @else {
           <ul class="text-sm flex flex-col gap-1">
             @for (b of dayBookings(sel); track b.id) {
-              <li class="v-card !p-3">
+              <li class="ui-card !p-3">
                 {{ plateOf(b.vehicleId) }}｜{{ customerStore.nameOf(b.customerId) }}｜
                 {{ fmt(b.startTime) }} → {{ fmt(b.endTime) }}｜{{ t.booking.statusLabels[b.status] }}
               </li>

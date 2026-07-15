@@ -1,6 +1,6 @@
 <div class="page-shell">
   <section class="stack-block">
-    <h1 class="v-page-title">{{ t.maintenance.alerts }}</h1>
+    <h1 class="ui-text-title">{{ t.maintenance.alerts }}</h1>
     @if (store.alerts().length === 0) {
       <p class="empty-state">{{ t.maintenance.noAlerts }}</p>
     } @else {
@@ -17,8 +17,8 @@
     }
   </section>
 
-  <section class="v-card flex flex-col gap-1">
-    <h2 class="v-card-label font-semibold text-base mb-1">{{ t.vehicle.status }}</h2>
+  <section class="ui-card flex flex-col gap-1">
+    <h2 class="ui-text-caption font-semibold text-base mb-1">{{ t.vehicle.status }}</h2>
     <div class="vehicle-list">
       @for (v of vehicleStore.vehicles(); track v.id) {
         <div class="vehicle-row">
@@ -37,13 +37,13 @@
 
   <section class="stack-block">
     <div class="section-header">
-      <h2 class="v-card-label font-semibold text-base">{{ t.maintenance.records }}</h2>
+      <h2 class="ui-text-caption font-semibold text-base">{{ t.maintenance.records }}</h2>
       <button mat-flat-button (click)="addRecord()">{{ t.common.create }}</button>
     </div>
     @if (store.records().length === 0) {
       <p class="empty-state">{{ t.common.empty }}</p>
     } @else {
-      <div class="v-card overflow-x-auto !p-0">
+      <div class="ui-card overflow-x-auto !p-0">
         <table class="w-full text-sm">
           <thead>
             <tr class="table-head">

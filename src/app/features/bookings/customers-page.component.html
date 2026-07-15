@@ -1,13 +1,13 @@
 <div class="page-shell">
   <div class="page-header">
-    <h1 class="v-page-title">{{ t.customer.title }}</h1>
+    <h1 class="ui-text-title">{{ t.customer.title }}</h1>
     <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
   </div>
 
   @if (store.customers().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
-    <div class="v-card overflow-x-auto !p-0">
+    <div class="ui-card overflow-x-auto !p-0">
       <table class="w-full text-sm">
         <thead>
           <tr class="table-head">
