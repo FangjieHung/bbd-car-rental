@@ -54,12 +54,12 @@ export class App implements OnInit {
 
     this.router.events
       .pipe(
-        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-        map(event => event.urlAfterRedirects),
+        filter(event => event.type === 1),
+        map(() => this.router.url),
       )
       .subscribe(url => {
         const active = this.navItems.find(item => item.route === url || url.startsWith(`${item.route}/`));
-        this.currentTitle = String(active?.label ?? this.t.nav.dashboard);
+        this.currentTitle = active?.label ?? this.t.nav.dashboard;
       });
   }
 
