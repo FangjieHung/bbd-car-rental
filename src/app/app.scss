@@ -15,8 +15,8 @@
 .app-sidenav {
   width: 280px;
   border: 0;
-  background: var(--mat-sys-inverse-surface);
-  color: var(--mat-sys-inverse-on-surface);
+  background: var(--app-shell-bg);
+  color: var(--app-shell-on);
   padding: 24px 16px;
   box-shadow: var(--mat-sys-level4);
 }
@@ -34,8 +34,8 @@
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--mat-sys-primary) 78%, white), var(--mat-sys-primary));
+  color: var(--app-shell-on);
   font-weight: 800;
   font-size: 1.1rem;
 }
@@ -48,7 +48,7 @@
 
 .brand-copy p {
   margin: 2px 0 0;
-  color: var(--mat-sys-on-primary);
+  color: var(--app-shell-on-muted);
   font-size: 0.85rem;
 }
 
@@ -64,7 +64,7 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 14px;
-  color: var(--mat-sys-on-primary);
+  color: var(--app-shell-on-muted);
   text-decoration: none;
   transition: background 180ms ease, color 180ms ease, transform 180ms ease;
 }
@@ -72,7 +72,7 @@
 .nav-link:hover,
 .nav-link.active {
   background: rgba(255, 255, 255, 0.12);
-  color: var(--mat-sys-on-primary);
+  color: var(--app-shell-on);
   transform: translateX(2px);
 }
 
@@ -108,7 +108,7 @@
 
 .user-card p {
   margin: 2px 0 0;
-  color: var(--mat-sys-on-primary);
+  color: var(--app-shell-on-muted);
   font-size: 0.8rem;
 }
 
