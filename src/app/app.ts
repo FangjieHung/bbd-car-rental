@@ -7,6 +7,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
 import { ZH_TW } from './core/i18n/zh-tw';
+import { ThemeSwitcherComponent } from './shared/theme-switcher.component';
 
 interface NavItem {
   route: string;
@@ -24,6 +25,7 @@ interface NavItem {
     MatSidenavModule,
     MatButtonModule,
     MatIconModule,
+    ThemeSwitcherComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
