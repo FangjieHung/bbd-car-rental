@@ -34,4 +34,13 @@ describe('lint-theme', () => {
     writeFileSync(join(dir, 'material', '_tokens.scss'), '--x: #ff0000;');
     expect(run(dir).code).toBe(0);
   });
+
+  it('scanRoot 可以是單一 .scss 檔（非目錄）→ 也會被 lint', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'lt-'));
+    const file = join(dir, 'single.scss');
+    writeFileSync(file, '.x { color: #ff0000; }');
+    const r = run(file);
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('single.scss');
+  });
 });

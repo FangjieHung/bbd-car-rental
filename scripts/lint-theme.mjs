@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
 const roots = process.argv.slice(2);
-const scanRoots = roots.length ? roots : ['src/app', 'src/styles'];
+const scanRoots = roots.length ? roots : ['src/app', 'src/styles', 'src/styles.scss'];
 
 const HEX = /#[0-9a-fA-F]{3,8}\b/;
 const PALETTE = /var\(\s*--_?(primary|accent|neutral|sage|teal|cream)-\d/;
@@ -23,7 +23,11 @@ function walk(dir, out) {
 
 const files = [];
 for (const r of scanRoots) {
-  try { walk(r, files); } catch { /* root 不存在略過 */ }
+  try {
+    const st = statSync(r);
+    if (st.isDirectory()) walk(r, files);
+    else if (EXTS.some(e => r.endsWith(e))) files.push(r);
+  } catch { /* root 不存在略過 */ }
 }
 
 const violations = [];
