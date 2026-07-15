@@ -43,7 +43,7 @@
               <td class="table-cell table-cell--body">{{ customerStore.nameOf(b.customerId) }}</td>
               <td class="table-cell table-cell--body">{{ fmt(b.startTime) }}</td>
               <td class="table-cell table-cell--body">{{ fmt(b.endTime) }}</td>
-              <td class="table-cell table-cell--body"><app-status-chip [label]="t.booking.statusLabels[b.status]" [tone]="toneOf(b)" /></td>
+              <td class="table-cell table-cell--body"><app-status-chip [label]="t.booking.statusLabels[b.status]" [status]="statusKeyOf(b)" /></td>
               <td class="table-cell table-cell--body action-cell">
                 @if (b.status === 'confirmed') {
                   <button mat-button (click)="act(() => store.pickUp(b.id))">{{ t.booking.pickUp }}</button>

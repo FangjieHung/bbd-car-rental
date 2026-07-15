@@ -1,4 +1,10 @@
 // src/styles/paradigms/material/status.scss
 [data-paradigm='material'] {
-  // .ui-chip tone styles added in Task 7
+  .ui-chip { display: inline-flex; align-items: center; gap: .375rem; padding: .125rem .625rem; border-radius: var(--mat-sys-corner-full); font-size: 13px; }
+  .ui-chip__dot { width: .5rem; height: .5rem; border-radius: 999px; }
+  .ui-chip--positive { background: var(--app-positive-bg); color: var(--app-positive-fg); .ui-chip__dot { background: var(--app-positive-dot); } }
+  .ui-chip--info { background: var(--app-info-bg); color: var(--app-info-fg); .ui-chip__dot { background: var(--app-info-dot); } }
+  .ui-chip--neutral { background: var(--app-neutral-bg); color: var(--app-neutral-fg); .ui-chip__dot { background: var(--app-neutral-dot); } }
+  .ui-chip--warning { background: var(--app-warning-bg); color: var(--app-warning-fg); .ui-chip__dot { background: var(--app-warning-dot); } }
+  .ui-chip--danger { background: var(--app-danger-bg); color: var(--app-danger-fg); .ui-chip__dot { background: var(--app-danger-dot); } }
 }
