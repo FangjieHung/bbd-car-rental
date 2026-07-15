@@ -1,5 +1,7 @@
 @use "tailwindcss";
 @use '@angular/material' as mat;
+@use 'styles/paradigms/registry' as *;
+@use 'styles/color-themes/registry' as *;
 
 /* ============================================================
    Verdant design tokens（來源：docs/design-system/verdant/）
