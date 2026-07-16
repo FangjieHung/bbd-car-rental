@@ -117,7 +117,7 @@ For more information on using the Angular CLI, including detailed command refere
 4. **元件 class 契約**
    - 元件一律用 `.ui-*` 開頭（如 `.ui-card`、`.ui-btn`、`.ui-chip`）
    - 狀態使用 `.is-*`（如 `.is-active`、`.is-disabled`）
-   - 完整列表見 `src/styles/_contract.scss`
+   - 完整列表見 `src/styles/CONTRACT.md`
 
 5. **狀態色彩**
    - 業務狀態（success、error、warning 等）對應的 tone 在 `src/app/core/theme/status-tone.ts` 定義
@@ -172,7 +172,7 @@ For more information on using the Angular CLI, including detailed command refere
    ```
 
 2. **依契約重寫 recipe**
-   - 參考 `src/styles/_contract.scss` 的 class 名單
+   - 參考 `src/styles/CONTRACT.md` 的 class 名單
    - 在各 recipe 檔中（`buttons.scss`、`card.scss`、`table.scss` 等）重新設計樣式
    - 可自由使用 CSS（包括 `backdrop-filter`、`inset` 陰影等），但顏色一定要綁 token
    - 新增或修改 `_tokens.scss` 裡的造型 token（圓角、陰影、字體等）
