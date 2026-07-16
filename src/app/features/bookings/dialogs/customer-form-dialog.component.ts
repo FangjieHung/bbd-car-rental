@@ -4,14 +4,14 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Customer } from '../../core/models';
-import { ZH_TW } from '../../core/i18n/zh-tw';
+import { Customer } from '../../../core/models';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 @Component({
   selector: 'app-customer-form-dialog',
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   templateUrl: './customer-form-dialog.component.html',
-  styleUrls: ['./customer-form-dialog.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class CustomerFormDialogComponent {
   protected readonly t = ZH_TW;

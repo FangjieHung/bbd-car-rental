@@ -2,17 +2,17 @@ import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
-import { Customer } from '../../core/models';
-import { ZH_TW } from '../../core/i18n/zh-tw';
-import { CustomerStore } from '../../stores/customer.store';
-import { confirm } from '../../shared/confirm-dialog.component';
-import { CustomerFormDialogComponent } from './customer-form-dialog.component';
+import { Customer } from '../../../core/models';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { CustomerStore } from '../../../stores/customer.store';
+import { confirm } from '../../../shared/confirm-dialog.component';
+import { CustomerFormDialogComponent } from '../dialogs/customer-form-dialog.component';
 
 @Component({
   selector: 'app-customers-page',
   imports: [MatButtonModule],
   templateUrl: './customers-page.component.html',
-  styleUrls: ['./customers-page.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class CustomersPageComponent {
   protected readonly t = ZH_TW;

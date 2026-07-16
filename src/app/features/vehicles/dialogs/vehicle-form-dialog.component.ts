@@ -5,8 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Vehicle } from '../../core/models';
-import { ZH_TW } from '../../core/i18n/zh-tw';
+import { Vehicle } from '../../../core/models';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 export interface VehicleFormResult {
   plateNumber: string;
@@ -19,7 +19,7 @@ export interface VehicleFormResult {
   selector: 'app-vehicle-form-dialog',
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './vehicle-form-dialog.component.html',
-  styleUrls: ['./vehicle-form-dialog.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class VehicleFormDialogComponent {
   protected readonly t = ZH_TW;

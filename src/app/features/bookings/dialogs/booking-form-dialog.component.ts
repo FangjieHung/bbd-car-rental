@@ -6,10 +6,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
-import { RentalBooking } from '../../core/models';
-import { ZH_TW } from '../../core/i18n/zh-tw';
-import { VehicleStore } from '../../stores/vehicle.store';
-import { CustomerStore } from '../../stores/customer.store';
+import { RentalBooking } from '../../../core/models';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { VehicleStore } from '../../../stores/vehicle.store';
+import { CustomerStore } from '../../../stores/customer.store';
 import { CustomerFormDialogComponent } from './customer-form-dialog.component';
 
 export interface BookingFormResult {
@@ -31,7 +31,7 @@ function toLocalInputValue(iso: string): string {
   selector: 'app-booking-form-dialog',
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './booking-form-dialog.component.html',
-  styleUrls: ['./booking-form-dialog.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class BookingFormDialogComponent {
   protected readonly t = ZH_TW;

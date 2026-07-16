@@ -1,15 +1,15 @@
 import { Component, computed, inject } from '@angular/core';
-import { ZH_TW } from '../../core/i18n/zh-tw';
-import { fmtDateTime, isSameDay } from '../../core/date-utils';
-import { BookingStore } from '../../stores/booking.store';
-import { VehicleStore } from '../../stores/vehicle.store';
-import { CustomerStore } from '../../stores/customer.store';
-import { MaintenanceStore } from '../../stores/maintenance.store';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime, isSameDay } from '../../../core/date-utils';
+import { BookingStore } from '../../../stores/booking.store';
+import { VehicleStore } from '../../../stores/vehicle.store';
+import { CustomerStore } from '../../../stores/customer.store';
+import { MaintenanceStore } from '../../../stores/maintenance.store';
 
 @Component({
   selector: 'app-dashboard-page',
   templateUrl: './dashboard-page.component.html',
-  styleUrls: ['./dashboard-page.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class DashboardPageComponent {
   protected readonly t = ZH_TW;

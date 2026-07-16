@@ -3,18 +3,18 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
-import { MaintenanceAlert, Vehicle } from '../../core/models';
-import { ZH_TW } from '../../core/i18n/zh-tw';
-import { fmtDateTime } from '../../core/date-utils';
-import { MaintenanceStore } from '../../stores/maintenance.store';
-import { VehicleStore } from '../../stores/vehicle.store';
-import { MaintenanceRecordDialogComponent, RecordFormResult } from './maintenance-record-dialog.component';
+import { MaintenanceAlert, Vehicle } from '../../../core/models';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
+import { MaintenanceStore } from '../../../stores/maintenance.store';
+import { VehicleStore } from '../../../stores/vehicle.store';
+import { MaintenanceRecordDialogComponent, RecordFormResult } from '../dialogs/maintenance-record-dialog.component';
 
 @Component({
   selector: 'app-maintenance-page',
   imports: [MatButtonModule],
   templateUrl: './maintenance-page.component.html',
-  styleUrls: ['./maintenance-page.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class MaintenancePageComponent {
   protected readonly t = ZH_TW;

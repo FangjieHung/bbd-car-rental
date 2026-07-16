@@ -3,15 +3,15 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { ZH_TW } from '../../core/i18n/zh-tw';
-import { TimelineViewComponent } from './timeline-view.component';
-import { CalendarViewComponent } from './calendar-view.component';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { TimelineViewComponent } from '../timeline-view.component';
+import { CalendarViewComponent } from '../calendar-view.component';
 
 @Component({
   selector: 'app-dispatch-page',
   imports: [MatButtonToggleModule, TimelineViewComponent, CalendarViewComponent],
   templateUrl: './dispatch-page.component.html',
-  styleUrls: ['./dispatch-page.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class DispatchPageComponent {
   protected readonly t = ZH_TW;

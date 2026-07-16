@@ -3,15 +3,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
-import { Vehicle, VehicleStatus, VehicleType } from '../../core/models';
-import { ZH_TW } from '../../core/i18n/zh-tw';
-import { VehicleStore } from '../../stores/vehicle.store';
-import { StatusChipComponent } from '../../shared/status-chip.component';
-import { StatusKey } from '../../core/theme/status-tone';
-import { confirm } from '../../shared/confirm-dialog.component';
-import { ListToolbarComponent } from '../../shared/list-toolbar.component';
-import { FilterOption, FilterSelectComponent } from '../../shared/filter-select.component';
-import { VehicleFormDialogComponent, VehicleFormResult } from './vehicle-form-dialog.component';
+import { Vehicle, VehicleStatus, VehicleType } from '../../../core/models';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { VehicleStore } from '../../../stores/vehicle.store';
+import { StatusChipComponent } from '../../../shared/status-chip.component';
+import { StatusKey } from '../../../core/theme/status-tone';
+import { confirm } from '../../../shared/confirm-dialog.component';
+import { ListToolbarComponent } from '../../../shared/list-toolbar.component';
+import { FilterOption, FilterSelectComponent } from '../../../shared/filter-select.component';
+import { VehicleFormDialogComponent, VehicleFormResult } from '../dialogs/vehicle-form-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
 const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
@@ -22,7 +22,7 @@ const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
   selector: 'app-vehicles-page',
   imports: [MatTableModule, MatButtonModule, StatusChipComponent, ListToolbarComponent, FilterSelectComponent],
   templateUrl: './vehicles-page.component.html',
-  styleUrls: ['./vehicles-page.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class VehiclesPageComponent {
   protected readonly t = ZH_TW;

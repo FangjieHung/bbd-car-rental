@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { BookingsPageComponent } from './bookings-page.component';
-import { VEHICLE_REPO, BOOKING_REPO, CUSTOMER_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
-import { createInMemoryRepo } from '../../core/repositories/testing';
-import { Vehicle, RentalBooking, Customer, MaintenanceRecord } from '../../core/models';
+import { VEHICLE_REPO, BOOKING_REPO, CUSTOMER_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
+import { createInMemoryRepo } from '../../../core/repositories/testing';
+import { Vehicle, RentalBooking, Customer, MaintenanceRecord } from '../../../core/models';
 
 function makeVehicle(partial: Partial<Vehicle>): Vehicle {
   return { id: partial.id ?? 'v1', plateNumber: 'ABC-123', type: 'scooter', model: 'Gogoro',

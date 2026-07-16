@@ -5,31 +5,31 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     loadComponent: () =>
-      import('./features/dashboard/dashboard-page.component').then(m => m.DashboardPageComponent),
+      import('./features/dashboard/pages/dashboard-page.component').then(m => m.DashboardPageComponent),
   },
   {
     path: 'vehicles',
     loadComponent: () =>
-      import('./features/vehicles/vehicles-page.component').then(m => m.VehiclesPageComponent),
+      import('./features/vehicles/pages/vehicles-page.component').then(m => m.VehiclesPageComponent),
   },
   {
     path: 'dispatch',
     loadComponent: () =>
-      import('./features/dispatch/dispatch-page.component').then(m => m.DispatchPageComponent),
+      import('./features/dispatch/pages/dispatch-page.component').then(m => m.DispatchPageComponent),
   },
   {
     path: 'bookings/customers',
     loadComponent: () =>
-      import('./features/bookings/customers-page.component').then(m => m.CustomersPageComponent),
+      import('./features/bookings/pages/customers-page.component').then(m => m.CustomersPageComponent),
   },
   {
     path: 'bookings',
     loadComponent: () =>
-      import('./features/bookings/bookings-page.component').then(m => m.BookingsPageComponent),
+      import('./features/bookings/pages/bookings-page.component').then(m => m.BookingsPageComponent),
   },
   {
     path: 'maintenance',
     loadComponent: () =>
-      import('./features/maintenance/maintenance-page.component').then(m => m.MaintenancePageComponent),
+      import('./features/maintenance/pages/maintenance-page.component').then(m => m.MaintenancePageComponent),
   },
 ];

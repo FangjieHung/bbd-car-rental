@@ -5,9 +5,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MaintenanceRecord, MaintenanceType } from '../../core/models';
-import { ZH_TW } from '../../core/i18n/zh-tw';
-import { VehicleStore } from '../../stores/vehicle.store';
+import { MaintenanceRecord, MaintenanceType } from '../../../core/models';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { VehicleStore } from '../../../stores/vehicle.store';
 
 export interface RecordFormResult extends Omit<MaintenanceRecord, 'id'> {}
 
@@ -17,7 +17,7 @@ const TYPES: MaintenanceType[] = ['oil_change', 'tire', 'brake', 'inspection', '
   selector: 'app-maintenance-record-dialog',
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './maintenance-record-dialog.component.html',
-  styleUrls: ['./maintenance-record-dialog.component.scss'],
+  styleUrls: ['../../../app.scss'],
 })
 export class MaintenanceRecordDialogComponent {
   protected readonly t = ZH_TW;
