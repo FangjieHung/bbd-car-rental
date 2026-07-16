@@ -1,0 +1,74 @@
+<div class="page-shell">
+  <h1 class="ui-text-title">{{ t.nav.dashboard }}</h1>
+
+  <div class="stat-grid">
+    @for (s of statusKeys; track s) {
+      <div class="stat-card" [class.stat-card--hero]="s === 'available'">
+        <div class="ui-text-display text-3xl md:text-4xl">{{ vehicleStore.statusCounts()[s] }}</div>
+        <div class="stat-card__label" [class.stat-card__label--hero]="s === 'available'">
+          {{ t.vehicle.statusLabels[s] }}
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="content-grid">
+    <section class="ui-card">
+      <div class="ui-text-caption mb-0.5">{{ t.dashboard.todayPickups }}</div>
+      <div class="section-title">{{ todayPickups().length }} 筆</div>
+      @if (todayPickups().length === 0) {
+        <p class="empty-state">{{ t.dashboard.none }}</p>
+      } @else {
+        <ul class="list-stack">
+          @for (b of todayPickups(); track b.id) {
+            <li class="list-row">
+              <span class="font-semibold">{{ plateOf(b.vehicleId) }}</span>
+              <span class="list-row__secondary">{{ customerStore.nameOf(b.customerId) }}</span>
+              <span class="list-row__meta">{{ fmt(b.startTime) }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="ui-card">
+      <div class="ui-text-caption mb-0.5">{{ t.dashboard.todayReturns }}</div>
+      <div class="section-title">{{ todayReturns().length }} 筆</div>
+      @if (todayReturns().length === 0) {
+        <p class="empty-state">{{ t.dashboard.none }}</p>
+      } @else {
+        <ul class="list-stack">
+          @for (b of todayReturns(); track b.id) {
+            <li class="list-row">
+              <span class="font-semibold">{{ plateOf(b.vehicleId) }}</span>
+              <span class="list-row__secondary">{{ customerStore.nameOf(b.customerId) }}</span>
+              <span class="list-row__meta">{{ fmt(b.endTime) }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="ui-card md:col-span-2">
+      <div class="ui-text-caption mb-0.5">{{ t.dashboard.alerts }}</div>
+      <div class="section-title">{{ maintenanceStore.alerts().length }} 筆</div>
+      @if (maintenanceStore.alerts().length === 0) {
+        <p class="empty-state">{{ t.maintenance.noAlerts }}</p>
+      } @else {
+        <ul class="chip-list">
+          @for (a of maintenanceStore.alerts(); track a.vehicleId + a.ruleType) {
+            <li class="alert-chip" [class.alert-chip--overdue]="a.status === 'overdue'">
+              <span
+                class="alert-chip__dot"
+                [class.alert-chip__dot--overdue]="a.status === 'overdue'"
+              ></span>
+              {{ plateOf(a.vehicleId) }}：{{
+                a.status === 'overdue' ? t.maintenance.overdue : t.maintenance.upcoming
+              }}
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</div>
