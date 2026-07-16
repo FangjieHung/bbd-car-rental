@@ -1,13 +1,13 @@
 @use 'tailwindcss';
 @use '@angular/material' as mat;
-@use 'styles/paradigms/registry' as *;
-@use 'styles/color-themes/registry' as *;
-@use 'styles/skeleton';
-@use 'styles/paradigms/material/card';
-@use 'styles/paradigms/material/buttons';
-@use 'styles/paradigms/material/table';
-@use 'styles/paradigms/material/status';
-@use 'styles/paradigms/material/typography';
+@use 'theme-pack/src/lib/styles/paradigms/registry' as *;
+@use 'theme-pack/src/lib/styles/color-themes/registry' as *;
+@use 'theme-pack/src/lib/styles/skeleton';
+@use 'theme-pack/src/lib/styles/paradigms/material/card';
+@use 'theme-pack/src/lib/styles/paradigms/material/buttons';
+@use 'theme-pack/src/lib/styles/paradigms/material/table';
+@use 'theme-pack/src/lib/styles/paradigms/material/status';
+@use 'theme-pack/src/lib/styles/paradigms/material/typography';
 
 /* ============================================================
    Angular Material：主題（色彩/造型 token 由

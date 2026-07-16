@@ -22,7 +22,7 @@ import {
   seedMaintenanceRecords,
 } from './core/repositories/seed-data';
 import { ZH_TW } from './core/i18n/zh-tw';
-import { ThemeService } from './core/theme/theme.service';
+import { ThemeService } from '@car-rental/theme-pack';
 
 function notifyStorageReset(snackBar: MatSnackBar): () => void {
   return () => snackBar.open(ZH_TW.common.storageReset, undefined, { duration: 4000 });

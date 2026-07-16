@@ -5,6 +5,9 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@car-rental/theme-pack": ["./libs/theme-pack/src/index.ts"]
+    }
   }
 }

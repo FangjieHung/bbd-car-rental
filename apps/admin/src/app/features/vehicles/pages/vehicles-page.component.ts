@@ -7,7 +7,7 @@ import { Vehicle, VehicleStatus, VehicleType } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
-import { StatusKey } from '../../../core/theme/status-tone';
+import { StatusKey } from '@car-rental/theme-pack';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
 import {

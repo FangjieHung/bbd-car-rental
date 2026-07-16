@@ -25,6 +25,7 @@
           }
         ],
         "styles": ["apps/admin/src/styles.scss"],
+        "stylePreprocessorOptions": { "includePaths": ["libs"] },
         "outputPath": "dist/penghu-rental-admin"
       },
       "configurations": {
