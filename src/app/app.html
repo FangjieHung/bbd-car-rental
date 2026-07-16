@@ -7,32 +7,38 @@
       [opened]="isMobile ? isSidenavOpen : true"
       (closedStart)="isSidenavOpen = false"
     >
-      <div class="brand">
-        <div class="brand-mark">P</div>
-        <div class="brand-copy">
-          <h1>{{ t.app.title }}</h1>
-          <p>管理中心</p>
+      <div class="sidenav-inner">
+        <div class="brand">
+          <div class="brand-mark">P</div>
+          <div class="brand-copy">
+            <h1>{{ t.app.title }}</h1>
+            <p>管理中心</p>
+          </div>
         </div>
-      </div>
 
-      <nav class="nav-list" aria-label="主導覽">
-        <a
-          *ngFor="let item of navItems"
-          class="nav-link"
-          [routerLink]="item.route"
-          routerLinkActive="active"
-          (click)="onNavClick()"
-        >
-          <span class="nav-icon">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
-        </a>
-      </nav>
+        <nav class="nav-list" aria-label="主導覽">
+          <a
+            *ngFor="let item of navItems"
+            class="nav-link"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            (click)="onNavClick()"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>
+            <span>{{ item.label }}</span>
+          </a>
+        </nav>
 
-      <div class="user-card">
-        <div class="avatar">A</div>
-        <div>
-          <strong>管理員</strong>
-          <p>已登入</p>
+        <div class="sidenav-footer">
+          <app-theme-switcher />
+
+          <div class="user-card">
+            <div class="avatar">A</div>
+            <div>
+              <strong>管理員</strong>
+              <p>已登入</p>
+            </div>
+          </div>
         </div>
       </div>
     </mat-sidenav>
@@ -48,7 +54,6 @@
           <h2>{{ currentTitle }}</h2>
         </div>
 
-        <app-theme-switcher />
         <button mat-stroked-button type="button">登出</button>
       </header>
 
