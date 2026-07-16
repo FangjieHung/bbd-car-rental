@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import { StatusKey, toneOf } from '../core/theme/status-tone';
+import { StatusKey, toneOf } from '../../core/theme/status-tone';
 
 @Component({
   selector: 'app-status-chip',

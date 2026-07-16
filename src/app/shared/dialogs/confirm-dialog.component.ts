@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { firstValueFrom } from 'rxjs';
-import { ZH_TW } from '../core/i18n/zh-tw';
+import { ZH_TW } from '../../core/i18n/zh-tw';
 
 @Component({
   selector: 'app-confirm-dialog',

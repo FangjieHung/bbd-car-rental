@@ -4,8 +4,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
-import { VehicleStore } from '../../../stores/vehicle.store';
-import { CustomerStore } from '../../../stores/customer.store';
+import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
+import { CustomerStore } from '../../../stores/customer/customer.store';
 
 @Component({
   selector: 'app-booking-detail-dialog',

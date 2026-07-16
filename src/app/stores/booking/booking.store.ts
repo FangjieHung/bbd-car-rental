@@ -1,8 +1,8 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
-import { RentalBooking } from '../core/models';
-import { BOOKING_REPO } from '../core/repositories/tokens';
-import { VehicleStore } from './vehicle.store';
-import { ZH_TW } from '../core/i18n/zh-tw';
+import { RentalBooking } from '../../core/models';
+import { BOOKING_REPO } from '../../core/repositories/tokens';
+import { VehicleStore } from '../vehicle/vehicle.store';
+import { ZH_TW } from '../../core/i18n/zh-tw';
 
 const ACTIVE: RentalBooking['status'][] = ['confirmed', 'in_progress'];
 

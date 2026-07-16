@@ -1,7 +1,7 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
-import { Vehicle, VehicleStatus, VehicleType } from '../core/models';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../core/repositories/tokens';
-import { ZH_TW } from '../core/i18n/zh-tw';
+import { Vehicle, VehicleStatus, VehicleType } from '../../core/models';
+import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { ZH_TW } from '../../core/i18n/zh-tw';
 
 const ALLOWED: Record<VehicleStatus, VehicleStatus[]> = {
   available: ['reserved', 'rented', 'maintenance'],

@@ -3,9 +3,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { RentalBooking } from '../../core/models';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 import { addDays, fmtDateTime, isSameDay, startOfDay } from '../../core/date-utils';
-import { BookingStore } from '../../stores/booking.store';
-import { VehicleStore } from '../../stores/vehicle.store';
-import { CustomerStore } from '../../stores/customer.store';
+import { BookingStore } from '../../stores/booking/booking.store';
+import { VehicleStore } from '../../stores/vehicle/vehicle.store';
+import { CustomerStore } from '../../stores/customer/customer.store';
 
 const ACTIVE: RentalBooking['status'][] = ['confirmed', 'in_progress'];
 

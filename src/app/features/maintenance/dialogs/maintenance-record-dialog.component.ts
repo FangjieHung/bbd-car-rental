@@ -7,7 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MaintenanceRecord, MaintenanceType } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { VehicleStore } from '../../../stores/vehicle.store';
+import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 
 export interface RecordFormResult extends Omit<MaintenanceRecord, 'id'> {}
 

@@ -5,12 +5,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Vehicle, VehicleStatus, VehicleType } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { VehicleStore } from '../../../stores/vehicle.store';
-import { StatusChipComponent } from '../../../shared/status-chip.component';
+import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
+import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { StatusKey } from '../../../core/theme/status-tone';
-import { confirm } from '../../../shared/confirm-dialog.component';
-import { ListToolbarComponent } from '../../../shared/list-toolbar.component';
-import { FilterOption, FilterSelectComponent } from '../../../shared/filter-select.component';
+import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
+import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
+import { FilterOption, FilterSelectComponent } from '../../../shared/filters/filter-select.component';
 import { VehicleFormDialogComponent, VehicleFormResult } from '../dialogs/vehicle-form-dialog.component';
 import { firstValueFrom } from 'rxjs';
 

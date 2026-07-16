@@ -6,8 +6,8 @@ import { firstValueFrom } from 'rxjs';
 import { MaintenanceAlert, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
-import { MaintenanceStore } from '../../../stores/maintenance.store';
-import { VehicleStore } from '../../../stores/vehicle.store';
+import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
+import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MaintenanceRecordDialogComponent, RecordFormResult } from '../dialogs/maintenance-record-dialog.component';
 
 @Component({

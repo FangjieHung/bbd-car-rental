@@ -4,8 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Customer } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { CustomerStore } from '../../../stores/customer.store';
-import { confirm } from '../../../shared/confirm-dialog.component';
+import { CustomerStore } from '../../../stores/customer/customer.store';
+import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { CustomerFormDialogComponent } from '../dialogs/customer-form-dialog.component';
 
 @Component({

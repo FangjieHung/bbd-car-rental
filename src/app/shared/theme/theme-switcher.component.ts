@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
-import { ThemeService } from '../core/theme/theme.service';
-import { PARADIGMS, COLOR_THEMES } from '../core/theme/theme.token';
+import { ThemeService } from '../../core/theme/theme.service';
+import { PARADIGMS, COLOR_THEMES } from '../../core/theme/theme.token';
 
 @Component({
   selector: 'app-theme-switcher',

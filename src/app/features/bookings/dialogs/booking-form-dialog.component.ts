@@ -8,8 +8,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
 import { RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { VehicleStore } from '../../../stores/vehicle.store';
-import { CustomerStore } from '../../../stores/customer.store';
+import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
+import { CustomerStore } from '../../../stores/customer/customer.store';
 import { CustomerFormDialogComponent } from './customer-form-dialog.component';
 
 export interface BookingFormResult {

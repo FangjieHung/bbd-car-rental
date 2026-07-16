@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { ZH_TW } from '../core/i18n/zh-tw';
+import { ZH_TW } from '../../core/i18n/zh-tw';
 
 @Component({
   selector: 'app-list-toolbar',

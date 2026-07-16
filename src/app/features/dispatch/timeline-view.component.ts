@@ -4,8 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { RentalBooking } from '../../core/models';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 import { addDays, diffDays, fmtDate, startOfDay } from '../../core/date-utils';
-import { BookingStore } from '../../stores/booking.store';
-import { VehicleStore } from '../../stores/vehicle.store';
+import { BookingStore } from '../../stores/booking/booking.store';
+import { VehicleStore } from '../../stores/vehicle/vehicle.store';
 import { BookingDetailDialogComponent } from './dialogs/booking-detail-dialog.component';
 
 export interface TimelineBlock {

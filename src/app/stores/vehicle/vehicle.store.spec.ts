@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { VehicleStore } from './vehicle.store';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../core/repositories/tokens';
-import { createInMemoryRepo } from '../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord } from '../core/models';
-import { ZH_TW } from '../core/i18n/zh-tw';
+import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { createInMemoryRepo } from '../../core/repositories/testing';
+import { Vehicle, RentalBooking, MaintenanceRecord } from '../../core/models';
+import { ZH_TW } from '../../core/i18n/zh-tw';
 
 function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
   return { id: 'v1', plateNumber: 'ABC-123', type: 'scooter', model: 'Gogoro',

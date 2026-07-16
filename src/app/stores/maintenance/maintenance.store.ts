@@ -1,7 +1,7 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
-import { MaintenanceAlert, MaintenanceRecord } from '../core/models';
-import { MAINTENANCE_REPO } from '../core/repositories/tokens';
-import { VehicleStore } from './vehicle.store';
+import { MaintenanceAlert, MaintenanceRecord } from '../../core/models';
+import { MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { VehicleStore } from '../vehicle/vehicle.store';
 
 const MILEAGE_WARN_BEFORE = 300;
 const DATE_WARN_DAYS = 7;

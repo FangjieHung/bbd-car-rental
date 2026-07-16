@@ -7,14 +7,14 @@ import { firstValueFrom } from 'rxjs';
 import { BookingStatus, RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
-import { BookingStore } from '../../../stores/booking.store';
-import { VehicleStore } from '../../../stores/vehicle.store';
-import { CustomerStore } from '../../../stores/customer.store';
-import { StatusChipComponent } from '../../../shared/status-chip.component';
+import { BookingStore } from '../../../stores/booking/booking.store';
+import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
+import { CustomerStore } from '../../../stores/customer/customer.store';
+import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { StatusKey } from '../../../core/theme/status-tone';
-import { confirm } from '../../../shared/confirm-dialog.component';
-import { ListToolbarComponent } from '../../../shared/list-toolbar.component';
-import { FilterOption, FilterSelectComponent } from '../../../shared/filter-select.component';
+import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
+import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
+import { FilterOption, FilterSelectComponent } from '../../../shared/filters/filter-select.component';
 import { BookingFormDialogComponent, BookingFormResult } from '../dialogs/booking-form-dialog.component';
 
 const STATUS_KEY: Record<BookingStatus, StatusKey> = {

@@ -1,6 +1,6 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
-import { Customer } from '../core/models';
-import { CUSTOMER_REPO } from '../core/repositories/tokens';
+import { Customer } from '../../core/models';
+import { CUSTOMER_REPO } from '../../core/repositories/tokens';
 
 @Injectable({ providedIn: 'root' })
 export class CustomerStore {

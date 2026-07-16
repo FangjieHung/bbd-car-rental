@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { BookingStore } from './booking.store';
-import { VEHICLE_REPO, CUSTOMER_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../core/repositories/tokens';
-import { createInMemoryRepo } from '../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord, Customer } from '../core/models';
-import { ZH_TW } from '../core/i18n/zh-tw';
+import { VEHICLE_REPO, CUSTOMER_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { createInMemoryRepo } from '../../core/repositories/testing';
+import { Vehicle, RentalBooking, MaintenanceRecord, Customer } from '../../core/models';
+import { ZH_TW } from '../../core/i18n/zh-tw';
 
 const T0 = '2026-07-20T09:00:00.000Z';
 const T1 = '2026-07-22T18:00:00.000Z';

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { MaintenanceStore } from './maintenance.store';
-import { VehicleStore } from './vehicle.store';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO, CUSTOMER_REPO } from '../core/repositories/tokens';
-import { createInMemoryRepo } from '../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord, Customer } from '../core/models';
+import { VehicleStore } from '../vehicle/vehicle.store';
+import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO, CUSTOMER_REPO } from '../../core/repositories/tokens';
+import { createInMemoryRepo } from '../../core/repositories/testing';
+import { Vehicle, RentalBooking, MaintenanceRecord, Customer } from '../../core/models';
 
 const NOW = new Date('2026-07-20T12:00:00.000Z');
 

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { CustomerStore } from './customer.store';
-import { CUSTOMER_REPO } from '../core/repositories/tokens';
-import { createInMemoryRepo } from '../core/repositories/testing';
-import { Customer } from '../core/models';
+import { CUSTOMER_REPO } from '../../core/repositories/tokens';
+import { createInMemoryRepo } from '../../core/repositories/testing';
+import { Customer } from '../../core/models';
 
 describe('CustomerStore', () => {
   let store: CustomerStore;
