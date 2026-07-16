@@ -3,12 +3,12 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "nx serve",
-    "build": "nx build",
-    "watch": "nx build --watch --configuration development",
-    "test": "nx test",
+    "start": "nx serve admin",
+    "build": "nx build admin",
+    "watch": "nx build admin --watch --configuration development",
+    "test": "nx test admin",
     "lint:theme": "node scripts/lint-theme.mjs",
-    "deploy": "nx build --base-href /bbd-car-rental/ && npx angular-cli-ghpages --dir=dist/penghu-rental-admin/browser"
+    "deploy": "nx build admin --base-href /bbd-car-rental/ && npx angular-cli-ghpages --dir=dist/penghu-rental-admin/browser"
   },
   "private": true,
   "packageManager": "npm@11.16.0",
