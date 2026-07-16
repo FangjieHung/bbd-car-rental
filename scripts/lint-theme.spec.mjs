@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { collectThemedAppRoots } from './lint-theme.mjs';
 
 function run(dir) {
   try {
@@ -42,5 +43,20 @@ describe('lint-theme', () => {
     const r = run(file);
     expect(r.code).toBe(1);
     expect(r.out).toContain('single.scss');
+  });
+
+  it('collectThemedAppRoots 只回傳有 @use theme-pack 的 app', () => {
+    const base = mkdtempSync(join(tmpdir(), 'lt-'));
+    const apps = join(base, 'apps');
+    for (const [name, styles] of [
+      ['admin', "@use 'theme-pack/src/lib/styles/skeleton';"],
+      ['store', "@use 'tailwindcss';"],
+    ]) {
+      mkdirSync(join(apps, name, 'src'), { recursive: true });
+      writeFileSync(join(apps, name, 'src', 'styles.scss'), styles);
+    }
+    const roots = collectThemedAppRoots(apps);
+    expect(roots).toHaveLength(1);
+    expect(roots[0].endsWith(join('admin', 'src'))).toBe(true);
   });
 });
