@@ -29,7 +29,7 @@ car-rental/ (Nx workspace)
     assets/
       image/                        ← logo、favicon、共用品牌圖檔
       style/
-        tailwind-config.js          ← 共用 tailwind 基礎設定（各 app 用 presets 繼承）
+        tailwind-base.scss          ← 共用 Tailwind v4 @theme 基礎設定（各 app @use 繼承）
         scss/
           quill-content-style/      ← Quill 編輯器內容排版樣式
     theme-pack/                     ← 雙軸主題系統（選配），現有 core/theme + styles/paradigms + styles/color-themes 搬入
@@ -48,7 +48,7 @@ car-rental/ (Nx workspace)
 ### `libs/assets/` 三類共用資源
 
 1. **`image/`** — logo、favicon.ico、其他共用品牌圖檔。各 app 的 `index.html`/模板直接引用這裡的檔案，不再各自放一份重複拷貝。
-2. **`style/tailwind-config.js`** — 匯出一份基礎 Tailwind 設定（spacing scale 等共用部分）。各 app 自己的 `tailwind.config.js` 用 `presets: [require('@car-rental/assets/style/tailwind-config')]` 繼承，app 層只保留自己的差異設定，不再整份重複。
+2. **`style/tailwind-base.scss`** — 本專案用 Tailwind v4（設定寫在 CSS，無 `tailwind.config.js`）。這份匯出共用的 `@theme` 基礎 token（spacing scale、斷點等）。各 app 的 `styles.scss` 用 `@use 'assets/style/tailwind-base';` 繼承，app 層只保留自己的差異設定，不再整份重複。
 3. **`style/scss/quill-content-style/`** — Quill 編輯器輸出內容（如公告、說明文字）的排版樣式（標題、段落、清單、引言）。**獨立於 theme-pack，不吃 `--mat-sys-*`/`--app-*` token，顏色與字體直接寫死在這份 scss 內**——不論該 app 有沒有套用主題系統，都可以單獨 `@use` 這份樣式，顯示效果固定、不隨配色/範式切換。
 
 ### 主題選配機制
