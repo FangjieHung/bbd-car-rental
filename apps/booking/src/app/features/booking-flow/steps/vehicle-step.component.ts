@@ -49,6 +49,11 @@ export class VehicleStepComponent {
   });
 
   protected select(vehicle: Vehicle): void {
+    if (this.priceForVehicle(vehicle) === null) return;
     this.vehicleSelect.emit(vehicle);
+  }
+
+  protected isUnpriced(vehicle: Vehicle): boolean {
+    return this.priceForVehicle(vehicle) === null;
   }
 }

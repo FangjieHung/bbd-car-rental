@@ -197,6 +197,16 @@ export function seedPricingPlans(): PricingPlan[] {
       dayTypeRates: { weekday: 1500, weekend: 1800, holiday: 2200, peak: 2600 },
       tiers: [{ minDays: 3, discountPercent: 5 }],
     },
+    {
+      id: 'pp3',
+      name: '電動車',
+      appliesToCategory: 'ev',
+      dayTypeRates: { weekday: 450, weekend: 550, holiday: 650, peak: 750 },
+      tiers: [
+        { minDays: 3, discountPercent: 5 },
+        { minDays: 7, discountPercent: 10 },
+      ],
+    },
   ];
 }
 

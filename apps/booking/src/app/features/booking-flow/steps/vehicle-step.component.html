@@ -11,6 +11,7 @@
           <mat-card
             class="vehicle-card"
             [class.selected]="selectedVehicle?.id === vehicle.id"
+            [class.unpriced]="isUnpriced(vehicle)"
             (click)="select(vehicle)"
           >
             <mat-card-header>
@@ -18,11 +19,15 @@
               <mat-card-subtitle>{{ vehicle.plateNumber }}</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-              <p class="price">NT$ {{ priceForVehicle(vehicle) ?? '—' }}</p>
+              @if (isUnpriced(vehicle)) {
+                <p class="price">暫無定價</p>
+              } @else {
+                <p class="price">NT$ {{ priceForVehicle(vehicle) }}</p>
+              }
             </mat-card-content>
             <mat-card-actions>
-              <button mat-flat-button color="primary">
-                {{ selectedVehicle?.id === vehicle.id ? '已選擇' : '選擇' }}
+              <button mat-flat-button color="primary" [disabled]="isUnpriced(vehicle)">
+                {{ selectedVehicle?.id === vehicle.id ? '已選擇' : (isUnpriced(vehicle) ? '暫無定價' : '選擇') }}
               </button>
             </mat-card-actions>
           </mat-card>
