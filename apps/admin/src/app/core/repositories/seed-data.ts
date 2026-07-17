@@ -1,4 +1,10 @@
-export { seedVehicles, seedCustomers, seedBookings } from '@car-rental/domain';
+export {
+  seedVehicles,
+  seedCustomers,
+  seedBookings,
+  seedPricingPlans,
+  seedSeasonCalendar,
+} from '@car-rental/domain';
 
 import { MaintenanceRecord } from '../models';
 import { isoAt } from '../date-utils';

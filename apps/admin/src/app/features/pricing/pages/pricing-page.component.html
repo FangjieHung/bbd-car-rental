@@ -1,0 +1,102 @@
+<div class="page-shell">
+  <div class="page-header">
+    <h1 class="ui-text-title">{{ t.pricing.title }}</h1>
+    <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+  </div>
+
+  <h2 class="ui-text-subtitle">{{ t.pricing.plans }}</h2>
+  @if (store.plans().length === 0) {
+    <p class="empty-state">{{ t.common.empty }}</p>
+  } @else {
+    <div class="ui-card overflow-x-auto !p-0">
+      <table mat-table [dataSource]="store.plans()" class="w-full">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.name }}</th>
+          <td mat-cell *matCellDef="let p">{{ p.name }}</td>
+        </ng-container>
+        <ng-container matColumnDef="appliesToCategory">
+          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.appliesToCategory }}</th>
+          <td mat-cell *matCellDef="let p">{{ t.vehicle.typeLabels[p.appliesToCategory] }}</td>
+        </ng-container>
+        <ng-container matColumnDef="weekday">
+          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.weekday }}</th>
+          <td mat-cell *matCellDef="let p">{{ p.dayTypeRates.weekday }}</td>
+        </ng-container>
+        <ng-container matColumnDef="weekend">
+          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.weekend }}</th>
+          <td mat-cell *matCellDef="let p">{{ p.dayTypeRates.weekend }}</td>
+        </ng-container>
+        <ng-container matColumnDef="holiday">
+          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.holiday }}</th>
+          <td mat-cell *matCellDef="let p">{{ p.dayTypeRates.holiday }}</td>
+        </ng-container>
+        <ng-container matColumnDef="peak">
+          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.peak }}</th>
+          <td mat-cell *matCellDef="let p">{{ p.dayTypeRates.peak }}</td>
+        </ng-container>
+        <ng-container matColumnDef="tiers">
+          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.tiers }}</th>
+          <td mat-cell *matCellDef="let p">{{ tiersSummary(p) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>{{ t.common.actions }}</th>
+          <td mat-cell *matCellDef="let p">
+            <button mat-button (click)="openForm(p)">{{ t.common.edit }}</button>
+            <button mat-button color="warn" (click)="remove(p)">{{ t.common.delete }}</button>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns" class="table-row"></tr>
+      </table>
+    </div>
+  }
+
+  <h2 class="ui-text-subtitle">{{ t.pricing.calendar }}</h2>
+  <form [formGroup]="calendarForm" (ngSubmit)="saveCalendar()" class="form-shell ui-card">
+    <h3 class="ui-text-subtitle">{{ t.pricing.holidays }}</h3>
+    <div formArrayName="holidays">
+      @for (range of holidays.controls; track $index) {
+        <div [formGroupName]="$index" class="range-row">
+          <mat-form-field>
+            <mat-label>{{ t.pricing.start }}</mat-label>
+            <input matInput type="date" formControlName="start" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ t.pricing.end }}</mat-label>
+            <input matInput type="date" formControlName="end" />
+          </mat-form-field>
+          <button mat-button type="button" color="warn" (click)="removeHoliday($index)">
+            {{ t.pricing.removeRange }}
+          </button>
+        </div>
+      }
+    </div>
+    <button mat-button type="button" (click)="addHoliday()">{{ t.pricing.addRange }}</button>
+
+    <h3 class="ui-text-subtitle">{{ t.pricing.peakSeasons }}</h3>
+    <div formArrayName="peakSeasons">
+      @for (range of peakSeasons.controls; track $index) {
+        <div [formGroupName]="$index" class="range-row">
+          <mat-form-field>
+            <mat-label>{{ t.pricing.start }}</mat-label>
+            <input matInput type="date" formControlName="start" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ t.pricing.end }}</mat-label>
+            <input matInput type="date" formControlName="end" />
+          </mat-form-field>
+          <button mat-button type="button" color="warn" (click)="removePeakSeason($index)">
+            {{ t.pricing.removeRange }}
+          </button>
+        </div>
+      }
+    </div>
+    <button mat-button type="button" (click)="addPeakSeason()">{{ t.pricing.addRange }}</button>
+
+    <div class="actions">
+      <button mat-flat-button type="submit" [disabled]="calendarForm.invalid">
+        {{ t.pricing.saveCalendar }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,4 +1,4 @@
-import { Vehicle, Customer, RentalBooking } from '../models';
+import { Vehicle, Customer, RentalBooking, PricingPlan, SeasonCalendar } from '../models';
 import { isoAt } from '../date-utils';
 
 export function seedVehicles(): Vehicle[] {
@@ -176,4 +176,30 @@ export function seedBookings(): RentalBooking[] {
       status: 'confirmed',
     },
   ];
+}
+
+export function seedPricingPlans(): PricingPlan[] {
+  return [
+    {
+      id: 'pp1',
+      name: '機車 125',
+      appliesToCategory: 'scooter',
+      dayTypeRates: { weekday: 400, weekend: 500, holiday: 600, peak: 700 },
+      tiers: [
+        { minDays: 3, discountPercent: 5 },
+        { minDays: 7, discountPercent: 10 },
+      ],
+    },
+    {
+      id: 'pp2',
+      name: '小客車',
+      appliesToCategory: 'car',
+      dayTypeRates: { weekday: 1500, weekend: 1800, holiday: 2200, peak: 2600 },
+      tiers: [{ minDays: 3, discountPercent: 5 }],
+    },
+  ];
+}
+
+export function seedSeasonCalendar(): SeasonCalendar[] {
+  return [{ id: 'default', holidays: [], peakSeasons: [{ start: '2026-04-18', end: '2026-06-30' }] }];
 }

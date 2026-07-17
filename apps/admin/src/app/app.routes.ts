@@ -44,4 +44,11 @@ export const routes: Routes = [
         (m) => m.MaintenancePageComponent,
       ),
   },
+  {
+    path: 'pricing',
+    loadComponent: () =>
+      import('./features/pricing/pages/pricing-page.component').then(
+        (m) => m.PricingPageComponent,
+      ),
+  },
 ];

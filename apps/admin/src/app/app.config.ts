@@ -13,6 +13,8 @@ import {
   CUSTOMER_REPO,
   BOOKING_REPO,
   MAINTENANCE_REPO,
+  PRICING_PLAN_REPO,
+  SEASON_CALENDAR_REPO,
 } from './core/repositories/tokens';
 import { LocalStorageRepository } from './core/repositories/local-storage-repository';
 import {
@@ -20,6 +22,8 @@ import {
   seedCustomers,
   seedBookings,
   seedMaintenanceRecords,
+  seedPricingPlans,
+  seedSeasonCalendar,
 } from './core/repositories/seed-data';
 import { ZH_TW } from './core/i18n/zh-tw';
 import { ThemeService } from '@car-rental/theme-pack';
@@ -66,6 +70,24 @@ export const appConfig: ApplicationConfig = {
         new LocalStorageRepository(
           'cr.maintenance',
           seedMaintenanceRecords,
+          notifyStorageReset(inject(MatSnackBar)),
+        ),
+    },
+    {
+      provide: PRICING_PLAN_REPO,
+      useFactory: () =>
+        new LocalStorageRepository(
+          'cr.pricingPlans',
+          seedPricingPlans,
+          notifyStorageReset(inject(MatSnackBar)),
+        ),
+    },
+    {
+      provide: SEASON_CALENDAR_REPO,
+      useFactory: () =>
+        new LocalStorageRepository(
+          'cr.seasonCalendar',
+          seedSeasonCalendar,
           notifyStorageReset(inject(MatSnackBar)),
         ),
     },

@@ -331,6 +331,13 @@
   padding-top: 0.5rem;
 }
 
+.tier-row,
+.range-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
 .error-message {
   font-size: 0.875rem;
   white-space: pre-wrap;
