@@ -1,10 +1,8 @@
 import { InjectionToken } from '@angular/core';
-import { Vehicle, Customer, RentalBooking, MaintenanceRecord } from '../models';
-import { Repository } from './repository';
+import { Repository } from '@car-rental/domain';
+import { MaintenanceRecord } from '../models';
 
-export const VEHICLE_REPO = new InjectionToken<Repository<Vehicle>>('VEHICLE_REPO');
-export const CUSTOMER_REPO = new InjectionToken<Repository<Customer>>('CUSTOMER_REPO');
-export const BOOKING_REPO = new InjectionToken<Repository<RentalBooking>>('BOOKING_REPO');
+export { VEHICLE_REPO, CUSTOMER_REPO, BOOKING_REPO } from '@car-rental/domain';
 export const MAINTENANCE_REPO = new InjectionToken<Repository<MaintenanceRecord>>(
   'MAINTENANCE_REPO',
 );

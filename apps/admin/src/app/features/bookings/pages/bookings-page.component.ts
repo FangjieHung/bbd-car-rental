@@ -24,6 +24,7 @@ import {
 } from '../dialogs/booking-form-dialog.component';
 
 const STATUS_KEY: Record<BookingStatus, StatusKey> = {
+  pending_payment: 'pending',
   confirmed: 'warning',
   in_progress: 'processing',
   completed: 'completed',
