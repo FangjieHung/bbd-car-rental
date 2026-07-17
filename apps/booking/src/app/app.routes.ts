@@ -5,13 +5,10 @@ export const routes: Routes = [
   {
     path: 'book',
     loadComponent: () =>
-      import('./features/booking-flow/booking-flow.component').then(
-        (m) => m.BookingFlowComponent,
-      ),
+      import('@car-rental/booking-flow').then((m) => m.BookingFlowComponent),
   },
   {
     path: 'book/done/:id',
-    loadComponent: () =>
-      import('./features/booking-flow/steps/done.component').then((m) => m.DoneComponent),
+    loadComponent: () => import('@car-rental/booking-flow').then((m) => m.DoneComponent),
   },
 ];

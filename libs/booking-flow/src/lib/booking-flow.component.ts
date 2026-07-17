@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
 import { AddOn, Coupon, PriceBreakdown, Vehicle } from '@car-rental/domain';
-import { CatalogStore } from '../../stores/catalog.store';
+import { CatalogStore } from './catalog.store';
 import { DateStepComponent } from './steps/date-step.component';
 import { VehicleStepComponent } from './steps/vehicle-step.component';
 import { AddonStepComponent } from './steps/addon-step.component';
