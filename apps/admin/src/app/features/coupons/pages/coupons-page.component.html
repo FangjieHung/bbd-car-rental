@@ -1,0 +1,50 @@
+<div class="page-shell">
+  <div class="page-header">
+    <h1 class="ui-text-title">{{ t.coupon.title }}</h1>
+    <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+  </div>
+
+  @if (store.coupons().length === 0) {
+    <p class="empty-state">{{ t.common.empty }}</p>
+  } @else {
+    <div class="ui-card overflow-x-auto !p-0">
+      <table mat-table [dataSource]="store.coupons()" class="w-full">
+        <ng-container matColumnDef="code">
+          <th mat-header-cell *matHeaderCellDef>{{ t.coupon.code }}</th>
+          <td mat-cell *matCellDef="let c">{{ c.code }}</td>
+        </ng-container>
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>{{ t.coupon.type }}</th>
+          <td mat-cell *matCellDef="let c">{{ t.coupon.typeLabels[c.type] }}</td>
+        </ng-container>
+        <ng-container matColumnDef="value">
+          <th mat-header-cell *matHeaderCellDef>{{ t.coupon.value }}</th>
+          <td mat-cell *matCellDef="let c">{{ c.type === 'percent' ? c.value + '%' : c.value }}</td>
+        </ng-container>
+        <ng-container matColumnDef="minDays">
+          <th mat-header-cell *matHeaderCellDef>{{ t.coupon.minDays }}</th>
+          <td mat-cell *matCellDef="let c">{{ c.minDays ?? '-' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="applicableCategories">
+          <th mat-header-cell *matHeaderCellDef>{{ t.coupon.applicableCategories }}</th>
+          <td mat-cell *matCellDef="let c">
+            {{ c.applicableCategories?.length ? c.applicableCategories.map(cat => t.vehicle.typeLabels[cat]).join('、') : t.common.all }}
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="period">
+          <th mat-header-cell *matHeaderCellDef>{{ t.coupon.validFrom }} - {{ t.coupon.validTo }}</th>
+          <td mat-cell *matCellDef="let c">{{ c.validFrom }} ~ {{ c.validTo }}</td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>{{ t.common.actions }}</th>
+          <td mat-cell *matCellDef="let c">
+            <button mat-button (click)="openForm(c)">{{ t.common.edit }}</button>
+            <button mat-button color="warn" (click)="remove(c)">{{ t.common.delete }}</button>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns" class="table-row"></tr>
+      </table>
+    </div>
+  }
+</div>

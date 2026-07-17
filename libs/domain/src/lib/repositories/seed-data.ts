@@ -1,4 +1,4 @@
-import { Vehicle, Customer, RentalBooking, PricingPlan, SeasonCalendar, AddOn } from '../models';
+import { Vehicle, Customer, RentalBooking, PricingPlan, SeasonCalendar, AddOn, Coupon } from '../models';
 import { isoAt } from '../date-utils';
 
 export function seedVehicles(): Vehicle[] {
@@ -210,5 +210,14 @@ export function seedAddOns(): AddOn[] {
     { id: 'ao2', name: '雨衣', unitPrice: 50, unit: 'per_rental' },
     { id: 'ao3', name: '兒童安全座椅', unitPrice: 100, unit: 'per_day' },
     { id: 'ao4', name: '手機支架', unitPrice: 30, unit: 'per_rental' },
+  ];
+}
+
+export function seedCoupons(): Coupon[] {
+  return [
+    { id: 'cp1', code: 'SUMMER10', type: 'percent', value: 10, minDays: 2,
+      validFrom: '2026-06-01', validTo: '2026-08-31' },
+    { id: 'cp2', code: 'CAR300', type: 'amount', value: 300, applicableCategories: ['car'],
+      validFrom: '2026-01-01', validTo: '2026-12-31' },
   ];
 }

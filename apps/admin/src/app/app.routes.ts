@@ -58,4 +58,11 @@ export const routes: Routes = [
         (m) => m.AddOnsPageComponent,
       ),
   },
+  {
+    path: 'coupons',
+    loadComponent: () =>
+      import('./features/coupons/pages/coupons-page.component').then(
+        (m) => m.CouponsPageComponent,
+      ),
+  },
 ];

@@ -8,6 +8,7 @@ export const ZH_TW = {
     maintenance: '保養管理',
     pricing: '定價規則',
     addOns: '配件設定',
+    coupons: '優惠券設定',
   },
   common: {
     create: '新增',
@@ -150,6 +151,17 @@ export const ZH_TW = {
     unitPrice: '單價',
     unit: '計價單位',
     unitLabels: { per_rental: '每筆訂單', per_day: '每日' } as Record<string, string>,
+  },
+  coupon: {
+    title: '優惠券設定',
+    code: '優惠碼',
+    type: '折扣類型',
+    typeLabels: { percent: '百分比', amount: '固定金額' } as Record<string, string>,
+    value: '折扣值',
+    minDays: '最低天數',
+    applicableCategories: '適用車型',
+    validFrom: '生效日',
+    validTo: '到期日',
   },
   dashboard: {
     title: '總覽',
