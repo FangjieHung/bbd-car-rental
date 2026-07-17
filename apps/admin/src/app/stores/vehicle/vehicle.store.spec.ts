@@ -10,8 +10,10 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
   return {
     id: 'v1',
     plateNumber: 'ABC-123',
-    type: 'scooter',
+    category: 'scooter',
     model: 'Gogoro',
+    brand: 'Gogoro',
+    year: 2022,
     status: 'available',
     mileage: 100,
     createdAt: new Date().toISOString(),
@@ -42,7 +44,14 @@ describe('VehicleStore', () => {
 
   it('create 車牌重複要擋', () => {
     expect(() =>
-      store.create({ plateNumber: 'ABC-123', type: 'car', model: 'X', mileage: 0 }),
+      store.create({
+        plateNumber: 'ABC-123',
+        category: 'car',
+        model: 'X',
+        brand: 'Toyota',
+        year: 2023,
+        mileage: 0,
+      }),
     ).toThrowError(ZH_TW.vehicle.plateDuplicate);
   });
 
@@ -83,6 +92,33 @@ describe('VehicleStore', () => {
               pickupLocation: '',
               returnLocation: '',
               status: 'confirmed',
+            },
+          ]),
+        },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>() },
+      ],
+    });
+    const s = TestBed.inject(VehicleStore);
+    expect(() => s.remove('v1')).toThrowError(ZH_TW.vehicle.deleteBlocked);
+  });
+
+  it('有待付款訂單不可刪', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
+        {
+          provide: BOOKING_REPO,
+          useValue: createInMemoryRepo<RentalBooking>([
+            {
+              id: 'b1',
+              vehicleId: 'v1',
+              customerId: 'c1',
+              startTime: '2026-07-11T09:00:00Z',
+              endTime: '2026-07-12T09:00:00Z',
+              pickupLocation: '',
+              returnLocation: '',
+              status: 'pending_payment',
             },
           ]),
         },

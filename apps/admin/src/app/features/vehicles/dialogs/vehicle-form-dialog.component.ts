@@ -10,9 +10,14 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 export interface VehicleFormResult {
   plateNumber: string;
-  type: Vehicle['type'];
+  category: Vehicle['category'];
   model: string;
+  brand: string;
+  year: number;
+  displacement?: number;
   mileage: number;
+  nextServiceMileage?: number;
+  insuranceExpiry?: string;
 }
 
 @Component({
@@ -36,12 +41,31 @@ export class VehicleFormDialogComponent {
 
   form = this.fb.group({
     plateNumber: [this.data?.plateNumber ?? '', Validators.required],
-    type: [this.data?.type ?? ('scooter' as Vehicle['type']), Validators.required],
+    category: [this.data?.category ?? ('scooter' as Vehicle['category']), Validators.required],
     model: [this.data?.model ?? '', Validators.required],
+    brand: [this.data?.brand ?? '', Validators.required],
+    year: [this.data?.year ?? new Date().getFullYear(), [Validators.required, Validators.min(0)]],
+    displacement: [this.data?.displacement ?? null],
     mileage: [this.data?.mileage ?? 0, [Validators.required, Validators.min(0)]],
+    nextServiceMileage: [this.data?.nextServiceMileage ?? null],
+    insuranceExpiry: [this.data?.insuranceExpiry ?? ''],
   });
 
   save(): void {
-    if (this.form.valid) this.ref.close(this.form.getRawValue() as VehicleFormResult);
+    if (this.form.valid) {
+      const raw = this.form.getRawValue();
+      const result: VehicleFormResult = {
+        plateNumber: raw.plateNumber,
+        category: raw.category,
+        model: raw.model,
+        brand: raw.brand,
+        year: raw.year,
+        mileage: raw.mileage,
+        ...(raw.displacement != null ? { displacement: raw.displacement } : {}),
+        ...(raw.nextServiceMileage != null ? { nextServiceMileage: raw.nextServiceMileage } : {}),
+        ...(raw.insuranceExpiry ? { insuranceExpiry: raw.insuranceExpiry } : {}),
+      };
+      this.ref.close(result);
+    }
   }
 }

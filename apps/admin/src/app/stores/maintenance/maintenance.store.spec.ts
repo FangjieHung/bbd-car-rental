@@ -28,8 +28,10 @@ function setup(vehicles: Vehicle[], records: MaintenanceRecord[]) {
 const vehicle = (mileage: number): Vehicle => ({
   id: 'v1',
   plateNumber: 'A-1',
-  type: 'scooter',
+  category: 'scooter',
   model: 'X',
+  brand: 'Gogoro',
+  year: 2022,
   status: 'available',
   mileage,
   createdAt: '2026-01-01T00:00:00Z',

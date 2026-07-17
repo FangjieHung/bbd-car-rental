@@ -1,5 +1,5 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
-import { Vehicle, VehicleStatus, VehicleType } from '../../core/models';
+import { Vehicle, VehicleStatus, VehicleCategory } from '../../core/models';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
@@ -32,9 +32,14 @@ export class VehicleStore {
 
   create(input: {
     plateNumber: string;
-    type: VehicleType;
+    category: VehicleCategory;
     model: string;
+    brand: string;
+    year: number;
+    displacement?: number;
     mileage: number;
+    nextServiceMileage?: number;
+    insuranceExpiry?: string;
   }): Vehicle {
     this.assertPlateUnique(input.plateNumber);
     const vehicle: Vehicle = {
@@ -48,7 +53,19 @@ export class VehicleStore {
     return vehicle;
   }
 
-  update(id: string, patch: { plateNumber?: string; model?: string; mileage?: number }): void {
+  update(
+    id: string,
+    patch: {
+      plateNumber?: string;
+      model?: string;
+      brand?: string;
+      year?: number;
+      displacement?: number;
+      mileage?: number;
+      nextServiceMileage?: number;
+      insuranceExpiry?: string;
+    },
+  ): void {
     const current = this.repo.getById(id);
     if (!current) throw new Error(`not found: ${id}`);
     if (patch.plateNumber !== undefined && patch.plateNumber !== current.plateNumber) {
@@ -74,7 +91,13 @@ export class VehicleStore {
   remove(id: string): void {
     const hasActiveBooking = this.bookingRepo
       .getAll()
-      .some((b) => b.vehicleId === id && (b.status === 'confirmed' || b.status === 'in_progress'));
+      .some(
+        (b) =>
+          b.vehicleId === id &&
+          (b.status === 'pending_payment' ||
+            b.status === 'confirmed' ||
+            b.status === 'in_progress'),
+      );
     const hasRecords = this.maintenanceRepo.getAll().some((r) => r.vehicleId === id);
     if (hasActiveBooking || hasRecords) throw new Error(ZH_TW.vehicle.deleteBlocked);
     this.repo.remove(id);

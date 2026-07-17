@@ -38,8 +38,10 @@ describe('BookingStore', () => {
             {
               id: 'v1',
               plateNumber: 'A-1',
-              type: 'scooter',
+              category: 'scooter',
               model: 'X',
+              brand: 'Gogoro',
+              year: 2022,
               status: 'available',
               mileage: 0,
               createdAt: T0,

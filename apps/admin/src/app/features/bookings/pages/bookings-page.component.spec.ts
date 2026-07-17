@@ -15,8 +15,10 @@ function makeVehicle(partial: Partial<Vehicle>): Vehicle {
   return {
     id: partial.id ?? 'v1',
     plateNumber: 'ABC-123',
-    type: 'scooter',
+    category: 'scooter',
     model: 'Gogoro',
+    brand: 'Gogoro',
+    year: 2022,
     status: 'available',
     mileage: 100,
     createdAt: new Date().toISOString(),

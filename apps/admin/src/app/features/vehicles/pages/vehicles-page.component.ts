@@ -3,7 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
-import { Vehicle, VehicleStatus, VehicleType } from '../../../core/models';
+import { Vehicle, VehicleStatus, VehicleCategory } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
@@ -44,14 +44,14 @@ export class VehiclesPageComponent {
   readonly store = inject(VehicleStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
-  readonly columns = ['plateNumber', 'type', 'model', 'status', 'mileage', 'actions'];
+  readonly columns = ['plateNumber', 'category', 'model', 'status', 'mileage', 'actions'];
 
   readonly searchQuery = signal('');
-  readonly typeFilter = signal<VehicleType | null>(null);
+  readonly typeFilter = signal<VehicleCategory | null>(null);
   readonly statusFilter = signal<VehicleStatus | null>(null);
 
-  readonly typeOptions: FilterOption<VehicleType>[] = (
-    Object.entries(this.t.vehicle.typeLabels) as [VehicleType, string][]
+  readonly typeOptions: FilterOption<VehicleCategory>[] = (
+    Object.entries(this.t.vehicle.typeLabels) as [VehicleCategory, string][]
   ).map(([value, label]) => ({ value, label }));
 
   readonly statusOptions: FilterOption<VehicleStatus>[] = (
@@ -67,7 +67,7 @@ export class VehiclesPageComponent {
     const type = this.typeFilter();
     const status = this.statusFilter();
     return this.store.vehicles().filter((v) => {
-      if (type && v.type !== type) return false;
+      if (type && v.category !== type) return false;
       if (status && v.status !== status) return false;
       if (
         query &&
