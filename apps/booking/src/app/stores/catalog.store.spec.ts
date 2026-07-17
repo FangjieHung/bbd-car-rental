@@ -94,6 +94,18 @@ describe('CatalogStore', () => {
     expect(r.total).toBeGreaterThan(0);
   });
 
+  it('price 找不到對應車型 plan 時應 throw', () => {
+    const store = setup();
+    expect(() =>
+      store.price({
+        category: 'car',
+        startDate: '2026-01-05',
+        endDate: '2026-01-07',
+        addOns: [],
+      }),
+    ).toThrow();
+  });
+
   it('validateCoupon 無效券回原因', () => {
     const store = setup();
     expect(
