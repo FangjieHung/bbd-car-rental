@@ -1,12 +1,17 @@
 <div class="booking-flow">
   <h1>租車預約</h1>
 
-  <mat-stepper orientation="horizontal" [linear]="false">
+  <mat-stepper orientation="horizontal" [linear]="false" #stepper>
     <mat-step label="租期">
       <app-date-step
         [dateRange]="dateRange()"
         (dateRangeChange)="onDateRangeChange($event)"
       ></app-date-step>
+      <div class="step-nav">
+        <button mat-flat-button color="primary" [disabled]="!dateStepDone()" matStepperNext>
+          下一步
+        </button>
+      </div>
     </mat-step>
 
     <mat-step label="車款">
@@ -16,6 +21,12 @@
         [priceForVehicle]="priceForVehicle.bind(this)"
         (vehicleSelect)="onVehicleSelect($event)"
       ></app-vehicle-step>
+      <div class="step-nav">
+        <button mat-stroked-button matStepperPrevious>上一步</button>
+        <button mat-flat-button color="primary" [disabled]="!vehicleStepDone()" matStepperNext>
+          下一步
+        </button>
+      </div>
     </mat-step>
 
     <mat-step label="配件">
@@ -24,6 +35,10 @@
         [addOnQty]="addOnQty()"
         (addOnQtyChange)="onAddOnQtyChange($event.addOnId, $event.qty)"
       ></app-addon-step>
+      <div class="step-nav">
+        <button mat-stroked-button matStepperPrevious>上一步</button>
+        <button mat-flat-button color="primary" matStepperNext>下一步</button>
+      </div>
     </mat-step>
 
     <mat-step label="優惠券">
@@ -33,6 +48,10 @@
         [priceBreakdown]="priceBreakdown()"
         (couponCodeChange)="onCouponCodeChange($event)"
       ></app-coupon-step>
+      <div class="step-nav">
+        <button mat-stroked-button matStepperPrevious>上一步</button>
+        <button mat-flat-button color="primary" matStepperNext>下一步</button>
+      </div>
     </mat-step>
 
     <mat-step label="確認">
@@ -46,6 +65,9 @@
         [submitError]="submitError()"
         (confirm)="onConfirmSubmit($event)"
       ></app-confirm-step>
+      <div class="step-nav">
+        <button mat-stroked-button matStepperPrevious>上一步</button>
+      </div>
     </mat-step>
   </mat-stepper>
 </div>

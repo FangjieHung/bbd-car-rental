@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatStepperModule } from '@angular/material/stepper';
+import { MatButtonModule } from '@angular/material/button';
 import { AddOn, Coupon, PriceBreakdown, Vehicle } from '@car-rental/domain';
 import { CatalogStore } from '../../stores/catalog.store';
 import { DateStepComponent } from './steps/date-step.component';
@@ -18,6 +19,7 @@ export interface DateRange {
   selector: 'app-booking-flow',
   imports: [
     MatStepperModule,
+    MatButtonModule,
     DateStepComponent,
     VehicleStepComponent,
     AddonStepComponent,
@@ -37,6 +39,9 @@ export class BookingFlowComponent {
   readonly couponCode = signal('');
   readonly submitting = signal(false);
   readonly submitError = signal('');
+
+  readonly dateStepDone = computed(() => !!this.dateRange());
+  readonly vehicleStepDone = computed(() => !!this.selectedVehicle());
 
   readonly startDate = computed(() => this.dateRange()?.startDateTime.slice(0, 10) ?? '');
   readonly endDate = computed(() => this.dateRange()?.endDateTime.slice(0, 10) ?? '');
