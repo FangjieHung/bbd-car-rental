@@ -68,6 +68,7 @@ export const ZH_TW = {
     returnLocation: '還車地點',
     status: '狀態',
     statusLabels: {
+      pending_payment: '待付款',
       confirmed: '已確認',
       in_progress: '出租中',
       completed: '已完成',
@@ -75,10 +76,12 @@ export const ZH_TW = {
     } as Record<string, string>,
     pickUp: '取車',
     complete: '還車',
+    confirmPayment: '確認收款',
     cancelBooking: '取消訂單',
     conflict: '時段衝突，與下列訂單重疊：',
     endBeforeStart: '結束時間必須晚於開始時間',
     invalidTransition: '訂單狀態不允許此操作',
+    notPending: '僅待付款訂單可確認收款',
     goCustomers: '客戶管理',
   },
   dispatch: {

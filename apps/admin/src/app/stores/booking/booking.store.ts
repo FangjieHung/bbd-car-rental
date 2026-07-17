@@ -51,6 +51,13 @@ export class BookingStore {
     this.reload();
   }
 
+  confirmPayment(id: string): void {
+    const b = this.mustGet(id);
+    if (b.status !== 'pending_payment') throw new Error(ZH_TW.booking.notPending);
+    this.repo.update(id, { status: 'confirmed' });
+    this.reload();
+  }
+
   pickUp(id: string): void {
     const b = this.mustGet(id);
     if (b.status !== 'confirmed') throw new Error(ZH_TW.booking.invalidTransition);

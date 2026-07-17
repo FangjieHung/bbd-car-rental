@@ -106,4 +106,16 @@ describe('BookingStore', () => {
     const vehicleStore = (store as any).vehicleStore;
     expect(vehicleStore.vehicles()[0].status).toBe('available');
   });
+
+  it('confirmPayment 把 pending_payment 轉 confirmed', () => {
+    const bookingRepo = TestBed.inject(BOOKING_REPO);
+    bookingRepo.create({ ...baseInput(), id: 'bp', status: 'pending_payment' } as RentalBooking);
+    store.confirmPayment('bp');
+    expect(store.bookings().find((b) => b.id === 'bp')?.status).toBe('confirmed');
+  });
+
+  it('confirmPayment 對非 pending_payment 應丟錯', () => {
+    const b = store.create(baseInput());
+    expect(() => store.confirmPayment(b.id)).toThrowError(ZH_TW.booking.notPending);
+  });
 });

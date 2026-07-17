@@ -56,6 +56,11 @@
                   />
                 </td>
                 <td class="table-cell table-cell--body action-cell">
+                  @if (b.status === 'pending_payment') {
+                    <button mat-button (click)="act(() => store.confirmPayment(b.id))">
+                      {{ t.booking.confirmPayment }}
+                    </button>
+                  }
                   @if (b.status === 'confirmed') {
                     <button mat-button (click)="act(() => store.pickUp(b.id))">
                       {{ t.booking.pickUp }}
