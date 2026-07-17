@@ -1,0 +1,38 @@
+<div class="booking-flow">
+  <h1>租車預約</h1>
+
+  <mat-stepper orientation="horizontal" [linear]="false">
+    <mat-step label="租期">
+      <app-date-step
+        [dateRange]="dateRange()"
+        (dateRangeChange)="onDateRangeChange($event)"
+      ></app-date-step>
+    </mat-step>
+
+    <mat-step label="車款">
+      <app-vehicle-step
+        [vehicles]="availableVehicles()"
+        [selectedVehicle]="selectedVehicle()"
+        [priceForVehicle]="priceForVehicle.bind(this)"
+        (vehicleSelect)="onVehicleSelect($event)"
+      ></app-vehicle-step>
+    </mat-step>
+
+    <mat-step label="配件">
+      <app-addon-step
+        [addOns]="addOns()"
+        [addOnQty]="addOnQty()"
+        (addOnQtyChange)="onAddOnQtyChange($event.addOnId, $event.qty)"
+      ></app-addon-step>
+    </mat-step>
+
+    <mat-step label="優惠券">
+      <app-coupon-step
+        [couponCode]="couponCode()"
+        [couponResult]="couponResult()"
+        [priceBreakdown]="priceBreakdown()"
+        (couponCodeChange)="onCouponCodeChange($event)"
+      ></app-coupon-step>
+    </mat-step>
+  </mat-stepper>
+</div>

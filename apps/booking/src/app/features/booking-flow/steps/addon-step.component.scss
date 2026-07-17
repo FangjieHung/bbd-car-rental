@@ -1,0 +1,30 @@
+.addon-step {
+  padding: 16px 0;
+  max-width: 480px;
+
+  .addon-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .addon-info {
+    display: flex;
+    flex-direction: column;
+
+    .name {
+      font-weight: 600;
+    }
+
+    .price {
+      font-size: 0.85em;
+      opacity: 0.7;
+    }
+  }
+
+  .qty-field {
+    width: 100px;
+  }
+}

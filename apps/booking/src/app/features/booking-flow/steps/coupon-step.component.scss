@@ -1,0 +1,36 @@
+.coupon-step {
+  padding: 16px 0;
+  max-width: 400px;
+
+  .coupon-ok {
+    color: #2e7d32;
+  }
+
+  .coupon-error {
+    color: #c62828;
+  }
+
+  .summary {
+    margin-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    padding-top: 12px;
+
+    .line {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+
+    .discount {
+      color: #2e7d32;
+    }
+
+    .total {
+      font-weight: 700;
+      font-size: 1.1em;
+      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+  }
+}

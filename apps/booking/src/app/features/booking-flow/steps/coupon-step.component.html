@@ -1,0 +1,38 @@
+<div class="coupon-step">
+  <mat-form-field appearance="outline">
+    <mat-label>優惠碼</mat-label>
+    <input
+      matInput
+      [ngModel]="couponCode"
+      (ngModelChange)="onCodeInput($event)"
+      placeholder="輸入優惠碼"
+    />
+  </mat-form-field>
+
+  @if (couponResult) {
+    @if (couponResult.ok) {
+      <p class="coupon-ok">優惠碼可用：{{ couponResult.coupon?.code }}</p>
+    } @else {
+      <p class="coupon-error">{{ couponResult.reason }}</p>
+    }
+  }
+
+  @if (priceBreakdown) {
+    <div class="summary">
+      <h3>試算明細</h3>
+      <div class="line"><span>租金小計</span><span>NT$ {{ priceBreakdown.rentalSubtotal }}</span></div>
+      @if (priceBreakdown.addOnSubtotal > 0) {
+        <div class="line"><span>配件費用</span><span>NT$ {{ priceBreakdown.addOnSubtotal }}</span></div>
+      }
+      @if (priceBreakdown.couponDiscount > 0) {
+        <div class="line discount">
+          <span>優惠折抵（{{ priceBreakdown.couponCode }}）</span>
+          <span>-NT$ {{ priceBreakdown.couponDiscount }}</span>
+        </div>
+      }
+      <div class="line total"><span>總計</span><span>NT$ {{ priceBreakdown.total }}</span></div>
+    </div>
+  } @else {
+    <p>請先完成前面步驟以查看試算。</p>
+  }
+</div>

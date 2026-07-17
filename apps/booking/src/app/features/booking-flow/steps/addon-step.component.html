@@ -1,0 +1,24 @@
+<div class="addon-step">
+  @if (addOns.length === 0) {
+    <p>目前無可加購配件。</p>
+  }
+
+  @for (addOn of addOns; track addOn.id) {
+    <div class="addon-row">
+      <div class="addon-info">
+        <span class="name">{{ addOn.name }}</span>
+        <span class="price">NT$ {{ addOn.unitPrice }} / {{ unitLabel[addOn.unit] }}</span>
+      </div>
+      <mat-form-field appearance="outline" class="qty-field">
+        <mat-label>數量</mat-label>
+        <input
+          matInput
+          type="number"
+          min="0"
+          [ngModel]="qtyOf(addOn.id)"
+          (ngModelChange)="onQtyInput(addOn.id, $event)"
+        />
+      </mat-form-field>
+    </div>
+  }
+</div>
