@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { MatStepperModule } from '@angular/material/stepper';
 import { AddOn, Coupon, PriceBreakdown, Vehicle } from '@car-rental/domain';
 import { CatalogStore } from '../../stores/catalog.store';
@@ -6,6 +7,7 @@ import { DateStepComponent } from './steps/date-step.component';
 import { VehicleStepComponent } from './steps/vehicle-step.component';
 import { AddonStepComponent } from './steps/addon-step.component';
 import { CouponStepComponent } from './steps/coupon-step.component';
+import { ConfirmFormValue, ConfirmStepComponent } from './steps/confirm-step.component';
 
 export interface DateRange {
   startDateTime: string;
@@ -14,17 +16,27 @@ export interface DateRange {
 
 @Component({
   selector: 'app-booking-flow',
-  imports: [MatStepperModule, DateStepComponent, VehicleStepComponent, AddonStepComponent, CouponStepComponent],
+  imports: [
+    MatStepperModule,
+    DateStepComponent,
+    VehicleStepComponent,
+    AddonStepComponent,
+    CouponStepComponent,
+    ConfirmStepComponent,
+  ],
   templateUrl: './booking-flow.component.html',
   styleUrl: './booking-flow.component.scss',
 })
 export class BookingFlowComponent {
   private readonly catalog = inject(CatalogStore);
+  private readonly router = inject(Router);
 
   readonly dateRange = signal<DateRange | null>(null);
   readonly selectedVehicle = signal<Vehicle | null>(null);
   readonly addOnQty = signal<Record<string, number>>({});
   readonly couponCode = signal('');
+  readonly submitting = signal(false);
+  readonly submitError = signal('');
 
   readonly startDate = computed(() => this.dateRange()?.startDateTime.slice(0, 10) ?? '');
   readonly endDate = computed(() => this.dateRange()?.endDateTime.slice(0, 10) ?? '');
@@ -105,5 +117,35 @@ export class BookingFlowComponent {
 
   onCouponCodeChange(code: string): void {
     this.couponCode.set(code);
+  }
+
+  onConfirmSubmit(form: ConfirmFormValue): void {
+    const vehicle = this.selectedVehicle();
+    const range = this.dateRange();
+    if (!vehicle || !range) return;
+    this.submitting.set(true);
+    this.submitError.set('');
+    try {
+      const result = this.couponResult();
+      const booking = this.catalog.submitBooking({
+        vehicleId: vehicle.id,
+        startTime: range.startDateTime,
+        endTime: range.endDateTime,
+        pickupLocation: '馬公',
+        returnLocation: '馬公',
+        customer: { name: form.name, phone: form.phone, email: form.email },
+        category: vehicle.category,
+        startDate: this.startDate(),
+        endDate: this.endDate(),
+        addOns: this.selectedAddOnLines(),
+        couponCode: result?.ok ? result.coupon?.code : undefined,
+        paymentMethod: form.paymentMethod,
+      });
+      this.router.navigate(['/book/done', booking.id]);
+    } catch (err) {
+      this.submitError.set(err instanceof Error ? err.message : '送出失敗，請稍後再試');
+    } finally {
+      this.submitting.set(false);
+    }
   }
 }

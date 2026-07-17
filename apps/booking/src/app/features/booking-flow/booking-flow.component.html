@@ -34,5 +34,18 @@
         (couponCodeChange)="onCouponCodeChange($event)"
       ></app-coupon-step>
     </mat-step>
+
+    <mat-step label="確認">
+      <app-confirm-step
+        [vehicle]="selectedVehicle()"
+        [startDate]="startDate()"
+        [endDate]="endDate()"
+        [selectedAddOnLines]="selectedAddOnLines()"
+        [priceBreakdown]="priceBreakdown()"
+        [submitting]="submitting()"
+        [submitError]="submitError()"
+        (confirm)="onConfirmSubmit($event)"
+      ></app-confirm-step>
+    </mat-step>
   </mat-stepper>
 </div>

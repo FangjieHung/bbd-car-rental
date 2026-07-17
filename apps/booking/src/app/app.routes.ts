@@ -9,4 +9,9 @@ export const routes: Routes = [
         (m) => m.BookingFlowComponent,
       ),
   },
+  {
+    path: 'book/done/:id',
+    loadComponent: () =>
+      import('./features/booking-flow/steps/done.component').then((m) => m.DoneComponent),
+  },
 ];

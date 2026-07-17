@@ -1,4 +1,10 @@
-import { BookingStatus } from './enums';
+import { BookingStatus, PaymentMethod } from './enums';
+import { PriceBreakdown } from './price-breakdown';
+
+export interface BookingAddOnLine {
+  addOnId: string;
+  qty: number;
+}
 
 export interface RentalBooking {
   id: string;
@@ -9,4 +15,8 @@ export interface RentalBooking {
   pickupLocation: string;
   returnLocation: string;
   status: BookingStatus;
+  addOns?: BookingAddOnLine[];
+  couponCode?: string;
+  priceBreakdown?: PriceBreakdown;
+  paymentMethod?: PaymentMethod;
 }

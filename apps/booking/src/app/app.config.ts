@@ -5,6 +5,7 @@ import { routes } from './app.routes';
 import {
   VEHICLE_REPO,
   BOOKING_REPO,
+  CUSTOMER_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
@@ -12,6 +13,7 @@ import {
   LocalStorageRepository,
   seedVehicles,
   seedBookings,
+  seedCustomers,
   seedPricingPlans,
   seedSeasonCalendar,
   seedAddOns,
@@ -29,6 +31,10 @@ export const appConfig: ApplicationConfig = {
     {
       provide: BOOKING_REPO,
       useFactory: () => new LocalStorageRepository('cr.bookings', seedBookings),
+    },
+    {
+      provide: CUSTOMER_REPO,
+      useFactory: () => new LocalStorageRepository('cr.customers', seedCustomers),
     },
     {
       provide: PRICING_PLAN_REPO,

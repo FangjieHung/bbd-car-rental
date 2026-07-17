@@ -1,0 +1,51 @@
+.confirm-step {
+  padding: 16px 0;
+  max-width: 480px;
+
+  .summary-block {
+    margin-bottom: 16px;
+  }
+
+  .add-on-item {
+    margin-left: 8px;
+  }
+
+  .summary {
+    margin-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    padding-top: 12px;
+
+    .line {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+
+    .discount {
+      color: #2e7d32;
+    }
+
+    .total {
+      font-weight: 700;
+      font-size: 1.1em;
+      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+  }
+
+  .form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 320px;
+  }
+
+  .submit-error {
+    color: #c62828;
+  }
+
+  .actions {
+    margin-top: 16px;
+  }
+}

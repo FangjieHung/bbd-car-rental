@@ -1,0 +1,84 @@
+<div class="confirm-step">
+  <h3>購買內容</h3>
+  @if (vehicle) {
+    <div class="summary-block">
+      <div class="line"><span>車款</span><span>{{ vehicle.brand }} {{ vehicle.model }}（{{ vehicle.plateNumber }}）</span></div>
+      <div class="line"><span>租期</span><span>{{ startDate }} ～ {{ endDate }}</span></div>
+      @if (selectedAddOnLines.length > 0) {
+        <div class="line">
+          <span>配件</span>
+          <span>
+            @for (line of selectedAddOnLines; track line.addOn.id) {
+              <span class="add-on-item">{{ line.addOn.name }} x{{ line.qty }}</span>
+            }
+          </span>
+        </div>
+      }
+    </div>
+  } @else {
+    <p>請先完成前面步驟。</p>
+  }
+
+  @if (priceBreakdown) {
+    <div class="summary">
+      <h3>試算明細</h3>
+      @for (day of priceBreakdown.dailyLines; track day.date) {
+        <div class="line"><span>{{ day.date }}（{{ day.dayType }}）</span><span>NT$ {{ day.price }}</span></div>
+      }
+      <div class="line"><span>租金原價</span><span>NT$ {{ priceBreakdown.rentalRaw }}</span></div>
+      @if (priceBreakdown.tierDiscountAmount > 0) {
+        <div class="line discount">
+          <span>累租折扣（{{ priceBreakdown.tierDiscountPercent }}%）</span>
+          <span>-NT$ {{ priceBreakdown.tierDiscountAmount }}</span>
+        </div>
+      }
+      <div class="line"><span>租金小計</span><span>NT$ {{ priceBreakdown.rentalSubtotal }}</span></div>
+      @for (addOnLine of priceBreakdown.addOnLines; track addOnLine.addOnId) {
+        <div class="line"><span>{{ addOnLine.name }} x{{ addOnLine.qty }}</span><span>NT$ {{ addOnLine.amount }}</span></div>
+      }
+      @if (priceBreakdown.addOnSubtotal > 0) {
+        <div class="line"><span>配件費用小計</span><span>NT$ {{ priceBreakdown.addOnSubtotal }}</span></div>
+      }
+      @if (priceBreakdown.couponDiscount > 0) {
+        <div class="line discount">
+          <span>優惠折抵（{{ priceBreakdown.couponCode }}）</span>
+          <span>-NT$ {{ priceBreakdown.couponDiscount }}</span>
+        </div>
+      }
+      <div class="line total"><span>應付總計</span><span>NT$ {{ priceBreakdown.total }}</span></div>
+    </div>
+  }
+
+  <h3>付款人資訊</h3>
+  <div class="form-grid">
+    <mat-form-field appearance="outline">
+      <mat-label>姓名</mat-label>
+      <input matInput [(ngModel)]="form.name" name="name" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>電話</mat-label>
+      <input matInput [(ngModel)]="form.phone" name="phone" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" [(ngModel)]="form.email" name="email" />
+    </mat-form-field>
+  </div>
+
+  <h3>付款方式</h3>
+  <mat-radio-group [(ngModel)]="form.paymentMethod" name="paymentMethod">
+    @for (method of paymentMethods; track method) {
+      <mat-radio-button [value]="method">{{ paymentMethodLabel[method] }}</mat-radio-button>
+    }
+  </mat-radio-group>
+
+  @if (submitError) {
+    <p class="submit-error">{{ submitError }}</p>
+  }
+
+  <div class="actions">
+    <button mat-flat-button color="primary" [disabled]="!canSubmit" (click)="onSubmit()">
+      {{ submitting ? '送出中…' : '送出訂單' }}
+    </button>
+  </div>
+</div>

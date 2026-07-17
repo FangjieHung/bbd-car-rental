@@ -3,12 +3,14 @@ import { TestBed } from '@angular/core/testing';
 import {
   AddOn,
   Coupon,
+  Customer,
   PricingPlan,
   RentalBooking,
   SeasonCalendar,
   Vehicle,
   VEHICLE_REPO,
   BOOKING_REPO,
+  CUSTOMER_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
@@ -55,6 +57,7 @@ function setup(bookings: RentalBooking[] = []): CatalogStore {
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
       { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+      { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([plan]) },
       { provide: SEASON_CALENDAR_REPO, useValue: createInMemoryRepo<SeasonCalendar>([calendar]) },
       { provide: ADDON_REPO, useValue: createInMemoryRepo<AddOn>([]) },
@@ -111,5 +114,56 @@ describe('CatalogStore', () => {
     expect(
       store.validateCoupon('NOPE', { startDate: '2026-05-01', days: 3, category: 'scooter' }).ok,
     ).toBe(false);
+  });
+
+  it('submitBooking 寫入 pending_payment 訂單並帶 priceBreakdown', () => {
+    const store = setup();
+    const b = store.submitBooking({
+      vehicleId: 'v1',
+      startTime: '2026-01-05T09:00:00',
+      endTime: '2026-01-07T09:00:00',
+      pickupLocation: '馬公',
+      returnLocation: '馬公',
+      customer: { name: '測試', phone: '0900000000', email: 't@t.com' },
+      category: 'scooter',
+      startDate: '2026-01-05',
+      endDate: '2026-01-07',
+      addOns: [],
+      couponCode: undefined,
+      paymentMethod: 'on_site',
+    });
+    expect(b.status).toBe('pending_payment');
+    expect(b.priceBreakdown?.total).toBeGreaterThan(0);
+  });
+
+  it('submitBooking 車已被佔用 → 丟錯', () => {
+    const store = setup([
+      {
+        id: 'b1',
+        vehicleId: 'v1',
+        customerId: 'cust1',
+        startTime: '2026-01-05T09:00:00',
+        endTime: '2026-01-07T09:00:00',
+        pickupLocation: '',
+        returnLocation: '',
+        status: 'confirmed',
+      },
+    ]);
+    expect(() =>
+      store.submitBooking({
+        vehicleId: 'v1',
+        startTime: '2026-01-05T09:00:00',
+        endTime: '2026-01-07T09:00:00',
+        pickupLocation: '馬公',
+        returnLocation: '馬公',
+        customer: { name: '測試', phone: '0900000000', email: 't@t.com' },
+        category: 'scooter',
+        startDate: '2026-01-05',
+        endDate: '2026-01-07',
+        addOns: [],
+        couponCode: undefined,
+        paymentMethod: 'on_site',
+      }),
+    ).toThrow();
   });
 });
