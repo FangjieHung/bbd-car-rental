@@ -8,6 +8,7 @@ export {
   BOOKING_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
+  ADDON_REPO,
 } from '@car-rental/domain';
 export const MAINTENANCE_REPO = new InjectionToken<Repository<MaintenanceRecord>>(
   'MAINTENANCE_REPO',

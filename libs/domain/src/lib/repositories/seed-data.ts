@@ -1,4 +1,4 @@
-import { Vehicle, Customer, RentalBooking, PricingPlan, SeasonCalendar } from '../models';
+import { Vehicle, Customer, RentalBooking, PricingPlan, SeasonCalendar, AddOn } from '../models';
 import { isoAt } from '../date-utils';
 
 export function seedVehicles(): Vehicle[] {
@@ -202,4 +202,13 @@ export function seedPricingPlans(): PricingPlan[] {
 
 export function seedSeasonCalendar(): SeasonCalendar[] {
   return [{ id: 'default', holidays: [], peakSeasons: [{ start: '2026-04-18', end: '2026-06-30' }] }];
+}
+
+export function seedAddOns(): AddOn[] {
+  return [
+    { id: 'ao1', name: '安全帽', unitPrice: 0, unit: 'per_rental' },
+    { id: 'ao2', name: '雨衣', unitPrice: 50, unit: 'per_rental' },
+    { id: 'ao3', name: '兒童安全座椅', unitPrice: 100, unit: 'per_day' },
+    { id: 'ao4', name: '手機支架', unitPrice: 30, unit: 'per_rental' },
+  ];
 }

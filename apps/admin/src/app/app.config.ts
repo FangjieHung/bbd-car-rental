@@ -15,6 +15,7 @@ import {
   MAINTENANCE_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
+  ADDON_REPO,
 } from './core/repositories/tokens';
 import { LocalStorageRepository } from './core/repositories/local-storage-repository';
 import {
@@ -24,6 +25,7 @@ import {
   seedMaintenanceRecords,
   seedPricingPlans,
   seedSeasonCalendar,
+  seedAddOns,
 } from './core/repositories/seed-data';
 import { ZH_TW } from './core/i18n/zh-tw';
 import { ThemeService } from '@car-rental/theme-pack';
@@ -90,6 +92,11 @@ export const appConfig: ApplicationConfig = {
           seedSeasonCalendar,
           notifyStorageReset(inject(MatSnackBar)),
         ),
+    },
+    {
+      provide: ADDON_REPO,
+      useFactory: () =>
+        new LocalStorageRepository('cr.addOns', seedAddOns, notifyStorageReset(inject(MatSnackBar))),
     },
   ],
 };

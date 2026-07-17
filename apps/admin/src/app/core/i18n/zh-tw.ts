@@ -7,6 +7,7 @@ export const ZH_TW = {
     bookings: '訂單管理',
     maintenance: '保養管理',
     pricing: '定價規則',
+    addOns: '配件設定',
   },
   common: {
     create: '新增',
@@ -142,6 +143,13 @@ export const ZH_TW = {
     addRange: '＋ 新增區間',
     removeRange: '移除',
     saveCalendar: '儲存行事曆',
+  },
+  addOn: {
+    title: '配件設定',
+    name: '配件名稱',
+    unitPrice: '單價',
+    unit: '計價單位',
+    unitLabels: { per_rental: '每筆訂單', per_day: '每日' } as Record<string, string>,
   },
   dashboard: {
     title: '總覽',

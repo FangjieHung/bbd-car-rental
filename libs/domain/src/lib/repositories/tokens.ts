@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { Vehicle, Customer, RentalBooking, PricingPlan, SeasonCalendar } from '../models';
+import { Vehicle, Customer, RentalBooking, PricingPlan, SeasonCalendar, AddOn } from '../models';
 import { Repository } from './repository';
 
 export const VEHICLE_REPO = new InjectionToken<Repository<Vehicle>>('VEHICLE_REPO');
@@ -9,3 +9,4 @@ export const PRICING_PLAN_REPO = new InjectionToken<Repository<PricingPlan>>('PR
 export const SEASON_CALENDAR_REPO = new InjectionToken<Repository<SeasonCalendar>>(
   'SEASON_CALENDAR_REPO',
 );
+export const ADDON_REPO = new InjectionToken<Repository<AddOn>>('ADDON_REPO');

@@ -51,4 +51,11 @@ export const routes: Routes = [
         (m) => m.PricingPageComponent,
       ),
   },
+  {
+    path: 'add-ons',
+    loadComponent: () =>
+      import('./features/add-ons/pages/add-ons-page.component').then(
+        (m) => m.AddOnsPageComponent,
+      ),
+  },
 ];
