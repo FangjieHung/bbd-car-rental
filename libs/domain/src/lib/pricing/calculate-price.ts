@@ -38,6 +38,7 @@ export function calculatePrice(input: {
   endDate: string;
   addOns: { addOn: AddOn; qty: number }[];
   coupon?: Coupon;
+  partnerDiscountPercent?: number;
 }): PriceBreakdown {
   const { plan, calendar, startDate, endDate, addOns, coupon } = input;
   const nights = eachNight(startDate, endDate);
@@ -53,6 +54,10 @@ export function calculatePrice(input: {
   const tierDiscountAmount = Math.round((rentalRaw * tierDiscountPercent) / 100);
   const rentalSubtotal = rentalRaw - tierDiscountAmount;
 
+  const partnerDiscountPercent = input.partnerDiscountPercent ?? 0;
+  const partnerDiscount = Math.round((rentalSubtotal * partnerDiscountPercent) / 100);
+  const afterPartner = rentalSubtotal - partnerDiscount;
+
   const addOnLines: PriceLineAddOn[] = addOns
     .filter((a) => a.qty > 0)
     .map(({ addOn, qty }) => ({
@@ -65,14 +70,15 @@ export function calculatePrice(input: {
   let couponCode: string | undefined;
   if (coupon && isCouponValid(coupon, { startDate, days, category: plan.appliesToCategory })) {
     couponDiscount = coupon.type === 'percent'
-      ? Math.round((rentalSubtotal * coupon.value) / 100)
-      : Math.min(coupon.value, rentalSubtotal);
+      ? Math.round((afterPartner * coupon.value) / 100)
+      : Math.min(coupon.value, afterPartner);
     couponCode = coupon.code;
   }
 
-  const total = rentalSubtotal - couponDiscount + addOnSubtotal;
+  const total = afterPartner - couponDiscount + addOnSubtotal;
   return {
     dailyLines, rentalRaw, tierDiscountPercent, tierDiscountAmount, rentalSubtotal,
+    partnerDiscountPercent, partnerDiscount,
     addOnLines, addOnSubtotal, couponCode, couponDiscount, total,
   };
 }

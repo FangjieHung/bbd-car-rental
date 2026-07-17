@@ -5,6 +5,8 @@ export interface PriceBreakdown {
   dailyLines: PriceLineDay[];
   rentalRaw: number; tierDiscountPercent: number; tierDiscountAmount: number;
   rentalSubtotal: number;
+  partnerDiscountPercent: number;
+  partnerDiscount: number;
   addOnLines: PriceLineAddOn[]; addOnSubtotal: number;
   couponCode?: string; couponDiscount: number; total: number;
 }
