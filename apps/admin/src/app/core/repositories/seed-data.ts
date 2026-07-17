@@ -6,6 +6,8 @@ export {
   seedSeasonCalendar,
   seedAddOns,
   seedCoupons,
+  seedPartners,
+  seedPayouts,
 } from '@car-rental/domain';
 
 import { MaintenanceRecord } from '../models';

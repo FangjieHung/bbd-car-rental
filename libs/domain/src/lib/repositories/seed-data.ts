@@ -1,4 +1,14 @@
-import { Vehicle, Customer, RentalBooking, PricingPlan, SeasonCalendar, AddOn, Coupon } from '../models';
+import {
+  Vehicle,
+  Customer,
+  RentalBooking,
+  PricingPlan,
+  SeasonCalendar,
+  AddOn,
+  Coupon,
+  Partner,
+  MonthlyPayout,
+} from '../models';
 import { isoAt } from '../date-utils';
 
 export function seedVehicles(): Vehicle[] {
@@ -114,6 +124,7 @@ export function seedBookings(): RentalBooking[] {
       pickupLocation: '機場',
       returnLocation: '馬公門市',
       status: 'confirmed',
+      sourcePartnerId: 'pt1',
     },
     {
       id: 'b3',
@@ -144,6 +155,7 @@ export function seedBookings(): RentalBooking[] {
       pickupLocation: '馬公門市',
       returnLocation: '馬公門市',
       status: 'completed',
+      sourcePartnerId: 'pt1',
     },
     {
       id: 'b6',
@@ -230,4 +242,17 @@ export function seedCoupons(): Coupon[] {
     { id: 'cp2', code: 'CAR300', type: 'amount', value: 300, applicableCategories: ['car'],
       validFrom: '2026-01-01', validTo: '2026-12-31' },
   ];
+}
+
+export function seedPartners(): Partner[] {
+  return [
+    { id: 'pt1', name: '海景民宿', slug: 'seaview', discountPercent: 8,
+      commission: { type: 'percent', value: 10 } },
+    { id: 'pt2', name: '陽光民宿', slug: 'sunshine', discountPercent: 5,
+      commission: { type: 'per_vehicle_day', value: 100 } },
+  ];
+}
+
+export function seedPayouts(): MonthlyPayout[] {
+  return [{ id: 'po1', partnerId: 'pt1', month: '2026-07', status: 'pending' }];
 }
