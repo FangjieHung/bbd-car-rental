@@ -17,6 +17,8 @@ import {
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
   COUPON_REPO,
+  PARTNER_REPO,
+  PAYOUT_REPO,
 } from './core/repositories/tokens';
 import { LocalStorageRepository } from './core/repositories/local-storage-repository';
 import {
@@ -28,6 +30,8 @@ import {
   seedSeasonCalendar,
   seedAddOns,
   seedCoupons,
+  seedPartners,
+  seedPayouts,
 } from './core/repositories/seed-data';
 import { ZH_TW } from './core/i18n/zh-tw';
 import { ThemeService } from '@car-rental/theme-pack';
@@ -104,6 +108,16 @@ export const appConfig: ApplicationConfig = {
       provide: COUPON_REPO,
       useFactory: () =>
         new LocalStorageRepository('cr.coupons', seedCoupons, notifyStorageReset(inject(MatSnackBar))),
+    },
+    {
+      provide: PARTNER_REPO,
+      useFactory: () =>
+        new LocalStorageRepository('cr.partners', seedPartners, notifyStorageReset(inject(MatSnackBar))),
+    },
+    {
+      provide: PAYOUT_REPO,
+      useFactory: () =>
+        new LocalStorageRepository('cr.payouts', seedPayouts, notifyStorageReset(inject(MatSnackBar))),
     },
   ],
 };
