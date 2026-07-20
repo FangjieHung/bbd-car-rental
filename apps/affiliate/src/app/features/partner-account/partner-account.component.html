@@ -1,0 +1,52 @@
+@if (account(); as a) {
+  <div class="partner-account-page">
+    <header>
+      <h1>{{ a.partner.name }} 對帳明細</h1>
+    </header>
+
+    <table class="commission-table">
+      <thead>
+        <tr>
+          <th>訂單編號</th>
+          <th>租期</th>
+          <th>天數</th>
+          <th>租金小計</th>
+          <th>退佣</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (line of a.commissionLines; track line.booking.id) {
+          <tr>
+            <td>{{ line.booking.id }}</td>
+            <td>{{ line.booking.startTime | slice: 0 : 10 }} ~ {{ line.booking.endTime | slice: 0 : 10 }}</td>
+            <td>{{ line.days }}</td>
+            <td>{{ line.booking.priceBreakdown?.rentalSubtotal }}</td>
+            <td>{{ line.commission }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5">目前沒有訂單紀錄</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <p class="total-commission">累計佣金合計：{{ a.totalCommission }}</p>
+
+    <section class="payout-progress">
+      <h2>各月撥款進度</h2>
+      <ul>
+        @for (payout of a.payoutsByMonth; track payout.month) {
+          <li>{{ payout.month }}：{{ payout.status === 'paid' ? '已撥款' : '待撥款' }}</li>
+        } @empty {
+          <li>尚無撥款紀錄</li>
+        }
+      </ul>
+    </section>
+  </div>
+} @else {
+  <div class="invalid-link">
+    <h1>連結無效</h1>
+    <p>找不到對應的合作夥伴，請確認連結是否正確。</p>
+  </div>
+}

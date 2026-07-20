@@ -1,0 +1,14 @@
+@if (partner(); as p) {
+  <div class="partner-booking-page">
+    <header class="partner-header">
+      <h1>{{ p.name }}</h1>
+      <p>專屬預約連結，已為您套用合作折扣。</p>
+    </header>
+    <app-booking-flow [mode]="mode()"></app-booking-flow>
+  </div>
+} @else {
+  <div class="invalid-link">
+    <h1>連結無效</h1>
+    <p>找不到對應的合作夥伴，請確認連結是否正確。</p>
+  </div>
+}
