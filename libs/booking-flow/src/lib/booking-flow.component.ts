@@ -1,9 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
 import { AddOn, Coupon, PriceBreakdown, Vehicle } from '@car-rental/domain';
 import { CatalogStore } from './catalog.store';
+import { FlowMode } from './flow-mode';
 import { DateStepComponent } from './steps/date-step.component';
 import { VehicleStepComponent } from './steps/vehicle-step.component';
 import { AddonStepComponent } from './steps/addon-step.component';
@@ -32,6 +33,13 @@ export interface DateRange {
 export class BookingFlowComponent {
   private readonly catalog = inject(CatalogStore);
   private readonly router = inject(Router);
+
+  readonly mode = input<FlowMode>({ kind: 'consumer' });
+
+  readonly partner = computed(() => {
+    const m = this.mode();
+    return m.kind === 'partner' ? m.partner : null;
+  });
 
   readonly dateRange = signal<DateRange | null>(null);
   readonly selectedVehicle = signal<Vehicle | null>(null);
@@ -92,6 +100,7 @@ export class BookingFlowComponent {
       endDate: end,
       addOns: this.selectedAddOnLines(),
       coupon: result?.ok ? result.coupon : undefined,
+      partnerDiscountPercent: this.partner()?.discountPercent,
     });
   });
 
@@ -100,8 +109,13 @@ export class BookingFlowComponent {
     const end = this.endDate();
     if (!start || !end) return null;
     try {
-      return this.catalog.price({ category: vehicle.category, startDate: start, endDate: end, addOns: [] })
-        .total;
+      return this.catalog.price({
+        category: vehicle.category,
+        startDate: start,
+        endDate: end,
+        addOns: [],
+        partnerDiscountPercent: this.partner()?.discountPercent,
+      }).total;
     } catch {
       return null;
     }
@@ -145,6 +159,8 @@ export class BookingFlowComponent {
         addOns: this.selectedAddOnLines(),
         couponCode: result?.ok ? result.coupon?.code : undefined,
         paymentMethod: form.paymentMethod,
+        partnerDiscountPercent: this.partner()?.discountPercent,
+        sourcePartnerId: this.partner()?.id,
       });
       this.router.navigate(['/book/done', booking.id]);
     } catch (err) {
