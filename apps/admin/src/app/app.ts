@@ -42,6 +42,8 @@ export class App implements OnInit {
     { route: '/pricing', label: this.t.nav.pricing, icon: '◈' },
     { route: '/add-ons', label: this.t.nav.addOns, icon: '◇' },
     { route: '/coupons', label: this.t.nav.coupons, icon: '◆' },
+    { route: '/partners', label: this.t.nav.partners, icon: '◐' },
+    { route: '/commission', label: this.t.nav.commission, icon: '◑' },
   ];
 
   protected isMobile = false;

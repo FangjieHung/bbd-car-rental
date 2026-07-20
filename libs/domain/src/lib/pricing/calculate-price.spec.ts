@@ -67,6 +67,26 @@ describe('calculatePrice', () => {
     expect(r.couponDiscount).toBe(0);
     expect(r.couponCode).toBeUndefined();
   });
+
+  it('協議折扣施於 rentalSubtotal，優惠券再施於協議折扣後', () => {
+    // 3 平日 400*3=1200；tier5% → 1140；協議 10% → partnerDiscount 114、afterPartner 1026
+    const coupon: Coupon = { id: 'k', code: 'C', type: 'percent', value: 10, validFrom: '2026-01-01', validTo: '2026-12-31' };
+    const r = calculatePrice({ plan, calendar: cal, startDate: '2026-01-05', endDate: '2026-01-08',
+      addOns: [], coupon, partnerDiscountPercent: 10 });
+    expect(r.rentalSubtotal).toBe(1140);
+    expect(r.partnerDiscountPercent).toBe(10);
+    expect(r.partnerDiscount).toBe(114);
+    // 優惠券施於 afterPartner 1026 → 10% = 103（四捨五入）；total = 1026-103 = 923
+    expect(r.couponDiscount).toBe(103);
+    expect(r.total).toBe(923);
+  });
+  it('未帶 partnerDiscountPercent → partnerDiscount 0、結果與模組一一致', () => {
+    const r = calculatePrice({ plan, calendar: cal, startDate: '2026-01-05', endDate: '2026-01-08', addOns: [] });
+    expect(r.partnerDiscount).toBe(0);
+    expect(r.partnerDiscountPercent).toBe(0);
+    expect(r.rentalSubtotal).toBe(1140);
+    expect(r.total).toBe(1140);
+  });
 });
 
 describe('isCouponValid', () => {

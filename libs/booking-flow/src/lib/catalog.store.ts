@@ -52,6 +52,7 @@ export class CatalogStore {
     endDate: string;
     addOns: { addOn: AddOn; qty: number }[];
     coupon?: Coupon;
+    partnerDiscountPercent?: number;
   }): PriceBreakdown {
     const plan = this.planForCategory(input.category);
     if (!plan) throw new Error('無此車型定價');
@@ -82,6 +83,8 @@ export class CatalogStore {
     addOns: { addOn: AddOn; qty: number }[];
     couponCode?: string;
     paymentMethod: PaymentMethod;
+    partnerDiscountPercent?: number;
+    sourcePartnerId?: string;
   }): RentalBooking {
     const vehicle = this.vehicleRepo.getById(input.vehicleId);
     if (!vehicle) throw new Error('查無車輛');
@@ -103,6 +106,7 @@ export class CatalogStore {
       endDate: input.endDate,
       addOns: input.addOns,
       coupon,
+      partnerDiscountPercent: input.partnerDiscountPercent,
     });
     const customer: Customer = {
       id: crypto.randomUUID(),
@@ -124,6 +128,7 @@ export class CatalogStore {
       couponCode: priceBreakdown.couponCode,
       priceBreakdown,
       paymentMethod: input.paymentMethod,
+      ...(input.sourcePartnerId ? { sourcePartnerId: input.sourcePartnerId } : {}),
     };
     this.bookingRepo.create(booking);
     return booking;

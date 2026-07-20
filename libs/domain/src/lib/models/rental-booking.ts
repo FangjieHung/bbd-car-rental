@@ -19,4 +19,5 @@ export interface RentalBooking {
   couponCode?: string;
   priceBreakdown?: PriceBreakdown;
   paymentMethod?: PaymentMethod;
+  sourcePartnerId?: string;
 }

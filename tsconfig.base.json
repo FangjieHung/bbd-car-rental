@@ -8,7 +8,8 @@
     "skipLibCheck": true,
     "paths": {
       "@car-rental/theme-pack": ["./libs/theme-pack/src/index.ts"],
-      "@car-rental/domain": ["./libs/domain/src/index.ts"]
+      "@car-rental/domain": ["./libs/domain/src/index.ts"],
+      "@car-rental/booking-flow": ["./libs/booking-flow/src/index.ts"]
     }
   }
 }

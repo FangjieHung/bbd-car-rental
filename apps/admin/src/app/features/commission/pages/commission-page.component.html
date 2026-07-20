@@ -1,0 +1,68 @@
+<div class="page-shell">
+  <div class="page-header">
+    <h1 class="ui-text-title">{{ t.commission.title }}</h1>
+  </div>
+
+  <div class="ui-card form-shell filter-row">
+    <mat-form-field>
+      <mat-label>{{ t.commission.partner }}</mat-label>
+      <mat-select [ngModel]="selectedPartnerId()" (ngModelChange)="onPartnerChange($event)">
+        @for (p of partnerStore.partners(); track p.id) {
+          <mat-option [value]="p.id">{{ p.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ t.commission.month }}</mat-label>
+      <input matInput type="month" [ngModel]="selectedMonth()" (ngModelChange)="onMonthChange($event)" />
+    </mat-form-field>
+  </div>
+
+  @if (!report()) {
+    <p class="empty-state">{{ t.commission.selectPartnerFirst }}</p>
+  } @else {
+    <div class="page-header">
+      <span>
+        {{ t.commission.payoutStatus }}：{{ t.commission.payoutStatusLabels[payoutStatus()!] }}
+      </span>
+      <div>
+        <button mat-button (click)="exportCsv()">{{ t.commission.exportCsv }}</button>
+        <button mat-flat-button [disabled]="payoutStatus() === 'paid'" (click)="markPaid()">
+          {{ t.commission.markPaid }}
+        </button>
+      </div>
+    </div>
+
+    @if (report()!.rows.length === 0) {
+      <p class="empty-state">{{ t.common.empty }}</p>
+    } @else {
+      <div class="ui-card overflow-x-auto !p-0">
+        <table mat-table [dataSource]="report()!.rows" class="w-full">
+          <ng-container matColumnDef="bookingId">
+            <th mat-header-cell *matHeaderCellDef>{{ t.commission.bookingId }}</th>
+            <td mat-cell *matCellDef="let r">{{ r.bookingId }}</td>
+          </ng-container>
+          <ng-container matColumnDef="vehicleLabel">
+            <th mat-header-cell *matHeaderCellDef>{{ t.commission.vehicleLabel }}</th>
+            <td mat-cell *matCellDef="let r">{{ r.vehicleLabel }}</td>
+          </ng-container>
+          <ng-container matColumnDef="period">
+            <th mat-header-cell *matHeaderCellDef>{{ t.commission.period }}</th>
+            <td mat-cell *matCellDef="let r">{{ r.startTime }} ~ {{ r.endTime }}</td>
+          </ng-container>
+          <ng-container matColumnDef="rentalSubtotal">
+            <th mat-header-cell *matHeaderCellDef>{{ t.commission.rentalSubtotal }}</th>
+            <td mat-cell *matCellDef="let r">{{ r.rentalSubtotal }}</td>
+          </ng-container>
+          <ng-container matColumnDef="commission">
+            <th mat-header-cell *matHeaderCellDef>{{ t.commission.commissionAmount }}</th>
+            <td mat-cell *matCellDef="let r">{{ r.commission }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns" class="table-row"></tr>
+        </table>
+      </div>
+      <p class="ui-text-title">{{ t.commission.total }}：{{ report()!.total }}</p>
+    }
+  }
+</div>

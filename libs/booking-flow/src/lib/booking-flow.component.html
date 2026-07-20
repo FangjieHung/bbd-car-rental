@@ -1,4 +1,7 @@
 <div class="booking-flow">
+  @if (partner(); as p) {
+    <div class="partner-banner">{{ p.name }} 專屬預約</div>
+  }
   <h1>租車預約</h1>
 
   <mat-stepper orientation="horizontal" [linear]="false" #stepper>

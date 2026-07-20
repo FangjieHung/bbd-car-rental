@@ -166,4 +166,34 @@ describe('CatalogStore', () => {
       }),
     ).toThrow();
   });
+
+  it('submitBooking 帶 sourcePartnerId + partnerDiscountPercent → booking 帶 sourcePartnerId、priceBreakdown 反映協議折扣', () => {
+    const store = setup();
+    const withoutPartner = store.price({
+      category: 'scooter',
+      startDate: '2026-01-05',
+      endDate: '2026-01-07',
+      addOns: [],
+    });
+    const b = store.submitBooking({
+      vehicleId: 'v1',
+      startTime: '2026-01-05T09:00:00',
+      endTime: '2026-01-07T09:00:00',
+      pickupLocation: '馬公',
+      returnLocation: '馬公',
+      customer: { name: '測試', phone: '0900000000', email: 't@t.com' },
+      category: 'scooter',
+      startDate: '2026-01-05',
+      endDate: '2026-01-07',
+      addOns: [],
+      couponCode: undefined,
+      paymentMethod: 'on_site',
+      partnerDiscountPercent: 10,
+      sourcePartnerId: 'partner1',
+    });
+    expect(b.sourcePartnerId).toBe('partner1');
+    expect(b.priceBreakdown?.partnerDiscountPercent).toBe(10);
+    expect(b.priceBreakdown?.partnerDiscount).toBeGreaterThan(0);
+    expect(b.priceBreakdown!.total).toBeLessThan(withoutPartner.total);
+  });
 });

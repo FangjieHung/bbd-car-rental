@@ -65,4 +65,18 @@ export const routes: Routes = [
         (m) => m.CouponsPageComponent,
       ),
   },
+  {
+    path: 'partners',
+    loadComponent: () =>
+      import('./features/partners/pages/partners-page.component').then(
+        (m) => m.PartnersPageComponent,
+      ),
+  },
+  {
+    path: 'commission',
+    loadComponent: () =>
+      import('./features/commission/pages/commission-page.component').then(
+        (m) => m.CommissionPageComponent,
+      ),
+  },
 ];
