@@ -7,6 +7,7 @@ import {
   PayoutStatus,
   RentalBooking,
   calculateCommission,
+  rentalDaysOf,
 } from '@car-rental/domain';
 
 export interface CommissionLine {
@@ -26,11 +27,6 @@ export interface PartnerAccount {
   commissionLines: CommissionLine[];
   totalCommission: number;
   payoutsByMonth: MonthlyPayoutProgress[];
-}
-
-function daysBetween(startTime: string, endTime: string): number {
-  const ms = new Date(endTime).getTime() - new Date(startTime).getTime();
-  return Math.max(0, Math.round(ms / 86400000));
 }
 
 function monthOf(iso: string): string {
@@ -55,7 +51,7 @@ export class PartnerAccountStore {
       .getAll()
       .filter((b) => b.sourcePartnerId === partner.id && b.priceBreakdown)
       .map((booking) => {
-        const days = daysBetween(booking.startTime, booking.endTime);
+        const days = rentalDaysOf(booking);
         const commission = calculateCommission({
           rule: partner.commission,
           rentalSubtotal: booking.priceBreakdown!.rentalSubtotal,

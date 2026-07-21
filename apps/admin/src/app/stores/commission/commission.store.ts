@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { calculateCommission } from '@car-rental/domain';
-import { RentalBooking, PayoutStatus } from '../../core/models';
+import { calculateCommission, rentalDaysOf } from '@car-rental/domain';
+import { PayoutStatus } from '../../core/models';
 import { BOOKING_REPO, PARTNER_REPO, PAYOUT_REPO, VEHICLE_REPO } from '../../core/repositories/tokens';
 
 export interface CommissionReportRow {
@@ -37,7 +37,7 @@ export class CommissionStore {
     const rows: CommissionReportRow[] = bookings.map((b) => {
       const vehicle = this.vehicleRepo.getById(b.vehicleId);
       const rentalSubtotal = b.priceBreakdown?.rentalSubtotal ?? 0;
-      const days = this.rentalDays(b);
+      const days = rentalDaysOf(b);
       const commission = calculateCommission({ rule: partner.commission, rentalSubtotal, days });
       return {
         bookingId: b.id,
@@ -51,12 +51,6 @@ export class CommissionStore {
 
     const total = rows.reduce((sum, r) => sum + r.commission, 0);
     return { rows, total };
-  }
-
-  private rentalDays(b: RentalBooking): number {
-    if (b.priceBreakdown?.dailyLines.length) return b.priceBreakdown.dailyLines.length;
-    const ms = new Date(b.endTime).getTime() - new Date(b.startTime).getTime();
-    return Math.max(1, Math.ceil(ms / 86_400_000));
   }
 
   toCsv(rows: CommissionReportRow[]): string {

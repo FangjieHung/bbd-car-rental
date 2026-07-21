@@ -97,17 +97,16 @@ function calculateCommission(input: {
 | 檔案 | `apps/admin/src/app/stores/commission/commission.store.ts` | `apps/affiliate/src/app/stores/partner-account.store.ts` |
 | 篩選 | 選定 `partnerId` + `yyyy-mm`，`booking.sourcePartnerId === partnerId && booking.startTime` 落在該月 | 該 partner 的**全部**訂單（不分月，前端自己依 `month` 分組顯示） |
 | 歸月依據 | `booking.startTime.slice(0, 7)` | 同左：`booking.startTime.slice(0, 7)` |
-| 天數怎麼算 | `rentalDays()`：優先用 `priceBreakdown.dailyLines.length`（等於 `calculatePrice()` 算出的晚數），沒有才 fallback 用 `Math.ceil((endTime−startTime)/一天)` | `daysBetween()`：**固定**用 `Math.round((endTime−startTime)/一天)`，不看 `priceBreakdown` |
+| 天數怎麼算 | `rentalDaysOf(booking)`（`libs/domain/src/lib/commission/rental-days.ts`） | 同一個 `rentalDaysOf()` |
 | 撥款狀態 | `getPayoutStatus(partnerId, yyyyMm)` 查 `PAYOUT_REPO`，無記錄視為 `pending` | 同一份 `PAYOUT_REPO`，邏輯相同 |
 | 額外功能 | CSV 匯出（`toCsv()`，UTF-8 BOM）、`markPaid()` 標記已撥款 | 無（唯讀對帳頁） |
 
-> **已知的小落差（尚未修）**：admin 那份的天數計算優先用 `priceBreakdown.dailyLines.length`
-> （跟計價時用的晚數定義一致），affiliate 那份直接用時間戳算天數，兩者在
-> `startTime`/`endTime` 不是整日邊界（例如取車 09:00、還車隔天 09:00 屬正常，
-> 但若時間再更複雜）時可能有 1 天以內的差異，進而讓 `per_vehicle_day` 類型的
-> 退佣金額兩邊算出不同數字。目前 seed 資料的時間都是簡單案例，看不出差異，
-> 但如果要做「兩邊金額對得起來」的驗收，這是第一個該查的地方。理想修法是抽成
-> 同一個共用函式（例如放進 `libs/domain`），而不是兩處各自實作。
+天數計算（`rentalDaysOf()`）優先用 `priceBreakdown.dailyLines.length`（跟 `calculatePrice()`
+算出的晚數定義一致）；沒有 `priceBreakdown`（或 `dailyLines` 是空陣列）才 fallback 用
+`startTime`/`endTime` 的時間差。2026-07-21 前 admin 跟 affiliate 各自實作了一份邏輯不完全
+一樣的版本，可能讓 `per_vehicle_day` 類型的退佣金額兩邊算出不同數字；已抽成
+`libs/domain` 的共用函式並改兩邊都呼叫它，兩邊現在保證算出同一個數字
+（見 `libs/domain/src/lib/commission/rental-days.spec.ts` 的邊界測試）。
 
 CSV 欄位（`CommissionStore.toCsv()`）：`訂單編號 / 車款 / 租期起訖 / 租金小計 / 退佣`，
 UTF-8 BOM 開頭，確保用 Excel 開啟繁體中文不亂碼。
