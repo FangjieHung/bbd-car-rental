@@ -64,7 +64,7 @@ describe('PartnerStore', () => {
     });
   });
 
-  it('產生代訂連結', () => {
-    expect(store.bookingLink(p1)).toBe('/p/seaview');
+  it('產生代訂連結（含 affiliate app 完整 origin，才能直接貼到瀏覽器打開）', () => {
+    expect(store.bookingLink(p1)).toBe('http://localhost:4400/p/seaview');
   });
 });
