@@ -11,13 +11,75 @@ nvm use   # switches to Node 24 (from .nvmrc)
 npm install
 ```
 
+## 這是一個多 App 專案（Nx Monorepo）
+
+`npm install` 只需在專案根目錄跑一次；`apps/` 底下有多個各自獨立的網站（各自的網址、各自的
+畫面），開發時要看哪個就另外啟動哪個。目前有：
+
+| App | 是誰在用 | 本機開發網址 | 啟動指令 |
+|---|---|---|---|
+| **admin** | 車行內部後台人員 | http://localhost:4200/ | `npx nx serve admin` |
+| **booking** | 一般消費者訂車站 | http://localhost:4300/ | `npx nx serve booking --port 4300` |
+| **affiliate** | 合作民宿代訂＋對帳站 | http://localhost:4400/ | `npx nx serve affiliate` |
+| pos（尚未啟用） | — | — | — |
+
+三個站是三個獨立的網站（各自的網域/port），**不是**同一個網站底下的三個分頁，所以要同時看
+兩個以上，就要開兩個以上的終端機視窗，各自跑各自的 `nx serve`。詳細原因見「為什麼設計成
+不同 App」一節。
+
+### 同時跑起所有 app
+
+開三個終端機分頁（tab），各自進到專案資料夾，各跑一行：
+
+```bash
+# 分頁 1
+npx nx serve admin
+
+# 分頁 2
+npx nx serve booking --port 4300
+
+# 分頁 3
+npx nx serve affiliate
+```
+
+三個都起來後，瀏覽器分別開：
+- 後台：http://localhost:4200/
+- 訂車站：http://localhost:4300/
+- 民宿代訂站：http://localhost:4400/p/seaview （`seaview` 是示範民宿的代碼，
+  也可以到 http://localhost:4200/partners 頁面按「複製代訂連結」拿正確網址）
+
+**注意**：`admin` 和 `booking` 沒有另外指定 port 時預設都是 4200，兩個一起開會互撞
+（其中一個會啟動失敗或占用不到 port），所以 `booking` 一定要加 `--port 4300`。
+`affiliate` 的 4400 已經寫在它自己的設定檔（`apps/affiliate/project.json`）裡，不用另外指定。
+
+### 只想跑單一個 app
+
+只看後台，跑 `npm start`（等同 `npx nx serve admin`）就好，不用管其他兩個。
+
+### 為什麼設計成不同 App（不同 port / 未來不同網域）
+
+三個站的使用者身分不同：admin 是車行員工用的內部後台、booking 是給一般消費者訂車、
+affiliate 是給合作民宿免登入代訂＋對帳。分開部署符合這個業務上的分工，正式上線後預期
+會是三個不同網域（例如 `admin.xxx.com` / `book.xxx.com` / `partner.xxx.com`），現在本機開發
+用不同 port 只是本機的權宜作法。目前是純前端 demo（資料存在瀏覽器 localStorage），三個站
+各自的資料**不會互通**——例如在 affiliate 站下的新單，不會即時出現在 admin 的退佣報表裡，
+admin 看到的是內建的範例訂單；接上真正後端後才會即時互通。
+
 ## Common commands
 
 ```bash
-npm start        # dev server (ng serve), http://localhost:4200/
-npm run build    # production build (ng build), output in dist/
-npm test         # unit tests (vitest)
-npm run deploy   # build + publish to GitHub Pages (gh-pages branch)
+npm start        # 等同 npx nx serve admin，http://localhost:4200/
+npm run build    # 建置 admin production 版本，輸出到 dist/
+npm test         # 跑 admin 的單元測試（vitest）
+npm run deploy   # 建置 admin 並發布到 GitHub Pages（gh-pages branch）
+```
+
+上面四個指令預設都只作用在 `admin`。要對其他 app 做一樣的事，把 app 名字換掉即可：
+
+```bash
+npx nx build affiliate   # 建置 affiliate
+npx nx test booking      # 跑 booking 的測試
+npx nx run-many -t test  # 一次跑全部 app 的測試
 ```
 
 ## Development server
@@ -29,6 +91,9 @@ ng serve
 ```
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+
+> 上面這段是舊版單一 app 專案留下的說明，等同 `npx nx serve admin`。多 app 開發請看
+> 上方「這是一個多 App 專案」一節。
 
 ## Code scaffolding
 
