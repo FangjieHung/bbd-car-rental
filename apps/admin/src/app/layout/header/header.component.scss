@@ -1,0 +1,49 @@
+:host {
+  display: contents;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.topbar-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 4px 0 0;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8rem;
+}
+
+.breadcrumb-sep {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.menu-toggle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .topbar {
+    padding: 16px 18px;
+  }
+}
