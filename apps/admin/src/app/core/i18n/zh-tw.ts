@@ -204,5 +204,6 @@ export const ZH_TW = {
     navAriaLabel: '主導覽',
     adminUser: '管理員',
     loggedIn: '已登入',
+    copyright: '版權所有',
   },
 } as const;
