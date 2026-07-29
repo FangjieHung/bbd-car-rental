@@ -1,0 +1,106 @@
+<div class="sidenav-inner" [class.collapsed]="collapsed()">
+  <div class="brand">
+    <div class="brand-mark">P</div>
+    <div class="brand-copy" *ngIf="!collapsed()">
+      <h1>{{ t.app.title }}</h1>
+      <p>管理中心</p>
+    </div>
+    <button
+      *ngIf="!isMobile()"
+      mat-icon-button
+      type="button"
+      class="collapse-toggle"
+      (click)="toggleCollapse.emit()"
+    >
+      <mat-icon>{{ collapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+    </button>
+  </div>
+
+  <nav class="nav-list" aria-label="主導覽">
+    <ng-container *ngFor="let item of navItems()">
+      <a
+        *ngIf="!isNavGroup(item)"
+        class="nav-link"
+        [routerLink]="$any(item).route"
+        routerLinkActive="active"
+        [matTooltip]="collapsed() ? item.label : ''"
+        matTooltipPosition="right"
+        (click)="navClick.emit()"
+      >
+        <span class="nav-icon">{{ item.icon }}</span>
+        <span *ngIf="!collapsed()">{{ item.label }}</span>
+      </a>
+
+      <ng-container *ngIf="isNavGroup(item)">
+        <button
+          #groupOrigin="cdkOverlayOrigin"
+          cdkOverlayOrigin
+          type="button"
+          class="nav-link nav-group-trigger"
+          [class.active]="isGroupActive($any(item))"
+          [matTooltip]="collapsed() ? item.label : ''"
+          matTooltipPosition="right"
+          (click)="toggleGroup.emit(item.label)"
+        >
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span *ngIf="!collapsed()">{{ item.label }}</span>
+          <mat-icon
+            *ngIf="!collapsed()"
+            class="nav-group-caret"
+            [class.open]="openGroupLabel() === item.label"
+          >
+            expand_more
+          </mat-icon>
+        </button>
+
+        <div class="nav-subgroup" *ngIf="!collapsed() && openGroupLabel() === item.label">
+          <a
+            *ngFor="let child of $any(item).children"
+            class="nav-sublink"
+            [routerLink]="child.route"
+            routerLinkActive="active"
+            (click)="navClick.emit()"
+          >
+            <span class="nav-icon">{{ child.icon }}</span>
+            <span>{{ child.label }}</span>
+          </a>
+        </div>
+
+        <ng-template
+          *ngIf="collapsed()"
+          cdkConnectedOverlay
+          [cdkConnectedOverlayOrigin]="groupOrigin"
+          [cdkConnectedOverlayOpen]="openGroupLabel() === item.label"
+          [cdkConnectedOverlayPositions]="flyoutPositions()"
+          [cdkConnectedOverlayHasBackdrop]="true"
+          cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+          (backdropClick)="toggleGroup.emit(item.label)"
+          (detach)="groupDetach.emit()"
+        >
+          <div class="nav-flyout">
+            <a
+              *ngFor="let child of $any(item).children"
+              class="nav-flyout-item"
+              [routerLink]="child.route"
+              routerLinkActive="active"
+              (click)="navClick.emit()"
+            >
+              <span class="nav-icon">{{ child.icon }}</span>
+              <span>{{ child.label }}</span>
+            </a>
+          </div>
+        </ng-template>
+      </ng-container>
+    </ng-container>
+  </nav>
+
+  <div class="sidenav-footer">
+    <div class="user-card">
+      <div class="avatar">A</div>
+      <div *ngIf="!collapsed()">
+        <strong>管理員</strong>
+        <p>已登入</p>
+      </div>
+    </div>
+  </div>
+</div>
