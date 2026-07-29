@@ -199,4 +199,10 @@ export const ZH_TW = {
     markPaid: '標記已撥款',
     selectPartnerFirst: '請先選擇民宿與月份',
   },
+  layout: {
+    subtitle: '管理中心',
+    navAriaLabel: '主導覽',
+    adminUser: '管理員',
+    loggedIn: '已登入',
+  },
 } as const;

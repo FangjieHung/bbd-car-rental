@@ -3,7 +3,7 @@
     <div class="brand-mark">P</div>
     <div class="brand-copy" *ngIf="!collapsed()">
       <h1>{{ t.app.title }}</h1>
-      <p>管理中心</p>
+      <p>{{ t.layout.subtitle }}</p>
     </div>
     <button
       *ngIf="!isMobile()"
@@ -16,7 +16,7 @@
     </button>
   </div>
 
-  <nav class="nav-list" aria-label="主導覽">
+  <nav class="nav-list" [attr.aria-label]="t.layout.navAriaLabel">
     <ng-container *ngFor="let item of navItems()">
       <a
         *ngIf="!isNavGroup(item)"
@@ -98,8 +98,8 @@
     <div class="user-card">
       <div class="avatar">A</div>
       <div *ngIf="!collapsed()">
-        <strong>管理員</strong>
-        <p>已登入</p>
+        <strong>{{ t.layout.adminUser }}</strong>
+        <p>{{ t.layout.loggedIn }}</p>
       </div>
     </div>
   </div>
