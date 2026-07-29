@@ -1,55 +1,31 @@
 import { Component, inject, OnInit, ViewChild } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
-import { NgFor, NgIf } from '@angular/common';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { ConnectedPosition } from '@angular/cdk/overlay';
 import { MatSidenavContainer, MatSidenavModule } from '@angular/material/sidenav';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
 import { ZH_TW } from './core/i18n/zh-tw';
 import { ThemeSwitcherComponent } from '@car-rental/theme-pack';
-
-interface NavLeaf {
-  route: string;
-  label: string;
-  icon: string;
-}
-
-interface NavGroup {
-  label: string;
-  icon: string;
-  children: NavLeaf[];
-}
-
-type NavEntry = NavLeaf | NavGroup;
-
-function isNavGroup(entry: NavEntry): entry is NavGroup {
-  return 'children' in entry;
-}
+import { SideNavComponent } from './layout/side-nav/side-nav.component';
+import { NavEntry, NavGroup, isNavGroup } from './layout/side-nav/nav-item.model';
+import { HeaderComponent } from './layout/header/header.component';
+import { FooterComponent } from './layout/footer/footer.component';
 
 @Component({
   selector: 'app-root',
   imports: [
     RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    NgFor,
-    NgIf,
     MatSidenavModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTooltipModule,
-    OverlayModule,
     ThemeSwitcherComponent,
+    SideNavComponent,
+    HeaderComponent,
+    FooterComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
   protected readonly t = ZH_TW;
-  protected readonly isNavGroup = isNavGroup;
 
   protected readonly navItems: NavEntry[] = [
     { route: '/dashboard', label: this.t.nav.dashboard, icon: '◉' },
@@ -81,7 +57,7 @@ export class App implements OnInit {
     },
   ];
 
-  private readonly navLeaves: NavLeaf[] = this.navItems.flatMap((entry) =>
+  private readonly navLeaves = this.navItems.flatMap((entry) =>
     isNavGroup(entry) ? entry.children : [entry],
   );
 
@@ -156,12 +132,5 @@ export class App implements OnInit {
 
   protected toggleGroup(label: string): void {
     this.openGroupLabel = this.openGroupLabel === label ? null : label;
-  }
-
-  protected isGroupActive(group: NavGroup): boolean {
-    const url = this.router.url;
-    return group.children.some(
-      (child) => child.route === url || url.startsWith(`${child.route}/`),
-    );
   }
 }
