@@ -13,7 +13,7 @@ import { CustomerStore } from '../../../stores/customer/customer.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { StatusKey } from '@car-rental/theme-pack';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
-import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
+import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import {
   FilterOption,
   FilterSelectComponent,
@@ -37,7 +37,7 @@ const STATUS_KEY: Record<BookingStatus, StatusKey> = {
     MatButtonModule,
     RouterLink,
     StatusChipComponent,
-    ListToolbarComponent,
+    PageToolbarComponent,
     FilterSelectComponent,
   ],
   templateUrl: './bookings-page.component.html',

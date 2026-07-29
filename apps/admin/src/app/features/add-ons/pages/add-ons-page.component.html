@@ -1,7 +1,7 @@
 <div >
-  <app-list-toolbar [showSearch]="false">
+  <app-page-toolbar [showSearch]="false">
     <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </app-list-toolbar>
+  </app-page-toolbar>
 
   @if (store.addOns().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>

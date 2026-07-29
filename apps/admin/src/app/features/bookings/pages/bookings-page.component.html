@@ -1,5 +1,5 @@
 <div >
-  <app-list-toolbar
+  <app-page-toolbar
     [(query)]="searchQuery"
     [placeholder]="t.common.search"
     [activeFilterCount]="activeFilterCount()"
@@ -13,7 +13,7 @@
     />
     <a actions mat-button routerLink="/bookings/customers">{{ t.booking.goCustomers }}</a>
     <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </app-list-toolbar>
+  </app-page-toolbar>
 
   @if (store.bookings().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>

@@ -8,12 +8,12 @@ import { Partner } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { PartnerStore } from '../../../stores/partner/partner.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
-import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
+import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { PartnerDialogComponent, PartnerFormResult } from '../dialogs/partner-dialog.component';
 
 @Component({
   selector: 'app-partners-page',
-  imports: [MatTableModule, MatButtonModule, ListToolbarComponent],
+  imports: [MatTableModule, MatButtonModule, PageToolbarComponent],
   templateUrl: './partners-page.component.html',
   styleUrls: ['../../../app.scss'],
 })

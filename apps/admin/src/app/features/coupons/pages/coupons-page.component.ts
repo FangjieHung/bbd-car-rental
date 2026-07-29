@@ -8,12 +8,12 @@ import { Coupon } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { CouponStore } from '../../../stores/coupon/coupon.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
-import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
+import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { CouponDialogComponent, CouponFormResult } from '../dialogs/coupon-dialog.component';
 
 @Component({
   selector: 'app-coupons-page',
-  imports: [MatTableModule, MatButtonModule, ListToolbarComponent],
+  imports: [MatTableModule, MatButtonModule, PageToolbarComponent],
   templateUrl: './coupons-page.component.html',
   styleUrls: ['../../../app.scss'],
 })

@@ -1,5 +1,5 @@
 <div >
-  <app-list-toolbar
+  <app-page-toolbar
     [(query)]="searchQuery"
     [placeholder]="t.common.search"
     [activeFilterCount]="activeFilterCount()"
@@ -18,7 +18,7 @@
       [(value)]="statusFilter"
     />
     <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </app-list-toolbar>
+  </app-page-toolbar>
 
   @if (store.vehicles().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>

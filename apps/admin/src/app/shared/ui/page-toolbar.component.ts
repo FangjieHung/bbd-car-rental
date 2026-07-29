@@ -7,12 +7,12 @@ import { MatInputModule } from '@angular/material/input';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
 @Component({
-  selector: 'app-list-toolbar',
+  selector: 'app-page-toolbar',
   imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule],
-  templateUrl: './list-toolbar.component.html',
-  styleUrls: ['./list-toolbar.component.scss'],
+  templateUrl: './page-toolbar.component.html',
+  styleUrls: ['./page-toolbar.component.scss'],
 })
-export class ListToolbarComponent {
+export class PageToolbarComponent {
   protected readonly t = ZH_TW;
   readonly query = model<string>('');
   readonly placeholder = input<string>(ZH_TW.common.search);

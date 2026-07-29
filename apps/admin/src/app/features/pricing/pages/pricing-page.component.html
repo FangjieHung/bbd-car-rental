@@ -1,7 +1,7 @@
 <div >
-  <app-list-toolbar [showSearch]="false">
+  <app-page-toolbar [showSearch]="false">
     <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </app-list-toolbar>
+  </app-page-toolbar>
 
   <h2 class="ui-text-subtitle">{{ t.pricing.plans }}</h2>
   @if (store.plans().length === 0) {

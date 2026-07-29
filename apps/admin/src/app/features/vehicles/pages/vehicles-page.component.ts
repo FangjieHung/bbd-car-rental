@@ -9,7 +9,7 @@ import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { StatusKey } from '@car-rental/theme-pack';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
-import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
+import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import {
   FilterOption,
   FilterSelectComponent,
@@ -33,7 +33,7 @@ const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
     MatTableModule,
     MatButtonModule,
     StatusChipComponent,
-    ListToolbarComponent,
+    PageToolbarComponent,
     FilterSelectComponent,
   ],
   templateUrl: './vehicles-page.component.html',
