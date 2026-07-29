@@ -49,3 +49,6 @@ Thumbs.db
 .nx/workspace-data
 .nx/migrate-runs
 .angular
+
+# Git worktrees (superpowers:using-git-worktrees)
+.worktrees/
