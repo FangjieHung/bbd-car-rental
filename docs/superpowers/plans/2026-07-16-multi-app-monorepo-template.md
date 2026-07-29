@@ -59,7 +59,7 @@ car-rental/ (Nx workspace)
           styles/
             _skeleton.scss
             CONTRACT.md
-            paradigms/                     （material/*.scss、_registry.scss）
+            texture/                     （material/*.scss、_registry.scss）
             color-themes/                  （verdant/、midnight/、_registry.scss）
     assets/
       image/                               ← Task 4：favicon.ico、logo
@@ -186,15 +186,15 @@ git commit -m "refactor: 將 admin app 移到 apps/admin"
 - Create: `libs/theme-pack/` Nx library（`nx g @nx/angular:library`）
 - Move: `apps/admin/src/app/core/theme/{theme.service.ts,theme.service.spec.ts,theme.token.ts,status-tone.ts,status-tone.spec.ts}` → `libs/theme-pack/src/lib/theme/`
 - Move: `apps/admin/src/app/shared/theme/theme-switcher.component.ts` → `libs/theme-pack/src/lib/theme-switcher/`
-- Move: `apps/admin/src/styles/{_skeleton.scss,CONTRACT.md,paradigms/,color-themes/}` → `libs/theme-pack/src/lib/styles/`
+- Move: `apps/admin/src/styles/{_skeleton.scss,CONTRACT.md,texture/,color-themes/}` → `libs/theme-pack/src/lib/styles/`
 - Create: `libs/theme-pack/src/index.ts`（barrel）
 - Modify: `tsconfig.base.json`（加 `@car-rental/theme-pack` path）、`apps/admin/src/styles.scss`（改 includePaths 相對路徑）、`apps/admin` 的 build options（加 `stylePreprocessorOptions.includePaths: ["libs"]`）、所有引用 theme 的 admin TS 檔改 import `@car-rental/theme-pack`
 
 **Interfaces:**
 - Consumes: Task 2 的 `apps/admin`。
 - Produces:
-  - TS barrel `@car-rental/theme-pack` 匯出：`ThemeService`、`ThemeSwitcherComponent`、`PARADIGMS`、`COLOR_THEMES`、`DEFAULT_PARADIGM`、`DEFAULT_THEME`、`PARADIGM_KEY`、`THEME_KEY`、`StatusKey`、`Tone`、`STATUS_TONE`、`toneOf`。
-  - SCSS 入口（供 app 用 includePaths `@use`）：`theme-pack/src/lib/styles/skeleton`、`theme-pack/src/lib/styles/paradigms/registry`、`theme-pack/src/lib/styles/color-themes/registry`、`theme-pack/src/lib/styles/paradigms/material/{card,buttons,table,status,typography}`。
+  - TS barrel `@car-rental/theme-pack` 匯出：`ThemeService`、`ThemeSwitcherComponent`、`texture`、`COLOR_THEMES`、`DEFAULT_PARADIGM`、`DEFAULT_THEME`、`PARADIGM_KEY`、`THEME_KEY`、`StatusKey`、`Tone`、`STATUS_TONE`、`toneOf`。
+  - SCSS 入口（供 app 用 includePaths `@use`）：`theme-pack/src/lib/styles/skeleton`、`theme-pack/src/lib/styles/texture/registry`、`theme-pack/src/lib/styles/color-themes/registry`、`theme-pack/src/lib/styles/texture/material/{card,buttons,table,status,typography}`。
 
 - [ ] **Step 1: 建立 library**
 
@@ -218,7 +218,7 @@ git mv apps/admin/src/app/shared/theme/theme-switcher.component.ts libs/theme-pa
 ```bash
 git mv apps/admin/src/styles/_skeleton.scss libs/theme-pack/src/lib/styles/
 git mv apps/admin/src/styles/CONTRACT.md libs/theme-pack/src/lib/styles/
-git mv apps/admin/src/styles/paradigms libs/theme-pack/src/lib/styles/paradigms
+git mv apps/admin/src/styles/texture libs/theme-pack/src/lib/styles/texture
 git mv apps/admin/src/styles/color-themes libs/theme-pack/src/lib/styles/color-themes
 ```
 
@@ -237,7 +237,7 @@ export * from './lib/theme-switcher/theme-switcher.component';
 `theme-switcher.component.ts` 原本相對匯入 `theme.service`/`theme.token`。改為相對新位置：
 ```typescript
 import { ThemeService } from '../theme/theme.service';
-import { PARADIGMS, COLOR_THEMES } from '../theme/theme.token';
+import { texture, COLOR_THEMES } from '../theme/theme.token';
 ```
 Run: `grep -n "import" libs/theme-pack/src/lib/theme-switcher/theme-switcher.component.ts`
 確認無殘留舊路徑（如 `core/theme`、`./theme.service`）。
@@ -251,18 +251,18 @@ Run: `grep -n "import" libs/theme-pack/src/lib/theme-switcher/theme-switcher.com
 
 - [ ] **Step 7: 改 apps/admin/src/styles.scss 的 SCSS @use 路徑**
 
-把原本 `@use 'styles/paradigms/registry' as *;` 等 5 行主題相關 `@use`，改為 theme-pack 相對路徑（含關鍵字 `theme-pack`，供 Task 5 偵測）：
+把原本 `@use 'styles/texture/registry' as *;` 等 5 行主題相關 `@use`，改為 theme-pack 相對路徑（含關鍵字 `theme-pack`，供 Task 5 偵測）：
 ```scss
 @use "tailwindcss";
 @use '@angular/material' as mat;
-@use 'theme-pack/src/lib/styles/paradigms/registry' as *;
+@use 'theme-pack/src/lib/styles/texture/registry' as *;
 @use 'theme-pack/src/lib/styles/color-themes/registry' as *;
 @use 'theme-pack/src/lib/styles/skeleton';
-@use 'theme-pack/src/lib/styles/paradigms/material/card';
-@use 'theme-pack/src/lib/styles/paradigms/material/buttons';
-@use 'theme-pack/src/lib/styles/paradigms/material/table';
-@use 'theme-pack/src/lib/styles/paradigms/material/status';
-@use 'theme-pack/src/lib/styles/paradigms/material/typography';
+@use 'theme-pack/src/lib/styles/texture/material/card';
+@use 'theme-pack/src/lib/styles/texture/material/buttons';
+@use 'theme-pack/src/lib/styles/texture/material/table';
+@use 'theme-pack/src/lib/styles/texture/material/status';
+@use 'theme-pack/src/lib/styles/texture/material/typography';
 ```
 （`html { @include mat.theme(...) }` 區塊保留不動。）
 
@@ -631,15 +631,15 @@ Expected: 建置成功且 grep 得 1（base href 正確）。
 本 repo 是多子專案 monorepo（`apps/` 下多個 app，`libs/` 共用）。每個 app 可自由決定要不要套用雙軸主題系統（`libs/theme-pack`）。
 
 ### 判斷準則
-這個 app 的 UI 未來是否需要換膚 / 換範式？需要就套 theme-pack；純資訊型、不需要換膚的前台可以不套。
+這個 app 的 UI 未來是否需要換膚 / 換質地？需要就套 theme-pack；純資訊型、不需要換膚的前台可以不套。
 
 ### 套用步驟
 1. `apps/<app>/src/styles.scss` 加入主題 SCSS（關鍵字 `theme-pack` 是 lint 的偵測依據）：
    ```scss
-   @use 'theme-pack/src/lib/styles/paradigms/registry' as *;
+   @use 'theme-pack/src/lib/styles/texture/registry' as *;
    @use 'theme-pack/src/lib/styles/color-themes/registry' as *;
    @use 'theme-pack/src/lib/styles/skeleton';
-   @use 'theme-pack/src/lib/styles/paradigms/material/card';
+   @use 'theme-pack/src/lib/styles/texture/material/card';
    // buttons / table / status / typography 同理
    ```
 2. 確認該 app 的 `project.json` build options 有 `"stylePreprocessorOptions": { "includePaths": ["libs"] }`。
@@ -664,7 +664,7 @@ Expected: 建置成功且 grep 得 1（base href 正確）。
 
 - [ ] **Step 5: 修正 README 舊路徑參照**
 
-README 舊文中對主題檔的路徑參照（如 `src/styles/CONTRACT.md`、`src/app/core/theme/theme.token.ts`、`src/styles/color-themes/`、`src/styles/paradigms/`）已隨搬遷失效。Run:
+README 舊文中對主題檔的路徑參照（如 `src/styles/CONTRACT.md`、`src/app/core/theme/theme.token.ts`、`src/styles/color-themes/`、`src/styles/texture/`）已隨搬遷失效。Run:
 ```bash
 grep -n -e "src/styles/" -e "src/app/core/theme" -e "src/app/shared/theme-switcher" README.md
 ```

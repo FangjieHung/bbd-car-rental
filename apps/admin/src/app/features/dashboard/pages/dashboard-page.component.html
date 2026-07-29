@@ -1,6 +1,4 @@
-<div class="page-shell">
-  <h1 class="ui-text-title">{{ t.nav.dashboard }}</h1>
-
+<div >
   <div class="stat-grid">
     @for (s of statusKeys; track s) {
       <div class="stat-card" [class.stat-card--hero]="s === 'available'">
@@ -11,6 +9,21 @@
       </div>
     }
   </div>
+
+  <section class="ui-card">
+    <div class="page-header">
+      <div class="ui-text-caption mb-0.5">{{ t.dispatch.title }}</div>
+      <mat-button-toggle-group [value]="dispatchView()" (change)="setDispatchView($event.value)">
+        <mat-button-toggle value="timeline">{{ t.dispatch.timeline }}</mat-button-toggle>
+        <mat-button-toggle value="calendar">{{ t.dispatch.calendar }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+    @if (dispatchView() === 'timeline') {
+      <app-timeline-view />
+    } @else {
+      <app-calendar-view />
+    }
+  </section>
 
   <div class="content-grid">
     <section class="ui-card">

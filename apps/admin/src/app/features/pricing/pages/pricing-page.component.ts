@@ -18,6 +18,7 @@ import { PricingPlan } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
+import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
 import {
   PricingPlanDialogComponent,
   PricingPlanFormResult,
@@ -27,7 +28,14 @@ type RangeGroup = FormGroup<{ start: FormControl<string>; end: FormControl<strin
 
 @Component({
   selector: 'app-pricing-page',
-  imports: [MatTableModule, MatButtonModule, MatFormFieldModule, MatInputModule, ReactiveFormsModule],
+  imports: [
+    MatTableModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    ReactiveFormsModule,
+    ListToolbarComponent,
+  ],
   templateUrl: './pricing-page.component.html',
   styleUrls: ['../../../app.scss'],
 })

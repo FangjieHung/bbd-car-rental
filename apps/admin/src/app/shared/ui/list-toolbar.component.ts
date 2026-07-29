@@ -17,5 +17,6 @@ export class ListToolbarComponent {
   readonly query = model<string>('');
   readonly placeholder = input<string>(ZH_TW.common.search);
   readonly activeFilterCount = input<number>(0);
+  readonly showSearch = input<boolean>(true);
   readonly clearAll = output<void>();
 }

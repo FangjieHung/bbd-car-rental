@@ -3,38 +3,112 @@
     <mat-sidenav
       #drawer
       class="app-sidenav"
+      [class.collapsed]="!isMobile && collapsed"
       [mode]="isMobile ? 'over' : 'side'"
       [opened]="isMobile ? isSidenavOpen : true"
       (closedStart)="isSidenavOpen = false"
+      (transitionend)="onSidenavTransitionEnd()"
     >
       <div class="sidenav-inner">
         <div class="brand">
           <div class="brand-mark">P</div>
-          <div class="brand-copy">
+          <div class="brand-copy" *ngIf="!collapsed">
             <h1>{{ t.app.title }}</h1>
             <p>管理中心</p>
           </div>
+          <button
+            *ngIf="!isMobile"
+            mat-icon-button
+            type="button"
+            class="collapse-toggle"
+            (click)="toggleCollapsed()"
+          >
+            <mat-icon>{{ collapsed ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+          </button>
         </div>
 
         <nav class="nav-list" aria-label="主導覽">
-          <a
-            *ngFor="let item of navItems"
-            class="nav-link"
-            [routerLink]="item.route"
-            routerLinkActive="active"
-            (click)="onNavClick()"
-          >
-            <span class="nav-icon">{{ item.icon }}</span>
-            <span>{{ item.label }}</span>
-          </a>
+          <ng-container *ngFor="let item of navItems">
+            <a
+              *ngIf="!isNavGroup(item)"
+              class="nav-link"
+              [routerLink]="$any(item).route"
+              routerLinkActive="active"
+              [matTooltip]="collapsed ? item.label : ''"
+              matTooltipPosition="right"
+              (click)="onNavClick()"
+            >
+              <span class="nav-icon">{{ item.icon }}</span>
+              <span *ngIf="!collapsed">{{ item.label }}</span>
+            </a>
+
+            <ng-container *ngIf="isNavGroup(item)">
+              <button
+                #groupOrigin="cdkOverlayOrigin"
+                cdkOverlayOrigin
+                type="button"
+                class="nav-link nav-group-trigger"
+                [class.active]="isGroupActive($any(item))"
+                [matTooltip]="collapsed ? item.label : ''"
+                matTooltipPosition="right"
+                (click)="toggleGroup(item.label)"
+              >
+                <span class="nav-icon">{{ item.icon }}</span>
+                <span *ngIf="!collapsed">{{ item.label }}</span>
+                <mat-icon
+                  *ngIf="!collapsed"
+                  class="nav-group-caret"
+                  [class.open]="openGroupLabel === item.label"
+                >
+                  expand_more
+                </mat-icon>
+              </button>
+
+              <div class="nav-subgroup" *ngIf="!collapsed && openGroupLabel === item.label">
+                <a
+                  *ngFor="let child of $any(item).children"
+                  class="nav-sublink"
+                  [routerLink]="child.route"
+                  routerLinkActive="active"
+                  (click)="onNavClick()"
+                >
+                  <span class="nav-icon">{{ child.icon }}</span>
+                  <span>{{ child.label }}</span>
+                </a>
+              </div>
+
+              <ng-template
+                *ngIf="collapsed"
+                cdkConnectedOverlay
+                [cdkConnectedOverlayOrigin]="groupOrigin"
+                [cdkConnectedOverlayOpen]="openGroupLabel === item.label"
+                [cdkConnectedOverlayPositions]="flyoutPositions"
+                [cdkConnectedOverlayHasBackdrop]="true"
+                cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+                (backdropClick)="toggleGroup(item.label)"
+                (detach)="openGroupLabel = null"
+              >
+                <div class="nav-flyout">
+                  <a
+                    *ngFor="let child of $any(item).children"
+                    class="nav-flyout-item"
+                    [routerLink]="child.route"
+                    routerLinkActive="active"
+                    (click)="onNavClick()"
+                  >
+                    <span class="nav-icon">{{ child.icon }}</span>
+                    <span>{{ child.label }}</span>
+                  </a>
+                </div>
+              </ng-template>
+            </ng-container>
+          </ng-container>
         </nav>
 
         <div class="sidenav-footer">
-          <app-theme-switcher />
-
           <div class="user-card">
             <div class="avatar">A</div>
-            <div>
+            <div *ngIf="!collapsed">
               <strong>管理員</strong>
               <p>已登入</p>
             </div>
@@ -50,11 +124,17 @@
         </button>
 
         <div class="topbar-title">
-          <p>歡迎回來</p>
+          <div class="breadcrumb">
+            <ng-container *ngIf="currentGroupLabel">
+              <span>{{ currentGroupLabel }}</span>
+              <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+            </ng-container>
+            <span>{{ currentTitle }}</span>
+          </div>
           <h2>{{ currentTitle }}</h2>
         </div>
 
-        <button mat-stroked-button type="button">登出</button>
+        <app-list-toolbar></app-list-toolbar>
       </header>
 
       <main class="page-shell">
@@ -62,4 +142,6 @@
       </main>
     </mat-sidenav-content>
   </mat-sidenav-container>
+
+  <app-theme-switcher />
 </div>

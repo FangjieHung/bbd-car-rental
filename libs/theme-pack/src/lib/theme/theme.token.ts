@@ -3,7 +3,7 @@ export interface ThemeOption {
   label: string;
 }
 
-export const PARADIGMS: ThemeOption[] = [{ id: 'material', label: 'Material' }];
+export const texture: ThemeOption[] = [{ id: 'material', label: 'Material' }];
 
 export const COLOR_THEMES: ThemeOption[] = [
   { id: 'verdant', label: 'Verdant 綠' },

@@ -2,14 +2,16 @@ export const ZH_TW = {
   app: { title: '澎湖租車後台' },
   nav: {
     dashboard: '總覽',
-    vehicles: '車輛管理',
-    dispatch: '調度看板',
+    productGroup: '商品管理',
+    vehicles: '車輛清單',
     bookings: '訂單管理',
     maintenance: '保養管理',
+    pricingGroup: '定價管理',
     pricing: '定價規則',
-    addOns: '配件設定',
+    addOns: '配件清單',
     coupons: '優惠券設定',
-    partners: '民宿管理',
+    partnerGroup: '合作通路',
+    partners: '通路管理',
     commission: '退佣帳單',
   },
   common: {
@@ -29,7 +31,6 @@ export const ZH_TW = {
     noResults: '沒有符合條件的資料',
   },
   vehicle: {
-    title: '車輛管理',
     plateNumber: '車牌',
     type: '車型',
     model: '型號',
@@ -53,7 +54,6 @@ export const ZH_TW = {
     invalidTransition: '車輛狀態不允許此操作',
   },
   customer: {
-    title: '客戶管理',
     name: '姓名',
     phone: '電話',
     idNumber: '證件號',
@@ -61,7 +61,6 @@ export const ZH_TW = {
     newInline: '＋ 新增客戶',
   },
   booking: {
-    title: '訂單管理',
     vehicle: '車輛',
     customer: '客戶',
     startTime: '開始時間',
@@ -101,7 +100,6 @@ export const ZH_TW = {
     maintenanceBlock: '保養中',
   },
   maintenance: {
-    title: '保養管理',
     alerts: '保養提醒',
     records: '保養紀錄',
     type: '項目',
@@ -127,7 +125,6 @@ export const ZH_TW = {
     noAlerts: '目前沒有到期提醒',
   },
   pricing: {
-    title: '定價規則',
     plans: '定價方案',
     name: '方案名稱',
     appliesToCategory: '適用車型',
@@ -151,14 +148,12 @@ export const ZH_TW = {
     saveCalendar: '儲存行事曆',
   },
   addOn: {
-    title: '配件設定',
     name: '配件名稱',
     unitPrice: '單價',
     unit: '計價單位',
     unitLabels: { per_rental: '每筆訂單', per_day: '每日' } as Record<string, string>,
   },
   coupon: {
-    title: '優惠券設定',
     code: '優惠碼',
     type: '折扣類型',
     typeLabels: { percent: '百分比', amount: '固定金額' } as Record<string, string>,
@@ -169,7 +164,6 @@ export const ZH_TW = {
     validTo: '到期日',
   },
   dashboard: {
-    title: '總覽',
     todayPickups: '今日取車',
     todayReturns: '今日還車',
     alerts: '保養警示',
@@ -177,7 +171,6 @@ export const ZH_TW = {
     none: '無',
   },
   partner: {
-    title: '民宿管理',
     name: '民宿名稱',
     slug: '代訂連結代碼',
     discountPercent: '協議折扣 %',
@@ -192,7 +185,6 @@ export const ZH_TW = {
     slugDuplicate: '此連結代碼已被使用',
   },
   commission: {
-    title: '退佣帳單報表',
     partner: '民宿',
     month: '月份',
     bookingId: '訂單編號',

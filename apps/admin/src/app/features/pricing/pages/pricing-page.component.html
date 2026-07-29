@@ -1,8 +1,7 @@
-<div class="page-shell">
-  <div class="page-header">
-    <h1 class="ui-text-title">{{ t.pricing.title }}</h1>
-    <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </div>
+<div >
+  <app-list-toolbar [showSearch]="false">
+    <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+  </app-list-toolbar>
 
   <h2 class="ui-text-subtitle">{{ t.pricing.plans }}</h2>
   @if (store.plans().length === 0) {

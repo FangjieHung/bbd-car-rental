@@ -21,7 +21,8 @@
             "input": "apps/affiliate/public"
           }
         ],
-        "styles": ["apps/affiliate/src/styles.scss"]
+        "styles": ["apps/affiliate/src/styles.scss"],
+        "stylePreprocessorOptions": { "includePaths": ["libs"] }
       },
       "configurations": {
         "production": {

@@ -1,32 +1,28 @@
-<div class="page-shell">
-  <div class="page-header">
-    <h1 class="ui-text-title">{{ t.vehicle.title }}</h1>
-    <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </div>
+<div >
+  <app-list-toolbar
+    [(query)]="searchQuery"
+    [placeholder]="t.common.search"
+    [activeFilterCount]="activeFilterCount()"
+    (clearAll)="clearFilters()"
+  >
+    <app-filter-select
+      filters
+      [label]="t.vehicle.type"
+      [options]="typeOptions"
+      [(value)]="typeFilter"
+    />
+    <app-filter-select
+      filters
+      [label]="t.vehicle.status"
+      [options]="statusOptions"
+      [(value)]="statusFilter"
+    />
+    <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+  </app-list-toolbar>
 
   @if (store.vehicles().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
-    <app-list-toolbar
-      [(query)]="searchQuery"
-      [placeholder]="t.common.search"
-      [activeFilterCount]="activeFilterCount()"
-      (clearAll)="clearFilters()"
-    >
-      <div filters>
-        <app-filter-select
-          [label]="t.vehicle.type"
-          [options]="typeOptions"
-          [(value)]="typeFilter"
-        />
-        <app-filter-select
-          [label]="t.vehicle.status"
-          [options]="statusOptions"
-          [(value)]="statusFilter"
-        />
-      </div>
-    </app-list-toolbar>
-
     @if (filteredVehicles().length === 0) {
       <p class="empty-state">{{ t.common.noResults }}</p>
     } @else {

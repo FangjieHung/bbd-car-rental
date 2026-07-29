@@ -17,13 +17,6 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'dispatch',
-    loadComponent: () =>
-      import('./features/dispatch/pages/dispatch-page.component').then(
-        (m) => m.DispatchPageComponent,
-      ),
-  },
-  {
     path: 'bookings/customers',
     loadComponent: () =>
       import('./features/bookings/pages/customers-page.component').then(

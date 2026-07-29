@@ -4,16 +4,16 @@
 >
 > **搭配閱讀**：本計畫的設計依據是 `docs/superpowers/specs/2026-07-15-theme-pack-architecture-design.md`（下稱 spec）。CSS token 對照表在 spec §4/§11/§12，狀態→tone 在 §5，class 契約在 §3。計畫引用這些表格，不重複整貼。
 
-**Goal:** 把現有單一 Verdant 樣式，重構成「範式 × 配色」雙軸主題系統，並以 Midnight 配色證明配色軸可即時切換。
+**Goal:** 把現有單一 Verdant 樣式，重構成「質地 × 配色」雙軸主題系統，並以 Midnight 配色證明配色軸可即時切換。
 
-**Architecture:** 兩個正交維度——範式包（paradigm，管造型 recipe＋圓角/陰影/字體）與配色包（color-theme，只管顏色 token）；最外層 `data-paradigm` + `data-theme` 兩屬性獨立切換。元件綁 Material 3 sys token（`--mat-sys-*`）與 `--app-*` 擴充，透過固定 `ui-` class 契約（CSS Zen Garden 模型）。本計畫範式軸只做 Material，配色軸做 Verdant＋Midnight，Glass/Neumo 插槽預留。
+**Architecture:** 兩個正交維度——質地包（paradigm，管造型 recipe＋圓角/陰影/字體）與配色包（color-theme，只管顏色 token）；最外層 `data-paradigm` + `data-theme` 兩屬性獨立切換。元件綁 Material 3 sys token（`--mat-sys-*`）與 `--app-*` 擴充，透過固定 `ui-` class 契約（CSS Zen Garden 模型）。本計畫質地軸只做 Material，配色軸做 Verdant＋Midnight，Glass/Neumo 插槽預留。
 
 **Tech Stack:** Angular 22（zoneless、signal）、Angular Material 22（M3）、Tailwind v4、SCSS、Vitest。
 
 ## Global Constraints
 
 - **只改樣式，不改功能行為**：任何 task 不得更動元件的資料流、store、路由、業務邏輯。
-- **Token 詞彙 = M3 sys token**：顏色/字體/圓角/陰影一律綁 `--mat-sys-*`（或 `--app-*` 擴充）；顏色值只准出現在 `src/styles/color-themes/**`，造型值只准出現在 `src/styles/paradigms/*/_tokens.scss`。
+- **Token 詞彙 = M3 sys token**：顏色/字體/圓角/陰影一律綁 `--mat-sys-*`（或 `--app-*` 擴充）；顏色值只准出現在 `src/styles/color-themes/**`，造型值只准出現在 `src/styles/texture/*/_tokens.scss`。
 - **間距用 Tailwind**（`p-4`/`gap-3`），不進 CSS 變數。
 - **class 命名**：元件 `ui-` 前綴 + BEM（`ui-card__header--compact`）；暫時狀態 `is-`；名字描述角色不描述長相。
 - **不寫死色**：`themes`/`_tokens.scss` 允許區以外不得出現十六進位色碼或底層色階變數。
@@ -121,7 +121,7 @@ git commit -m "feat: 狀態 tone 單一真相源（StatusKey→Tone）"
 
 **Interfaces:**
 - Produces:
-  - `theme.token.ts`：`interface ThemeOption { id: string; label: string }`；`PARADIGMS: ThemeOption[]`；`COLOR_THEMES: ThemeOption[]`；`DEFAULT_PARADIGM='material'`；`DEFAULT_THEME='verdant'`；`PARADIGM_KEY='cr.paradigm'`；`THEME_KEY='cr.theme'`。
+  - `theme.token.ts`：`interface ThemeOption { id: string; label: string }`；`texture: ThemeOption[]`；`COLOR_THEMES: ThemeOption[]`；`DEFAULT_PARADIGM='material'`；`DEFAULT_THEME='verdant'`；`PARADIGM_KEY='cr.paradigm'`；`THEME_KEY='cr.theme'`。
   - `ThemeService`：`paradigm: Signal<string>`、`theme: Signal<string>`、`setParadigm(id)`、`setTheme(id)`、`init()`。均寫 `document.documentElement.dataset` 與 `localStorage`。
 
 - [ ] **Step 1: 寫失敗測試**
@@ -176,7 +176,7 @@ Expected: FAIL（找不到模組）
 ```ts
 // src/app/core/theme/theme.token.ts
 export interface ThemeOption { id: string; label: string; }
-export const PARADIGMS: ThemeOption[] = [{ id: 'material', label: 'Material' }];
+export const texture: ThemeOption[] = [{ id: 'material', label: 'Material' }];
 export const COLOR_THEMES: ThemeOption[] = [
   { id: 'verdant', label: 'Verdant 綠' },
   { id: 'midnight', label: 'Midnight 深' },
@@ -372,9 +372,9 @@ git commit -m "feat: lint:theme 防漏腳本（禁寫死色/底層色）"
 
 **Files:**
 - Create: `src/styles/color-themes/verdant/_tokens.scss`
-- Create: `src/styles/paradigms/material/_tokens.scss`
+- Create: `src/styles/texture/material/_tokens.scss`
 - Create: `src/styles/color-themes/_registry.scss`
-- Create: `src/styles/paradigms/_registry.scss`
+- Create: `src/styles/texture/_registry.scss`
 - Modify: `src/styles.scss`（改為 `@use` 新檔；**暫時保留**舊 `:root` 自創語意層當橋）
 - Modify: `src/index.html`（`<html>` 加預設兩屬性）
 
@@ -434,7 +434,7 @@ git commit -m "feat: lint:theme 防漏腳本（禁寫死色/底層色）"
 - [ ] **Step 2: 建 material 造型包**
 
 ```scss
-// src/styles/paradigms/material/_tokens.scss
+// src/styles/texture/material/_tokens.scss
 // 只放造型：圓角、陰影、字體。值照搬自原 styles.scss 行 87–104。
 :root[data-paradigm='material'] {
   --mat-sys-corner-small: 10px;      // 原 --radius-sm
@@ -447,7 +447,7 @@ git commit -m "feat: lint:theme 防漏腳本（禁寫死色/底層色）"
   --mat-sys-level3: 0 8px 24px rgba(35, 34, 32, 0.07);
   --mat-sys-level4: 0 16px 40px rgba(35, 34, 32, 0.10);
 
-  // 字體：中英分軌（spec §6）。中文固定、英文依範式。
+  // 字體：中英分軌（spec §6）。中文固定、英文依質地。
   --font-zh: 'Noto Sans TC', system-ui, sans-serif;
   --font-en: 'Plus Jakarta Sans', 'Inter';
   --font-display: var(--font-en), var(--font-zh);
@@ -463,7 +463,7 @@ git commit -m "feat: lint:theme 防漏腳本（禁寫死色/底層色）"
 @forward 'verdant/tokens';
 ```
 ```scss
-// src/styles/paradigms/_registry.scss
+// src/styles/texture/_registry.scss
 @forward 'material/tokens';
 ```
 
@@ -472,7 +472,7 @@ git commit -m "feat: lint:theme 防漏腳本（禁寫死色/底層色）"
 在 `styles.scss` 頂部 `@use '@angular/material' as mat;` 之後加：
 
 ```scss
-@use 'styles/paradigms/registry';
+@use 'styles/texture/registry';
 @use 'styles/color-themes/registry';
 ```
 
@@ -565,15 +565,15 @@ git commit -m "refactor: 元件改綁 M3 token、移除自創語意層、修寫�
 
 ---
 
-### Task 6: class rename `.v-*`→`.ui-*` + recipe 歸位到 material 範式包
+### Task 6: class rename `.v-*`→`.ui-*` + recipe 歸位到 material 質地包
 
 **Files:**
-- Create: `src/styles/paradigms/material/{card,buttons,table,status,typography}.scss`
+- Create: `src/styles/texture/material/{card,buttons,table,status,typography}.scss`
 - Create: `src/styles/_skeleton.scss`、`src/styles/_contract.scss`
-- Modify: `src/styles.scss`（recipe 區移出；`@use` skeleton 與 material recipe）、`src/styles/paradigms/_registry.scss`
+- Modify: `src/styles.scss`（recipe 區移出；`@use` skeleton 與 material recipe）、`src/styles/texture/_registry.scss`
 - Modify: 8 個含 `.v-*` 的 template/ts（見下）
 
-**做法說明**：把 `styles.scss` recipe 區（`.v-card`/`.v-card-dark`/`.v-nav-pill`/`.v-stat-number`/`.v-page-title`/`.v-card-label` 及 Material 微調）搬到 material 範式包，並 rename 成 `ui-` 契約 class。recipe 掛在 `[data-paradigm='material']` 作用域下，未來換範式才能整包替換。
+**做法說明**：把 `styles.scss` recipe 區（`.v-card`/`.v-card-dark`/`.v-nav-pill`/`.v-stat-number`/`.v-page-title`/`.v-card-label` 及 Material 微調）搬到 material 質地包，並 rename 成 `ui-` 契約 class。recipe 掛在 `[data-paradigm='material']` 作用域下，未來換質地才能整包替換。
 
 Class rename 對照：
 
@@ -589,7 +589,7 @@ Class rename 對照：
 - [ ] **Step 1: 建 material recipe 檔（card/typography 範例，其餘同法）**
 
 ```scss
-// src/styles/paradigms/material/card.scss
+// src/styles/texture/material/card.scss
 [data-paradigm='material'] {
   .ui-card {
     background: var(--mat-sys-surface);
@@ -610,7 +610,7 @@ Class rename 對照：
 }
 ```
 ```scss
-// src/styles/paradigms/material/typography.scss
+// src/styles/texture/material/typography.scss
 [data-paradigm='material'] {
   .ui-text-display { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
   .ui-text-title { font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: -0.02em; color: var(--mat-sys-on-surface); }
@@ -624,7 +624,7 @@ Class rename 對照：
 
 ```scss
 // src/styles/_skeleton.scss
-// 主題無關：全域 reset 與 body 基礎。視覺造型交給範式包。
+// 主題無關：全域 reset 與 body 基礎。視覺造型交給質地包。
 body {
   color-scheme: light;
   background: var(--mat-sys-background);
@@ -648,14 +648,14 @@ body {
 ```scss
 @use 'tailwindcss';
 @use '@angular/material' as mat;
-@use 'styles/paradigms/registry';
+@use 'styles/texture/registry';
 @use 'styles/color-themes/registry';
 @use 'styles/skeleton';
-@use 'styles/paradigms/material/card';
-@use 'styles/paradigms/material/buttons';
-@use 'styles/paradigms/material/table';
-@use 'styles/paradigms/material/status';
-@use 'styles/paradigms/material/typography';
+@use 'styles/texture/material/card';
+@use 'styles/texture/material/buttons';
+@use 'styles/texture/material/table';
+@use 'styles/texture/material/status';
+@use 'styles/texture/material/typography';
 
 html { height: 100%; @include mat.theme((color: (primary: mat.$green-palette, tertiary: mat.$cyan-palette), typography: (plain-family: 'Inter', brand-family: '"Plus Jakarta Sans"'), density: 0)); }
 ```
@@ -678,7 +678,7 @@ Expected: build exit 0；45 測試綠；第一個 grep **無輸出**（無舊 cl
 
 ```bash
 git add src/styles src/styles.scss src/app
-git commit -m "refactor: class 改 ui- 契約、recipe 歸位 material 範式包；lint:theme 全綠"
+git commit -m "refactor: class 改 ui- 契約、recipe 歸位 material 質地包；lint:theme 全綠"
 ```
 
 ---
@@ -687,7 +687,7 @@ git commit -m "refactor: class 改 ui- 契約、recipe 歸位 material 範式包
 
 **Files:**
 - Modify: `src/app/shared/status-chip.component.ts`、`src/app/shared/status-chip.component.html`
-- Create: `src/styles/paradigms/material/status.scss` 的 `.ui-chip` tone 樣式（若 Task 6 未建完則在此補）
+- Create: `src/styles/texture/material/status.scss` 的 `.ui-chip` tone 樣式（若 Task 6 未建完則在此補）
 - Modify: 呼叫端 `vehicles-page.component.ts`、`bookings-page.component.ts`（把 domain status 對到 `StatusKey`）
 - Test: `src/app/shared/status-chip.component.spec.ts`
 
@@ -774,7 +774,7 @@ Expected: build exit 0；測試綠（含新 status-chip）；lint 通過。目�
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/app/shared/status-chip.component.* src/styles/paradigms/material/status.scss src/app/features/vehicles src/app/features/bookings
+git add src/app/shared/status-chip.component.* src/styles/texture/material/status.scss src/app/features/vehicles src/app/features/bookings
 git commit -m "refactor: status-chip 改吃 StatusKey，晶片 tone 由真相源決定"
 ```
 
@@ -789,7 +789,7 @@ git commit -m "refactor: status-chip 改吃 StatusKey，晶片 tone 由真相源
 - Test: `src/app/shared/theme-switcher.component.spec.ts`
 
 **Interfaces:**
-- Consumes: `ThemeService`、`PARADIGMS`、`COLOR_THEMES`（Task 2）。
+- Consumes: `ThemeService`、`texture`、`COLOR_THEMES`（Task 2）。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -825,14 +825,14 @@ import { Component, inject } from '@angular/core';
 import { MatSelectModule } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
 import { ThemeService } from '../core/theme/theme.service';
-import { PARADIGMS, COLOR_THEMES } from '../core/theme/theme.token';
+import { texture, COLOR_THEMES } from '../core/theme/theme.token';
 
 @Component({
   selector: 'app-theme-switcher',
   imports: [MatSelectModule, FormsModule],
   template: `
-    <mat-select [ngModel]="theme.paradigm()" (ngModelChange)="onParadigm($event)" aria-label="範式">
-      @for (p of paradigms; track p.id) { <mat-option [value]="p.id">{{ p.label }}</mat-option> }
+    <mat-select [ngModel]="theme.paradigm()" (ngModelChange)="onParadigm($event)" aria-label="質地">
+      @for (p of texture; track p.id) { <mat-option [value]="p.id">{{ p.label }}</mat-option> }
     </mat-select>
     <mat-select [ngModel]="theme.theme()" (ngModelChange)="onTheme($event)" aria-label="配色">
       @for (c of colorThemes; track c.id) { <mat-option [value]="c.id">{{ c.label }}</mat-option> }
@@ -841,7 +841,7 @@ import { PARADIGMS, COLOR_THEMES } from '../core/theme/theme.token';
 })
 export class ThemeSwitcherComponent {
   readonly theme = inject(ThemeService);
-  readonly paradigms = PARADIGMS;
+  readonly texture = texture;
   readonly colorThemes = COLOR_THEMES;
   onParadigm(id: string) { this.theme.setParadigm(id); }
   onTheme(id: string) { this.theme.setTheme(id); }
@@ -943,7 +943,7 @@ git commit -m "feat: 雙軸換膚器 + 啟動時還原主題"
 ```bash
 npm run build && npm run lint:theme
 ```
-Expected: build exit 0；lint 通過（midnight 在 color-themes/ 允許區）。dev server：範式固定 Material，用換膚器切「配色」verdant↔midnight，vehicles/bookings/dashboard 三頁、桌機＋390px：**只有顏色變、版面完全不動、無 layout shift**（截圖對照）；深色下對比足夠、狀態晶片可辨。
+Expected: build exit 0；lint 通過（midnight 在 color-themes/ 允許區）。dev server：質地固定 Material，用換膚器切「配色」verdant↔midnight，vehicles/bookings/dashboard 三頁、桌機＋390px：**只有顏色變、版面完全不動、無 layout shift**（截圖對照）；深色下對比足夠、狀態晶片可辨。
 
 - [ ] **Step 4: Commit**
 
@@ -964,8 +964,8 @@ git commit -m "feat: Midnight 配色包，證明配色軸即時換膚"
 在 README 加入章節：
 1. **樣式規則**：顏色/字體/圓角綁 `--mat-sys-*`／`--app-*`，間距用 Tailwind；不寫死色；存檔/CI 前 `npm run lint:theme`。
 2. **新增一套配色**：複製 `src/styles/color-themes/verdant/` → 改顏色 token → `_registry.scss` 加 `@forward` → `theme.token.ts` 的 `COLOR_THEMES` 加一筆。
-3. **新增一個範式**：複製 `src/styles/paradigms/material/` → 依 class 契約（spec §3）重寫 recipe（可用 `backdrop-filter` 等）→ `_registry.scss` 註冊 → `PARADIGMS` 加一筆。
-4. **鎖成單一主題（初始化）**：設死 `ThemeService` 預設或 `<html>` 兩屬性；可刪換膚器與用不到的 `paradigms/*`、`color-themes/*`。
+3. **新增一個質地**：複製 `src/styles/texture/material/` → 依 class 契約（spec §3）重寫 recipe（可用 `backdrop-filter` 等）→ `_registry.scss` 註冊 → `texture` 加一筆。
+4. **鎖成單一主題（初始化）**：設死 `ThemeService` 預設或 `<html>` 兩屬性；可刪換膚器與用不到的 `texture/*`、`color-themes/*`。
 
 - [ ] **Step 2: 驗證 + Commit**
 

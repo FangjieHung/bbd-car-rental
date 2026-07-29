@@ -8,11 +8,12 @@ import { AddOn } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { AddOnStore } from '../../../stores/addon/addon.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
+import { ListToolbarComponent } from '../../../shared/ui/list-toolbar.component';
 import { AddOnDialogComponent, AddOnFormResult } from '../dialogs/add-on-dialog.component';
 
 @Component({
   selector: 'app-add-ons-page',
-  imports: [MatTableModule, MatButtonModule],
+  imports: [MatTableModule, MatButtonModule, ListToolbarComponent],
   templateUrl: './add-ons-page.component.html',
   styleUrls: ['../../../app.scss'],
 })

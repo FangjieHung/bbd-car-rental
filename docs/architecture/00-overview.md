@@ -26,7 +26,7 @@ apps/
 libs/
   domain/         # 全系統共用的 model、Repository 介面、定價/退佣純函式、seed 資料
   booking-flow/   # 五步預約流程元件 + CatalogStore，booking 和 affiliate 都用它
-  theme-pack/     # 雙軸主題系統（範式 × 配色），目前只有 admin 套用
+  theme-pack/     # 雙軸主題系統（質地 × 配色），目前只有 admin 套用
 ```
 
 三個 app 是**三個獨立部署的網站**（各自的 port，未來各自的網域），不是同一站底下的分頁。

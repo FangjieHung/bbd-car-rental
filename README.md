@@ -160,7 +160,7 @@ For more information on using the Angular CLI, including detailed command refere
 
 ## 雙軸主題系統
 
-本專案採用**範式（Paradigm）× 配色（Color-theme）**的兩軸主題架構。範式管造型（圓角、陰影、字體），配色管顏色。一套配色可搭配不同範式；同一範式可套用不同配色。目前提供 Material 範式與 Verdant / Midnight 兩套配色。
+本專案採用**質地（Paradigm）× 配色（Color-theme）**的兩軸主題架構。質地管造型（圓角、陰影、字體），配色管顏色。一套配色可搭配不同質地；同一質地可套用不同配色。目前提供 Material 質地與 Verdant / Midnight 兩套配色。
 
 詳細設計見 `docs/superpowers/specs/2026-07-15-theme-pack-architecture-design.md`。
 
@@ -170,8 +170,8 @@ For more information on using the Angular CLI, including detailed command refere
 
 1. **顏色、字體、圓角綁定 token**
    - 顏色一律綁 `--mat-sys-*`（由配色包提供）或 `--app-*` 擴充 token（如 `--app-positive-bg`、`--app-viz-1` 等）
-   - 字體綁 `--font-zh`（中文）與 `--font-en`（英文），由範式包提供
-   - 圓角綁 `--mat-sys-corner-*`，由範式包提供
+   - 字體綁 `--font-zh`（中文）與 `--font-en`（英文），由質地包提供
+   - 圓角綁 `--mat-sys-corner-*`，由質地包提供
 
 2. **間距與尺寸**
    - 間距（padding、margin、gap）使用 Tailwind 工具類（`p-4`、`gap-3` 等）
@@ -180,7 +180,7 @@ For more information on using the Angular CLI, including detailed command refere
 3. **禁止寫死顏色**
    - 嚴禁出現十六進位色碼（`#xxx`、`#xxxxxx`）
    - 嚴禁使用底層色階變數（如舊專案的 `--sage-500`）
-   - **唯一允許的例外**：`libs/theme-pack/src/lib/styles/color-themes/*/` 與各範式的 `_tokens.scss` 檔案
+   - **唯一允許的例外**：`libs/theme-pack/src/lib/styles/color-themes/*/` 與各質地的 `_tokens.scss` 檔案
 
 4. **元件 class 契約**
    - 元件一律用 `.ui-*` 開頭（如 `.ui-card`、`.ui-btn`、`.ui-chip`）
@@ -230,13 +230,13 @@ For more information on using the Angular CLI, including detailed command refere
    npm run lint:theme
    ```
 
-### 新增一個範式
+### 新增一個質地
 
-若要新增造型範式（如玻璃態效果、新形主義等），請按以下步驟：
+若要新增造型質地（如玻璃態效果、新形主義等），請按以下步驟：
 
 1. **複製基礎**
    ```bash
-   cp -r libs/theme-pack/src/lib/styles/paradigms/material libs/theme-pack/src/lib/styles/paradigms/新範式名稱
+   cp -r libs/theme-pack/src/lib/styles/texture/material libs/theme-pack/src/lib/styles/texture/新質地名稱
    ```
 
 2. **依契約重寫 recipe**
@@ -246,15 +246,15 @@ For more information on using the Angular CLI, including detailed command refere
    - 新增或修改 `_tokens.scss` 裡的造型 token（圓角、陰影、字體等）
 
 3. **註冊到全域**
-   - 編輯 `libs/theme-pack/src/lib/styles/paradigms/_registry.scss`
-   - 新增一行：`@forward '新範式名稱/tokens';`
+   - 編輯 `libs/theme-pack/src/lib/styles/texture/_registry.scss`
+   - 新增一行：`@forward '新質地名稱/tokens';`
    - 若新增了 recipe 檔，也在該檔頭部用 `@use` 引入
 
-4. **新增到範式清單**
+4. **新增到質地清單**
    - 編輯 `libs/theme-pack/src/lib/theme/theme.token.ts`
-   - 在 `PARADIGMS` 陣列中新增：
+   - 在 `texture` 陣列中新增：
      ```typescript
-     { id: '新範式名稱', label: '顯示名稱' }
+     { id: '新質地名稱', label: '顯示名稱' }
      ```
 
 5. **驗證**
@@ -265,7 +265,7 @@ For more information on using the Angular CLI, including detailed command refere
 
 ### 鎖成單一主題（初始化步驟）
 
-若專案要收斂為固定的主題組合（範式 + 配色），請按以下步驟：
+若專案要收斂為固定的主題組合（質地 + 配色），請按以下步驟：
 
 1. **設定預設值**
    - 編輯 `libs/theme-pack/src/lib/theme/theme.token.ts`
@@ -280,8 +280,8 @@ For more information on using the Angular CLI, including detailed command refere
    - 編輯主應用模板，移除 theme-switcher 的宣告與使用
 
 3. **（可選）清理未用資源**
-   - 若只用一個範式，可刪除 `libs/theme-pack/src/lib/styles/paradigms/` 下的其他資料夾
-   - 同時編輯 `libs/theme-pack/src/lib/styles/paradigms/_registry.scss`，移除對應的 `@forward` 行
+   - 若只用一個質地，可刪除 `libs/theme-pack/src/lib/styles/texture/` 下的其他資料夾
+   - 同時編輯 `libs/theme-pack/src/lib/styles/texture/_registry.scss`，移除對應的 `@forward` 行
    - 若只用一個配色，可刪除 `libs/theme-pack/src/lib/styles/color-themes/` 下的其他資料夾
    - 同時編輯 `libs/theme-pack/src/lib/styles/color-themes/_registry.scss`，移除對應的 `@forward` 行
 
@@ -300,27 +300,37 @@ Runtime 主題切換能力隨時可重新啟用，無需修改架構。
 本 repo 是多子專案 monorepo（`apps/` 下多個 app，`libs/` 共用）。每個 app 可自由決定要不要套用雙軸主題系統（`libs/theme-pack`）。
 
 ### 判斷準則
-這個 app 的 UI 未來是否需要換膚 / 換範式？需要就套 theme-pack；純資訊型、不需要換膚的前台可以不套。
+這個 app 的 UI 未來是否需要換膚 / 換質地？需要就套 theme-pack；純資訊型、不需要換膚的前台可以不套。
 
 ### 套用步驟
-1. `apps/<app>/src/styles.scss` 加入主題 SCSS（關鍵字 `theme-pack` 是 lint 的偵測依據）：
-   ```scss
-   @use 'theme-pack/src/lib/styles/paradigms/registry' as *;
-   @use 'theme-pack/src/lib/styles/color-themes/registry' as *;
-   @use 'theme-pack/src/lib/styles/skeleton';
-   @use 'theme-pack/src/lib/styles/paradigms/material/card';
-   // buttons / table / status / typography 同理
-   ```
-2. 確認該 app 的 `project.json` build options 有 `"stylePreprocessorOptions": { "includePaths": ["libs"] }`。
-3. `app.config.ts` / `app.ts` 注入主題系統：
-   ```typescript
-   import { ThemeService, ThemeSwitcherComponent } from '@car-rental/theme-pack';
-   ```
-   在模板放入 `<app-theme-switcher />`，並依現有 admin 作法在啟動時呼叫 `ThemeService.init()`。
-4. 元件樣式遵守 `ui-*` / `is-*` class 契約（見 `libs/theme-pack/src/lib/styles/CONTRACT.md`）。
+`apps/<app>/src/styles.scss` 一律引入 `component`（reset，質地/配色無關）＋質地軸，
+再依需求二選一決定配色軸怎麼接：
+
+**A. Runtime 可切換配色**（app 內要放主題切換器，如 admin）：
+```scss
+@use 'theme-pack/src/lib/styles/texture/registry' as *;
+@use 'theme-pack/src/lib/styles/color-themes/registry' as *; // 全部配色都編進去，供切換
+@use 'theme-pack/src/lib/styles/component';
+```
+`app.config.ts` 注入 `provideAppInitializer(() => inject(ThemeService).init())`，
+模板放 `<app-theme-switcher />`（見 `apps/admin`）。
+
+**B. Build-time 鎖死單一配色**（不放切換器，如 booking／affiliate）：
+```scss
+@use 'theme-pack/src/lib/styles/texture/registry' as *;
+@use 'theme-pack/src/lib/styles/color-themes/verdant/tokens' as *; // 只編進去這一個配色
+@use 'theme-pack/src/lib/styles/component';
+```
+不注入 `ThemeService`，改在 `index.html` 的 `<html>` 直接寫死
+`data-paradigm="material" data-theme="verdant"`（值要跟上面選的配色一致，否則沒有對應的
+CSS block 可套）。
+
+其餘共同步驟：
+1. 確認該 app 的 `project.json` build options 有 `"stylePreprocessorOptions": { "includePaths": ["libs"] }`。
+2. 元件樣式遵守 `ui-*` / `is-*` class 契約（見 `libs/theme-pack/src/lib/styles/CONTRACT.md`）。
 
 ### 不套用（預設）
-什麼都不用做。app 直接用 Angular Material 預設主題或自訂 CSS，不受 `ui-*` 契約約束。`booking`、`pos` 目前即為此狀態。
+什麼都不用做。app 直接用 Angular Material 預設主題或自訂 CSS，不受 `ui-*` 契約約束。`pos` 目前即為此狀態。
 
 ### lint:theme 如何運作
 `npm run lint:theme` 會自動掃 `libs/theme-pack/src` 與所有 `styles.scss` 含 `theme-pack` 的 app；沒套主題的 app 自動略過，不需維護任何清單。

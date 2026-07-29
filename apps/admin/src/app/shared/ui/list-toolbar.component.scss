@@ -25,6 +25,13 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
 @media (max-width: 640px) {
   .search-field {
     max-width: none;

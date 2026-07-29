@@ -1,13 +1,15 @@
 <div class="list-toolbar">
-  <mat-form-field class="search-field" subscriptSizing="dynamic">
-    <mat-icon matPrefix>search</mat-icon>
-    <input
-      matInput
-      [ngModel]="query()"
-      (ngModelChange)="query.set($event)"
-      [placeholder]="placeholder()"
-    />
-  </mat-form-field>
+  @if (showSearch()) {
+    <mat-form-field class="search-field" subscriptSizing="dynamic">
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+        [placeholder]="placeholder()"
+      />
+    </mat-form-field>
+  }
 
   <div class="filters">
     <ng-content select="[filters]" />
@@ -17,5 +19,9 @@
         {{ t.common.clearFilters }}
       </button>
     }
+  </div>
+
+  <div class="actions">
+    <ng-content select="[actions]" />
   </div>
 </div>

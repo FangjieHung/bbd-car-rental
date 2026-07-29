@@ -1,59 +1,81 @@
 import { Component, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { ThemeService } from '../theme/theme.service';
-import { PARADIGMS, COLOR_THEMES } from '../theme/theme.token';
+import { texture, COLOR_THEMES } from '../theme/theme.token';
 
 @Component({
   selector: 'app-theme-switcher',
+  imports: [MatButtonModule, MatIconModule, MatMenuModule],
   template: `
-    <section class="theme-panel" aria-label="外觀設定">
-      <p class="theme-panel__title">外觀</p>
+    <button
+      type="button"
+      mat-fab
+      color="primary"
+      class="theme-fab"
+      [matMenuTriggerFor]="themeMenu"
+      aria-label="外觀設定"
+    >
+      <mat-icon>palette</mat-icon>
+    </button>
 
-      <div class="theme-row">
-        <span class="theme-row__label">範式</span>
-        <div class="theme-row__options" role="group" aria-label="範式">
-          @for (p of paradigms; track p.id) {
-            <button
-              type="button"
-              class="theme-pill"
-              [class.is-active]="theme.paradigm() === p.id"
-              [attr.aria-pressed]="theme.paradigm() === p.id"
-              (click)="onParadigm(p.id)"
-            >
-              {{ p.label }}
-            </button>
-          }
-        </div>
-      </div>
+    <mat-menu #themeMenu="matMenu" class="theme-menu-panel" xPosition="before" yPosition="above">
+      <section class="theme-panel" aria-label="外觀設定" (click)="$event.stopPropagation()">
+        <p class="theme-panel__title">外觀</p>
 
-      <div class="theme-row">
-        <span class="theme-row__label">配色</span>
-        <div class="theme-row__options" role="group" aria-label="配色">
-          @for (c of colorThemes; track c.id) {
-            <button
-              type="button"
-              class="theme-pill"
-              [class.is-active]="theme.theme() === c.id"
-              [attr.aria-pressed]="theme.theme() === c.id"
-              (click)="onTheme(c.id)"
-            >
-              {{ c.label }}
-            </button>
-          }
+        <div class="theme-row">
+          <span class="theme-row__label">質地</span>
+          <div class="theme-row__options" role="group" aria-label="質地">
+            @for (p of texture; track p.id) {
+              <button
+                type="button"
+                class="theme-pill"
+                [class.is-active]="theme.paradigm() === p.id"
+                [attr.aria-pressed]="theme.paradigm() === p.id"
+                (click)="onParadigm(p.id)"
+              >
+                {{ p.label }}
+              </button>
+            }
+          </div>
         </div>
-      </div>
-    </section>
+
+        <div class="theme-row">
+          <span class="theme-row__label">配色</span>
+          <div class="theme-row__options" role="group" aria-label="配色">
+            @for (c of colorThemes; track c.id) {
+              <button
+                type="button"
+                class="theme-pill"
+                [class.is-active]="theme.theme() === c.id"
+                [attr.aria-pressed]="theme.theme() === c.id"
+                (click)="onTheme(c.id)"
+              >
+                {{ c.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+    </mat-menu>
   `,
   styles: `
     :host {
-      display: block;
+      display: contents;
+    }
+    .theme-fab {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 1000;
     }
     .theme-panel {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.08);
+      padding: 4px 4px 8px;
+      min-width: 220px;
     }
     .theme-panel__title {
       margin: 0;
@@ -61,7 +83,7 @@ import { PARADIGMS, COLOR_THEMES } from '../theme/theme.token';
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--app-shell-on-muted);
+      color: var(--mat-sys-on-surface-variant);
     }
     .theme-row {
       display: flex;
@@ -70,7 +92,7 @@ import { PARADIGMS, COLOR_THEMES } from '../theme/theme.token';
     }
     .theme-row__label {
       font-size: 0.75rem;
-      color: var(--app-shell-on-muted);
+      color: var(--mat-sys-on-surface-variant);
     }
     .theme-row__options {
       display: flex;
@@ -82,8 +104,8 @@ import { PARADIGMS, COLOR_THEMES } from '../theme/theme.token';
       padding: 6px 10px;
       border: 0;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--app-shell-on-muted);
+      background: var(--mat-sys-surface-container-high);
+      color: var(--mat-sys-on-surface-variant);
       font-size: 0.8rem;
       font-weight: 600;
       white-space: nowrap;
@@ -93,8 +115,8 @@ import { PARADIGMS, COLOR_THEMES } from '../theme/theme.token';
         color 160ms ease;
     }
     .theme-pill:hover {
-      background: rgba(255, 255, 255, 0.14);
-      color: var(--app-shell-on);
+      background: var(--mat-sys-surface-container-highest);
+      color: var(--mat-sys-on-surface);
     }
     .theme-pill.is-active {
       background: var(--mat-sys-primary);
@@ -104,7 +126,7 @@ import { PARADIGMS, COLOR_THEMES } from '../theme/theme.token';
 })
 export class ThemeSwitcherComponent {
   readonly theme = inject(ThemeService);
-  readonly paradigms = PARADIGMS;
+  readonly texture = texture;
   readonly colorThemes = COLOR_THEMES;
   onParadigm(id: string) {
     this.theme.setParadigm(id);

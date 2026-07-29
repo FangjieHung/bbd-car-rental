@@ -109,11 +109,11 @@ affiliate 的 `PartnerBookingComponent` 找到 `Partner` 後傳 `{ kind: 'partne
 
 ## libs/theme-pack — 雙軸主題系統（只有 admin 套用）
 
-別名 `@car-rental/theme-pack`。範式（Paradigm，管造型：圓角/陰影/字體）×
-配色（Color-theme，管顏色）兩軸可自由組合，目前提供 Material 範式與 Verdant/Midnight
+別名 `@car-rental/theme-pack`。質地（Paradigm，管造型：圓角/陰影/字體）×
+配色（Color-theme，管顏色）兩軸可自由組合，目前提供 Material 質地與 Verdant/Midnight
 兩套配色。booking 跟 affiliate **沒有套用**這套系統——它們是免登入的公開/合作夥伴頁面，
 定位是資訊型頁面，不需要換膚。
 
-詳細設計、樣式規則（禁止寫死顏色、`.ui-*` class 契約等）、新增配色/範式的步驟，
+詳細設計、樣式規則（禁止寫死顏色、`.ui-*` class 契約等）、新增配色/質地的步驟，
 完整寫在根目錄 `README.md`「雙軸主題系統」一節與
 `docs/superpowers/specs/2026-07-15-theme-pack-architecture-design.md`，這裡不重複。

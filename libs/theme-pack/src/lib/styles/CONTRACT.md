@@ -10,7 +10,7 @@
 
 ## Class 契約（`ui-*` / `is-*`）
 
-骨架 HTML 使用這組固定 class，每個範式包（`src/styles/paradigms/*`）負責實作它們。
+骨架 HTML 使用這組固定 class，每個質地包（`src/styles/texture/*`）負責實作它們。
 
 | Class                           | 說明                                                                              |
 | ------------------------------- | --------------------------------------------------------------------------------- |
@@ -33,7 +33,7 @@
 
 ### Material 3 系統 token（`--mat-sys-*`）
 
-顏色值由**配色包**（`color-themes/*`）提供；造型值由**範式包**（`paradigms/*/_tokens.scss`）提供。
+顏色值由**配色包**（`color-themes/*`）提供；造型值由**質地包**（`texture/*/_tokens.scss`）提供。
 
 | 類別 | Token                                                                                                            |
 | ---- | ---------------------------------------------------------------------------------------------------------------- |
@@ -53,9 +53,9 @@
 | 圖表／時間軸 | `--app-viz-1` … `--app-viz-4`                              |
 | 深色側欄     | `--app-shell-bg`、`--app-shell-on`、`--app-shell-on-muted` |
 
-### 字體（範式包提供，中英分軌）
+### 字體（質地包提供，中英分軌）
 
-`--font-zh`（中文固定 Noto）、`--font-en`（英文依範式）、`--font-display`、`--font-body`、`--font-mono`
+`--font-zh`（中文固定 Noto）、`--font-en`（英文依質地）、`--font-display`、`--font-body`、`--font-mono`
 
 ### 間距
 

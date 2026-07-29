@@ -1,8 +1,7 @@
-<div class="page-shell">
-  <div class="page-header">
-    <h1 class="ui-text-title">{{ t.partner.title }}</h1>
-    <button mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </div>
+<div >
+  <app-list-toolbar [showSearch]="false">
+    <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+  </app-list-toolbar>
 
   @if (store.partners().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>

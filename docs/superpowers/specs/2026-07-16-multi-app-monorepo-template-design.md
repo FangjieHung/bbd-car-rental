@@ -2,7 +2,7 @@
 
 ## 目標
 
-把 car-rental 從單一 Angular app 改造成可複製的 **多子專案 monorepo template**：一個 repo 裡容納多個獨立子專案（app），共用 lib 資源，每個子專案可各自決定要不要套用雙軸主題系統（範式 × 配色）。這次只搭骨架，不開發新子專案的業務功能。
+把 car-rental 從單一 Angular app 改造成可複製的 **多子專案 monorepo template**：一個 repo 裡容納多個獨立子專案（app），共用 lib 資源，每個子專案可各自決定要不要套用雙軸主題系統（質地 × 配色）。這次只搭骨架，不開發新子專案的業務功能。
 
 ## 背景與動機
 
@@ -32,10 +32,10 @@ car-rental/ (Nx workspace)
         tailwind-base.scss          ← 共用 Tailwind v4 @theme 基礎設定（各 app @use 繼承）
         scss/
           quill-content-style/      ← Quill 編輯器內容排版樣式
-    theme-pack/                     ← 雙軸主題系統（選配），現有 core/theme + styles/paradigms + styles/color-themes 搬入
+    theme-pack/                     ← 雙軸主題系統（選配），現有 core/theme + styles/texture + styles/color-themes 搬入
       src/
         theme/                      （ThemeService、ThemeSwitcherComponent、theme.token.ts、status-tone.ts）
-        styles/paradigms/
+        styles/texture/
         styles/color-themes/
   nx.json
   package.json                      （合併後的單一 workspace 依賴）
@@ -49,7 +49,7 @@ car-rental/ (Nx workspace)
 
 1. **`image/`** — logo、favicon.ico、其他共用品牌圖檔。各 app 的 `index.html`/模板直接引用這裡的檔案，不再各自放一份重複拷貝。
 2. **`style/tailwind-base.scss`** — 本專案用 Tailwind v4（設定寫在 CSS，無 `tailwind.config.js`）。這份匯出共用的 `@theme` 基礎 token（spacing scale、斷點等）。各 app 的 `styles.scss` 用 `@use 'assets/style/tailwind-base';` 繼承，app 層只保留自己的差異設定，不再整份重複。
-3. **`style/scss/quill-content-style/`** — Quill 編輯器輸出內容（如公告、說明文字）的排版樣式（標題、段落、清單、引言）。**獨立於 theme-pack，不吃 `--mat-sys-*`/`--app-*` token，顏色與字體直接寫死在這份 scss 內**——不論該 app 有沒有套用主題系統，都可以單獨 `@use` 這份樣式，顯示效果固定、不隨配色/範式切換。
+3. **`style/scss/quill-content-style/`** — Quill 編輯器輸出內容（如公告、說明文字）的排版樣式（標題、段落、清單、引言）。**獨立於 theme-pack，不吃 `--mat-sys-*`/`--app-*` token，顏色與字體直接寫死在這份 scss 內**——不論該 app 有沒有套用主題系統，都可以單獨 `@use` 這份樣式，顯示效果固定、不隨配色/質地切換。
 
 ### 主題選配機制
 
@@ -68,7 +68,7 @@ car-rental/ (Nx workspace)
 
 在 car-rental 現有 README「雙軸主題系統」章節旁，新增一節「**子專案如何套用/取消主題系統**」，涵蓋：
 
-1. 新建 app 時「要不要套用 theme-pack」的判斷準則：這個 app 的 UI 未來是否需要換膚/換範式？需要就套，純資訊型或不需要換膚的前台可以不套。
+1. 新建 app 時「要不要套用 theme-pack」的判斷準則：這個 app 的 UI 未來是否需要換膚/換質地？需要就套，純資訊型或不需要換膚的前台可以不套。
 2. **套用步驟**：`styles.scss` 加 `@use '@car-rental/theme-pack'` → `app.ts` 注入 `ThemeService` → 模板加入 theme-switcher → 元件樣式遵守 `ui-*`/`is-*` 契約。
 3. **取消/不套用**：預設狀態，不需要任何動作。
 4. **`lint:theme` 掃描邏輯說明**：自動偵測，不需手動維護清單。
@@ -80,7 +80,7 @@ car-rental/ (Nx workspace)
 
 1. 在既有 car-rental repo 執行 Nx 官方「為 Angular CLI workspace 加裝 Nx」流程，將 `angular.json` 轉為 Nx 的 `project.json` 結構。
 2. 現有 `src/app`、`src/styles`（扣除搬入 `theme-pack`/`libs/assets` 的部分）搬入 `apps/admin/src`。
-3. 現有 `src/app/core/theme/`、`src/styles/paradigms/`、`src/styles/color-themes/`、`src/styles/CONTRACT.md` 搬入 `libs/theme-pack/`。
+3. 現有 `src/app/core/theme/`、`src/styles/texture/`、`src/styles/color-themes/`、`src/styles/CONTRACT.md` 搬入 `libs/theme-pack/`。
 4. 現有 `src/favicon.ico`、品牌圖檔搬入 `libs/assets/image/`；現有 `tailwind.config.js` 拆成 base preset（`libs/assets/style/tailwind-config.js`）+ `apps/admin/tailwind.config.js` 繼承。
 5. 新建 `apps/booking/`、`apps/pos/` 兩個最小可跑的空殼 app（各自 `project.json` + 最小 `app.ts`，不套用 theme-pack）。
 6. 更新 `scripts/lint-theme.mjs` 為多 app 自動偵測版本。

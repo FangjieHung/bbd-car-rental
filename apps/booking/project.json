@@ -21,7 +21,8 @@
             "input": "apps/booking/public"
           }
         ],
-        "styles": ["apps/booking/src/styles.scss"]
+        "styles": ["apps/booking/src/styles.scss"],
+        "stylePreprocessorOptions": { "includePaths": ["libs"] }
       },
       "configurations": {
         "production": {
