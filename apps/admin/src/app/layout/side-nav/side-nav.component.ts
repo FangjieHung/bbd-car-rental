@@ -1,6 +1,5 @@
 import { Component, input, output } from '@angular/core';
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
-import { NgFor, NgIf } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -11,8 +10,6 @@ import { NavEntry, NavGroup, isNavGroup } from './nav-item.model';
 @Component({
   selector: 'app-side-nav',
   imports: [
-    NgFor,
-    NgIf,
     RouterLink,
     RouterLinkActive,
     MatButtonModule,

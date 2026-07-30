@@ -5,10 +5,10 @@
 
   <div class="topbar-title">
     <div class="breadcrumb">
-      <ng-container *ngIf="currentGroupLabel()">
+      @if (currentGroupLabel()) {
         <span>{{ currentGroupLabel() }}</span>
         <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
-      </ng-container>
+      }
       <span>{{ currentTitle() }}</span>
     </div>
     <h2>{{ currentTitle() }}</h2>
