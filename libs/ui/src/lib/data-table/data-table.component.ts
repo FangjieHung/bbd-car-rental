@@ -6,6 +6,7 @@ import {
   computed,
   contentChildren,
   input,
+  signal,
 } from '@angular/core';
 import { DataTableCellContext, DataTableCellDirective } from './data-table-cell.directive';
 import { DataTableColumn, DataTableLabels, DataTableMobileMode } from './data-table.types';
@@ -58,6 +59,24 @@ export class DataTableComponent<T> {
 
   protected cellContext(row: T): DataTableCellContext<T> {
     return { $implicit: row };
+  }
+
+  protected readonly hasSecondary = computed(() =>
+    this.resolvedColumns().some((col) => !col.primary),
+  );
+
+  private readonly expandedIds = signal<ReadonlySet<unknown>>(new Set());
+
+  protected isExpanded(row: T): boolean {
+    return this.expandedIds().has(this.rowId()(row));
+  }
+
+  protected toggle(row: T): void {
+    const id = this.rowId()(row);
+    const next = new Set(this.expandedIds());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.expandedIds.set(next);
   }
 
   protected valueOf(row: T, key: string): string {

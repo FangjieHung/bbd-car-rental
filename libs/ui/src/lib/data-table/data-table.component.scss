@@ -50,6 +50,25 @@
   padding: 0.75rem 1rem;
 }
 
+// 桌機所有欄位本就可見，展開鈕僅在手機出現
+.dt-expand-head,
+.dt-expand-cell {
+  display: none;
+}
+
+.dt-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
   // scroll 模式：保留表格形態，改為橫向捲動（合併儲存格的報表硬拆成卡片會讀不懂）
   .dt-wrap--scroll {
@@ -107,6 +126,19 @@
 
     .dt-table tbody tr.is-expanded td.is-secondary {
       display: block;
+    }
+
+    .dt-expand-cell {
+      display: block;
+      padding: 0.25rem 0 0;
+    }
+
+    .dt-expand-cell::before {
+      content: none; // 展開鈕不需要 data-label
+    }
+
+    tr.is-expanded .dt-expand-btn svg {
+      transform: rotate(180deg);
     }
   }
 }

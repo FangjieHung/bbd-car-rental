@@ -8,11 +8,14 @@
           @for (col of resolvedColumns(); track col.key) {
             <th scope="col" [class]="'dt-align-' + (col.align ?? 'start')">{{ col.label }}</th>
           }
+          @if (hasSecondary()) {
+            <th scope="col" class="dt-expand-head"></th>
+          }
         </tr>
       </thead>
       <tbody>
         @for (row of rows(); track rowId()(row)) {
-          <tr>
+          <tr [class.is-expanded]="isExpanded(row)">
             @for (col of resolvedColumns(); track col.key) {
               <td
                 [attr.data-label]="col.label"
@@ -27,6 +30,21 @@
                 } @else {
                   {{ valueOf(row, col.key) }}
                 }
+              </td>
+            }
+            @if (hasSecondary()) {
+              <td class="dt-expand-cell">
+                <button
+                  type="button"
+                  class="dt-expand-btn"
+                  [attr.aria-expanded]="isExpanded(row)"
+                  [attr.aria-label]="isExpanded(row) ? labels().collapseRow : labels().expandRow"
+                  (click)="toggle(row)"
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" />
+                  </svg>
+                </button>
               </td>
             }
           </tr>

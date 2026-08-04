@@ -159,3 +159,63 @@ describe('DataTableComponent 手機版 DOM 不變性', () => {
     expect(plateCell?.classList.contains('is-secondary')).toBe(false);
   });
 });
+
+describe('DataTableComponent 展開／收合', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<HostComponent>>;
+  let el: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(HostComponent);
+    await fixture.whenStable();
+    el = fixture.nativeElement as HTMLElement;
+  });
+
+  it('有次要欄位時每列渲染一顆展開鈕', () => {
+    expect(el.querySelectorAll('tbody .dt-expand-btn')).toHaveLength(2);
+  });
+
+  it('展開鈕預設 aria-expanded 為 false', () => {
+    const btn = el.querySelector('tbody .dt-expand-btn');
+    expect(btn?.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('點擊後該列加上 is-expanded，且 DOM 節點數不變', async () => {
+    const before = el.querySelectorAll('tbody td').length;
+    (el.querySelector('tbody .dt-expand-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(el.querySelectorAll('tbody tr')[0].classList.contains('is-expanded')).toBe(true);
+    expect(el.querySelectorAll('tbody td').length).toBe(before);
+  });
+
+  it('展開一列不影響其他列', async () => {
+    (el.querySelector('tbody .dt-expand-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(el.querySelectorAll('tbody tr')[1].classList.contains('is-expanded')).toBe(false);
+  });
+
+  it('再次點擊收合', async () => {
+    const btn = el.querySelector('tbody .dt-expand-btn') as HTMLButtonElement;
+    btn.click();
+    await fixture.whenStable();
+    btn.click();
+    await fixture.whenStable();
+    expect(el.querySelectorAll('tbody tr')[0].classList.contains('is-expanded')).toBe(false);
+  });
+
+  it('展開時 aria-label 換成收合文案', async () => {
+    const btn = el.querySelector('tbody .dt-expand-btn') as HTMLButtonElement;
+    btn.click();
+    await fixture.whenStable();
+    expect(btn.getAttribute('aria-label')).toBe('收合詳細資料');
+  });
+
+  it('所有欄位都是 primary 時不渲染展開鈕', async () => {
+    fixture.componentInstance.columns.set([
+      { key: 'name', label: '車牌', primary: true },
+      { key: 'status', label: '狀態', primary: true },
+    ]);
+    await fixture.whenStable();
+    expect(el.querySelectorAll('tbody .dt-expand-btn')).toHaveLength(0);
+  });
+});
