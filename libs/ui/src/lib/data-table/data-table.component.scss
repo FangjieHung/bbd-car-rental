@@ -1,0 +1,51 @@
+:host {
+  display: block;
+}
+
+.dt-wrap {
+  overflow-x: auto;
+}
+
+.dt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.dt-table thead tr {
+  text-align: left;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.dt-table th {
+  color: var(--mat-sys-on-surface-variant);
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+}
+
+.dt-table td {
+  padding: 0.75rem 1rem;
+  color: inherit;
+}
+
+.dt-table tbody tr {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.dt-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.dt-align-start {
+  text-align: left;
+}
+
+.dt-align-end {
+  text-align: right;
+}
+
+.dt-empty {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 0.75rem 1rem;
+}

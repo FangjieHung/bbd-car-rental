@@ -1,0 +1,61 @@
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  TemplateRef,
+  computed,
+  contentChildren,
+  input,
+} from '@angular/core';
+import { DataTableCellContext, DataTableCellDirective } from './data-table-cell.directive';
+import { DataTableColumn, DataTableLabels, DataTableMobileMode } from './data-table.types';
+
+type ResolvedColumn<T> = DataTableColumn<T> & { primary: boolean };
+
+@Component({
+  selector: 'lib-data-table',
+  imports: [NgTemplateOutlet],
+  templateUrl: './data-table.component.html',
+  styleUrl: './data-table.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class DataTableComponent<T> {
+  readonly columns = input<DataTableColumn<T>[]>([]);
+  readonly rows = input<readonly T[]>([]);
+  readonly rowId = input<(row: T) => unknown>((row) => (row as { id: unknown }).id);
+  readonly mobile = input<DataTableMobileMode | null>(null);
+  readonly exportName = input('export');
+  readonly showExport = input(true);
+  readonly emptyText = input('');
+  readonly labels = input.required<DataTableLabels>();
+
+  private readonly cellDirectives = contentChildren(DataTableCellDirective<T>);
+
+  protected readonly mobileMode = computed<DataTableMobileMode>(() => this.mobile() ?? 'cards');
+
+  protected readonly cellTemplates = computed(() => {
+    const map = new Map<string, TemplateRef<DataTableCellContext<T>>>();
+    for (const directive of this.cellDirectives()) {
+      map.set(directive.dtCell(), directive.template);
+    }
+    return map;
+  });
+
+  /** 沒有任何欄位標 primary 時，第一欄自動視為 primary，避免手機卡片整張空白。 */
+  protected readonly resolvedColumns = computed<ResolvedColumn<T>[]>(() => {
+    const cols = this.columns();
+    const hasPrimary = cols.some((c) => c.primary);
+    return cols.map((col, i) => ({ ...col, primary: hasPrimary ? !!col.primary : i === 0 }));
+  });
+
+  protected readonly isEmpty = computed(() => this.rows().length === 0);
+
+  protected cellContext(row: T): DataTableCellContext<T> {
+    return { $implicit: row };
+  }
+
+  protected valueOf(row: T, key: string): string {
+    const value = (row as Record<string, unknown>)[key];
+    return value === null || value === undefined ? '' : String(value);
+  }
+}

@@ -1,0 +1,37 @@
+<div class="dt-wrap" [class.dt-wrap--scroll]="mobileMode() === 'scroll'">
+  @if (isEmpty()) {
+    <p class="dt-empty">{{ emptyText() }}</p>
+  } @else {
+    <table class="dt-table">
+      <thead>
+        <tr>
+          @for (col of resolvedColumns(); track col.key) {
+            <th scope="col" [class]="'dt-align-' + (col.align ?? 'start')">{{ col.label }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track rowId()(row)) {
+          <tr>
+            @for (col of resolvedColumns(); track col.key) {
+              <td
+                [attr.data-label]="col.label"
+                [class]="'dt-align-' + (col.align ?? 'start')"
+                [class.is-secondary]="!col.primary"
+              >
+                @if (cellTemplates().get(col.key); as tpl) {
+                  <ng-container
+                    [ngTemplateOutlet]="tpl"
+                    [ngTemplateOutletContext]="cellContext(row)"
+                  />
+                } @else {
+                  {{ valueOf(row, col.key) }}
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
