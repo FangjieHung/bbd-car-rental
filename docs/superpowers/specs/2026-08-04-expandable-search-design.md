@@ -111,10 +111,15 @@ input 的尺寸自始至終不變，確保它永遠是有實體大小、可正�
 
 | 狀態 | 桌面 | ≤640px |
 |---|---|---|
-| 收合 | `44px` | `44px` |
-| 展開 | `flex: 1 1 240px; max-width: 320px` | `flex-basis: 100%`（佔滿一列，將 actions 擠至下一列） |
+| 收合 | `width: 44px` | `width: 44px` |
+| 展開 | `width: 320px; max-width: 100%` | `width: 100%`（佔滿一列，將 actions 擠至下一列） |
 
 收合態的 44px 在所有斷點一致。
+
+寬度一律以 `width` 控制，不使用 `flex-basis`：本設計的動畫標的就是寬度，而瀏覽器對
+`flex-basis` 的過渡遠不如 `width` 可靠（flex 容器重新分配空間時容易跳動）。父容器
+（包住搜尋框與 actions 的 flex 列）需加上 `flex-wrap`，窄螢幕展開佔滿整列後 actions
+才能被擠到下一列。
 
 ### 4.4 動畫
 
