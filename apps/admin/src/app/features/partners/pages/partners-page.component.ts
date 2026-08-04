@@ -9,11 +9,12 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { PartnerStore } from '../../../stores/partner/partner.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
+import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
 import { PartnerDialogComponent, PartnerFormResult } from '../dialogs/partner-dialog.component';
 
 @Component({
   selector: 'app-partners-page',
-  imports: [MatTableModule, MatButtonModule, PageToolbarComponent],
+  imports: [MatTableModule, MatButtonModule, PageToolbarComponent, HeaderToolbarDirective],
   templateUrl: './partners-page.component.html',
   styleUrls: ['../../../app.scss'],
 })

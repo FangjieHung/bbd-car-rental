@@ -14,6 +14,7 @@ import { StatusChipComponent } from '../../../shared/chips/status-chip.component
 import { StatusKey } from '@car-rental/theme-pack';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
+import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
 import {
   FilterOption,
   FilterSelectComponent,
@@ -39,6 +40,7 @@ const STATUS_KEY: Record<BookingStatus, StatusKey> = {
     StatusChipComponent,
     PageToolbarComponent,
     FilterSelectComponent,
+    HeaderToolbarDirective,
   ],
   templateUrl: './bookings-page.component.html',
   styleUrls: ['../../../app.scss'],

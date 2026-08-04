@@ -1,19 +1,21 @@
-<div >
-  <app-page-toolbar
-    [(query)]="searchQuery"
-    [placeholder]="t.common.search"
-    [activeFilterCount]="activeFilterCount()"
-    (clearAll)="clearFilters()"
-  >
-    <app-filter-select
-      filters
-      [label]="t.booking.status"
-      [options]="statusOptions"
-      [(value)]="statusFilter"
-    />
-    <a actions mat-button routerLink="/bookings/customers">{{ t.booking.goCustomers }}</a>
-    <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </app-page-toolbar>
+<div>
+  <ng-template appHeaderToolbar>
+    <app-page-toolbar
+      [(query)]="searchQuery"
+      [placeholder]="t.common.search"
+      [activeFilterCount]="activeFilterCount()"
+      (clearAll)="clearFilters()"
+    >
+      <app-filter-select
+        filters
+        [label]="t.booking.status"
+        [options]="statusOptions"
+        [(value)]="statusFilter"
+      />
+      <a actions mat-button routerLink="/bookings/customers">{{ t.booking.goCustomers }}</a>
+      <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+    </app-page-toolbar>
+  </ng-template>
 
   @if (store.bookings().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>

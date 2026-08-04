@@ -30,6 +30,7 @@
   --mat-sys-surface-container-high: var(--_ink-600);
   --mat-sys-surface-container-highest: var(--_ink-600);
   --mat-sys-on-surface: var(--_slate-100);
+  --mat-sys-surface-variant: var(--_ink-700); /* filled input 等元件底色的 fallback 來源 */
   --mat-sys-on-surface-variant: var(--_slate-300);
   --mat-sys-outline: var(--_slate-500);
   --mat-sys-outline-variant: var(--_ink-600);
@@ -67,6 +68,9 @@
   --app-shell-bg: var(--_ink-900); /* 側欄：最深，比 surface 更深 */
   --app-shell-on: var(--_slate-100); /* 側欄主要文字：亮 */
   --app-shell-on-muted: var(--_slate-300); /* 側欄次要文字：較暗 */
+
+  // topbar 半透明底（搭配 backdrop blur 的毛玻璃感，讓內容捲動時透出底色）
+  --app-topbar-bg: color-mix(in srgb, var(--_ink-800) 82%, transparent);
 
   color-scheme: dark;
 }

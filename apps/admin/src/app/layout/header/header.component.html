@@ -13,4 +13,10 @@
     </div>
     <h2>{{ currentTitle() }}</h2>
   </div>
+
+  @if (toolbarTemplate(); as toolbar) {
+    <div class="topbar-toolbar">
+      <ng-container [ngTemplateOutlet]="toolbar" />
+    </div>
+  }
 </header>

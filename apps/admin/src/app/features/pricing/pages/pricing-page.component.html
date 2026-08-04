@@ -1,7 +1,9 @@
-<div >
-  <app-page-toolbar [showSearch]="false">
-    <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </app-page-toolbar>
+<div>
+  <ng-template appHeaderToolbar>
+    <app-page-toolbar [showSearch]="false">
+      <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+    </app-page-toolbar>
+  </ng-template>
 
   <h2 class="ui-text-subtitle">{{ t.pricing.plans }}</h2>
   @if (store.plans().length === 0) {

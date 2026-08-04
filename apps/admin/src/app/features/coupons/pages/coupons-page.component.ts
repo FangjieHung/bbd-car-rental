@@ -9,11 +9,12 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { CouponStore } from '../../../stores/coupon/coupon.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
+import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
 import { CouponDialogComponent, CouponFormResult } from '../dialogs/coupon-dialog.component';
 
 @Component({
   selector: 'app-coupons-page',
-  imports: [MatTableModule, MatButtonModule, PageToolbarComponent],
+  imports: [MatTableModule, MatButtonModule, PageToolbarComponent, HeaderToolbarDirective],
   templateUrl: './coupons-page.component.html',
   styleUrls: ['../../../app.scss'],
 })

@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 :host {
   display: contents;
 }
@@ -5,18 +7,41 @@
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 24px;
   padding: 18px 24px;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--app-topbar-bg);
   backdrop-filter: blur(10px);
+}
+
+.topbar-title {
+  flex: 0 0 auto;
+}
+
+/* 各頁面透過 appHeaderToolbar 投影進來的 toolbar，撐滿標題右側的剩餘寬度 */
+.topbar-toolbar {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  /* toolbar 併入 topbar 後，把 form field 從預設 56px 壓到 44px（density -3），
+     避免輸入框的視覺重量壓過頁面標題。搭配 filter-select 改用 placeholder，
+     浮動 label 消失後仍看得到欄位名稱。 */
+  @include mat.form-field-overrides(
+    (
+      container-height: 44px,
+      container-vertical-padding: 10px,
+      filled-with-label-container-padding-top: 10px,
+      filled-with-label-container-padding-bottom: 10px,
+      filled-label-display: none,
+    )
+  );
 }
 
 .topbar-title h2 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 800;
+  color: var(--mat-sys-on-surface);
 }
 
 .breadcrumb {
@@ -45,5 +70,12 @@
 
   .topbar {
     padding: 16px 18px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* 窄畫面時 toolbar 讓出標題那一列，改為換行獨佔一列 */
+  .topbar-toolbar {
+    flex-basis: 100%;
   }
 }

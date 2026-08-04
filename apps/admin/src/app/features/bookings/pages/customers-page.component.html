@@ -1,7 +1,9 @@
-<div >
-  <app-page-toolbar [showSearch]="false">
-    <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
-  </app-page-toolbar>
+<div>
+  <ng-template appHeaderToolbar>
+    <app-page-toolbar [showSearch]="false">
+      <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+    </app-page-toolbar>
+  </ng-template>
 
   @if (store.customers().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>
