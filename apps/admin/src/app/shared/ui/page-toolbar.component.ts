@@ -35,4 +35,16 @@ export class PageToolbarComponent {
     // 必須同步呼叫。包進 setTimeout / afterNextRender 會讓 iOS Safari 不喚起軟鍵盤。
     this.inputRef()?.nativeElement.focus();
   }
+
+  onEscape(): void {
+    this.query.set('');
+    this.expanded.set(false);
+    this.inputRef()?.nativeElement.blur();
+  }
+
+  clearKeepFocus(): void {
+    this.query.set('');
+    // 清空後游標留在框內，讓使用者直接重打。
+    this.inputRef()?.nativeElement.focus();
+  }
 }

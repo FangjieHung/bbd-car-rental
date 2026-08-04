@@ -22,7 +22,20 @@
           [placeholder]="placeholder()"
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
+          (keydown.escape)="onEscape()"
         />
+
+        @if (query()) {
+          <button
+            type="button"
+            class="search__clear"
+            [attr.aria-label]="t.common.clearSearch"
+            (mousedown)="$event.preventDefault()"
+            (click)="clearKeepFocus()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
       </div>
     }
 
