@@ -1,35 +1,44 @@
+/* 這個 toolbar 會被投影進 topbar（見 layout/header/header-toolbar-slot.ts）。
+   :host 與 .page-toolbar 都用 display: contents，讓下面三個區塊直接成為 .topbar
+   的 flex item，各自決定要跟標題同列還是換到下一列。 */
 :host {
-  display: block;
+  display: contents;
 }
 
 .page-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
+  display: contents;
 }
 
+/* 第一列：搜尋框接在標題右側 */
 .search-field {
   flex: 1 1 240px;
   max-width: 320px;
 }
 
+/* 第一列最右：主要操作（新增等） */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 第二列：篩選器獨佔一列並齊左，與標題左邊界對齊 */
 .filters {
+  order: 2;
+  flex-basis: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
 
-.clear-btn {
-  color: var(--mat-sys-on-surface-variant);
+/* 沒有任何篩選器的頁面不留下空白列 */
+.filters:empty {
+  display: none;
 }
 
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-left: auto;
+.clear-btn {
+  color: var(--mat-sys-on-surface-variant);
 }
 
 @media (max-width: 640px) {

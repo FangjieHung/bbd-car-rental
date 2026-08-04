@@ -1,27 +1,44 @@
 <div class="page-toolbar">
-  @if (showSearch()) {
-    <mat-form-field class="search-field" subscriptSizing="dynamic">
-      <mat-icon matPrefix>search</mat-icon>
-      <input
-        matInput
-        [ngModel]="query()"
-        (ngModelChange)="query.set($event)"
-        [placeholder]="placeholder()"
-      />
-    </mat-form-field>
-  }
+  <div class="flex gap-2 ml-auto">
+    @if (showSearch()) {
+      <mat-form-field class="search-field" subscriptSizing="dynamic">
+        <button matPrefix>
+          <mat-icon>search</mat-icon>
+        </button>
+        <input
+          matInput
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+          [placeholder]="placeholder()"
+        />
+        @if (query()) {
+          <button
+            matSuffix
+            mat-icon-button
+            class="search-clear"
+            type="button"
+            [attr.aria-label]="t.common.clearSearch"
+            (click)="query.set('')"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+    }
+
+    <div class="actions">
+      <ng-content select="[actions]" />
+    </div>
+  </div>
 
   <div class="filters">
     <ng-content select="[filters]" />
 
     @if (activeFilterCount() > 0) {
       <button mat-button class="clear-btn" type="button" (click)="clearAll.emit()">
+        <mat-icon>close</mat-icon>
         {{ t.common.clearFilters }}
       </button>
     }
-  </div>
-
-  <div class="actions">
-    <ng-content select="[actions]" />
   </div>
 </div>

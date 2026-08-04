@@ -28,6 +28,8 @@ export const ZH_TW = {
     search: '搜尋',
     all: '全部',
     clearFilters: '清除篩選',
+    clearSearch: '清除搜尋',
+    collapseSearch: '收合搜尋',
     noResults: '沒有符合條件的資料',
   },
   vehicle: {

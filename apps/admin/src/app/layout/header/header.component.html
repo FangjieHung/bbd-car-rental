@@ -1,17 +1,18 @@
 <header class="topbar">
-  <button mat-icon-button class="menu-toggle" type="button" (click)="menuToggle.emit()">
-    <mat-icon>menu</mat-icon>
-  </button>
-
-  <div class="topbar-title">
-    <div class="breadcrumb">
-      @if (currentGroupLabel()) {
-        <span>{{ currentGroupLabel() }}</span>
-        <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
-      }
-      <span>{{ currentTitle() }}</span>
+  <div class="flex items-center gap-2">
+    <button mat-icon-button class="menu-toggle" type="button" (click)="menuToggle.emit()">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <div class="topbar-title">
+      <div class="breadcrumb">
+        @if (currentGroupLabel()) {
+          <span>{{ currentGroupLabel() }}</span>
+          <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+        }
+        <span>{{ currentTitle() }}</span>
+      </div>
+      <h2>{{ currentTitle() }}</h2>
     </div>
-    <h2>{{ currentTitle() }}</h2>
   </div>
 
   @if (toolbarTemplate(); as toolbar) {

@@ -6,27 +6,25 @@
 
 .topbar {
   display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 24px;
-  padding: 18px 24px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  background: var(--app-topbar-bg);
+  gap: 1.5rem .75rem;
+  padding: 1rem 1.75rem;
   backdrop-filter: blur(10px);
 }
 
-.topbar-title {
-  flex: 0 0 auto;
-}
-
-/* 各頁面透過 appHeaderToolbar 投影進來的 toolbar，撐滿標題右側的剩餘寬度 */
+/* 各頁面透過 appHeaderToolbar 投影進來的 toolbar。
+   用 display: contents 讓 page-toolbar 的 search / filters / actions 直接成為
+   .topbar 的 flex item，才能各自決定要跟標題同列還是換到下一列（排版規則寫在
+   page-toolbar.component.scss，由該元件自己掌握三個區塊的 order 與換行）。 */
 .topbar-toolbar {
-  flex: 1 1 auto;
-  min-width: 0;
+  display: contents;
 
   /* toolbar 併入 topbar 後，把 form field 從預設 56px 壓到 44px（density -3），
      避免輸入框的視覺重量壓過頁面標題。搭配 filter-select 改用 placeholder，
      浮動 label 消失後仍看得到欄位名稱。 */
-  @include mat.form-field-overrides(
+  @include mat.form-field-overrides (
     (
       container-height: 44px,
       container-vertical-padding: 10px,
@@ -38,10 +36,13 @@
 }
 
 .topbar-title h2 {
-  margin: 0;
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 500;
   color: var(--mat-sys-on-surface);
+
+  @varient md {
+    font-size: 2rem;
+  }
 }
 
 .breadcrumb {
@@ -71,11 +72,5 @@
   .topbar {
     padding: 16px 18px;
     gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  /* 窄畫面時 toolbar 讓出標題那一列，改為換行獨佔一列 */
-  .topbar-toolbar {
-    flex-basis: 100%;
   }
 }
