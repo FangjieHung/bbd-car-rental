@@ -486,11 +486,14 @@ git commit -m "feat(admin): 搜尋框空白失焦時自動收合"
   cursor: pointer;
 }
 
-/* 固定基準寬度：收合時被容器裁掉，不能設為 0（零寬元素的 focus 行為在 iOS 上不保證）。 */
+/* input 必須永遠保有非零的實體尺寸——隱藏完全交給容器的 overflow: hidden。
+   min-width 是關鍵：收合態容器只有 44px，而 .search__toggle 不可縮，flex 會把全部
+   負空間壓到 input 身上；若下限為 0，實際渲染寬度就是 0，等同違反「不可用 width: 0」
+   的全域限制（零尺寸元素的 focus 不保證能喚起 iOS 軟鍵盤）。
+   用 min-width 而非 flex-shrink: 0，是為了讓極窄螢幕展開時不致溢出而裁掉 ✕ 按鈕。 */
 .search__input {
-  flex: 1 1 auto;
-  width: 200px;
-  min-width: 0;
+  flex: 1 1 200px;
+  min-width: 5rem;
   height: 100%;
   padding: 0;
   border: 0;
