@@ -52,11 +52,12 @@
   cursor: pointer;
 }
 
-/* 固定基準寬度：收合時被容器裁掉，不能設為 0（零寬元素的 focus 行為在 iOS 上不保證）。 */
+/* input 必須永遠保有非零的實體尺寸，收合時的隱藏完全交給容器的 overflow: hidden。
+   用 min-width（非零下限）而非 flex-shrink: 0：完全不可縮會讓極窄螢幕（約 320px）
+   展開時 44+200+44=288px 溢出、把 ✕ 按鈕裁掉；設非零下限則兩者兼顧。 */
 .search__input {
-  flex: 1 1 auto;
-  width: 200px;
-  min-width: 0;
+  flex: 1 1 200px;
+  min-width: 5rem;
   height: 100%;
   padding: 0;
   border: 0;
