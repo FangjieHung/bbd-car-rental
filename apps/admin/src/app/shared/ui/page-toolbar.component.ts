@@ -26,9 +26,7 @@ export class PageToolbarComponent {
 
   toggle(): void {
     if (this.expanded()) {
-      this.query.set('');
-      this.expanded.set(false);
-      this.inputRef()?.nativeElement.blur();
+      this.collapse();
       return;
     }
     this.expanded.set(true);
@@ -37,6 +35,10 @@ export class PageToolbarComponent {
   }
 
   onEscape(): void {
+    this.collapse();
+  }
+
+  private collapse(): void {
     this.query.set('');
     this.expanded.set(false);
     this.inputRef()?.nativeElement.blur();
