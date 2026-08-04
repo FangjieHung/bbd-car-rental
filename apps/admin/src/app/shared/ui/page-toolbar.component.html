@@ -1,29 +1,29 @@
 <div class="page-toolbar">
   <div class="flex gap-2 ml-auto">
     @if (showSearch()) {
-      <mat-form-field class="search-field" subscriptSizing="dynamic">
-        <button matPrefix>
+      <div class="search" [class.search--expanded]="expanded()">
+        <button
+          type="button"
+          class="search__toggle"
+          [attr.aria-label]="expanded() ? t.common.collapseSearch : t.common.search"
+          [attr.aria-expanded]="expanded()"
+          (mousedown)="$event.preventDefault()"
+          (click)="toggle()"
+        >
           <mat-icon>search</mat-icon>
         </button>
+
         <input
-          matInput
+          #searchInput
+          type="text"
+          class="search__input"
+          [tabindex]="expanded() ? 0 : -1"
+          [attr.aria-label]="placeholder()"
+          [placeholder]="placeholder()"
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
-          [placeholder]="placeholder()"
         />
-        @if (query()) {
-          <button
-            matSuffix
-            mat-icon-button
-            class="search-clear"
-            type="button"
-            [attr.aria-label]="t.common.clearSearch"
-            (click)="query.set('')"
-          >
-            <mat-icon>close</mat-icon>
-          </button>
-        }
-      </mat-form-field>
+      </div>
     }
 
     <div class="actions">
