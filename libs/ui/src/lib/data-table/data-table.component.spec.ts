@@ -46,6 +46,20 @@ class HostComponent {
   ]);
 }
 
+interface RowWithoutId {
+  name: string;
+}
+
+@Component({
+  imports: [DataTableComponent],
+  template: `<lib-data-table [columns]="columns" [rows]="rows" [labels]="labels" />`,
+})
+class NoIdHostComponent {
+  readonly labels = LABELS;
+  readonly columns: DataTableColumn<RowWithoutId>[] = [{ key: 'name', label: '名稱' }];
+  readonly rows: RowWithoutId[] = [{ name: 'foo' }];
+}
+
 describe('DataTableComponent 標準模式', () => {
   let el: HTMLElement;
   let fixture: ReturnType<typeof TestBed.createComponent<HostComponent>>;
@@ -104,5 +118,14 @@ describe('DataTableComponent 標準模式', () => {
     await fixture.whenStable();
     expect(el.querySelector('table')).toBeNull();
     expect(el.textContent).toContain('目前沒有資料');
+  });
+
+  it('資料列沒有 id 欄位且未指定 rowId 時，預設 rowId 丟出明確錯誤', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [NoIdHostComponent] }).compileComponents();
+    const noIdFixture = TestBed.createComponent(NoIdHostComponent);
+    expect(() => noIdFixture.detectChanges()).toThrow(
+      'DataTable：資料列沒有 id 欄位，請傳入 [rowId] 指定識別欄位',
+    );
   });
 });

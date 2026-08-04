@@ -22,7 +22,13 @@ type ResolvedColumn<T> = DataTableColumn<T> & { primary: boolean };
 export class DataTableComponent<T> {
   readonly columns = input<DataTableColumn<T>[]>([]);
   readonly rows = input<readonly T[]>([]);
-  readonly rowId = input<(row: T) => unknown>((row) => (row as { id: unknown }).id);
+  readonly rowId = input<(row: T) => unknown>((row) => {
+    const id = (row as { id?: unknown }).id;
+    if (id === undefined) {
+      throw new Error('DataTable：資料列沒有 id 欄位，請傳入 [rowId] 指定識別欄位');
+    }
+    return id;
+  });
   readonly mobile = input<DataTableMobileMode | null>(null);
   readonly exportName = input('export');
   readonly showExport = input(true);
