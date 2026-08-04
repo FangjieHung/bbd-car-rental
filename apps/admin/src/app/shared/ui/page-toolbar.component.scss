@@ -9,10 +9,71 @@
   display: contents;
 }
 
-/* 第一列：搜尋框接在標題右側 */
-.search-field {
-  flex: 1 1 240px;
-  max-width: 320px;
+/* 收合態為 44×44 正圓，展開態拉長為膠囊。
+   只有容器寬度在變，input 尺寸恆定、由 overflow 裁切——
+   這是為了讓 input 永遠是可 focus 的實體元素（iOS 軟鍵盤的前提）。 */
+.search {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--mat-sys-surface-variant);
+  overflow: hidden;
+  transition: width 200ms ease;
+}
+
+/* 偏離 spec §4.3：spec 原寫成 `flex: 1 1 240px; max-width: 320px`，此處改用 width。
+   原因是本設計的動畫標的就是寬度，而瀏覽器對 flex-basis 的過渡遠不如 width 可靠
+   （flex 容器重新分配空間時容易跳動）。改用 width 後 transition 只需盯住一個屬性。 */
+.search--expanded {
+  width: 320px;
+  max-width: 100%;
+}
+
+.search:focus-within {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 1px;
+}
+
+.search__toggle,
+.search__clear {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+}
+
+/* 固定基準寬度：收合時被容器裁掉，不能設為 0（零寬元素的 focus 行為在 iOS 上不保證）。 */
+.search__input {
+  flex: 1 1 auto;
+  width: 200px;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: inherit;
+  outline: none;
+}
+
+.search__input::placeholder {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search {
+    transition: none;
+  }
 }
 
 /* 第一列最右：主要操作（新增等） */
@@ -42,8 +103,7 @@
 }
 
 @media (max-width: 640px) {
-  .search-field {
-    max-width: none;
-    flex-basis: 100%;
+  .search--expanded {
+    width: 100%;
   }
 }
