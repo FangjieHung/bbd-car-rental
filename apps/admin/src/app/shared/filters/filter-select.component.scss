@@ -7,6 +7,13 @@
 .filter-select {
   width: 140px;
 
+  /* Material 的 filled form field 預設容器高度 56px，在 topbar 中會使視覺重量
+     過重而壓過頁面標題，故壓至 44px（相當於 density -3）。此外隱藏浮動 label
+     也符合本元件的設計——因為本元件用 [placeholder]="label()" 代替 <mat-label>，
+     placeholder 會在 input 內顯示，隱藏浮動 label 不會損失欄位名稱。
+
+     ⚠️ 注意：此元件目前只用在 topbar 的 toolbar 投影內（見 page-toolbar）。
+     若日後用於頁面內容區，需重新評估這組 density 與 label 設定是否仍適用。 */
   @include mat.form-field-overrides (
     (
       container-height: 44px,
