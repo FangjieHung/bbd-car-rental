@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { DataTableComponent } from './data-table.component';
 import { DataTableCellDirective } from './data-table-cell.directive';
+import { DataTableBodyDirective, DataTableHeadDirective } from './data-table-slot.directives';
 import { DataTableColumn, DataTableLabels } from './data-table.types';
 
 interface Row {
@@ -217,5 +218,71 @@ describe('DataTableComponent 展開／收合', () => {
     ]);
     await fixture.whenStable();
     expect(el.querySelectorAll('tbody .dt-expand-btn')).toHaveLength(0);
+  });
+});
+
+@Component({
+  imports: [DataTableComponent, DataTableHeadDirective, DataTableBodyDirective],
+  template: `
+    <lib-data-table [columns]="columns" [labels]="labels" exportName="settlement">
+      <ng-template dtHead>
+        <tr>
+          <th rowspan="2">合作夥伴</th>
+          <th colspan="2">本季</th>
+        </tr>
+        <tr>
+          <th>訂單數</th>
+          <th>退佣</th>
+        </tr>
+      </ng-template>
+      <ng-template dtBody>
+        <tr>
+          <td>海邊民宿</td>
+          <td>12</td>
+          <td>3600</td>
+        </tr>
+      </ng-template>
+    </lib-data-table>
+  `,
+})
+class CustomHostComponent {
+  readonly labels = LABELS;
+  // 逃生門模式下應被忽略
+  readonly columns: DataTableColumn<unknown>[] = [{ key: 'ignored', label: '不該出現' }];
+}
+
+describe('DataTableComponent 逃生門模式', () => {
+  let el: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [CustomHostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(CustomHostComponent);
+    await fixture.whenStable();
+    el = fixture.nativeElement as HTMLElement;
+  });
+
+  it('渲染頁面提供的 thead，保留 colspan / rowspan', () => {
+    expect(el.querySelector('thead th[rowspan="2"]')?.textContent?.trim()).toBe('合作夥伴');
+    expect(el.querySelector('thead th[colspan="2"]')?.textContent?.trim()).toBe('本季');
+  });
+
+  it('忽略 columns，不渲染其 label', () => {
+    expect(el.textContent).not.toContain('不該出現');
+  });
+
+  it('不注入 data-label', () => {
+    expect(el.querySelector('tbody td[data-label]')).toBeNull();
+  });
+
+  it('不渲染展開鈕', () => {
+    expect(el.querySelector('.dt-expand-btn')).toBeNull();
+  });
+
+  it('mobile 預設為 scroll', () => {
+    expect(el.querySelector('.dt-wrap')?.classList.contains('dt-wrap--scroll')).toBe(true);
+  });
+
+  it('rows 為空也不顯示 emptyText（列由 dtBody 決定）', () => {
+    expect(el.querySelector('table')).toBeTruthy();
   });
 });

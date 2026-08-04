@@ -4,11 +4,13 @@ import {
   Component,
   TemplateRef,
   computed,
+  contentChild,
   contentChildren,
   input,
   signal,
 } from '@angular/core';
 import { DataTableCellContext, DataTableCellDirective } from './data-table-cell.directive';
+import { DataTableBodyDirective, DataTableHeadDirective } from './data-table-slot.directives';
 import { DataTableColumn, DataTableLabels, DataTableMobileMode } from './data-table.types';
 
 type ResolvedColumn<T> = DataTableColumn<T> & { primary: boolean };
@@ -37,8 +39,15 @@ export class DataTableComponent<T> {
   readonly labels = input.required<DataTableLabels>();
 
   private readonly cellDirectives = contentChildren(DataTableCellDirective<T>);
+  protected readonly headDirective = contentChild(DataTableHeadDirective);
+  protected readonly bodyDirective = contentChild(DataTableBodyDirective);
 
-  protected readonly mobileMode = computed<DataTableMobileMode>(() => this.mobile() ?? 'cards');
+  /** dtHead 存在即進入逃生門模式：不讀 columns、不注入 data-label、不生卡片。 */
+  protected readonly isCustom = computed(() => this.headDirective() != null);
+
+  protected readonly mobileMode = computed<DataTableMobileMode>(
+    () => this.mobile() ?? (this.isCustom() ? 'scroll' : 'cards'),
+  );
 
   protected readonly cellTemplates = computed(() => {
     const map = new Map<string, TemplateRef<DataTableCellContext<T>>>();
@@ -55,7 +64,7 @@ export class DataTableComponent<T> {
     return cols.map((col, i) => ({ ...col, primary: hasPrimary ? !!col.primary : i === 0 }));
   });
 
-  protected readonly isEmpty = computed(() => this.rows().length === 0);
+  protected readonly isEmpty = computed(() => !this.isCustom() && this.rows().length === 0);
 
   protected cellContext(row: T): DataTableCellContext<T> {
     return { $implicit: row };
