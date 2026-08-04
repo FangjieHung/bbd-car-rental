@@ -23,6 +23,7 @@
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
           (keydown.escape)="onEscape()"
+          (blur)="collapseIfEmpty()"
         />
 
         @if (query()) {

@@ -49,4 +49,10 @@ export class PageToolbarComponent {
     // 清空後游標留在框內，讓使用者直接重打。
     this.inputRef()?.nativeElement.focus();
   }
+
+  collapseIfEmpty(): void {
+    if (!this.query()) {
+      this.expanded.set(false);
+    }
+  }
 }

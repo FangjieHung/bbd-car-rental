@@ -82,3 +82,29 @@ describe('PageToolbarComponent 清除與 Esc', () => {
     expect(component.expanded()).toBe(false);
   });
 });
+
+describe('PageToolbarComponent 失焦收合', () => {
+  it('失焦時若為空白則收合', () => {
+    const { fixture, component, toggleBtn, input } = setup();
+    toggleBtn().click();
+    fixture.detectChanges();
+
+    input().dispatchEvent(new FocusEvent('blur'));
+    fixture.detectChanges();
+
+    expect(component.expanded()).toBe(false);
+  });
+
+  it('失焦時若有文字則維持展開', () => {
+    const { fixture, component, toggleBtn, input } = setup();
+    toggleBtn().click();
+    fixture.detectChanges();
+    component.query.set('ABC');
+    fixture.detectChanges();
+
+    input().dispatchEvent(new FocusEvent('blur'));
+    fixture.detectChanges();
+
+    expect(component.expanded()).toBe(true);
+  });
+});
