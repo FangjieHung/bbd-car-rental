@@ -49,3 +49,64 @@
   color: var(--mat-sys-on-surface-variant);
   padding: 0.75rem 1rem;
 }
+
+@media (max-width: 640px) {
+  // scroll 模式：保留表格形態，改為橫向捲動（合併儲存格的報表硬拆成卡片會讀不懂）
+  .dt-wrap--scroll {
+    overflow-x: auto;
+  }
+
+  .dt-wrap:not(.dt-wrap--scroll) {
+    .dt-table,
+    .dt-table tbody,
+    .dt-table tr,
+    .dt-table td {
+      display: block;
+      width: auto;
+    }
+
+    // 視覺隱藏而非 display:none —— SheetJS 會跳過 display:none 的節點，
+    // 否則手機上匯出的 Excel 會少掉標題列。
+    .dt-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      white-space: nowrap;
+      clip-path: inset(50%);
+    }
+
+    .dt-table tbody tr {
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 1rem;
+      padding: 0.875rem 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .dt-table tbody tr:last-child {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+      margin-bottom: 0;
+    }
+
+    .dt-table td {
+      padding: 0.25rem 0;
+      text-align: left; // 手機版一律靠左，覆蓋 dt-align-end
+    }
+
+    .dt-table td::before {
+      content: attr(data-label);
+      display: block;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .dt-table td.is-secondary {
+      display: none;
+    }
+
+    .dt-table tbody tr.is-expanded td.is-secondary {
+      display: block;
+    }
+  }
+}

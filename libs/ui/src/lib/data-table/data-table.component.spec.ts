@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { DataTableComponent } from './data-table.component';
 import { DataTableCellDirective } from './data-table-cell.directive';
 import { DataTableColumn, DataTableLabels } from './data-table.types';
@@ -127,5 +130,32 @@ describe('DataTableComponent 標準模式', () => {
     expect(() => noIdFixture.detectChanges()).toThrow(
       'DataTable：資料列沒有 id 欄位，請傳入 [rowId] 指定識別欄位',
     );
+  });
+});
+
+describe('DataTableComponent 手機版 DOM 不變性', () => {
+  it('thead 不使用 display:none（SheetJS 會跳過隱藏節點，此迴歸守衛只在手機斷點才擋得住這個 bug，桌機測不出來）', async () => {
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(HostComponent);
+    await fixture.whenStable();
+
+    const scss = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'data-table.component.scss'),
+      'utf-8',
+    );
+    const mobileBlock = scss.split('@media (max-width: 640px)')[1] ?? '';
+    expect(mobileBlock).toContain('clip-path');
+    expect(mobileBlock).not.toMatch(/thead[^}]*display:\s*none/);
+  });
+
+  it('非 primary 欄位帶 is-secondary class（供手機版收合）', async () => {
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(HostComponent);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    const mileageCell = el.querySelector('tbody tr td[data-label="里程"]');
+    const plateCell = el.querySelector('tbody tr td[data-label="車牌"]');
+    expect(mileageCell?.classList.contains('is-secondary')).toBe(true);
+    expect(plateCell?.classList.contains('is-secondary')).toBe(false);
   });
 });
