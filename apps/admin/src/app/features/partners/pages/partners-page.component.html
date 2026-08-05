@@ -17,6 +17,7 @@
         exportName="partners"
         (exportFailed)="onExportFailed($event)"
       >
+        <ng-template dtCell="discountPercent" let-p>{{ p.discountPercent }}%</ng-template>
         <ng-template dtCell="commission" let-p>
           {{ t.partner.commissionTypeLabels[p.commission.type] }}（{{ p.commission.value }}）
         </ng-template>
