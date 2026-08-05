@@ -115,7 +115,9 @@ export class DataTableComponent<T> {
     try {
       if (this.isCustom()) {
         const el = this.tableEl()?.nativeElement;
-        if (!el) return;
+        if (!el) {
+          throw new Error('DataTable：找不到 table 節點，無法匯出');
+        }
         await exportTableElement(el, this.exportName());
       } else {
         await exportRows(this.columns(), this.rows(), this.exportName());

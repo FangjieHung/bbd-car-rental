@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
@@ -8,6 +8,28 @@ import { DataTableComponent } from './data-table.component';
 import { DataTableCellDirective } from './data-table-cell.directive';
 import { DataTableBodyDirective, DataTableHeadDirective } from './data-table-slot.directives';
 import { DataTableColumn, DataTableLabels } from './data-table.types';
+
+// Angular 的 vitest builder 禁止對「相對路徑」用 vi.mock（見
+// @angular/build .../unit-test/runners/vitest/build-options.js 的 vitest-mock-patch，
+// 對 /^[./]/ 開頭的 specifier 一律丟錯，要求改用 TestBed 做 DI mocking）。
+// 因此無法直接 mock './data-table-export'，改為 mock 'xlsx'（bare specifier，不受限）——
+// 這樣測試會實際跑過 exportRows / exportTableElement 真正的實作，
+// 只在 SheetJS 這層邊界處攔截，藉由它是否呼叫 aoa_to_sheet 還是 table_to_sheet
+// 來驗證 runExport() 的分派邏輯，覆蓋範圍其實更完整。
+const writeFile = vi.fn();
+const aoaToSheet = vi.fn((..._args: unknown[]) => ({ mock: 'ws-aoa' }));
+const tableToSheet = vi.fn((..._args: unknown[]) => ({ mock: 'ws-dom' }));
+const bookAppendSheet = vi.fn();
+
+vi.mock('xlsx', () => ({
+  utils: {
+    aoa_to_sheet: (...args: unknown[]) => aoaToSheet(...args),
+    table_to_sheet: (...args: unknown[]) => tableToSheet(...args),
+    book_new: () => ({ mock: 'wb' }),
+    book_append_sheet: (...args: unknown[]) => bookAppendSheet(...args),
+  },
+  writeFile: (...args: unknown[]) => writeFile(...args),
+}));
 
 interface Row {
   id: string;
@@ -341,5 +363,127 @@ describe('DataTableComponent 逃生門模式守衛', () => {
     expect(() => fixture.detectChanges()).toThrow(
       'DataTable：逃生門模式需同時提供 dtHead 與 dtBody',
     );
+  });
+});
+
+@Component({
+  imports: [DataTableComponent],
+  template: `
+    <lib-data-table
+      [columns]="columns"
+      [rows]="rows()"
+      [labels]="labels"
+      [showExport]="showExport()"
+      (exportFailed)="onExportFailed($event)"
+    />
+  `,
+})
+class ExportHostComponent {
+  readonly labels = LABELS;
+  readonly columns: DataTableColumn<Row>[] = [{ key: 'name', label: '車牌', primary: true }];
+  readonly rows = signal<Row[]>([
+    { id: 'v1', name: 'ABC-123', status: 'available', mileage: 12000 },
+  ]);
+  readonly showExport = signal(true);
+  lastError: Error | undefined;
+  onExportFailed(e: Error): void {
+    this.lastError = e;
+  }
+}
+
+@Component({
+  imports: [DataTableComponent, DataTableHeadDirective, DataTableBodyDirective],
+  template: `
+    <lib-data-table [columns]="columns" [labels]="labels" (exportFailed)="onExportFailed($event)">
+      <ng-template dtHead>
+        <tr>
+          <th>合作夥伴</th>
+        </tr>
+      </ng-template>
+      <ng-template dtBody>
+        <tr>
+          <td>海邊民宿</td>
+        </tr>
+      </ng-template>
+    </lib-data-table>
+  `,
+})
+class ExportCustomHostComponent {
+  readonly labels = LABELS;
+  readonly columns: DataTableColumn<unknown>[] = [];
+  lastError: Error | undefined;
+  onExportFailed(e: Error): void {
+    this.lastError = e;
+  }
+}
+
+describe('DataTableComponent 匯出接線', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('showExport 為 true 且有資料時渲染匯出鈕', async () => {
+    await TestBed.configureTestingModule({ imports: [ExportHostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(ExportHostComponent);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.dt-export-btn')).toBeTruthy();
+  });
+
+  it('showExport 為 false 時不渲染匯出鈕', async () => {
+    await TestBed.configureTestingModule({ imports: [ExportHostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(ExportHostComponent);
+    fixture.componentInstance.showExport.set(false);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.dt-export-btn')).toBeNull();
+  });
+
+  it('rows 為空（isEmpty）時不渲染匯出鈕，即使 showExport 為 true', async () => {
+    await TestBed.configureTestingModule({ imports: [ExportHostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(ExportHostComponent);
+    fixture.componentInstance.rows.set([]);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.dt-export-btn')).toBeNull();
+  });
+
+  it('標準模式點擊匯出鈕呼叫 aoa_to_sheet，不呼叫 table_to_sheet（分派到 exportRows）', async () => {
+    await TestBed.configureTestingModule({ imports: [ExportHostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(ExportHostComponent);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('.dt-export-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(aoaToSheet).toHaveBeenCalledTimes(1);
+    expect(tableToSheet).not.toHaveBeenCalled();
+    expect(writeFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('逃生門模式點擊匯出鈕呼叫 table_to_sheet，不呼叫 aoa_to_sheet（分派到 exportTableElement）', async () => {
+    await TestBed.configureTestingModule({
+      imports: [ExportCustomHostComponent],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(ExportCustomHostComponent);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('.dt-export-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(tableToSheet).toHaveBeenCalledTimes(1);
+    expect(aoaToSheet).not.toHaveBeenCalled();
+    expect(writeFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('底層匯出拋錯時發出 exportFailed', async () => {
+    writeFile.mockImplementationOnce(() => {
+      throw new Error('boom');
+    });
+    await TestBed.configureTestingModule({ imports: [ExportHostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(ExportHostComponent);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('.dt-export-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.lastError?.message).toBe('boom');
   });
 });

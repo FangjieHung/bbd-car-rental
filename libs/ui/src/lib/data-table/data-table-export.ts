@@ -25,8 +25,9 @@ export function rowsToAoa<T>(
   return [header, ...body];
 }
 
-async function writeWorkbook(sheet: unknown, name: string): Promise<void> {
-  const XLSX = await import('xlsx');
+type XlsxModule = typeof import('xlsx');
+
+async function writeWorkbook(XLSX: XlsxModule, sheet: unknown, name: string): Promise<void> {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, sheet as never, 'Sheet1');
   XLSX.writeFile(workbook, exportFileName(name));
@@ -42,7 +43,7 @@ export async function exportRows<T>(
   name: string,
 ): Promise<void> {
   const XLSX = await import('xlsx');
-  await writeWorkbook(XLSX.utils.aoa_to_sheet(rowsToAoa(columns, rows)), name);
+  await writeWorkbook(XLSX, XLSX.utils.aoa_to_sheet(rowsToAoa(columns, rows)), name);
 }
 
 /**
@@ -51,5 +52,5 @@ export async function exportRows<T>(
  */
 export async function exportTableElement(el: HTMLTableElement, name: string): Promise<void> {
   const XLSX = await import('xlsx');
-  await writeWorkbook(XLSX.utils.table_to_sheet(el), name);
+  await writeWorkbook(XLSX, XLSX.utils.table_to_sheet(el), name);
 }
