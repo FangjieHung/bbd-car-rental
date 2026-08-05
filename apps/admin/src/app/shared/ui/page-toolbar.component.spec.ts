@@ -54,6 +54,25 @@ describe('PageToolbarComponent 清除與 Esc', () => {
     expect(clearBtn()).toBeNull();
   });
 
+  it('點放大鏡會同步把焦點移到 input（不得跨非同步邊界）', () => {
+    const { toggleBtn, input } = setup();
+    const el = input();
+    toggleBtn().click();
+    // 刻意不呼叫 detectChanges：focus 必須在 click 的同步流程中完成。
+    expect(document.activeElement).toBe(el);
+  });
+
+  it('按 Esc 收合後，焦點回到放大鏡按鈕', () => {
+    const { fixture, toggleBtn, input } = setup();
+    toggleBtn().click();
+    fixture.detectChanges();
+
+    input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(toggleBtn());
+  });
+
   it('點清除鈕會清空文字但維持展開', () => {
     const { fixture, component, toggleBtn, clearBtn } = setup();
     toggleBtn().click();
@@ -106,5 +125,18 @@ describe('PageToolbarComponent 失焦收合', () => {
     fixture.detectChanges();
 
     expect(component.expanded()).toBe(true);
+  });
+
+  it('失焦時若只有空白字元則視為空並收合', () => {
+    const { fixture, component, toggleBtn, input } = setup();
+    toggleBtn().click();
+    fixture.detectChanges();
+    component.query.set('   ');
+    fixture.detectChanges();
+
+    input().dispatchEvent(new FocusEvent('blur'));
+    fixture.detectChanges();
+
+    expect(component.expanded()).toBe(false);
   });
 });

@@ -19,14 +19,14 @@
   width: 44px;
   height: 44px;
   border-radius: 999px;
+  /* 與 Material filled field 同源：其底色 fallback 即為 --mat-sys-surface-variant，
+     故搜尋膠囊與同列的 filter-select 天然同階，勿改用 surface-container-*。 */
   background: var(--mat-sys-surface-variant);
   overflow: hidden;
   transition: width 200ms ease;
 }
 
-/* 偏離 spec §4.3：spec 原寫成 `flex: 1 1 240px; max-width: 320px`，此處改用 width。
-   原因是本設計的動畫標的就是寬度，而瀏覽器對 flex-basis 的過渡遠不如 width 可靠
-   （flex 容器重新分配空間時容易跳動）。改用 width 後 transition 只需盯住一個屬性。 */
+/* 呼應 spec §4.3：寬度以 width 控制而非 flex-basis，因動畫標的即為寬度。 */
 .search--expanded {
   width: 320px;
   max-width: 100%;
@@ -47,9 +47,19 @@
   height: 44px;
   padding: 0;
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: var(--mat-sys-on-surface-variant);
   cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 12%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: -2px;
+  }
 }
 
 /* input 必須永遠保有非零的實體尺寸，收合時的隱藏完全交給容器的 overflow: hidden。
@@ -63,7 +73,9 @@
   border: 0;
   background: transparent;
   color: var(--mat-sys-on-surface);
-  font: inherit;
+  font-family: inherit;
+  font-size: 16px; /* 不可低於 16px：iOS Safari 會在 focus 時自動縮放頁面 */
+  line-height: inherit;
   outline: none;
 }
 

@@ -1,12 +1,14 @@
 <div class="page-toolbar">
   <div class="flex flex-wrap gap-2 ml-auto">
     @if (showSearch()) {
-      <div class="search" [class.search--expanded]="expanded()">
+      <div class="search" [class.search--expanded]="expanded()" (keydown.escape)="onEscape()">
         <button
+          #toggleBtn
           type="button"
           class="search__toggle"
           [attr.aria-label]="expanded() ? t.common.collapseSearch : t.common.search"
           [attr.aria-expanded]="expanded()"
+          [attr.aria-controls]="searchInputId"
           (mousedown)="$event.preventDefault()"
           (click)="toggle()"
         >
@@ -15,6 +17,7 @@
 
         <input
           #searchInput
+          [id]="searchInputId"
           type="text"
           class="search__input"
           [tabindex]="expanded() ? 0 : -1"
@@ -22,7 +25,6 @@
           [placeholder]="placeholder()"
           [ngModel]="query()"
           (ngModelChange)="query.set($event)"
-          (keydown.escape)="onEscape()"
           (blur)="collapseIfEmpty()"
         />
 
