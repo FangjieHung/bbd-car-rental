@@ -2,14 +2,18 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   TemplateRef,
   computed,
   contentChild,
   contentChildren,
   input,
+  output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { DataTableCellContext, DataTableCellDirective } from './data-table-cell.directive';
+import { exportRows, exportTableElement } from './data-table-export';
 import { DataTableBodyDirective, DataTableHeadDirective } from './data-table-slot.directives';
 import { DataTableColumn, DataTableLabels, DataTableMobileMode } from './data-table.types';
 
@@ -98,5 +102,26 @@ export class DataTableComponent<T> {
   protected valueOf(row: T, key: string): string {
     const value = (row as Record<string, unknown>)[key];
     return value === null || value === undefined ? '' : String(value);
+  }
+
+  /** 匯出失敗（多半是 xlsx 動態載入失敗）時通知使用端顯示 snackbar。 */
+  readonly exportFailed = output<Error>();
+
+  private readonly tableEl = viewChild<ElementRef<HTMLTableElement>>('tableEl');
+
+  protected readonly canExport = computed(() => this.showExport() && !this.isEmpty());
+
+  protected async runExport(): Promise<void> {
+    try {
+      if (this.isCustom()) {
+        const el = this.tableEl()?.nativeElement;
+        if (!el) return;
+        await exportTableElement(el, this.exportName());
+      } else {
+        await exportRows(this.columns(), this.rows(), this.exportName());
+      }
+    } catch (e) {
+      this.exportFailed.emit(e as Error);
+    }
   }
 }

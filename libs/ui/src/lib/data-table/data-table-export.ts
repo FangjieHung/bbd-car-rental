@@ -24,3 +24,32 @@ export function rowsToAoa<T>(
   );
   return [header, ...body];
 }
+
+async function writeWorkbook(sheet: unknown, name: string): Promise<void> {
+  const XLSX = await import('xlsx');
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, sheet as never, 'Sheet1');
+  XLSX.writeFile(workbook, exportFileName(name));
+}
+
+/**
+ * 標準模式：從資料匯出，與畫面完全脫鉤。
+ * 日後若加上分頁或虛擬捲動也不會變成「只匯出當前頁」。
+ */
+export async function exportRows<T>(
+  columns: DataTableColumn<T>[],
+  rows: readonly T[],
+  name: string,
+): Promise<void> {
+  const XLSX = await import('xlsx');
+  await writeWorkbook(XLSX.utils.aoa_to_sheet(rowsToAoa(columns, rows)), name);
+}
+
+/**
+ * 逃生門模式：從 DOM 匯出，colspan / rowspan 會轉為 Excel 的合併儲存格。
+ * 這是 exportRows 做不到的，代價是與畫面耦合。
+ */
+export async function exportTableElement(el: HTMLTableElement, name: string): Promise<void> {
+  const XLSX = await import('xlsx');
+  await writeWorkbook(XLSX.utils.table_to_sheet(el), name);
+}

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { exportFileName, rowsToAoa } from './data-table-export';
 import { DataTableColumn } from './data-table.types';
 
@@ -46,4 +46,46 @@ describe('rowsToAoa', () => {
 
   it('rows 為空時只有標題列', () =>
     expect(rowsToAoa(columns, [])).toHaveLength(1));
+});
+
+const writeFile = vi.fn();
+const aoaToSheet = vi.fn((..._args: unknown[]) => ({ mock: 'ws-aoa' }));
+const tableToSheet = vi.fn((..._args: unknown[]) => ({ mock: 'ws-dom' }));
+const bookAppendSheet = vi.fn();
+
+vi.mock('xlsx', () => ({
+  utils: {
+    aoa_to_sheet: (...args: unknown[]) => aoaToSheet(...args),
+    table_to_sheet: (...args: unknown[]) => tableToSheet(...args),
+    book_new: () => ({ mock: 'wb' }),
+    book_append_sheet: (...args: unknown[]) => bookAppendSheet(...args),
+  },
+  writeFile: (...args: unknown[]) => writeFile(...args),
+}));
+
+describe('exportRows（標準模式：從資料匯出）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('用 aoa_to_sheet，內容為 rowsToAoa 的結果', async () => {
+    const { exportRows } = await import('./data-table-export');
+    await exportRows(columns, rows, 'add-ons');
+    expect(aoaToSheet).toHaveBeenCalledWith(rowsToAoa(columns, rows));
+  });
+
+  it('檔名帶入 exportName 與日期', async () => {
+    const { exportRows } = await import('./data-table-export');
+    await exportRows(columns, rows, 'add-ons');
+    expect(writeFile.mock.calls[0][1]).toMatch(/^add-ons-\d{8}\.xlsx$/);
+  });
+});
+
+describe('exportTableElement（逃生門模式：從 DOM 匯出）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('用 table_to_sheet 並傳入該 table 節點', async () => {
+    const { exportTableElement } = await import('./data-table-export');
+    const table = document.createElement('table');
+    await exportTableElement(table, 'settlement');
+    expect(tableToSheet).toHaveBeenCalledWith(table);
+  });
 });

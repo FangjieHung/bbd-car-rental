@@ -1,8 +1,15 @@
+@if (canExport()) {
+  <div class="dt-toolbar">
+    <button type="button" class="dt-export-btn" (click)="runExport()">
+      {{ labels().exportExcel }}
+    </button>
+  </div>
+}
 <div class="dt-wrap" [class.dt-wrap--scroll]="mobileMode() === 'scroll'">
   @if (isEmpty()) {
     <p class="dt-empty">{{ emptyText() }}</p>
   } @else {
-    <table class="dt-table">
+    <table class="dt-table" #tableEl>
       @if (isCustom()) {
         <thead>
           <ng-container [ngTemplateOutlet]="headDirective()!.template" />
