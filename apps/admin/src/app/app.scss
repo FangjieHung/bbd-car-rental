@@ -284,8 +284,10 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-.action-cell {
-  white-space: nowrap;
+@media (min-width: 641px) {
+  .action-cell {
+    white-space: nowrap;
+  }
 }
 
 .text-secondary {
