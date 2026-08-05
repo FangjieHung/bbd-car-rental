@@ -68,8 +68,12 @@ export class CommissionPageComponent {
     return this.commissionStore.getPayoutStatus(partnerId, month);
   });
 
+  /** 依目前選定的合作夥伴與月份組出匯出檔名，否則多筆匯出只會拿到 commission-20260805 (1).xlsx 這種無法分辨的檔名。 */
+  readonly exportName = computed(() => `commission-${this.selectedPartnerId()}-${this.selectedMonth()}`);
+
   onExportFailed(e: Error): void {
-    this.snackBar.open(e.message, undefined, { duration: 3000 });
+    console.error('DataTable 匯出失敗', e);
+    this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
   onPartnerChange(id: string): void {
@@ -86,18 +90,5 @@ export class CommissionPageComponent {
     if (!partnerId || !month) return;
     this.commissionStore.markPaid(partnerId, month);
     this.payoutVersion.update((v) => v + 1);
-  }
-
-  exportCsv(): void {
-    const report = this.report();
-    if (!report) return;
-    const csv = this.commissionStore.toCsv(report.rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `commission-${this.selectedPartnerId()}-${this.selectedMonth()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 }

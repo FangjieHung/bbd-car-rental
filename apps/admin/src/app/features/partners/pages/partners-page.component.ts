@@ -36,17 +36,24 @@ export class PartnersPageComponent {
   readonly columns: DataTableColumn<Partner>[] = [
     { key: 'name', label: this.t.partner.name, primary: true },
     { key: 'slug', label: this.t.partner.slug, primary: true },
+    // 慣例：Excel 存可計算的數字，% 只用於畫面（dtCell 負責加 %）。
+    // discountPercent 沒有 exportValue 是刻意的——預設行為（取 row[key] 原始數字）已經符合這個慣例，
+    // 不必再多包一層。coupons 的 value 欄位原本反其道而行（exportValue 內加了 %），已一併修正對齊。
     { key: 'discountPercent', label: this.t.partner.discountPercent, align: 'end' },
     {
       key: 'commission',
       label: this.t.partner.commissionType,
-      exportValue: (p) => this.t.partner.commissionTypeLabels[p.commission.type],
+      // 畫面顯示「類型（數值）」，匯出也要帶上數值，否則 Excel 裡「拆帳方式」欄只剩類型、
+      // 缺了這個欄位存在的唯一理由：實際費率。
+      exportValue: (p) =>
+        `${this.t.partner.commissionTypeLabels[p.commission.type]}（${p.commission.value}）`,
     },
     { key: 'actions', label: this.t.common.actions, exportSkip: true },
   ];
 
   onExportFailed(e: Error): void {
-    this.snackBar.open(e.message, undefined, { duration: 3000 });
+    console.error('DataTable 匯出失敗', e);
+    this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
   async openForm(partner: Partner | null): Promise<void> {

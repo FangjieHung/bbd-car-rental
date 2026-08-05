@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
-import { MaintenanceAlert, MaintenanceRecord, Vehicle } from '../../../core/models';
+import { MaintenanceRecord, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
 import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
@@ -65,7 +65,8 @@ export class MaintenancePageComponent {
   ];
 
   onExportFailed(e: Error): void {
-    this.snackBar.open(e.message, undefined, { duration: 3000 });
+    console.error('DataTable 匯出失敗', e);
+    this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
   plateOf(id: string): string {

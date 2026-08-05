@@ -41,11 +41,14 @@ export class CouponsPageComponent {
       primary: true,
       exportValue: (c) => this.t.coupon.typeLabels[c.type],
     },
+    // 慣例：Excel 存可計算的數字，% 只用於畫面（見 partners-page 的 discountPercent/commission 欄同款註解）。
+    // 原本這裡對 percent 類型的折扣值加了 `%` 字尾，Excel 收到的是文字而非數字，
+    // 財務沒辦法直接拿去做加總或公式運算，因此改回存原始數字，與 partners 對齊。
     {
       key: 'value',
       label: this.t.coupon.value,
       align: 'end',
-      exportValue: (c) => (c.type === 'percent' ? `${c.value}%` : c.value),
+      exportValue: (c) => c.value,
     },
     {
       key: 'minDays',
@@ -70,7 +73,8 @@ export class CouponsPageComponent {
   ];
 
   onExportFailed(e: Error): void {
-    this.snackBar.open(e.message, undefined, { duration: 3000 });
+    console.error('DataTable 匯出失敗', e);
+    this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
   async openForm(coupon: Coupon | null): Promise<void> {

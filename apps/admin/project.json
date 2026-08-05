@@ -65,6 +65,9 @@
     },
     "test": {
       "executor": "@angular/build:unit-test"
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
     }
   }
 }

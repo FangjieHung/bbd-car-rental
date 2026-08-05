@@ -45,7 +45,8 @@ export class AddOnsPageComponent {
   ];
 
   onExportFailed(e: Error): void {
-    this.snackBar.open(e.message, undefined, { duration: 3000 });
+    console.error('DataTable 匯出失敗', e);
+    this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
   async openForm(addOn: AddOn | null): Promise<void> {

@@ -6,4 +6,5 @@ export const ADMIN_DATA_TABLE_LABELS: DataTableLabels = {
   exportExcel: ZH_TW.common.exportExcel,
   expandRow: ZH_TW.common.expandRow,
   collapseRow: ZH_TW.common.collapseRow,
+  exportFailedText: ZH_TW.common.exportFailedText,
 };

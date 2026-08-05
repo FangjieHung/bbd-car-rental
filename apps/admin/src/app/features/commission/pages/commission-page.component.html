@@ -22,7 +22,6 @@
         {{ t.commission.payoutStatus }}：{{ t.commission.payoutStatusLabels[payoutStatus()!] }}
       </span>
       <div>
-        <button mat-button (click)="exportCsv()">{{ t.commission.exportCsv }}</button>
         <button mat-flat-button [disabled]="payoutStatus() === 'paid'" (click)="markPaid()">
           {{ t.commission.markPaid }}
         </button>
@@ -39,7 +38,7 @@
           [rowId]="rowId"
           [labels]="labels"
           [emptyText]="t.common.empty"
-          exportName="commission"
+          [exportName]="exportName()"
           (exportFailed)="onExportFailed($event)"
         >
           <ng-template dtCell="period" let-r>{{ r.startTime }} ~ {{ r.endTime }}</ng-template>
