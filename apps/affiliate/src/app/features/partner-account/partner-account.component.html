@@ -4,32 +4,22 @@
       <h1>{{ a.partner.name }} 對帳明細</h1>
     </header>
 
-    <table class="commission-table">
-      <thead>
-        <tr>
-          <th>訂單編號</th>
-          <th>租期</th>
-          <th>天數</th>
-          <th>租金小計</th>
-          <th>退佣</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (line of a.commissionLines; track line.booking.id) {
-          <tr>
-            <td>{{ line.booking.id }}</td>
-            <td>{{ line.booking.startTime | slice: 0 : 10 }} ~ {{ line.booking.endTime | slice: 0 : 10 }}</td>
-            <td>{{ line.days }}</td>
-            <td>{{ line.booking.priceBreakdown?.rentalSubtotal }}</td>
-            <td>{{ line.commission }}</td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="5">目前沒有訂單紀錄</td>
-          </tr>
-        }
-      </tbody>
-    </table>
+    <lib-data-table
+      [columns]="commissionColumns"
+      [rows]="a.commissionLines"
+      [rowId]="commissionRowId"
+      [labels]="tableLabels"
+      emptyText="目前沒有訂單紀錄"
+      exportName="commission"
+    >
+      <ng-template dtCell="bookingId" let-l>{{ l.booking.id }}</ng-template>
+      <ng-template dtCell="period" let-l>
+        {{ l.booking.startTime | slice: 0 : 10 }} ~ {{ l.booking.endTime | slice: 0 : 10 }}
+      </ng-template>
+      <ng-template dtCell="rentalSubtotal" let-l>
+        {{ l.booking.priceBreakdown?.rentalSubtotal }}
+      </ng-template>
+    </lib-data-table>
 
     <p class="total-commission">累計佣金合計：{{ a.totalCommission }}</p>
 
