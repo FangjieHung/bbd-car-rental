@@ -31,6 +31,9 @@ export const ZH_TW = {
     clearSearch: '清除搜尋',
     collapseSearch: '收合搜尋',
     noResults: '沒有符合條件的資料',
+    exportExcel: '匯出 Excel',
+    expandRow: '展開詳細資料',
+    collapseRow: '收合詳細資料',
   },
   vehicle: {
     plateNumber: '車牌',
