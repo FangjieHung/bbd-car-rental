@@ -63,28 +63,6 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-.table-head {
-  text-align: left;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-}
-
-.table-cell {
-  color: var(--mat-sys-on-surface-variant);
-  padding: 0.75rem 1rem;
-}
-
-.table-cell--body {
-  color: inherit;
-}
-
-.table-row {
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-}
-
-.table-row:last-child {
-  border-bottom: 0;
-}
-
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
