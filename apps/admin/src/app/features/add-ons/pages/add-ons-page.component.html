@@ -5,33 +5,20 @@
     </app-page-toolbar>
   </ng-template>
 
-  @if (store.addOns().length === 0) {
-    <p class="empty-state">{{ t.common.empty }}</p>
-  } @else {
-    <div class="ui-card overflow-x-auto !p-0">
-      <table mat-table [dataSource]="store.addOns()" class="w-full">
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>{{ t.addOn.name }}</th>
-          <td mat-cell *matCellDef="let a">{{ a.name }}</td>
-        </ng-container>
-        <ng-container matColumnDef="unitPrice">
-          <th mat-header-cell *matHeaderCellDef>{{ t.addOn.unitPrice }}</th>
-          <td mat-cell *matCellDef="let a">{{ a.unitPrice }}</td>
-        </ng-container>
-        <ng-container matColumnDef="unit">
-          <th mat-header-cell *matHeaderCellDef>{{ t.addOn.unit }}</th>
-          <td mat-cell *matCellDef="let a">{{ t.addOn.unitLabels[a.unit] }}</td>
-        </ng-container>
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>{{ t.common.actions }}</th>
-          <td mat-cell *matCellDef="let a">
-            <button mat-button (click)="openForm(a)">{{ t.common.edit }}</button>
-            <button mat-button color="warn" (click)="remove(a)">{{ t.common.delete }}</button>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns" class="table-row"></tr>
-      </table>
-    </div>
-  }
+  <div class="ui-card !p-0">
+    <lib-data-table
+      [columns]="columns"
+      [rows]="store.addOns()"
+      [labels]="labels"
+      [emptyText]="t.common.empty"
+      exportName="add-ons"
+      (exportFailed)="onExportFailed($event)"
+    >
+      <ng-template dtCell="unit" let-a>{{ t.addOn.unitLabels[a.unit] }}</ng-template>
+      <ng-template dtCell="actions" let-a>
+        <button mat-button (click)="openForm(a)">{{ t.common.edit }}</button>
+        <button mat-button color="warn" (click)="remove(a)">{{ t.common.delete }}</button>
+      </ng-template>
+    </lib-data-table>
+  </div>
 </div>
