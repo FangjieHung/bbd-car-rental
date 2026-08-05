@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableModule } from '@angular/material/table';
+import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { Vehicle, VehicleStatus, VehicleCategory } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -11,6 +11,7 @@ import { StatusKey } from '@car-rental/theme-pack';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
+import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
 import {
   FilterOption,
   FilterSelectComponent,
@@ -31,7 +32,8 @@ const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
 @Component({
   selector: 'app-vehicles-page',
   imports: [
-    MatTableModule,
+    DataTableComponent,
+    DataTableCellDirective,
     MatButtonModule,
     StatusChipComponent,
     PageToolbarComponent,
@@ -46,7 +48,25 @@ export class VehiclesPageComponent {
   readonly store = inject(VehicleStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
-  readonly columns = ['plateNumber', 'category', 'model', 'status', 'mileage', 'actions'];
+  readonly labels = ADMIN_DATA_TABLE_LABELS;
+
+  readonly columns: DataTableColumn<Vehicle>[] = [
+    { key: 'plateNumber', label: this.t.vehicle.plateNumber, primary: true },
+    {
+      key: 'category',
+      label: this.t.vehicle.type,
+      exportValue: (v) => this.t.vehicle.typeLabels[v.category],
+    },
+    { key: 'model', label: this.t.vehicle.model },
+    {
+      key: 'status',
+      label: this.t.vehicle.status,
+      primary: true,
+      exportValue: (v) => this.t.vehicle.statusLabels[v.status],
+    },
+    { key: 'mileage', label: this.t.vehicle.mileage, align: 'end' },
+    { key: 'actions', label: this.t.common.actions, exportSkip: true },
+  ];
 
   readonly searchQuery = signal('');
   readonly typeFilter = signal<VehicleCategory | null>(null);
@@ -89,6 +109,10 @@ export class VehiclesPageComponent {
 
   statusKeyOf(v: Vehicle): StatusKey {
     return STATUS_KEY[v.status];
+  }
+
+  onExportFailed(e: Error): void {
+    this.snackBar.open(e.message, undefined, { duration: 3000 });
   }
 
   async openForm(vehicle: Vehicle | null): Promise<void> {
