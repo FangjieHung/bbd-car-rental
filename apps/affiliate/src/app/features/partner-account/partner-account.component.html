@@ -10,7 +10,8 @@
       [rowId]="commissionRowId"
       [labels]="tableLabels"
       emptyText="目前沒有訂單紀錄"
-      exportName="commission"
+      [exportName]="exportName()"
+      (exportFailed)="onExportFailed($event)"
     >
       <ng-template dtCell="bookingId" let-l>{{ l.booking.id }}</ng-template>
       <ng-template dtCell="period" let-l>
@@ -20,6 +21,9 @@
         {{ l.booking.priceBreakdown?.rentalSubtotal }}
       </ng-template>
     </lib-data-table>
+    @if (exportError(); as err) {
+      <p class="export-error">{{ err }}</p>
+    }
 
     <p class="total-commission">累計佣金合計：{{ a.totalCommission }}</p>
 
