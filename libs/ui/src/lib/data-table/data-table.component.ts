@@ -43,7 +43,14 @@ export class DataTableComponent<T> {
   protected readonly bodyDirective = contentChild(DataTableBodyDirective);
 
   /** dtHead 存在即進入逃生門模式：不讀 columns、不注入 data-label、不生卡片。 */
-  protected readonly isCustom = computed(() => this.headDirective() != null);
+  protected readonly isCustom = computed(() => {
+    const hasHead = this.headDirective() != null;
+    const hasBody = this.bodyDirective() != null;
+    if (hasHead !== hasBody) {
+      throw new Error('DataTable：逃生門模式需同時提供 dtHead 與 dtBody');
+    }
+    return hasHead;
+  });
 
   protected readonly mobileMode = computed<DataTableMobileMode>(
     () => this.mobile() ?? (this.isCustom() ? 'scroll' : 'cards'),

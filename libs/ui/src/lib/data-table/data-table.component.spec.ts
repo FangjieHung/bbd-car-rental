@@ -286,3 +286,60 @@ describe('DataTableComponent 逃生門模式', () => {
     expect(el.querySelector('table')).toBeTruthy();
   });
 });
+
+@Component({
+  imports: [DataTableComponent, DataTableHeadDirective],
+  template: `
+    <lib-data-table [columns]="columns" [labels]="labels">
+      <ng-template dtHead>
+        <tr>
+          <th>合作夥伴</th>
+        </tr>
+      </ng-template>
+    </lib-data-table>
+  `,
+})
+class HeadOnlyHostComponent {
+  readonly labels = LABELS;
+  readonly columns: DataTableColumn<unknown>[] = [];
+}
+
+@Component({
+  imports: [DataTableComponent, DataTableBodyDirective],
+  template: `
+    <lib-data-table [columns]="columns" [labels]="labels">
+      <ng-template dtBody>
+        <tr>
+          <td>海邊民宿</td>
+        </tr>
+      </ng-template>
+    </lib-data-table>
+  `,
+})
+class BodyOnlyHostComponent {
+  readonly labels = LABELS;
+  readonly columns: DataTableColumn<unknown>[] = [];
+}
+
+describe('DataTableComponent 逃生門模式守衛', () => {
+  it('只給 dtHead 沒給 dtBody 時丟出明確錯誤', async () => {
+    await TestBed.configureTestingModule({
+      imports: [HeadOnlyHostComponent],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(HeadOnlyHostComponent);
+    expect(() => fixture.detectChanges()).toThrow(
+      'DataTable：逃生門模式需同時提供 dtHead 與 dtBody',
+    );
+  });
+
+  it('只給 dtBody 沒給 dtHead 時丟出明確錯誤', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [BodyOnlyHostComponent],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(BodyOnlyHostComponent);
+    expect(() => fixture.detectChanges()).toThrow(
+      'DataTable：逃生門模式需同時提供 dtHead 與 dtBody',
+    );
+  });
+});
