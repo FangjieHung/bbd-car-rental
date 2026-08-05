@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
+import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { BookingStatus, RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
@@ -15,6 +16,7 @@ import { StatusKey } from '@car-rental/theme-pack';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
+import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
 import {
   FilterOption,
   FilterSelectComponent,
@@ -35,6 +37,8 @@ const STATUS_KEY: Record<BookingStatus, StatusKey> = {
 @Component({
   selector: 'app-bookings-page',
   imports: [
+    DataTableComponent,
+    DataTableCellDirective,
     MatButtonModule,
     RouterLink,
     StatusChipComponent,
@@ -53,6 +57,36 @@ export class BookingsPageComponent {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   readonly fmt = fmtDateTime;
+
+  readonly labels = ADMIN_DATA_TABLE_LABELS;
+
+  readonly columns: DataTableColumn<RentalBooking>[] = [
+    {
+      key: 'vehicleId',
+      label: this.t.booking.vehicle,
+      primary: true,
+      exportValue: (b) => this.plateOf(b.vehicleId),
+    },
+    {
+      key: 'customerId',
+      label: this.t.booking.customer,
+      primary: true,
+      exportValue: (b) => this.customerStore.nameOf(b.customerId),
+    },
+    { key: 'startTime', label: this.t.booking.startTime, exportValue: (b) => this.fmt(b.startTime) },
+    { key: 'endTime', label: this.t.booking.endTime, exportValue: (b) => this.fmt(b.endTime) },
+    {
+      key: 'status',
+      label: this.t.booking.status,
+      primary: true,
+      exportValue: (b) => this.t.booking.statusLabels[b.status],
+    },
+    { key: 'actions', label: this.t.common.actions, exportSkip: true },
+  ];
+
+  onExportFailed(e: Error): void {
+    this.snackBar.open(e.message, undefined, { duration: 3000 });
+  }
 
   readonly searchQuery = signal('');
   readonly statusFilter = signal<BookingStatus | null>(null);
