@@ -16,6 +16,13 @@ export interface DataTableLabels {
   exportExcel: string;
   expandRow: string;
   collapseRow: string;
+  /**
+   * 匯出失敗時要顯示給使用者看的文案（例如 xlsx 這個 lazy chunk 載入失敗）。
+   * 元件本身不使用這個欄位——它只透過 exportFailed 把原始 Error 丟給使用端，
+   * 由使用端的 onExportFailed 從這裡取用文案顯示，避免把 e.message 這種內部
+   * 錯誤字串（甚至是英文的 dynamic import 失敗訊息）直接餵給使用者。
+   */
+  exportFailedText: string;
 }
 
 export type DataTableMobileMode = 'cards' | 'scroll';

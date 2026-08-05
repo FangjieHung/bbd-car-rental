@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { DataTableComponent } from './data-table.component';
 import { DataTableCellDirective } from './data-table-cell.directive';
 import { DataTableBodyDirective, DataTableHeadDirective } from './data-table-slot.directives';
+import { rowsToAoa } from './data-table-export';
 import { DataTableColumn, DataTableLabels } from './data-table.types';
 
 // Angular 的 vitest builder 禁止對「相對路徑」用 vi.mock（見
@@ -42,6 +43,7 @@ const LABELS: DataTableLabels = {
   exportExcel: '匯出 Excel',
   expandRow: '展開詳細資料',
   collapseRow: '收合詳細資料',
+  exportFailedText: '匯出失敗，請稍後再試',
 };
 
 @Component({
@@ -458,6 +460,17 @@ describe('DataTableComponent 匯出接線', () => {
     expect(aoaToSheet).toHaveBeenCalledTimes(1);
     expect(tableToSheet).not.toHaveBeenCalled();
     expect(writeFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('標準模式呼叫 aoa_to_sheet 時帶正確內容，不只是呼叫次數對——呼叫了對的函式但內容錯仍要被抓到', async () => {
+    await TestBed.configureTestingModule({ imports: [ExportHostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(ExportHostComponent);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('.dt-export-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    const { columns, rows } = fixture.componentInstance;
+    expect(aoaToSheet).toHaveBeenCalledWith(rowsToAoa(columns, rows()));
   });
 
   it('逃生門模式點擊匯出鈕呼叫 table_to_sheet，不呼叫 aoa_to_sheet（分派到 exportTableElement）', async () => {

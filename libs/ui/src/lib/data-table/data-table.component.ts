@@ -29,6 +29,9 @@ type ResolvedColumn<T> = DataTableColumn<T> & { primary: boolean };
 export class DataTableComponent<T> {
   readonly columns = input<DataTableColumn<T>[]>([]);
   readonly rows = input<readonly T[]>([]);
+  // 下方拋出的字串是刻意保留的 developer diagnostics（開發期設定錯誤，不是使用者可見文案）：
+  // 呼叫端忘記傳 [rowId] 或 dtHead/dtBody 沒有成對提供，此時應直接在開發環境炸出明確訊息，
+  // 而不是靜默降級。這與「libs/ui 不得內建使用者可見字串」的約束不衝突，請勿把它們也搬進 labels。
   readonly rowId = input<(row: T) => unknown>((row) => {
     const id = (row as { id?: unknown }).id;
     if (id === undefined) {

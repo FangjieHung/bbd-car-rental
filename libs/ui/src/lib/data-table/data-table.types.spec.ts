@@ -35,15 +35,17 @@ describe('DataTableColumn', () => {
 });
 
 describe('DataTableLabels', () => {
-  it('三個欄位皆為必填字串，全部由使用端傳入，元件本身不內建文案', () => {
+  it('四個欄位皆為必填字串，全部由使用端傳入，元件本身不內建文案', () => {
     const labels: DataTableLabels = {
       exportExcel: '匯出 Excel',
       expandRow: '展開',
       collapseRow: '收合',
+      exportFailedText: '匯出失敗',
     };
     expect(labels.exportExcel).toBe('匯出 Excel');
     expect(labels.expandRow).toBe('展開');
     expect(labels.collapseRow).toBe('收合');
+    expect(labels.exportFailedText).toBe('匯出失敗');
   });
 });
 
