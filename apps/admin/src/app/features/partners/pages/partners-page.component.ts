@@ -1,20 +1,27 @@
 import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatTableModule } from '@angular/material/table';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
+import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { Partner } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { PartnerStore } from '../../../stores/partner/partner.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
+import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
 import { PartnerDialogComponent, PartnerFormResult } from '../dialogs/partner-dialog.component';
 
 @Component({
   selector: 'app-partners-page',
-  imports: [MatTableModule, MatButtonModule, PageToolbarComponent, HeaderToolbarDirective],
+  imports: [
+    DataTableComponent,
+    DataTableCellDirective,
+    MatButtonModule,
+    PageToolbarComponent,
+    HeaderToolbarDirective,
+  ],
   templateUrl: './partners-page.component.html',
   styleUrls: ['../../../app.scss'],
 })
@@ -24,7 +31,23 @@ export class PartnersPageComponent {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
-  readonly columns = ['name', 'slug', 'discountPercent', 'commission', 'actions'];
+  readonly labels = ADMIN_DATA_TABLE_LABELS;
+
+  readonly columns: DataTableColumn<Partner>[] = [
+    { key: 'name', label: this.t.partner.name, primary: true },
+    { key: 'slug', label: this.t.partner.slug, primary: true },
+    { key: 'discountPercent', label: this.t.partner.discountPercent, align: 'end' },
+    {
+      key: 'commission',
+      label: this.t.partner.commissionType,
+      exportValue: (p) => this.t.partner.commissionTypeLabels[p.commission.type],
+    },
+    { key: 'actions', label: this.t.common.actions, exportSkip: true },
+  ];
+
+  onExportFailed(e: Error): void {
+    this.snackBar.open(e.message, undefined, { duration: 3000 });
+  }
 
   async openForm(partner: Partner | null): Promise<void> {
     const ref = this.dialog.open(PartnerDialogComponent, { data: partner, width: '480px' });
