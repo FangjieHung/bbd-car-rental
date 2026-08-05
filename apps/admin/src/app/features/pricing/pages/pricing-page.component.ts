@@ -12,14 +12,15 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableModule } from '@angular/material/table';
 import { firstValueFrom } from 'rxjs';
+import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { PricingPlan } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
+import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
 import {
   PricingPlanDialogComponent,
   PricingPlanFormResult,
@@ -30,7 +31,8 @@ type RangeGroup = FormGroup<{ start: FormControl<string>; end: FormControl<strin
 @Component({
   selector: 'app-pricing-page',
   imports: [
-    MatTableModule,
+    DataTableComponent,
+    DataTableCellDirective,
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
@@ -48,7 +50,27 @@ export class PricingPageComponent {
   private snackBar = inject(MatSnackBar);
   private fb = inject(NonNullableFormBuilder);
 
-  readonly columns = ['name', 'appliesToCategory', 'weekday', 'weekend', 'holiday', 'peak', 'tiers', 'actions'];
+  readonly labels = ADMIN_DATA_TABLE_LABELS;
+
+  readonly columns: DataTableColumn<PricingPlan>[] = [
+    { key: 'name', label: this.t.pricing.name, primary: true },
+    {
+      key: 'appliesToCategory',
+      label: this.t.pricing.appliesToCategory,
+      primary: true,
+      exportValue: (p) => this.t.vehicle.typeLabels[p.appliesToCategory],
+    },
+    { key: 'weekday', label: this.t.pricing.weekday, align: 'end', exportValue: (p) => p.dayTypeRates.weekday },
+    { key: 'weekend', label: this.t.pricing.weekend, align: 'end', exportValue: (p) => p.dayTypeRates.weekend },
+    { key: 'holiday', label: this.t.pricing.holiday, align: 'end', exportValue: (p) => p.dayTypeRates.holiday },
+    { key: 'peak', label: this.t.pricing.peak, align: 'end', exportValue: (p) => p.dayTypeRates.peak },
+    { key: 'tiers', label: this.t.pricing.tiers, exportValue: (p) => this.tiersSummary(p) },
+    { key: 'actions', label: this.t.common.actions, exportSkip: true },
+  ];
+
+  onExportFailed(e: Error): void {
+    this.snackBar.open(e.message, undefined, { duration: 3000 });
+  }
 
   readonly calendarForm = this.fb.group({
     holidays: this.fb.array<RangeGroup>([]),
