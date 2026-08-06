@@ -1,6 +1,9 @@
+@reference "tailwindcss";
+
 /* 這個 toolbar 會被投影進 topbar（見 layout/header/header-toolbar-slot.ts）。
    :host 與 .page-toolbar 都用 display: contents，讓下面三個區塊直接成為 .topbar
    的 flex item，各自決定要跟標題同列還是換到下一列。 */
+
 :host {
   display: contents;
 }
@@ -12,6 +15,7 @@
 /* 收合態為 44×44 正圓，展開態拉長為膠囊。
    只有容器寬度在變，input 尺寸恆定、由 overflow 裁切——
    這是為了讓 input 永遠是可 focus 的實體元素（iOS 軟鍵盤的前提）。 */
+
 .search {
   display: flex;
   align-items: center;
@@ -19,8 +23,7 @@
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  /* 與 Material filled field 同源：其底色 fallback 即為 --mat-sys-surface-variant，
-     故搜尋膠囊與同列的 filter-select 天然同階，勿改用 surface-container-*。 */
+  
   background: var(--mat-sys-surface-variant);
   overflow: hidden;
   transition: width 200ms ease;
@@ -90,10 +93,17 @@
 }
 
 /* 第一列最右：主要操作（新增等） */
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.toolbar-actions {
+  @apply fixed left-0 bottom-0 w-full z-10 px-3 py-4 flex items-center justify-center gap-2;
+  background: var(--mat-sys-surface-container-highest);
+
+  @variant md {
+    @apply relative w-fit bg-transparent w-auto px-0 py-0;
+  }
+
+  button {
+    @apply flex-1;
+  }
 }
 
 /* 第二列：篩選器獨佔一列並齊左，與標題左邊界對齊 */

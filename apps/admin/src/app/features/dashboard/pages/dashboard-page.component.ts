@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
@@ -44,16 +44,36 @@ export class DashboardPageComponent {
     });
   }
 
-  readonly todayPickups = computed(() =>
+  /* 以下今日／明日切換為重建的程式碼——原始版本在一次工作區還原事故中遺失，
+     依模板的用法與既有的 todayPickups/todayReturns 邏輯回推，請檢視是否符合原意。 */
+  readonly selectedDate = signal<'today' | 'tomorrow'>('today');
+
+  setSelectedDate(value: string): void {
+    this.selectedDate.set(value === 'tomorrow' ? 'tomorrow' : 'today');
+  }
+
+  private readonly targetDate = computed(() => {
+    const d = new Date();
+    if (this.selectedDate() === 'tomorrow') {
+      d.setDate(d.getDate() + 1);
+    }
+    return d;
+  });
+
+  readonly pickups = computed(() =>
     this.bookingStore
       .bookings()
-      .filter((b) => b.status === 'confirmed' && isSameDay(new Date(b.startTime), new Date())),
+      .filter(
+        (b) => b.status === 'confirmed' && isSameDay(new Date(b.startTime), this.targetDate()),
+      ),
   );
 
-  readonly todayReturns = computed(() =>
+  readonly returns = computed(() =>
     this.bookingStore
       .bookings()
-      .filter((b) => b.status === 'in_progress' && isSameDay(new Date(b.endTime), new Date())),
+      .filter(
+        (b) => b.status === 'in_progress' && isSameDay(new Date(b.endTime), this.targetDate()),
+      ),
   );
 
   plateOf(id: string): string {
