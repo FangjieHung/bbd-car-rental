@@ -9,46 +9,26 @@
   @if (store.plans().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
-    <div class="ui-card overflow-x-auto !p-0">
-      <table mat-table [dataSource]="store.plans()" class="w-full">
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.name }}</th>
-          <td mat-cell *matCellDef="let p">{{ p.name }}</td>
-        </ng-container>
-        <ng-container matColumnDef="appliesToCategory">
-          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.appliesToCategory }}</th>
-          <td mat-cell *matCellDef="let p">{{ t.vehicle.typeLabels[p.appliesToCategory] }}</td>
-        </ng-container>
-        <ng-container matColumnDef="weekday">
-          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.weekday }}</th>
-          <td mat-cell *matCellDef="let p">{{ p.dayTypeRates.weekday }}</td>
-        </ng-container>
-        <ng-container matColumnDef="weekend">
-          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.weekend }}</th>
-          <td mat-cell *matCellDef="let p">{{ p.dayTypeRates.weekend }}</td>
-        </ng-container>
-        <ng-container matColumnDef="holiday">
-          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.holiday }}</th>
-          <td mat-cell *matCellDef="let p">{{ p.dayTypeRates.holiday }}</td>
-        </ng-container>
-        <ng-container matColumnDef="peak">
-          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.peak }}</th>
-          <td mat-cell *matCellDef="let p">{{ p.dayTypeRates.peak }}</td>
-        </ng-container>
-        <ng-container matColumnDef="tiers">
-          <th mat-header-cell *matHeaderCellDef>{{ t.pricing.tiers }}</th>
-          <td mat-cell *matCellDef="let p">{{ tiersSummary(p) }}</td>
-        </ng-container>
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>{{ t.common.actions }}</th>
-          <td mat-cell *matCellDef="let p">
-            <button mat-button (click)="openForm(p)">{{ t.common.edit }}</button>
-            <button mat-button color="warn" (click)="remove(p)">{{ t.common.delete }}</button>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="columns"></tr>
-        <tr mat-row *matRowDef="let row; columns: columns" class="table-row"></tr>
-      </table>
+    <div class="ui-card !p-0">
+      <lib-data-table
+        [columns]="columns"
+        [rows]="store.plans()"
+        [labels]="labels"
+        [emptyText]="t.common.empty"
+        exportName="pricing"
+        (exportFailed)="onExportFailed($event)"
+      >
+        <ng-template dtCell="appliesToCategory" let-p>{{ t.vehicle.typeLabels[p.appliesToCategory] }}</ng-template>
+        <ng-template dtCell="weekday" let-p>{{ p.dayTypeRates.weekday }}</ng-template>
+        <ng-template dtCell="weekend" let-p>{{ p.dayTypeRates.weekend }}</ng-template>
+        <ng-template dtCell="holiday" let-p>{{ p.dayTypeRates.holiday }}</ng-template>
+        <ng-template dtCell="peak" let-p>{{ p.dayTypeRates.peak }}</ng-template>
+        <ng-template dtCell="tiers" let-p>{{ tiersSummary(p) }}</ng-template>
+        <ng-template dtCell="actions" let-p>
+          <button mat-button (click)="openForm(p)">{{ t.common.edit }}</button>
+          <button mat-button color="warn" (click)="remove(p)">{{ t.common.delete }}</button>
+        </ng-template>
+      </lib-data-table>
     </div>
   }
 

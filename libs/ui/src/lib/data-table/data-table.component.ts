@@ -1,0 +1,132 @@
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  TemplateRef,
+  computed,
+  contentChild,
+  contentChildren,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { DataTableCellContext, DataTableCellDirective } from './data-table-cell.directive';
+import { exportRows, exportTableElement } from './data-table-export';
+import { DataTableBodyDirective, DataTableHeadDirective } from './data-table-slot.directives';
+import { DataTableColumn, DataTableLabels, DataTableMobileMode } from './data-table.types';
+
+type ResolvedColumn<T> = DataTableColumn<T> & { primary: boolean };
+
+@Component({
+  selector: 'lib-data-table',
+  imports: [NgTemplateOutlet],
+  templateUrl: './data-table.component.html',
+  styleUrl: './data-table.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class DataTableComponent<T> {
+  readonly columns = input<DataTableColumn<T>[]>([]);
+  readonly rows = input<readonly T[]>([]);
+  // 下方拋出的字串是刻意保留的 developer diagnostics（開發期設定錯誤，不是使用者可見文案）：
+  // 呼叫端忘記傳 [rowId] 或 dtHead/dtBody 沒有成對提供，此時應直接在開發環境炸出明確訊息，
+  // 而不是靜默降級。這與「libs/ui 不得內建使用者可見字串」的約束不衝突，請勿把它們也搬進 labels。
+  readonly rowId = input<(row: T) => unknown>((row) => {
+    const id = (row as { id?: unknown }).id;
+    if (id === undefined) {
+      throw new Error('DataTable：資料列沒有 id 欄位，請傳入 [rowId] 指定識別欄位');
+    }
+    return id;
+  });
+  readonly mobile = input<DataTableMobileMode | null>(null);
+  readonly exportName = input('export');
+  readonly showExport = input(true);
+  readonly emptyText = input('');
+  readonly labels = input.required<DataTableLabels>();
+
+  private readonly cellDirectives = contentChildren(DataTableCellDirective<T>);
+  protected readonly headDirective = contentChild(DataTableHeadDirective);
+  protected readonly bodyDirective = contentChild(DataTableBodyDirective);
+
+  /** dtHead 存在即進入逃生門模式：不讀 columns、不注入 data-label、不生卡片。 */
+  protected readonly isCustom = computed(() => {
+    const hasHead = this.headDirective() != null;
+    const hasBody = this.bodyDirective() != null;
+    if (hasHead !== hasBody) {
+      throw new Error('DataTable：逃生門模式需同時提供 dtHead 與 dtBody');
+    }
+    return hasHead;
+  });
+
+  protected readonly mobileMode = computed<DataTableMobileMode>(
+    () => this.mobile() ?? (this.isCustom() ? 'scroll' : 'cards'),
+  );
+
+  protected readonly cellTemplates = computed(() => {
+    const map = new Map<string, TemplateRef<DataTableCellContext<T>>>();
+    for (const directive of this.cellDirectives()) {
+      map.set(directive.dtCell(), directive.template);
+    }
+    return map;
+  });
+
+  /** 沒有任何欄位標 primary 時，第一欄自動視為 primary，避免手機卡片整張空白。 */
+  protected readonly resolvedColumns = computed<ResolvedColumn<T>[]>(() => {
+    const cols = this.columns();
+    const hasPrimary = cols.some((c) => c.primary);
+    return cols.map((col, i) => ({ ...col, primary: hasPrimary ? !!col.primary : i === 0 }));
+  });
+
+  protected readonly isEmpty = computed(() => !this.isCustom() && this.rows().length === 0);
+
+  protected cellContext(row: T): DataTableCellContext<T> {
+    return { $implicit: row };
+  }
+
+  protected readonly hasSecondary = computed(() =>
+    this.resolvedColumns().some((col) => !col.primary),
+  );
+
+  private readonly expandedIds = signal<ReadonlySet<unknown>>(new Set());
+
+  protected isExpanded(row: T): boolean {
+    return this.expandedIds().has(this.rowId()(row));
+  }
+
+  protected toggle(row: T): void {
+    const id = this.rowId()(row);
+    const next = new Set(this.expandedIds());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.expandedIds.set(next);
+  }
+
+  protected valueOf(row: T, key: string): string {
+    const value = (row as Record<string, unknown>)[key];
+    return value === null || value === undefined ? '' : String(value);
+  }
+
+  /** 匯出失敗（多半是 xlsx 動態載入失敗）時通知使用端顯示 snackbar。 */
+  readonly exportFailed = output<Error>();
+
+  private readonly tableEl = viewChild<ElementRef<HTMLTableElement>>('tableEl');
+
+  protected readonly canExport = computed(() => this.showExport() && !this.isEmpty());
+
+  protected async runExport(): Promise<void> {
+    try {
+      if (this.isCustom()) {
+        const el = this.tableEl()?.nativeElement;
+        if (!el) {
+          throw new Error('DataTable：找不到 table 節點，無法匯出');
+        }
+        await exportTableElement(el, this.exportName());
+      } else {
+        await exportRows(this.columns(), this.rows(), this.exportName());
+      }
+    } catch (e) {
+      this.exportFailed.emit(e as Error);
+    }
+  }
+}

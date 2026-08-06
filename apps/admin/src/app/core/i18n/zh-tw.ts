@@ -34,6 +34,7 @@ export const ZH_TW = {
     exportExcel: '匯出 Excel',
     expandRow: '展開詳細資料',
     collapseRow: '收合詳細資料',
+    exportFailedText: '匯出失敗，請確認網路連線後再試一次',
   },
   vehicle: {
     vehicle: '車輛',

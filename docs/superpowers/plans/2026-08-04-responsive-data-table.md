@@ -20,6 +20,7 @@
 - **斷點固定 `max-width: 640px`**，與 `apps/admin/src/app/shared/ui/page-toolbar.component.scss:44` 現有斷點一致。
 - **測試用 Vitest**，`import { describe, it, expect } from 'vitest'`，測試名稱用繁中（沿用 `libs/domain/src/lib/pricing/date-classify.spec.ts` 的風格）。
 - **所有 npm 安裝指令帶 `--legacy-peer-deps`**（本 repo 既有慣例）。
+- **遷移後桌機視覺與遷移前一致，唯一例外是數值欄位改為右對齊**（`align: 'end'`）。舊的 `mat-table` 沒有任何對齊設定，數值一律靠左，位數參差難以比較；本計畫刻意把單價、里程、費率、折扣、退佣、天數、成本等數值欄位改為右對齊，讓位數對齊。這是經人類決策者裁決確認的刻意改進，**不是遷移瑕疵**，全部 9 個遷移頁面一律照辦。除此之外的欄位順序、邊框、間距、按鈕行為都必須與遷移前完全相同。
 - **每個 task 結束時 commit**。commit 前必須先跑 `git diff --cached --name-only` 確認暫存區沒有無關檔案——工作區目前有 9 個與本計畫無關的未提交修改（`app.scss`、`zh-tw.ts`、dashboard、header、footer、page-toolbar），**絕對不可 `git add -A` 或 `git add .`**，一律逐檔 `git add`。
 - Commit message 結尾加上：`Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`
 

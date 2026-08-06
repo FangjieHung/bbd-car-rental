@@ -46,35 +46,21 @@
     @if (store.records().length === 0) {
       <p class="empty-state">{{ t.common.empty }}</p>
     } @else {
-      <div class="ui-card overflow-x-auto !p-0">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="table-head">
-              <th class="table-cell">{{ t.booking.vehicle }}</th>
-              <th class="table-cell">{{ t.maintenance.type }}</th>
-              <th class="table-cell">{{ t.maintenance.performedAt }}</th>
-              <th class="table-cell">{{ t.maintenance.mileageAtService }}</th>
-              <th class="table-cell">{{ t.maintenance.nextDueMileage }}</th>
-              <th class="table-cell">{{ t.maintenance.nextDueDate }}</th>
-              <th class="table-cell">{{ t.maintenance.cost }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (r of store.records(); track r.id) {
-              <tr class="table-row">
-                <td class="table-cell table-cell--body">{{ plateOf(r.vehicleId) }}</td>
-                <td class="table-cell table-cell--body">{{ t.maintenance.typeLabels[r.type] }}</td>
-                <td class="table-cell table-cell--body">{{ fmt(r.performedAt) }}</td>
-                <td class="table-cell table-cell--body">{{ r.mileageAtService }}</td>
-                <td class="table-cell table-cell--body">{{ r.nextDueMileage ?? '—' }}</td>
-                <td class="table-cell table-cell--body">
-                  {{ r.nextDueDate ? fmt(r.nextDueDate) : '—' }}
-                </td>
-                <td class="table-cell table-cell--body">{{ r.cost }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+      <div class="ui-card !p-0">
+        <lib-data-table
+          [columns]="columns"
+          [rows]="store.records()"
+          [labels]="labels"
+          [emptyText]="t.common.empty"
+          exportName="maintenance-records"
+          (exportFailed)="onExportFailed($event)"
+        >
+          <ng-template dtCell="vehicleId" let-r>{{ plateOf(r.vehicleId) }}</ng-template>
+          <ng-template dtCell="type" let-r>{{ t.maintenance.typeLabels[r.type] }}</ng-template>
+          <ng-template dtCell="performedAt" let-r>{{ fmt(r.performedAt) }}</ng-template>
+          <ng-template dtCell="nextDueMileage" let-r>{{ r.nextDueMileage ?? '—' }}</ng-template>
+          <ng-template dtCell="nextDueDate" let-r>{{ r.nextDueDate ? fmt(r.nextDueDate) : '—' }}</ng-template>
+        </lib-data-table>
       </div>
     }
   </section>
