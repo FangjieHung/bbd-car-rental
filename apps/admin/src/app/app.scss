@@ -40,8 +40,7 @@
 .page-shell {
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  padding-top: 1.5rem;
+  padding: 0 1.5rem 1.5rem;
   flex: 1 0 auto;
 }
 
@@ -99,20 +98,10 @@
   box-shadow: var(--mat-sys-level2);
 }
 
-.stat-card--hero {
-  background: var(--mat-sys-inverse-surface);
-  color: var(--mat-sys-inverse-on-surface);
-  border-color: transparent;
-}
-
 .stat-card__label {
   margin-top: 0.35rem;
   font-size: 0.875rem;
   color: var(--mat-sys-on-surface-variant);
-}
-
-.stat-card__label--hero {
-  color: var(--mat-sys-inverse-on-surface);
 }
 
 .content-grid {
