@@ -28,11 +28,12 @@
 }
 
 .responsive-panel__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1.1rem;
-  line-height: 1;
   padding: 0.25rem;
   color: var(--mat-sys-on-surface-variant);
 }
