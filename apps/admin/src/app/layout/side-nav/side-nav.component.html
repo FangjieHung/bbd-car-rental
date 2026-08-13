@@ -109,7 +109,7 @@
   </nav>
 
   <div class="sidenav-footer">
-    <div class="user-card">
+    <button matButton [matMenuTriggerFor]="menu" class="user-card">
       <div class="avatar">A</div>
       @if (!collapsed()) {
         <div>
@@ -117,6 +117,18 @@
           <p>{{ t.layout.loggedIn }}</p>
         </div>
       }
-    </div>
+    </button>
+
+    <mat-menu #menu="matMenu">
+      <a mat-menu-item data-menu-action="settings" [routerLink]="['/settings']">
+        <span class="material-symbols-rounded" aria-hidden="true">settings</span>
+        <span>設定</span>
+      </a>
+      <button mat-menu-item data-menu-action="logout" type="button" (click)="auth.logout()">
+        <span class="material-symbols-rounded" aria-hidden="true">logout</span>
+        <span>登出</span>
+      </button>
+    </mat-menu>
+
   </div>
 </div>

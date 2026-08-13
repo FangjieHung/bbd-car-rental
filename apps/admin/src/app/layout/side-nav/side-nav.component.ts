@@ -1,9 +1,11 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 import { NavEntry, NavGroup, isNavGroup } from './nav-item.model';
 
@@ -14,6 +16,7 @@ import { NavEntry, NavGroup, isNavGroup } from './nav-item.model';
     RouterLinkActive,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     MatTooltipModule,
     OverlayModule,
   ],
@@ -23,6 +26,7 @@ import { NavEntry, NavGroup, isNavGroup } from './nav-item.model';
 export class SideNavComponent {
   protected readonly t = ZH_TW;
   protected readonly isNavGroup = isNavGroup;
+  protected readonly auth = inject(AuthService);
 
   readonly navItems = input.required<NavEntry[]>();
   readonly collapsed = input.required<boolean>();
