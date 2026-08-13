@@ -1,5 +1,13 @@
 @if (open()) {
-  <div class="responsive-panel">
+  @if (isNarrow()) {
+    <div class="responsive-panel__backdrop" (click)="closed.emit()"></div>
+  }
+  <div
+    class="responsive-panel"
+    [class.responsive-panel--narrow]="isNarrow()"
+    [attr.role]="isNarrow() ? 'dialog' : null"
+    [attr.aria-modal]="isNarrow() ? 'true' : null"
+  >
     <div class="responsive-panel__header">
       @if (heading()) {
         <h2 class="responsive-panel__heading">{{ heading() }}</h2>

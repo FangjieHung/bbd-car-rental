@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ResponsivePanelComponent } from './responsive-panel.component';
+import { of } from 'rxjs';
+import { BreakpointObserver } from '@angular/cdk/layout';
 
 @Component({
   imports: [ResponsivePanelComponent],
@@ -69,5 +71,78 @@ describe('ResponsivePanelComponent', () => {
       '.responsive-panel__close',
     );
     expect(closeButton.getAttribute('aria-label')).toBe('關閉面板');
+  });
+});
+
+function provideBreakpoint(matches: boolean) {
+  return {
+    provide: BreakpointObserver,
+    useValue: { observe: () => of({ matches, breakpoints: {} }) },
+  };
+}
+
+describe('ResponsivePanelComponent 響應式行為', () => {
+  function createFixture(narrow: boolean) {
+    TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideBreakpoint(narrow)],
+    });
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('窄螢幕：具 role=dialog 與 aria-modal，且有遮罩', () => {
+    const fixture = createFixture(true);
+    const panel: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel');
+
+    expect(panel.getAttribute('role')).toBe('dialog');
+    expect(panel.getAttribute('aria-modal')).toBe('true');
+    expect(fixture.nativeElement.querySelector('.responsive-panel__backdrop')).not.toBeNull();
+  });
+
+  it('窄螢幕：點遮罩發出 closed', () => {
+    const fixture = createFixture(true);
+    const backdrop: HTMLElement = fixture.nativeElement.querySelector(
+      '.responsive-panel__backdrop',
+    );
+
+    backdrop.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.closedCount).toBe(1);
+  });
+
+  it('寬螢幕：無 role/aria-modal，無遮罩', () => {
+    const fixture = createFixture(false);
+    const panel: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel');
+
+    expect(panel.hasAttribute('role')).toBe(false);
+    expect(panel.hasAttribute('aria-modal')).toBe(false);
+    expect(fixture.nativeElement.querySelector('.responsive-panel__backdrop')).toBeNull();
+  });
+
+  it('開啟時按 Esc 發出 closed', () => {
+    const fixture = createFixture(false);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.closedCount).toBe(1);
+  });
+
+  it('關閉時按 Esc 不動作', () => {
+    TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideBreakpoint(false)],
+    });
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.detectChanges();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.closedCount).toBe(0);
   });
 });
