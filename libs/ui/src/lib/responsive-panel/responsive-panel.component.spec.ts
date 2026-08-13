@@ -146,3 +146,91 @@ describe('ResponsivePanelComponent 響應式行為', () => {
     expect(fixture.componentInstance.closedCount).toBe(0);
   });
 });
+
+describe('ResponsivePanelComponent 焦點與捲動', () => {
+  // 每個 it() 只呼叫一次 configureTestingModule（透過這個 helper），避免在同一個
+  // test 內於 fixture 建立後重新設定 TestBed（Angular 會丟錯）。
+  function createFixture(narrow: boolean) {
+    TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [provideBreakpoint(narrow)],
+    });
+    return TestBed.createComponent(HostComponent);
+  }
+
+  it('開啟時焦點移入面板內第一個可聚焦元素', () => {
+    const fixture = createFixture(false);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+
+    const closeButton = fixture.nativeElement.querySelector('.responsive-panel__close');
+    expect(document.activeElement).toBe(closeButton);
+  });
+
+  it('關閉後焦點還原到觸發元素', () => {
+    const fixture = createFixture(false);
+    const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('.trigger');
+    trigger.focus();
+
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('窄螢幕下 Tab 在最後一個可聚焦元素時循環回第一個', () => {
+    const fixture = createFixture(true);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+
+    const closeButton: HTMLElement = fixture.nativeElement.querySelector(
+      '.responsive-panel__close',
+    );
+    const actionButton: HTMLElement = fixture.nativeElement.querySelector('.content-action');
+    actionButton.focus();
+
+    fixture.nativeElement
+      .querySelector('.responsive-panel')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+
+    expect(document.activeElement).toBe(closeButton);
+  });
+
+  it('寬螢幕下 Tab 不被攔截（無循環）', () => {
+    const fixture = createFixture(false);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+
+    const actionButton: HTMLElement = fixture.nativeElement.querySelector('.content-action');
+    actionButton.focus();
+
+    fixture.nativeElement
+      .querySelector('.responsive-panel')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+
+    expect(document.activeElement).toBe(actionButton);
+  });
+
+  it('窄螢幕開啟時鎖住 body 捲動，關閉後還原', () => {
+    const fixture = createFixture(true);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+
+    expect(document.body.style.overflow).toBe('hidden');
+
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('寬螢幕開啟時不鎖住 body 捲動', () => {
+    const fixture = createFixture(false);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+
+    expect(document.body.style.overflow).toBe('');
+  });
+});

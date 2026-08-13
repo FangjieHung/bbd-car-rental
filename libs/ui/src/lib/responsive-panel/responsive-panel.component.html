@@ -3,10 +3,12 @@
     <div class="responsive-panel__backdrop" (click)="closed.emit()"></div>
   }
   <div
+    #panel
     class="responsive-panel"
     [class.responsive-panel--narrow]="isNarrow()"
     [attr.role]="isNarrow() ? 'dialog' : null"
     [attr.aria-modal]="isNarrow() ? 'true' : null"
+    (keydown)="onTrapKeydown($event)"
   >
     <div class="responsive-panel__header">
       @if (heading()) {
