@@ -1,0 +1,20 @@
+@if (open()) {
+  <div class="responsive-panel">
+    <div class="responsive-panel__header">
+      @if (heading()) {
+        <h2 class="responsive-panel__heading">{{ heading() }}</h2>
+      }
+      <button
+        type="button"
+        class="responsive-panel__close"
+        [attr.aria-label]="closeLabel()"
+        (click)="closed.emit()"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="responsive-panel__body">
+      <ng-content />
+    </div>
+  </div>
+}
