@@ -13,6 +13,7 @@ function setup() {
     input: () => el.querySelector('.search__input') as HTMLInputElement,
     container: () => el.querySelector('.search') as HTMLElement,
     clearBtn: () => el.querySelector('.search__clear') as HTMLButtonElement | null,
+    submitBtn: () => el.querySelector('.search__submit') as HTMLButtonElement | null,
   };
 }
 
@@ -99,6 +100,68 @@ describe('PageToolbarComponent 清除與 Esc', () => {
 
     expect(component.query()).toBe('');
     expect(component.expanded()).toBe(false);
+  });
+});
+
+describe('PageToolbarComponent 搜尋送出', () => {
+  it('沒有文字時不顯示送出鈕', () => {
+    const { fixture, toggleBtn, submitBtn } = setup();
+    toggleBtn().click();
+    fixture.detectChanges();
+
+    expect(submitBtn()).toBeNull();
+  });
+
+  it('有非空白文字時顯示送出鈕', () => {
+    const { fixture, component, toggleBtn, submitBtn } = setup();
+    toggleBtn().click();
+    fixture.detectChanges();
+    component.query.set('ABC');
+    fixture.detectChanges();
+
+    expect(submitBtn()).not.toBeNull();
+  });
+
+  it('點擊送出鈕會送出清除前後空白的搜尋文字', () => {
+    const { fixture, component, toggleBtn, submitBtn } = setup();
+    const emitted: string[] = [];
+    component.searchSubmit.subscribe((query) => emitted.push(query));
+    toggleBtn().click();
+    fixture.detectChanges();
+    component.query.set('  ABC  ');
+    fixture.detectChanges();
+
+    submitBtn()!.click();
+
+    expect(emitted).toEqual(['ABC']);
+  });
+
+  it('按 Enter 會送出清除前後空白的搜尋文字', () => {
+    const { fixture, component, toggleBtn, input } = setup();
+    const emitted: string[] = [];
+    component.searchSubmit.subscribe((query) => emitted.push(query));
+    toggleBtn().click();
+    fixture.detectChanges();
+    component.query.set('  ABC  ');
+    fixture.detectChanges();
+
+    input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(emitted).toEqual(['ABC']);
+  });
+
+  it('只有空白文字時不送出搜尋', () => {
+    const { fixture, component, toggleBtn, input } = setup();
+    const emitted: string[] = [];
+    component.searchSubmit.subscribe((query) => emitted.push(query));
+    toggleBtn().click();
+    fixture.detectChanges();
+    component.query.set('   ');
+    fixture.detectChanges();
+
+    input().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(emitted).toEqual([]);
   });
 });
 

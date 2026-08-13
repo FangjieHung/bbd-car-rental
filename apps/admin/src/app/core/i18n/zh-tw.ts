@@ -29,6 +29,7 @@ export const ZH_TW = {
     all: '全部',
     clearFilters: '清除篩選',
     clearSearch: '清除搜尋',
+    submitSearch: '送出搜尋',
     collapseSearch: '收合搜尋',
     noResults: '沒有符合條件的資料',
     exportExcel: '匯出 Excel',

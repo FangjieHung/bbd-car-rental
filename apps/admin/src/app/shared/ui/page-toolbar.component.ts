@@ -23,6 +23,7 @@ export class PageToolbarComponent {
   readonly activeFilterCount = input<number>(0);
   readonly showSearch = input<boolean>(true);
   readonly clearAll = output<void>();
+  readonly searchSubmit = output<string>();
 
   readonly expanded = signal(false);
   protected readonly searchInputId = `page-toolbar-search-${nextInstanceId++}`;
@@ -58,6 +59,13 @@ export class PageToolbarComponent {
     this.query.set('');
     // 清空後游標留在框內，讓使用者直接重打。
     this.inputRef()?.nativeElement.focus();
+  }
+
+  submitQuery(): void {
+    const query = this.query().trim();
+    if (query) {
+      this.searchSubmit.emit(query);
+    }
   }
 
   collapseIfEmpty(): void {
