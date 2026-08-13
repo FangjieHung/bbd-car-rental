@@ -37,16 +37,20 @@ export class ResponsivePanelComponent {
   private lastFocused: HTMLElement | null = null;
 
   constructor() {
+    // Effect 1: Focus lifecycle (only depends on open() transitions)
     effect(() => {
       if (this.open()) {
         this.lastFocused = document.activeElement as HTMLElement | null;
-        if (this.isNarrow()) document.body.style.overflow = 'hidden';
         this.focusableElements()[0]?.focus();
       } else {
-        document.body.style.overflow = '';
         this.lastFocused?.focus?.();
         this.lastFocused = null;
       }
+    });
+
+    // Effect 2: Scroll lock (always reflects current open && isNarrow state)
+    effect(() => {
+      document.body.style.overflow = this.open() && this.isNarrow() ? 'hidden' : '';
     });
   }
 

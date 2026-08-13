@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ResponsivePanelComponent } from './responsive-panel.component';
-import { of } from 'rxjs';
+import { of, BehaviorSubject } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
 
 @Component({
@@ -232,5 +232,25 @@ describe('ResponsivePanelComponent 焦點與捲動', () => {
     fixture.detectChanges();
 
     expect(document.body.style.overflow).toBe('');
+  });
+
+  it('isNarrow 在 open 期間改變不會重新搶焦點或維持捲動鎖定', () => {
+    const breakpoint$ = new BehaviorSubject({ matches: true, breakpoints: {} });
+    TestBed.configureTestingModule({
+      imports: [HostComponent],
+      providers: [{ provide: BreakpointObserver, useValue: { observe: () => breakpoint$ } }],
+    });
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+
+    const actionButton: HTMLElement = fixture.nativeElement.querySelector('.content-action');
+    actionButton.focus();
+
+    breakpoint$.next({ matches: false, breakpoints: {} }); // narrow -> wide while still open
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(actionButton); // focus not stolen back
+    expect(document.body.style.overflow).toBe(''); // scroll lock released now that it's wide
   });
 });
