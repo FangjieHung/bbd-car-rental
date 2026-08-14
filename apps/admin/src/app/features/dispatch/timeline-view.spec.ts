@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { computeBlocks } from './timeline-view.component';
+import { beforeEach, describe, it, expect } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import { computeBlocks, TimelineViewComponent } from './timeline-view/timeline-view.component';
 import { RentalBooking } from '../../core/models';
+import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { createInMemoryRepo } from '../../core/repositories/testing';
+import { MatDialog } from '@angular/material/dialog';
 
 const rangeStart = new Date(2026, 6, 20); // 2026-07-20 local
 const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
@@ -53,5 +57,43 @@ describe('computeBlocks', () => {
     ).toEqual([]);
     expect(computeBlocks([mk({ status: 'cancelled' })], 'v1', rangeStart, 14)).toEqual([]);
     expect(computeBlocks([mk({ vehicleId: 'v2' })], 'v1', rangeStart, 14)).toEqual([]);
+  });
+});
+
+describe('TimelineViewComponent supplied date', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<TimelineViewComponent>>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo([]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
+        { provide: MatDialog, useValue: { open: () => undefined } },
+      ],
+    });
+    fixture = TestBed.createComponent(TimelineViewComponent);
+  });
+
+  it('以 supplied date 作為第一個可見日', () => {
+    const suppliedDate = new Date(2026, 6, 23, 15);
+
+    fixture.componentRef.setInput('targetDate', suppliedDate);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.days()[0]).toEqual(new Date(2026, 6, 23));
+  });
+
+  it('前後移動後，未變更 supplied date 時保留 rangeStart', () => {
+    const suppliedDate = new Date(2026, 6, 23, 15);
+
+    fixture.componentRef.setInput('targetDate', suppliedDate);
+    fixture.detectChanges();
+    fixture.componentInstance.shift(14);
+    const shiftedStart = fixture.componentInstance.rangeStart();
+
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.rangeStart()).toEqual(shiftedStart);
   });
 });

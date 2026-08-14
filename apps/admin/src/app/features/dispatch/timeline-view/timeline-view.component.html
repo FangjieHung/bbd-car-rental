@@ -1,0 +1,46 @@
+<div class="timeline-view">
+  <div class="flex items-center gap-2">
+    <button mat-button (click)="shift(-14)">{{ t.dispatch.prevRange }}</button>
+    <button mat-button (click)="shift(14)">{{ t.dispatch.nextRange }}</button>
+  </div>
+  <div class="ui-card overflow-x-auto !p-0">
+    <div class="timeline-view__canvas min-w-[900px]">
+      <div class="grid" [style.grid-template-columns]="gridCols">
+        <div class="text-xs font-bold p-2">{{ t.booking.vehicle }}</div>
+        @for (d of days(); track $index) {
+          <div class="timeline-view__cell-header text-xs text-center p-2">{{ fmtDate(d) }}</div>
+        }
+      </div>
+      @for (v of vehicleStore.vehicles(); track v.id) {
+        <div class="timeline-view__vehicle-row relative">
+          <div class="grid" [style.grid-template-columns]="gridCols">
+            <div class="text-sm p-2 whitespace-nowrap">
+              {{ v.plateNumber }}
+              @if (v.status === 'maintenance') {
+                <span class="text-xs timeline-view__muted">（{{ t.dispatch.maintenanceBlock }}）</span>
+              }
+            </div>
+            @for (d of days(); track $index) {
+              <div
+                class="timeline-view__day min-h-10"
+                [style.background]="v.status === 'maintenance' && $index === todayIdx() ? 'var(--app-viz-4)' : null"
+              ></div>
+            }
+          </div>
+          <div class="timeline-view__blocks absolute inset-0 grid pointer-events-none" [style.grid-template-columns]="gridCols">
+            <div></div>
+            @for (block of blocksOf(v.id); track block.bookingId) {
+              <button
+                class="timeline-view__booking pointer-events-auto self-center h-6 rounded text-xs truncate px-1.5 cursor-pointer font-semibold"
+                [style.background]="block.kind === 'confirmed' ? 'var(--app-viz-2)' : 'var(--mat-sys-primary)'"
+                [style.grid-column]="block.startCol + 1 + ' / span ' + block.span"
+                [style.grid-row]="1"
+                (click)="openDetail(block.bookingId)"
+              >{{ t.booking.statusLabels[block.kind] }}</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -1,4 +1,102 @@
-<div >
+<div>
+  <div class="page-header">
+    <h1 class="ui-text-title">工作清單</h1>
+    <nav class="dashboard-view-nav dashboard-date-nav" aria-label="工作日期">
+      <button
+        type="button"
+        class="dashboard-view-nav__item"
+        [class.is-active]="selectedDate() === 'today'"
+        [attr.aria-pressed]="selectedDate() === 'today'"
+        (click)="setSelectedDate('today')"
+      >
+        <span class="material-symbols-rounded" aria-hidden="true">today</span>
+        <span>{{ todayToggleLabel }}</span>
+      </button>
+      <button
+        type="button"
+        class="dashboard-view-nav__item"
+        [class.is-active]="selectedDate() === 'tomorrow'"
+        [attr.aria-pressed]="selectedDate() === 'tomorrow'"
+        (click)="setSelectedDate('tomorrow')"
+      >
+        <span class="material-symbols-rounded" aria-hidden="true">event</span>
+        <span>{{ tomorrowToggleLabel }}</span>
+      </button>
+    </nav>
+  </div>
+
+  <section class="ui-card !p-0 mb-4">
+    <div class="px-4 pt-4">
+      <h2 class="section-title">{{ dateLabel(targetDate()) }} 取車 - {{ pickupWorkRows().length }} 筆</h2>
+      <lib-data-table
+        [columns]="workListColumns"
+        [rows]="pickupWorkRows()"
+        [labels]="labels"
+        [emptyText]="t.common.empty"
+        [rowId]="(row) => row.id"
+        [showExport]="false"
+      >
+        <ng-template dtCell="vehicle" let-row>{{ vehicleLabel(row) }}</ng-template>
+        <ng-template dtCell="customer" let-row>{{ customerName(row) }}</ng-template>
+        <ng-template dtCell="time" let-row>{{ fmt(row.booking.startTime) }}</ng-template>
+        <ng-template dtCell="location" let-row>取：{{ location(row) }}（—）</ng-template>
+        <ng-template dtCell="transport">—</ng-template>
+        <ng-template dtCell="wash">—</ng-template>
+        <ng-template dtCell="contact" let-row>
+          @if (phoneHref(row.booking); as href) {
+            <a class="underline" [href]="href">📞 打電話</a>
+            <span class="sr-only">{{ phoneLabel(row.booking) }}</span>
+          } @else {
+            —
+          }
+        </ng-template>
+        <ng-template dtCell="payment" let-row>{{ paymentLabel() }}</ng-template>
+      </lib-data-table>
+    </div>
+
+    <div class="px-4 pt-5">
+      <h2 class="section-title">
+        {{ dateLabel(targetDate()) }} 還車 - {{ returnWorkRows().length }} 筆
+        @if (showReturnPreview()) {
+          <span class="text-sm font-normal text-[var(--mat-sys-on-surface-variant)]"
+            >（顯示明日 {{ dateLabel(tomorrowDate()) }} 預告以利整備）</span
+          >
+        }
+      </h2>
+      @if (returnSectionRows().length > 0) {
+        <lib-data-table
+          [columns]="workListColumns"
+          [rows]="returnSectionRows()"
+          [labels]="labels"
+          [emptyText]="t.common.empty"
+          [rowId]="(row) => row.id"
+          [showExport]="false"
+        >
+          <ng-template dtCell="vehicle" let-row>{{ vehicleLabel(row) }}</ng-template>
+          <ng-template dtCell="customer" let-row>{{ customerName(row) }}</ng-template>
+          <ng-template dtCell="time" let-row>{{ returnTimeLabel(row) }}</ng-template>
+          <ng-template dtCell="location" let-row>還：{{ location(row) }}（—）</ng-template>
+          <ng-template dtCell="transport">—</ng-template>
+          <ng-template dtCell="wash">—</ng-template>
+          <ng-template dtCell="contact" let-row>
+            @if (phoneHref(row.booking); as href) {
+              <a class="underline" [href]="href">📞 打電話</a>
+            } @else {
+              —
+            }
+          </ng-template>
+          <ng-template dtCell="payment" let-row>{{ paymentLabel() }}</ng-template>
+        </lib-data-table>
+      } @else {
+        <p class="px-4 pb-4 text-sm text-[var(--mat-sys-on-surface-variant)]">目前沒有還車資料</p>
+      }
+    </div>
+  </section>
+
+
+
+
+
   <ul class="stat-grid">
     @for (s of statusKeys; track s) {
       <li class="stat-card">
@@ -32,66 +130,35 @@
 
   <section class="ui-card">
     <div class="page-header">
-      <div class="ui-text-caption mb-0.5">{{ t.dispatch.title }}</div>
-      <mat-button-toggle-group [value]="dispatchView()" (change)="setDispatchView($event.value)">
-        <mat-button-toggle value="timeline">{{ t.dispatch.timeline }}</mat-button-toggle>
-        <mat-button-toggle value="calendar">{{ t.dispatch.calendar }}</mat-button-toggle>
-      </mat-button-toggle-group>
+      <h2 class="ui-text-title">{{ t.dispatch.title }}</h2>
+      <nav class="dashboard-view-nav" aria-label="排程檢視方式">
+        <button
+          type="button"
+          class="dashboard-view-nav__item"
+          [class.is-active]="dispatchView() === 'timeline'"
+          [attr.aria-pressed]="dispatchView() === 'timeline'"
+          (click)="setDispatchView('timeline')"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">view_timeline</span>
+          <span>{{ t.dispatch.timeline }}</span>
+        </button>
+        <button
+          type="button"
+          class="dashboard-view-nav__item"
+          [class.is-active]="dispatchView() === 'calendar'"
+          [attr.aria-pressed]="dispatchView() === 'calendar'"
+          (click)="setDispatchView('calendar')"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+          <span>{{ t.dispatch.calendar }}</span>
+        </button>
+      </nav>
     </div>
     @if (dispatchView() === 'timeline') {
-      <app-timeline-view />
+      <app-timeline-view [targetDate]="targetDate()" />
     } @else {
-      <app-calendar-view />
+      <app-calendar-view [targetDate]="targetDate()" (dateSelected)="selectCalendarDate($event)" />
     }
   </section>
 
-
-  <div class="page-header">
-    <mat-button-toggle-group [value]="selectedDate()" (change)="setSelectedDate($event.value)">
-      <mat-button-toggle value="today">{{ t.dashboard.today }}</mat-button-toggle>
-      <mat-button-toggle value="tomorrow">{{ t.dashboard.tomorrow }}</mat-button-toggle>
-    </mat-button-toggle-group>
-  </div>
-
-  <div class="content-grid">
-    <section class="ui-card">
-      <div class="ui-text-caption mb-0.5">
-        {{ selectedDate() === 'today' ? t.dashboard.todayPickups : t.dashboard.tomorrowPickups }}
-      </div>
-      <div class="section-title">{{ pickups().length }} 筆</div>
-      @if (pickups().length === 0) {
-        <p class="empty-state">{{ t.dashboard.none }}</p>
-      } @else {
-        <ul class="list-stack">
-          @for (b of pickups(); track b.id) {
-            <li class="list-row">
-              <span class="font-semibold">{{ plateOf(b.vehicleId) }}</span>
-              <span class="list-row__secondary">{{ customerStore.nameOf(b.customerId) }}</span>
-              <span class="list-row__meta">{{ fmt(b.startTime) }}</span>
-            </li>
-          }
-        </ul>
-      }
-    </section>
-
-    <section class="ui-card">
-      <div class="ui-text-caption mb-0.5">
-        {{ selectedDate() === 'today' ? t.dashboard.todayReturns : t.dashboard.tomorrowReturns }}
-      </div>
-      <div class="section-title">{{ returns().length }} 筆</div>
-      @if (returns().length === 0) {
-        <p class="empty-state">{{ t.dashboard.none }}</p>
-      } @else {
-        <ul class="list-stack">
-          @for (b of returns(); track b.id) {
-            <li class="list-row">
-              <span class="font-semibold">{{ plateOf(b.vehicleId) }}</span>
-              <span class="list-row__secondary">{{ customerStore.nameOf(b.customerId) }}</span>
-              <span class="list-row__meta">{{ fmt(b.endTime) }}</span>
-            </li>
-          }
-        </ul>
-      }
-    </section>
-  </div>
 </div>

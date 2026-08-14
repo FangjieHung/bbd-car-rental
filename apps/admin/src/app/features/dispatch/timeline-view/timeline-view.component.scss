@@ -1,0 +1,21 @@
+.timeline-view__canvas {
+  min-width: 900px;
+}
+
+.timeline-view__cell-header,
+.timeline-view__day {
+  border-left: 1px solid var(--mat-sys-outline-variant);
+}
+
+.timeline-view__cell-header,
+.timeline-view__muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.timeline-view__vehicle-row {
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.timeline-view__booking {
+  color: var(--mat-sys-on-primary);
+}
