@@ -172,6 +172,7 @@ describe('CalendarViewComponent 面板開關', () => {
   });
 
   it('panelHeading 依選取日期組字串；未選取時為空字串', () => {
+    fixture.componentInstance.selected.set(null);
     expect(fixture.componentInstance.panelHeading()).toBe('');
 
     fixture.componentInstance.selectDate(new Date(2026, 6, 10));

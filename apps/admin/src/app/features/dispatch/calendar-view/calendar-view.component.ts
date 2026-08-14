@@ -66,17 +66,10 @@ export class CalendarViewComponent {
   });
 
   constructor() {
-    let isFirstRun = true;
     effect(() => {
       const date = startOfDay(this.targetDate());
       this.month.set(new Date(date.getFullYear(), date.getMonth(), 1));
-      // Only set selected on first run if it's not the default value (today)
-      if (isFirstRun && this.isSameDay(date, startOfDay(new Date()))) {
-        // Skip setting selected on initial load with default value
-      } else {
-        this.selected.set(date);
-      }
-      isFirstRun = false;
+      this.selected.set(date);
       this.panelDismissed.set(false);
     });
   }
