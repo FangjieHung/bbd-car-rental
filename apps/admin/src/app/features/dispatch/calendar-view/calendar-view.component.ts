@@ -44,7 +44,7 @@ export class CalendarViewComponent {
 
   readonly month = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   readonly selected = signal<Date | null>(null);
-  readonly panelDismissed = signal(false);
+  readonly panelDismissed = signal(true);
   readonly targetDate = input<Date>(startOfDay(new Date()));
   readonly dateSelected = output<Date>();
   readonly todayDate = new Date();
@@ -67,11 +67,15 @@ export class CalendarViewComponent {
   });
 
   constructor() {
+    let isFirstRun = true;
     effect(() => {
       const date = startOfDay(this.targetDate());
       this.month.set(new Date(date.getFullYear(), date.getMonth(), 1));
       this.selected.set(date);
-      this.panelDismissed.set(false);
+      if (!isFirstRun) {
+        this.panelDismissed.set(false);
+      }
+      isFirstRun = false;
     });
   }
 

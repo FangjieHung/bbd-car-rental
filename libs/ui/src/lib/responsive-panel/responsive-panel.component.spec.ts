@@ -72,6 +72,29 @@ describe('ResponsivePanelComponent', () => {
     );
     expect(closeButton.getAttribute('aria-label')).toBe('關閉面板');
   });
+
+  it('heading 有值時，panel 的 aria-labelledby 對應到標題元素的 id', () => {
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+
+    const panel: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel');
+    const headingEl: HTMLElement = fixture.nativeElement.querySelector(
+      '.responsive-panel__heading',
+    );
+    expect(panel.getAttribute('aria-labelledby')).toBe(headingEl.id);
+    expect(headingEl.id).toBeTruthy();
+    expect(panel.hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('heading 為空時，panel 的 aria-label 使用 closeLabel', () => {
+    fixture.componentInstance.heading.set('');
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+
+    const panel: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel');
+    expect(panel.getAttribute('aria-label')).toBe('關閉面板');
+    expect(panel.hasAttribute('aria-labelledby')).toBe(false);
+  });
 });
 
 function provideBreakpoint(matches: boolean) {

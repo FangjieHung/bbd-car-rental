@@ -27,6 +27,9 @@ export class ResponsivePanelComponent {
   readonly closeLabel = input.required<string>();
   readonly closed = output<void>();
 
+  private static nextId = 0;
+  protected readonly headingId = `responsive-panel-heading-${ResponsivePanelComponent.nextId++}`;
+
   private readonly breakpointObserver = inject(BreakpointObserver);
   protected readonly isNarrow = toSignal(
     this.breakpointObserver.observe([NARROW_QUERY]).pipe(map((result) => result.matches)),

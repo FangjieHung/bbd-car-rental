@@ -8,11 +8,13 @@
     [class.responsive-panel--narrow]="isNarrow()"
     [attr.role]="isNarrow() ? 'dialog' : null"
     [attr.aria-modal]="isNarrow() ? 'true' : null"
+    [attr.aria-labelledby]="heading() ? headingId : null"
+    [attr.aria-label]="heading() ? null : closeLabel()"
     (keydown)="onTrapKeydown($event)"
   >
     <div class="responsive-panel__header">
       @if (heading()) {
-        <h2 class="responsive-panel__heading">{{ heading() }}</h2>
+        <h2 [id]="headingId" class="responsive-panel__heading">{{ heading() }}</h2>
       }
       <button
         type="button"

@@ -178,6 +178,18 @@ describe('CalendarViewComponent 面板開關', () => {
     fixture.componentInstance.selectDate(new Date(2026, 6, 10));
     expect(fixture.componentInstance.panelHeading()).toBe('當日明細（7/10）');
   });
+
+  it('元件建立時面板不自動開啟，但當日仍為選取狀態', () => {
+    const freshFixture = TestBed.createComponent(CalendarViewComponent);
+    freshFixture.detectChanges();
+
+    const today = new Date();
+    expect(freshFixture.componentInstance.panelOpen()).toBe(false);
+    expect(freshFixture.componentInstance.selected()).not.toBeNull();
+    expect(freshFixture.componentInstance.month()).toEqual(
+      new Date(today.getFullYear(), today.getMonth(), 1),
+    );
+  });
 });
 
 describe('CalendarViewComponent 面板 DOM 行為', () => {
