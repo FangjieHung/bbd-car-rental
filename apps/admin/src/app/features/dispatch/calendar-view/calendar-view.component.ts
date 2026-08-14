@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { ResponsivePanelComponent } from '@car-rental/ui';
 import { RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, fmtDateTime, isSameDay, startOfDay } from '../../../core/date-utils';
@@ -29,7 +30,7 @@ export function dayStats(
 
 @Component({
   selector: 'app-calendar-view',
-  imports: [MatButtonModule],
+  imports: [MatButtonModule, ResponsivePanelComponent],
   templateUrl: './calendar-view.component.html',
   styleUrls: ['./calendar-view.component.scss'],
 })

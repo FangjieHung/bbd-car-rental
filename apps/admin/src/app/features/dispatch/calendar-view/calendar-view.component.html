@@ -1,0 +1,54 @@
+<div class="calendar-view">
+  <div class="calendar-view__toolbar flex items-center gap-2 mb-2">
+    <button mat-button (click)="shiftMonth(-1)">{{ t.dispatch.prevMonth }}</button>
+    <span class="font-bold">{{ monthLabel() }}</span>
+    <button mat-button (click)="shiftMonth(1)">{{ t.dispatch.nextMonth }}</button>
+  </div>
+
+  <div class="calendar-view__layout">
+    <div class="calendar-view__grid">
+      @for (d of monthDays(); track d.getTime()) {
+        <button
+          class="calendar-view__day p-2 min-h-16 text-left cursor-pointer transition-colors hover:[background:var(--mat-sys-surface-container-high)]"
+          [class.opacity-40]="d.getMonth() !== month().getMonth()"
+          [class.calendar-view__day--selected]="selected() && isSameDay(d, selected()!)"
+          (click)="selectDate(d)"
+        >
+          <div
+            class="font-bold"
+            [class.calendar-view__day-number--today]="isSameDay(d, todayDate)"
+          >
+            {{ d.getDate() }}
+          </div>
+          <div class="calendar-view__muted">
+            {{ t.dispatch.pickups }}{{ statsOf(d).pickups }} {{ t.dispatch.returns
+            }}{{ statsOf(d).returns }}
+          </div>
+          <div class="calendar-view__muted">{{ t.dispatch.available }} {{ statsOf(d).available }}</div>
+        </button>
+      }
+    </div>
+
+    <lib-responsive-panel
+      [open]="panelOpen()"
+      [heading]="panelHeading()"
+      [closeLabel]="t.common.closePanel"
+      (closed)="dismissPanel()"
+    >
+      @if (selected(); as sel) {
+        @if (dayBookings(sel).length === 0) {
+          <p class="text-sm calendar-view__muted">{{ t.common.empty }}</p>
+        } @else {
+          <ul class="text-sm flex flex-col gap-1">
+            @for (b of dayBookings(sel); track b.id) {
+              <li class="ui-card !p-3">
+                {{ plateOf(b.vehicleId) }}｜{{ customerStore.nameOf(b.customerId) }}｜
+                {{ fmt(b.startTime) }} → {{ fmt(b.endTime) }}｜{{ t.booking.statusLabels[b.status] }}
+              </li>
+            }
+          </ul>
+        }
+      }
+    </lib-responsive-panel>
+  </div>
+</div>

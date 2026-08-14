@@ -1,0 +1,32 @@
+.calendar-view__layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.calendar-view__grid {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: var(--mat-sys-outline-variant);
+}
+
+.calendar-view__day {
+  background: var(--mat-sys-surface);
+}
+
+.calendar-view__day--selected {
+  background: var(--app-positive-bg);
+}
+
+.calendar-view__day-number--today {
+  color: var(--mat-sys-primary);
+}
+
+.calendar-view__muted {
+  color: var(--mat-sys-on-surface-variant);
+}

@@ -179,3 +179,64 @@ describe('CalendarViewComponent 面板開關', () => {
     expect(fixture.componentInstance.panelHeading()).toBe('當日明細（7/10）');
   });
 });
+
+describe('CalendarViewComponent 面板 DOM 行為', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<CalendarViewComponent>>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+      ],
+    });
+    fixture = TestBed.createComponent(CalendarViewComponent);
+    fixture.detectChanges();
+  });
+
+  it('點日期格子開啟面板並標示選取', () => {
+    const dayButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.calendar-view__day') as NodeListOf<HTMLButtonElement>,
+    );
+    dayButtons[10].click();
+    fixture.detectChanges();
+
+    expect(dayButtons[10].classList.contains('calendar-view__day--selected')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.responsive-panel__body')).not.toBeNull();
+  });
+
+  it('點關閉鈕收起面板但保留格子選取樣式', () => {
+    const dayButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.calendar-view__day') as NodeListOf<HTMLButtonElement>,
+    );
+    dayButtons[10].click();
+    fixture.detectChanges();
+
+    (fixture.nativeElement
+      .querySelector('.responsive-panel__close') as HTMLButtonElement)
+      .click();
+    fixture.detectChanges();
+
+    expect(dayButtons[10].classList.contains('calendar-view__day--selected')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.responsive-panel__body')).toBeNull();
+  });
+
+  it('關閉後再點同一天會重新開啟面板', () => {
+    const dayButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.calendar-view__day') as NodeListOf<HTMLButtonElement>,
+    );
+    dayButtons[10].click();
+    fixture.detectChanges();
+    (fixture.nativeElement
+      .querySelector('.responsive-panel__close') as HTMLButtonElement)
+      .click();
+    fixture.detectChanges();
+
+    dayButtons[10].click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.responsive-panel__body')).not.toBeNull();
+  });
+});
