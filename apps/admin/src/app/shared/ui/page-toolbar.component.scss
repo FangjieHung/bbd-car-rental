@@ -12,27 +12,94 @@
   display: contents;
 }
 
-/* 收合態為 44×44 正圓，展開態拉長為膠囊。
-   只有容器寬度在變，input 尺寸恆定、由 overflow 裁切——
-   這是為了讓 input 永遠是可 focus 的實體元素（iOS 軟鍵盤的前提）。 */
+/* 收合態下 toggle 按鈕永遠留在第一列（title 同列）的右側，不參與展開動畫，
+   避免「展開時的寬度變化」與「觸發換行」耦合在同一個元素上——那正是舊版
+   會閃跳的原因：input 寬度一變寬就立刻跨過換行門檻，換行與變寬同一幀發生，
+   下方內容的位移毫無過渡可言。 */
+.search__toggle {
+  flex: 0 0 auto;
+}
 
+/* search-row 是永遠存在、預設「隱形」的第二列：flex-basis 收合時為 0，
+   展開時瞬間（0s transition）跳成 100% 強制獨佔一列——這個瞬間發生在
+   grid-template-rows 還是 0fr（高度 0）的那一刻，畫面上完全不可見，
+   所以感覺不到跳動；展開動畫看到的只有高度從 0 平滑長出，也就是
+   「先推開下方空間」。收合方向則相反：flex-basis 延遲到高度收合完成
+   （transition-delay 對齊 grid-template-rows 的秒數）才跳回 0，
+   避免全寬列在還有高度時被硬拔回行內造成二次跳動。
+   這整套「獨佔一列＋高度動畫」只在手機版需要（螢幕窄、必然換行）；
+   ≥768px 維持原本做法——search-row／__inner 直接 display: contents
+   退出版面計算，讓 .search 變回 row1（toggle 所在的 flex 容器）的
+   直接 flex item，在原地用 width 從 0 長到 12rem 上限，不換行。 */
+.search-row {
+  flex-grow: 0;
+  flex-shrink: 0;
+  flex-basis: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition:
+    grid-template-rows 220ms ease,
+    flex-basis 0s linear 220ms;
+
+  @variant md {
+    display: contents;
+  }
+}
+
+.search-row--expanded {
+  flex-basis: 100%;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 220ms ease,
+    flex-basis 0s linear 0s;
+
+  @variant md {
+    display: contents;
+  }
+}
+
+.search-row__inner {
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+
+  @variant md {
+    display: contents;
+  }
+}
+
+/* 收合態寬度為 0（完全不佔版面）；展開態拉長為膠囊。
+   手機版：margin-left: auto 讓它永遠貼齊 row 右緣，寬度從 0 長到 100% 時
+   左緣往左推、右緣不動——即「由右展開到左」；width transition 刻意晚於
+   search-row 的高度動畫起步，呼應「先推開空間、再展開」的兩段式節奏。
+   桌面版（≥768px）：search-row 已 display:contents 退場，.search 貼著
+   toggle 按鈕原地向右長，不套用上述位移/延遲，等同改版前的行為。 */
 .search {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  width: 44px;
+  width: 0;
   height: 44px;
+  margin-left: auto;
   border-radius: 999px;
-  
+
   background: var(--mat-sys-surface-variant);
   overflow: hidden;
-  transition: width 200ms ease;
+  transition: width 220ms ease 90ms;
+
+  @variant md {
+    margin-left: 0;
+    transition: width 200ms ease;
+  }
 }
 
-/* 呼應 spec §4.3：寬度以 width 控制而非 flex-basis，因動畫標的即為寬度。 */
 .search--expanded {
-  width: 320px;
-  max-width: 100%;
+  width: 100%;
+
+  @variant min-[768px] {
+    max-width: 12rem;
+  }
 }
 
 .search:focus-within {
@@ -40,8 +107,11 @@
   outline-offset: 1px;
 }
 
+.search__toggle--active {
+  background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 12%, transparent);
+}
+
 .search__toggle,
-.search__submit,
 .search__clear {
   flex: 0 0 auto;
   display: inline-flex;
@@ -88,7 +158,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .search {
+  .search,
+  .search-row,
+  .search-row--expanded {
     transition: none;
   }
 }
@@ -99,7 +171,7 @@
   background: var(--mat-sys-surface-container-highest);
 
   @variant md {
-    @apply relative w-fit bg-transparent w-auto px-0 py-0;
+    @apply relative min-w-fit bg-transparent w-auto px-0 py-0;
   }
 
   button {
@@ -124,10 +196,4 @@
 
 .clear-btn {
   color: var(--mat-sys-on-surface-variant);
-}
-
-@media (max-width: 640px) {
-  .search--expanded {
-    width: 100%;
-  }
 }

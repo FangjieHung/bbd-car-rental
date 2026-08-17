@@ -1,13 +1,13 @@
 <header class="topbar">
   <div class="flex items-center gap-2">
     <button mat-icon-button class="menu-toggle" type="button" (click)="menuToggle.emit()">
-      <mat-icon>menu</mat-icon>
+      <span class="material-symbols-rounded" aria-hidden="true">menu</span>
     </button>
     <div class="topbar-title">
       <div class="breadcrumb">
         @if (currentGroupLabel()) {
           <span>{{ currentGroupLabel() }}</span>
-          <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+          <span class="material-symbols-rounded breadcrumb-sep" aria-hidden="true">chevron_right</span>
         }
         <span>{{ currentTitle() }}</span>
       </div>

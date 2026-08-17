@@ -14,7 +14,7 @@
         class="collapse-toggle"
         (click)="toggleCollapse.emit()"
       >
-        <mat-icon>{{ collapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+        <span class="material-symbols-rounded" aria-hidden="true">{{ collapsed() ? 'chevron_right' : 'chevron_left' }}</span>
       </button>
     }
   </div>
@@ -30,7 +30,7 @@
           matTooltipPosition="right"
           (click)="navClick.emit()"
         >
-          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ item.icon }}</span>
           @if (!collapsed()) {
             <span>{{ item.label }}</span>
           }
@@ -48,17 +48,18 @@
           matTooltipPosition="right"
           (click)="toggleGroup.emit(item.label)"
         >
-          <span class="nav-icon">{{ item.icon }}</span>
+          <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ item.icon }}</span>
           @if (!collapsed()) {
             <span>{{ item.label }}</span>
           }
           @if (!collapsed()) {
-            <mat-icon
-              class="nav-group-caret"
+            <span
+              class="material-symbols-rounded nav-group-caret"
               [class.open]="openGroupLabel() === item.label"
+              aria-hidden="true"
             >
               expand_more
-            </mat-icon>
+            </span>
           }
         </button>
 
@@ -71,7 +72,7 @@
                 routerLinkActive="active"
                 (click)="navClick.emit()"
               >
-                <span class="nav-icon">{{ child.icon }}</span>
+                <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ child.icon }}</span>
                 <span>{{ child.label }}</span>
               </a>
             }
@@ -97,7 +98,7 @@
                   routerLinkActive="active"
                   (click)="navClick.emit()"
                 >
-                  <span class="nav-icon">{{ child.icon }}</span>
+                  <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ child.icon }}</span>
                   <span>{{ child.label }}</span>
                 </a>
               }
@@ -109,7 +110,7 @@
   </nav>
 
   <div class="sidenav-footer">
-    <button matButton [matMenuTriggerFor]="menu" class="user-card">
+    <button [matMenuTriggerFor]="menu" class="user-card">
       <div class="avatar">A</div>
       @if (!collapsed()) {
         <div>
@@ -121,11 +122,11 @@
 
     <mat-menu #menu="matMenu">
       <a mat-menu-item data-menu-action="settings" [routerLink]="['/settings']">
-        <span class="material-symbols-rounded" aria-hidden="true">settings</span>
+        <span class="material-symbols-rounded nav-icon" aria-hidden="true">settings</span>
         <span>設定</span>
       </a>
       <button mat-menu-item data-menu-action="logout" type="button" (click)="auth.logout()">
-        <span class="material-symbols-rounded" aria-hidden="true">logout</span>
+        <span class="material-symbols-rounded nav-icon" aria-hidden="true">logout</span>
         <span>登出</span>
       </button>
     </mat-menu>

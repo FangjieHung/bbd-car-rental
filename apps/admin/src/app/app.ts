@@ -5,7 +5,6 @@ import { MatSidenavContainer, MatSidenavModule } from '@angular/material/sidenav
 import { Router, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
 import { ZH_TW } from './core/i18n/zh-tw';
-import { ThemeSwitcherComponent } from '@car-rental/theme-pack';
 import { SideNavComponent } from './layout/side-nav/side-nav.component';
 import { NavEntry, NavGroup, isNavGroup } from './layout/side-nav/nav-item.model';
 import { HeaderComponent } from './layout/header/header.component';
@@ -16,7 +15,6 @@ import { FooterComponent } from './layout/footer/footer.component';
   imports: [
     RouterOutlet,
     MatSidenavModule,
-    ThemeSwitcherComponent,
     SideNavComponent,
     HeaderComponent,
     FooterComponent,
@@ -28,31 +26,31 @@ export class App implements OnInit {
   protected readonly t = ZH_TW;
 
   protected readonly navItems: NavEntry[] = [
-    { route: '/dashboard', label: this.t.nav.dashboard, icon: '◉' },
+    { route: '/dashboard', label: this.t.nav.dashboard, icon: 'dashboard' },
     {
       label: this.t.nav.productGroup,
-      icon: '◫',
+      icon: 'inventory_2',
       children: [
-        { route: '/vehicles', label: this.t.nav.vehicles, icon: '◫' },
-        { route: '/maintenance', label: this.t.nav.maintenance, icon: '◎' },
-        { route: '/add-ons', label: this.t.nav.addOns, icon: '◇' },
+        { route: '/vehicles', label: this.t.nav.vehicles, icon: 'directions_car' },
+        { route: '/maintenance', label: this.t.nav.maintenance, icon: 'build' },
+        { route: '/add-ons', label: this.t.nav.addOns, icon: 'extension' },
       ],
     },
-    { route: '/bookings', label: this.t.nav.bookings, icon: '◍' },
+    { route: '/bookings', label: this.t.nav.bookings, icon: 'calendar_month' },
     {
       label: this.t.nav.pricingGroup,
-      icon: '◈',
+      icon: 'payments',
       children: [
-        { route: '/pricing', label: this.t.nav.pricing, icon: '◈' },
-        { route: '/coupons', label: this.t.nav.coupons, icon: '◆' },
+        { route: '/pricing', label: this.t.nav.pricing, icon: 'payments' },
+        { route: '/coupons', label: this.t.nav.coupons, icon: 'sell' },
       ],
     },
     {
       label: this.t.nav.partnerGroup,
-      icon: '◐',
+      icon: 'handshake',
       children: [
-        { route: '/partners', label: this.t.nav.partners, icon: '◐' },
-        { route: '/commission', label: this.t.nav.commission, icon: '◑' },
+        { route: '/partners', label: this.t.nav.partners, icon: 'handshake' },
+        { route: '/commission', label: this.t.nav.commission, icon: 'percent' },
       ],
     },
   ];

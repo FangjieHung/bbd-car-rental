@@ -1,13 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { ThemeService } from '../theme/theme.service';
 import { texture, COLOR_THEMES } from '../theme/theme.token';
 
 @Component({
   selector: 'app-theme-switcher',
-  imports: [MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [MatButtonModule, MatMenuModule],
   template: `
     <button
       type="button"
@@ -17,7 +16,7 @@ import { texture, COLOR_THEMES } from '../theme/theme.token';
       [matMenuTriggerFor]="themeMenu"
       aria-label="外觀設定"
     >
-      <mat-icon>palette</mat-icon>
+      <span class="material-symbols-rounded" aria-hidden="true">palette</span>
     </button>
 
     <mat-menu #themeMenu="matMenu" class="theme-menu-panel" xPosition="before" yPosition="above">

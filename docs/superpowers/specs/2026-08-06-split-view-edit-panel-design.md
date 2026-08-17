@@ -20,7 +20,7 @@
 ### 這輪不做
 
 - **不動其餘 8 頁**（vehicles、bookings、customers、coupons、pricing、partners、maintenance、commission）與 affiliate。試點驗證體驗對了再推。
-- 不移除 actions 欄的「編輯」按鈕。這次是試點，同時改兩件事會分不清體驗變化來自哪一個。
+- 不移除 actions 欄的「編輯」按鈕。這次是試點，同時改兩件事會分不清體驗變化來自哪一個；該按鈕改為走和列點選相同的面板開啟流程，**不**保留第二套 dialog 編輯體驗。
 - 不移除手機卡片的展開鈕。展開是唯讀快速瞄一眼、面板是要動手改，用途不同。
 - 不做面板寬度可拖曳調整、不做多選、不做面板內的分頁瀏覽（上一筆／下一筆）。
 - 不改 `libs/ui` 既有的匯出、逃生門模式、手機卡片轉換等任何行為。
@@ -104,7 +104,7 @@ protected onRowClick(row: T, event: MouseEvent): void {
 
 只有真的要用列點選的頁面才該出現 `cursor: pointer` 與 hover 樣式——其餘 9 頁的列點下去沒反應，卻長得像可點，是壞體驗。
 
-Angular 的 `output()` 沒有公開的「是否有人訂閱」查詢，因此改用明確的 `selectable` input 讓頁面主動開啟。未開啟時不綁 click、不加游標樣式、不加 hover。
+Angular 的 `output()` 沒有公開的「是否有人訂閱」查詢，因此改用明確的 `selectable` input 讓頁面主動開啟。未開啟時不發出事件、不加游標樣式、不加 hover。模板可以為了簡化結構而保留 `(click)` 綁定，但處理器必須在第一行返回；這是實作細節，不能改變上述可觀察行為。
 
 ---
 
@@ -128,7 +128,7 @@ readonly rowClick = output<T>();
   [class.is-expanded]="isExpanded(row)"
   [class.is-selectable]="selectable()"
   [class.is-selected]="selectable() && rowId()(row) === selectedId()"
-  (click)="selectable() && onRowClick(row, $event)"
+  (click)="onRowClick(row, $event)"
 >
 ```
 
@@ -166,7 +166,8 @@ readonly closed = output<void>();
 - `open` 為 false 時不渲染內容（`@if`），避免表單在背景保持存活。
 - Esc 鍵發出 `closed`。
 - 窄螢幕（<1024px）覆蓋時，點面板外的遮罩發出 `closed`。
-- 開啟時把焦點移入面板第一個可聚焦元素；關閉時焦點回到觸發它的元素。
+- 開啟時記住目前焦點，並在下一個 render 將焦點移到面板內第一個可聚焦元素（通常是表單第一欄；沒有時為關閉鈕）。關閉時還原焦點；若原元素已被刪除，則不強制聚焦。
+- 寬螢幕的並排面板是補充區域，不宣告 modal，也不限制 Tab 在表格與面板間移動。窄螢幕覆蓋時才以 `role="dialog"`、`aria-modal="true"` 及焦點陷阱形成真正 modal；遮罩也只在此模式可要求關閉。
 
 **不內建任何使用者可見字串**，與 `DataTableComponent` 同一約束。
 
@@ -285,7 +286,14 @@ apps/admin/src/app/core/i18n/zh-tw.ts       # 修改：common 追加三個鍵，
 | `closePanel` | 關閉面板 |
 | `editPanelHeading` | 編輯 |
 | `createPanelHeading` | 新增 |
-```
+
+### 9.1 路由與頁面層的補充決策
+
+- `app.config.ts` 的 router 啟用 `withComponentInputBinding()`；`AddOnsPageComponent` 以 `edit = input<string | null>(null)` 接收 query param，不建立 RxJS 訂閱。
+- 頁面維持 `ChangeDetectionStrategy.OnPush`，並以 `computed()` 推導 `editing` 與 `panelOpen`。`editing` 只能是有效 id 對應的資料；`edit=new` 是開啟空白表單的唯一特殊值。
+- `openPanel()`、`openCreate()` 與 actions 欄的編輯鈕共用同一導航函式。只有「面板已開而切換目標」使用 `replaceUrl: true`；開啟、關閉與刪除後關閉都保留一筆可由返回鍵回復的歷史紀錄。
+- `remove()` 成功後若刪除的是 `editing()?.id`，必須移除 `edit` param 關閉面板；刪除其他資料則保留目前面板。
+- `SplitPanelComponent` 以 1024px 作為 modal 模式的唯一斷點。JavaScript 偵測與 CSS media query 必須同為 `max-width: 1024px`（包含 1024px），避免語意與視覺模式不同步。
 
 ---
 
@@ -306,6 +314,8 @@ apps/admin/src/app/core/i18n/zh-tw.ts       # 修改：common 追加三個鍵，
 - 點關閉鈕發出 `closed`。
 - 按 Esc 發出 `closed`。
 - 關閉鈕的 aria-label 來自 `closeLabel` input（守「不內建字串」）。
+- 開啟後焦點移入面板；關閉後回到仍存在的觸發元素。
+- 窄螢幕時具有 dialog/modal 語意與焦點陷阱，寬螢幕時不具有 `aria-modal`。
 
 `add-on-form.component.spec.ts`（新增）：
 
@@ -321,6 +331,7 @@ apps/admin/src/app/core/i18n/zh-tw.ts       # 修改：common 追加三個鍵，
 - URL 有 `?edit=<不存在的 id>` 時面板不開，且 param 被移除。
 - 面板開啟時點另一列，導航使用 `replaceUrl`。
 - 儲存成功後 param 被移除。
+- 刪除目前正在編輯的資料後 param 被移除；刪除其他資料不關閉面板。
 
 ---
 
@@ -329,4 +340,16 @@ apps/admin/src/app/core/i18n/zh-tw.ts       # 修改：common 追加三個鍵，
 - `npx nx test ui` / `npx nx test admin` 全過
 - `npx nx build admin` 成功
 - `npm run lint:theme` 通過（新樣式只用 `--mat-sys-*` token）
-- 瀏覽器實測：1280px 並排、900px 覆蓋、500px 卡片＋覆蓋三種寬度各確認一次；返回鍵關閉面板；連續點三列後按一次返回即離開面板狀態
+- 瀏覽器實測：1280px 並排、900px 覆蓋、500px 卡片＋覆蓋三種寬度各確認一次；返回鍵關閉面板；連續點三列後按一次返回即離開面板狀態；焦點在開關面板後正確進入與返回；刪除目前編輯項目後面板關閉。
+
+---
+
+## 12. Review 後的可實作性結論
+
+本 Spec 原先已涵蓋主要產品行為，但不足以避免下列三種實作偏差；本次已在上述章節補為規範，而非留給工程師臨場決定：
+
+1. **同頁兩種編輯容器**：保留 actions 欄編輯鈕不等於保留 dialog。按鈕必須開同一個 Split View，否則使用者在同一頁會得到兩套狀態與返回鍵行為。
+2. **刪除後的孤兒面板**：資料刪除會讓 `edit=<id>` 變成無效 URL；除了載入時的無效 id 自我修復外，刪除目前資料時也必須立即關閉面板。
+3. **視覺覆蓋不等於無障礙 modal**：只有窄螢幕覆蓋模式應使用 modal 語意與焦點陷阱；寬螢幕並排模式不應誤加 `aria-modal`。兩種模式都要處理進入與返回焦點。
+
+其餘架構選擇維持不變：UI lib 不知道業務資料或 URL，頁面負責接線，表單可同時被 dialog 與面板承載。這份 Spec 與對應 implementation plan 完成同步後，可作為後續試點實作的唯一行為依據。

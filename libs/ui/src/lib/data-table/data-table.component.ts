@@ -7,14 +7,20 @@ import {
   computed,
   contentChild,
   contentChildren,
+  effect,
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { DataTableCellContext, DataTableCellDirective } from './data-table-cell.directive';
 import { exportRows, exportTableElement } from './data-table-export';
-import { DataTableBodyDirective, DataTableHeadDirective } from './data-table-slot.directives';
+import {
+  DataTableBatchActionsDirective,
+  DataTableBodyDirective,
+  DataTableHeadDirective,
+} from './data-table-slot.directives';
 import { DataTableColumn, DataTableLabels, DataTableMobileMode } from './data-table.types';
 
 type ResolvedColumn<T> = DataTableColumn<T> & { primary: boolean };
@@ -44,10 +50,66 @@ export class DataTableComponent<T> {
   readonly showExport = input(true);
   readonly emptyText = input('');
   readonly labels = input.required<DataTableLabels>();
+  readonly selectable = input(false);
+  readonly selection = input<readonly T[]>([]);
+
+  readonly selectionChange = output<readonly T[]>();
+  readonly batchDelete = output<readonly T[]>();
 
   private readonly cellDirectives = contentChildren(DataTableCellDirective<T>);
   protected readonly headDirective = contentChild(DataTableHeadDirective);
   protected readonly bodyDirective = contentChild(DataTableBodyDirective);
+  protected readonly batchActionsDirective = contentChild(DataTableBatchActionsDirective<T>);
+
+  private readonly selectedIds = signal<ReadonlySet<unknown>>(new Set());
+
+  protected readonly selectedRows = computed<readonly T[]>(() => {
+    const ids = this.selectedIds();
+    return this.rows().filter((row) => ids.has(this.rowId()(row)));
+  });
+
+  protected readonly selectedCount = computed(() => this.selectedRows().length);
+
+  protected readonly allSelected = computed(() => {
+    const rows = this.rows();
+    return rows.length > 0 && this.selectedCount() === rows.length;
+  });
+
+  protected readonly partiallySelected = computed(() => {
+    const count = this.selectedCount();
+    return count > 0 && count < this.rows().length;
+  });
+
+  constructor() {
+    effect(() => {
+      const externalSelection = this.selection();
+      const rows = untracked(() => this.rows());
+      const rowIds = new Set(rows.map((row) => this.rowId()(row)));
+      const nextIds = new Set(
+        externalSelection
+          .map((row) => this.rowId()(row))
+          .filter((id) => rowIds.has(id)),
+      );
+
+      this.selectedIds.set(nextIds);
+      const cleanedSelection = rows.filter((row) => nextIds.has(this.rowId()(row)));
+      if (cleanedSelection.length !== externalSelection.length) {
+        this.selectionChange.emit(cleanedSelection);
+      }
+    });
+
+    effect(() => {
+      const rows = this.rows();
+      const previousIds = untracked(() => this.selectedIds());
+      const rowIds = new Set(rows.map((row) => this.rowId()(row)));
+      const nextIds = new Set([...previousIds].filter((id) => rowIds.has(id)));
+
+      if (nextIds.size !== previousIds.size) {
+        this.selectedIds.set(nextIds);
+        this.selectionChange.emit(rows.filter((row) => nextIds.has(this.rowId()(row))));
+      }
+    });
+  }
 
   /** dtHead 存在即進入逃生門模式：不讀 columns、不注入 data-label、不生卡片。 */
   protected readonly isCustom = computed(() => {
@@ -94,12 +156,48 @@ export class DataTableComponent<T> {
     return this.expandedIds().has(this.rowId()(row));
   }
 
+  protected isSelected(row: T): boolean {
+    return this.selectedIds().has(this.rowId()(row));
+  }
+
+  protected rowSelectionLabel(row: T): string {
+    const firstColumn = this.resolvedColumns()[0];
+    const visibleValue = firstColumn ? this.valueOf(row, firstColumn.key) : '';
+    const rowIdentifier = String(this.rowId()(row));
+    const parts = [this.labels().selectRow];
+    if (visibleValue) parts.push(visibleValue);
+    parts.push(rowIdentifier);
+    return parts.join(' - ');
+  }
+
   protected toggle(row: T): void {
     const id = this.rowId()(row);
     const next = new Set(this.expandedIds());
     if (next.has(id)) next.delete(id);
     else next.add(id);
     this.expandedIds.set(next);
+  }
+
+  protected toggleRowSelection(row: T): void {
+    const id = this.rowId()(row);
+    const next = new Set(this.selectedIds());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.selectedIds.set(next);
+    this.selectionChange.emit(this.rows().filter((current) => next.has(this.rowId()(current))));
+  }
+
+  protected toggleAllSelection(): void {
+    const rows = this.rows();
+    const next = this.allSelected()
+      ? new Set<unknown>()
+      : new Set(rows.map((row) => this.rowId()(row)));
+    this.selectedIds.set(next);
+    this.selectionChange.emit(rows.filter((row) => next.has(this.rowId()(row))));
+  }
+
+  protected deleteSelected(): void {
+    this.batchDelete.emit(this.selectedRows());
   }
 
   protected valueOf(row: T, key: string): string {
@@ -125,6 +223,14 @@ export class DataTableComponent<T> {
       } else {
         await exportRows(this.columns(), this.rows(), this.exportName());
       }
+    } catch (e) {
+      this.exportFailed.emit(e as Error);
+    }
+  }
+
+  protected async runSelectedExport(): Promise<void> {
+    try {
+      await exportRows(this.columns(), this.selectedRows(), `${this.exportName()}-selected`);
     } catch (e) {
       this.exportFailed.emit(e as Error);
     }

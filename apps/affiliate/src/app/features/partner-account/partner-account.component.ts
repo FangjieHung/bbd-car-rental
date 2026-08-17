@@ -29,6 +29,12 @@ export class PartnerAccountComponent {
 
   readonly tableLabels: DataTableLabels = {
     exportExcel: '匯出 Excel',
+    selectAll: '全選',
+    deselectAll: '取消全選',
+    selectRow: '選取資料列',
+    batchDelete: '刪除已選資料',
+    selectedCount: '已選 {count} 筆',
+    exportSelected: '只匯出已勾選的資料',
     expandRow: '展開詳細資料',
     collapseRow: '收合詳細資料',
     exportFailedText: '匯出失敗，請確認網路連線後再試一次',

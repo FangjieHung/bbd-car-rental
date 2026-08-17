@@ -14,10 +14,10 @@
             [class.unpriced]="isUnpriced(vehicle)"
             (click)="select(vehicle)"
           >
-            <mat-card-header>
-              <mat-card-title>{{ vehicle.brand }} {{ vehicle.model }}</mat-card-title>
-              <mat-card-subtitle>{{ vehicle.plateNumber }}</mat-card-subtitle>
-            </mat-card-header>
+            <div>
+              <p>{{ vehicle.brand }} {{ vehicle.model }}</p>
+              <p>{{ vehicle.plateNumber }}</p>
+            </div>
             <mat-card-content>
               @if (isUnpriced(vehicle)) {
                 <p class="price">暫無定價</p>

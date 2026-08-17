@@ -11,7 +11,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatIconModule } from '@angular/material/icon';
 import { PricingPlan } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 
@@ -26,7 +25,6 @@ export type PricingPlanFormResult = Omit<PricingPlan, 'id'>;
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatIconModule,
   ],
   templateUrl: './pricing-plan-dialog.component.html',
   styleUrls: ['../../../app.scss'],

@@ -6,7 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { DataTableComponent } from './data-table.component';
 import { DataTableCellDirective } from './data-table-cell.directive';
-import { DataTableBodyDirective, DataTableHeadDirective } from './data-table-slot.directives';
+import {
+  DataTableBatchActionsDirective,
+  DataTableBodyDirective,
+  DataTableHeadDirective,
+} from './data-table-slot.directives';
 import { rowsToAoa } from './data-table-export';
 import { DataTableColumn, DataTableLabels } from './data-table.types';
 
@@ -41,6 +45,12 @@ interface Row {
 
 const LABELS: DataTableLabels = {
   exportExcel: '匯出 Excel',
+  selectAll: '全選',
+  deselectAll: '取消全選',
+  selectRow: '選取資料列',
+  batchDelete: '刪除已選資料',
+  selectedCount: '已選 {count} 筆',
+  exportSelected: '只匯出已勾選的資料',
   expandRow: '展開詳細資料',
   collapseRow: '收合詳細資料',
   exportFailedText: '匯出失敗，請稍後再試',
@@ -72,6 +82,48 @@ class HostComponent {
     { id: 'v1', name: 'ABC-123', status: 'available', mileage: 12000 },
     { id: 'v2', name: 'XYZ-789', status: 'rented', mileage: 34000 },
   ]);
+}
+
+@Component({
+  imports: [DataTableComponent, DataTableBatchActionsDirective],
+  template: `
+    <lib-data-table
+      [columns]="columns()"
+      [rows]="rows()"
+      [labels]="labels"
+      [selectable]="true"
+      [selection]="selection()"
+      (selectionChange)="onSelectionChange($event)"
+      (batchDelete)="onBatchDelete($event)"
+    >
+      <ng-template dtBatchActions let-selected>
+        <span class="selection-slot-row-id">{{ $any(selected[0])?.id }}</span>
+      </ng-template>
+    </lib-data-table>
+  `,
+})
+class SelectionHostComponent {
+  readonly labels = LABELS;
+  readonly columns = signal<DataTableColumn<Row>[]>([
+    { key: 'name', label: '車牌', primary: true },
+    { key: 'status', label: '狀態', primary: true },
+  ]);
+  readonly rows = signal<Row[]>([
+    { id: 'v1', name: 'ABC-123', status: 'available', mileage: 12000 },
+    { id: 'v2', name: 'XYZ-789', status: 'rented', mileage: 34000 },
+  ]);
+  readonly selection = signal<readonly Row[]>([]);
+  readonly selectionChanges: readonly Row[][] = [];
+  readonly deletedRows: readonly Row[][] = [];
+
+  onSelectionChange(rows: readonly Row[]): void {
+    this.selection.set(rows);
+    (this.selectionChanges as Row[][]).push([...rows]);
+  }
+
+  onBatchDelete(rows: readonly Row[]): void {
+    (this.deletedRows as Row[][]).push([...rows]);
+  }
 }
 
 interface RowWithoutId {
@@ -155,6 +207,93 @@ describe('DataTableComponent 標準模式', () => {
     expect(() => noIdFixture.detectChanges()).toThrow(
       'DataTable：資料列沒有 id 欄位，請傳入 [rowId] 指定識別欄位',
     );
+  });
+});
+
+describe('DataTableComponent 資料列選取', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<SelectionHostComponent>>;
+  let el: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [SelectionHostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(SelectionHostComponent);
+    await fixture.whenStable();
+    el = fixture.nativeElement as HTMLElement;
+  });
+
+  it('既有 HostComponent 未啟用 selectable 時不顯示 checkbox 或批次工具列', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    const defaultFixture = TestBed.createComponent(HostComponent);
+    await defaultFixture.whenStable();
+    const defaultEl = defaultFixture.nativeElement as HTMLElement;
+
+    expect(defaultEl.querySelector('.dt-selection-checkbox')).toBeNull();
+    expect(defaultEl.querySelector('.dt-batch-toolbar')).toBeNull();
+  });
+
+  it('選取單列時發出完全相同的資料列並顯示批次工具列', async () => {
+    (el.querySelector('tbody .dt-selection-checkbox') as HTMLInputElement).click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.selectionChanges.at(-1)).toEqual([
+      fixture.componentInstance.rows()[0],
+    ]);
+    expect(el.querySelector('.dt-batch-toolbar')).toBeTruthy();
+  });
+
+  it('表頭全選後再清除會依序發出全部與空的選取資料', async () => {
+    const headerCheckbox = el.querySelector('thead .dt-selection-checkbox') as HTMLInputElement;
+    headerCheckbox.click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.selection()).toEqual(fixture.componentInstance.rows());
+
+    headerCheckbox.click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.selection()).toEqual([]);
+    expect(fixture.componentInstance.selectionChanges.slice(-2)).toEqual([
+      fixture.componentInstance.rows(),
+      [],
+    ]);
+  });
+
+  it('只選取兩列中的一列時表頭 checkbox 為 indeterminate', async () => {
+    (el.querySelector('tbody .dt-selection-checkbox') as HTMLInputElement).click();
+    await fixture.whenStable();
+
+    expect((el.querySelector('thead .dt-selection-checkbox') as HTMLInputElement).indeterminate).toBe(
+      true,
+    );
+  });
+
+  it('移除已選資料列時會清除 stale selection 並發出清理後資料', async () => {
+    (el.querySelector('tbody .dt-selection-checkbox') as HTMLInputElement).click();
+    await fixture.whenStable();
+
+    fixture.componentInstance.rows.set([fixture.componentInstance.rows()[1]]);
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.selection()).toEqual([]);
+    expect(fixture.componentInstance.selectionChanges.at(-1)).toEqual([]);
+  });
+
+  it('批次刪除只發出已選資料列，不改變 rows', async () => {
+    const selectedRow = fixture.componentInstance.rows()[0];
+    (el.querySelector('tbody .dt-selection-checkbox') as HTMLInputElement).click();
+    await fixture.whenStable();
+    (el.querySelector('.dt-batch-delete-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.deletedRows).toEqual([[selectedRow]]);
+    expect(fixture.componentInstance.rows()).toEqual([selectedRow, fixture.componentInstance.rows()[1]]);
+  });
+
+  it('dtBatchActions slot 會收到實際已選資料列', async () => {
+    const selectedRow = fixture.componentInstance.rows()[0];
+    (el.querySelector('tbody .dt-selection-checkbox') as HTMLInputElement).click();
+    await fixture.whenStable();
+
+    expect(el.querySelector('.selection-slot-row-id')?.textContent?.trim()).toBe(selectedRow.id);
   });
 });
 
@@ -394,6 +533,27 @@ class ExportHostComponent {
 }
 
 @Component({
+  imports: [DataTableComponent],
+  template: `
+    <lib-data-table
+      [columns]="columns"
+      [rows]="rows()"
+      [labels]="labels"
+      [selectable]="true"
+      exportName="vehicles"
+    />
+  `,
+})
+class SelectedExportHostComponent {
+  readonly labels = LABELS;
+  readonly columns: DataTableColumn<Row>[] = [{ key: 'name', label: '車牌', primary: true }];
+  readonly rows = signal<Row[]>([
+    { id: 'v1', name: 'ABC-123', status: 'available', mileage: 12000 },
+    { id: 'v2', name: 'XYZ-789', status: 'rented', mileage: 34000 },
+  ]);
+}
+
+@Component({
   imports: [DataTableComponent, DataTableHeadDirective, DataTableBodyDirective],
   template: `
     <lib-data-table [columns]="columns" [labels]="labels" (exportFailed)="onExportFailed($event)">
@@ -471,6 +631,22 @@ describe('DataTableComponent 匯出接線', () => {
     await fixture.whenStable();
     const { columns, rows } = fixture.componentInstance;
     expect(aoaToSheet).toHaveBeenCalledWith(rowsToAoa(columns, rows()));
+  });
+
+  it('點擊只匯出已勾選的資料時，exportRows 只收到已選資料列', async () => {
+    await TestBed.configureTestingModule({ imports: [SelectedExportHostComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(SelectedExportHostComponent);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+
+    (el.querySelector('tbody .dt-selection-checkbox') as HTMLInputElement).click();
+    await fixture.whenStable();
+    (el.querySelector('.dt-export-selected-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+
+    expect(aoaToSheet).toHaveBeenCalledWith(
+      rowsToAoa(fixture.componentInstance.columns, [fixture.componentInstance.rows()[0]]),
+    );
   });
 
   it('逃生門模式點擊匯出鈕呼叫 table_to_sheet，不呼叫 aoa_to_sheet（分派到 exportTableElement）', async () => {

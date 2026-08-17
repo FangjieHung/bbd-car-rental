@@ -1,54 +1,182 @@
 <div class="calendar-view">
-  <div class="calendar-view__toolbar flex items-center gap-2 mb-2">
-    <button mat-button (click)="shiftMonth(-1)">{{ t.dispatch.prevMonth }}</button>
-    <span class="font-bold">{{ monthLabel() }}</span>
-    <button mat-button (click)="shiftMonth(1)">{{ t.dispatch.nextMonth }}</button>
-  </div>
-
   <div class="calendar-view__layout">
-    <div class="calendar-view__grid">
-      @for (d of monthDays(); track d.getTime()) {
-        <button
-          class="calendar-view__day p-2 min-h-16 text-left cursor-pointer transition-colors hover:[background:var(--mat-sys-surface-container-high)]"
-          [class.opacity-40]="d.getMonth() !== month().getMonth()"
-          [class.calendar-view__day--selected]="selected() && isSameDay(d, selected()!)"
-          (click)="selectDate(d)"
-        >
-          <div
-            class="font-bold"
-            [class.calendar-view__day-number--today]="isSameDay(d, todayDate)"
-          >
-            {{ d.getDate() }}
-          </div>
-          <div class="calendar-view__muted">
-            {{ t.dispatch.pickups }}{{ statsOf(d).pickups }} {{ t.dispatch.returns
-            }}{{ statsOf(d).returns }}
-          </div>
-          <div class="calendar-view__muted">{{ t.dispatch.available }} {{ statsOf(d).available }}</div>
-        </button>
-      }
-    </div>
+    <section class="ui-card flex-auto">
+      <div class="calendar-view__header">
+        <h2 class="ui-text-title">{{ monthLabel() }}</h2>
+        <div class="calendar-view__toolbar flex items-center gap-2 mb-2">
+          <button mat-icon-button [attr.aria-label]="t.dispatch.prevMonth" (click)="shiftMonth(-1)">
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+          </button>
+          <button matButton="outlined" (click)="goToToday()">{{ t.dispatch.today }}</button>
+          <button mat-icon-button [attr.aria-label]="t.dispatch.nextMonth" (click)="shiftMonth(1)">
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+          </button>
+        </div>
+      </div>
 
-    <lib-responsive-panel
-      [open]="panelOpen()"
-      [heading]="panelHeading()"
-      [closeLabel]="t.common.closePanel"
-      (closed)="dismissPanel()"
-    >
-      @if (selected(); as sel) {
-        @if (dayBookings(sel).length === 0) {
-          <p class="text-sm calendar-view__muted">{{ t.common.empty }}</p>
-        } @else {
-          <ul class="text-sm flex flex-col gap-1">
-            @for (b of dayBookings(sel); track b.id) {
-              <li class="ui-card !p-3">
-                {{ plateOf(b.vehicleId) }}｜{{ customerStore.nameOf(b.customerId) }}｜
-                {{ fmt(b.startTime) }} → {{ fmt(b.endTime) }}｜{{ t.booking.statusLabels[b.status] }}
-              </li>
-            }
-          </ul>
+      <div class="calendar-view__grid">
+        @for (label of t.dispatch.weekdays; track label) {
+          <div class="calendar-view__weekday p-2 text-center font-bold calendar-view__muted">
+            {{ label }}
+          </div>
         }
-      }
-    </lib-responsive-panel>
+        @for (d of monthDays(); track d.getTime()) {
+          @let stats = statsOf(d);
+          <button
+            class="calendar-view__day p-2 min-h-16 text-left cursor-pointer transition-colors hover:[background:var(--mat-sys-surface-container-high)]"
+            [class.opacity-40]="d.getMonth() !== month().getMonth()"
+            [class.calendar-view__day--selected]="selected() && isSameDay(d, selected()!)"
+            (click)="selectDate(d)"
+          >
+            <div
+              class="font-bold"
+              [class.calendar-view__day-number--today]="isSameDay(d, todayDate)"
+            >
+              {{ d.getDate() }}
+            </div>
+            @if (stats.pickups > 0) {
+              <p class="calendar-view__muted">{{ t.dispatch.pickups }}{{ stats.pickups }}</p>
+            }
+            @if (stats.returns > 0) {
+              <p class="calendar-view__muted">{{ t.dispatch.returns }}{{ stats.returns }}</p>
+            }
+            <p class="calendar-view__muted">{{ t.dispatch.available }} {{ stats.available }}</p>
+          </button>
+        }
+      </div>
+    </section>
+
+    <section class="ui-card split-view__panel">
+      <lib-responsive-panel
+        [open]="panelOpen()"
+        [heading]="panelHeading()"
+        [closeLabel]="t.common.closePanel"
+        [showCloseButton]="isNarrow()"
+        (closed)="dismissPanel()"
+      >
+        @if (relativeDayLabel(); as label) {
+          <span panelHeaderExtra class="calendar-view__relative-chip">{{ label }}</span>
+        }
+        @if (selected()) {
+          @let pickup = todayPickupProgress();
+          @let ret = todayReturnProgress();
+          <mat-tab-group
+            [selectedIndex]="panelTabIndex()"
+            (selectedIndexChange)="onPanelTabIndexChange($event)"
+          >
+            <mat-tab [label]="'取車 - ' + pickup.done + '/' + pickup.total">
+              <ng-template matTabContent>
+                <mat-accordion class="work-list-accordion">
+                  @for (row of pickupWorkRows(); track row.id) {
+                    <mat-expansion-panel>
+                      <mat-expansion-panel-header>
+                        <mat-panel-title>{{ vehicleLabel(row) }}</mat-panel-title>
+                        <mat-panel-description
+                          >{{ customerName(row) }} ·
+                          {{ fmt(row.booking.startTime) }}</mat-panel-description
+                        >
+                      </mat-expansion-panel-header>
+                      <dl class="work-list-detail">
+                        <div>
+                          <dt>地點</dt>
+                          <dd>取：{{ location(row) }}（—）</dd>
+                        </div>
+                        <div>
+                          <dt>班次</dt>
+                          <dd>—</dd>
+                        </div>
+                        <div>
+                          <dt>洗車</dt>
+                          <dd>—</dd>
+                        </div>
+                        <div>
+                          <dt>聯絡</dt>
+                          <dd>
+                            @if (phoneHref(row.booking); as href) {
+                              <a class="underline" [href]="href">📞 打電話</a>
+                              <span class="sr-only">{{ phoneLabel(row.booking) }}</span>
+                            } @else {
+                              —
+                            }
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>付款</dt>
+                          <dd>{{ paymentLabel() }}</dd>
+                        </div>
+                      </dl>
+                    </mat-expansion-panel>
+                  } @empty {
+                    <p class="pb-4 pt-4 text-sm calendar-view__muted">{{ t.common.empty }}</p>
+                  }
+                </mat-accordion>
+              </ng-template>
+            </mat-tab>
+            <mat-tab [label]="'還車 - ' + ret.done + '/' + ret.total">
+              <ng-template matTabContent>
+                @if (returnWorkRows().length > 0) {
+                  <mat-accordion class="work-list-accordion">
+                    @for (row of returnWorkRows(); track row.id) {
+                      <mat-expansion-panel>
+                        <mat-expansion-panel-header>
+                          <mat-panel-title>{{ vehicleLabel(row) }}</mat-panel-title>
+                          <mat-panel-description
+                            >{{ customerName(row) }} ·
+                            {{ fmt(row.booking.endTime) }}</mat-panel-description
+                          >
+                        </mat-expansion-panel-header>
+                        <dl class="work-list-detail">
+                          <div>
+                            <dt>地點</dt>
+                            <dd>還：{{ location(row) }}（—）</dd>
+                          </div>
+                          <div>
+                            <dt>班次</dt>
+                            <dd>—</dd>
+                          </div>
+                          <div>
+                            <dt>洗車</dt>
+                            <dd>—</dd>
+                          </div>
+                          <div>
+                            <dt>聯絡</dt>
+                            <dd>
+                              @if (phoneHref(row.booking); as href) {
+                                <a class="underline" [href]="href">📞 打電話</a>
+                              } @else {
+                                —
+                              }
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>付款</dt>
+                            <dd>{{ paymentLabel() }}</dd>
+                          </div>
+                        </dl>
+                      </mat-expansion-panel>
+                    }
+                  </mat-accordion>
+                } @else {
+                  <p class="pb-4 pt-4 text-sm calendar-view__muted">目前沒有還車資料</p>
+                }
+              </ng-template>
+            </mat-tab>
+            <mat-tab [label]="'可用 - ' + availableVehicles().length + ' 筆'">
+              <ng-template matTabContent>
+                @if (availableVehicles().length > 0) {
+                  <ul class="text-sm flex flex-col gap-1 pt-4">
+                    @for (v of availableVehicles(); track v.id) {
+                      <li class="ui-card !p-3">{{ v.plateNumber }}（{{ v.model }}）</li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="pb-4 pt-4 text-sm calendar-view__muted">當日無可用車輛</p>
+                }
+              </ng-template>
+            </mat-tab>
+          </mat-tab-group>
+        }
+      </lib-responsive-panel>
+    </section>
   </div>
 </div>

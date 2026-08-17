@@ -17,7 +17,7 @@
   @if (!report()) {
     <p class="empty-state">{{ t.commission.selectPartnerFirst }}</p>
   } @else {
-    <div class="page-header">
+    <div class="ui-card-header">
       <span>
         {{ t.commission.payoutStatus }}：{{ t.commission.payoutStatusLabels[payoutStatus()!] }}
       </span>

@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - 每個新元件的 host 必須設 `:host { display: contents; }`，避免自訂元素標籤（`<app-header>`/`<app-footer>`/`<app-side-nav>`）在 flex 版面（`.content-area { display:flex }`、`.sidenav-inner` 的高度計算）中插入多餘的盒子，破壞現有版面。
-- `app.scss` 裡跟本次拆分「無關」的既有 utility class（`.page-header`、`.stat-grid`、`.table-*`、`.list-*`、`.chip-list`、`.alert-*`、`.form-shell`、`.tier-row`/`.range-row`、`.error-message`、`.actions`、`.dialog-content`、`.muted`、`.stack-block`、`.vehicle-*`、`.action-cell`、`.text-secondary`、`.section-title`、`.content-grid`）一律不動、不搬——這些不是本次任務範圍。
+- `app.scss` 裡跟本次拆分「無關」的既有 utility class（`.ui-card-header`、`.stat-grid`、`.table-*`、`.list-*`、`.chip-list`、`.alert-*`、`.form-shell`、`.tier-row`/`.range-row`、`.error-message`、`.actions`、`.dialog-content`、`.muted`、`.stack-block`、`.vehicle-*`、`.action-cell`、`.text-secondary`、`.section-title`、`.content-grid`）一律不動、不搬——這些不是本次任務範圍。
 - 每個 task 完成後跑 `npx nx test admin` 確認全部測試綠燈，改完 app 相關檔案後額外跑 `npx nx build admin` 確認能編譯。
 - i18n 文案一律加在 `apps/admin/src/app/core/i18n/zh-tw.ts` 的 `ZH_TW`，不要在元件裡寫死中文（既有慣例）。
 - commit message 用專案既有的 conventional commit 中文風格（參考 `git log`：`fix(domain): ...`、`docs(architecture): ...`），本次全部用 `refactor(admin): ...`。
@@ -1127,7 +1127,7 @@ export class App implements OnInit {
   min-height: 0;
 }
 
-.page-header {
+.ui-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -15,6 +15,7 @@
 - **必須在 git worktree 內作業。** 動工前用 `superpowers:using-git-worktrees` 從 `main` 建立隔離工作區。主 checkout 可能有其他 session 的未提交改動。
 - **每個 bash 指令以 `cd <worktree 絕對路徑> && unset NX_WORKSPACE_ROOT_PATH &&` 開頭。** 該環境變數從父 session 繼承、指向主 checkout，不 unset 會讓 `nx` 寫錯目錄。
 - Angular 22 zoneless + signal：`ChangeDetectionStrategy.OnPush`、`input()` / `input.required()` / `output()` / `signal()` / `computed()` / `effect()`。**不使用 `@Input()` 裝飾器。**
+- `SplitPanelComponent` 的窄螢幕覆蓋模式是 modal：必須處理焦點進入／返回、焦點陷阱與 `aria-modal`；寬螢幕並排時不應宣告 modal。
 - **`libs/ui` 不得 import `@angular/material` 或 `libs/domain`**，且**不得內建任何使用者可見字串**——所有文案由 input 傳入。（元件內丟出的開發者診斷錯誤不受此限，見 `data-table.component.ts:32-34` 既有註解。）
 - **SCSS 顏色只用 `--mat-sys-*` token**，不寫死色碼。改動 `apps/` 底下的樣式後必須跑 `npm run lint:theme`（該腳本只掃 `apps/`，但 `libs/ui` 仍須遵守同一約束）。
 - **既有斷點 `max-width: 640px` 不得更動**，那是表格轉卡片的線。面板用新的 `max-width: 1024px`。
@@ -215,7 +216,7 @@ Expected: FAIL，`selectable` / `selectedId` / `rowClick` 不存在
   }
 ```
 
-**與 spec §4.2 的一處實作偏離**：spec 寫「未開啟時不綁 click」，實作改為永遠綁定、在 `onRowClick` 第一行提早返回。行為完全相同（不發事件、無游標樣式），但模板單純。
+Spec §4.2 已允許保留 click 綁定、在 `onRowClick` 第一行提早返回；這是目前採用的實作，行為仍是未開啟時不發事件、無游標與 hover 樣式。
 
 - [ ] **Step 4: 改模板**
 
@@ -568,7 +569,7 @@ npx nx test ui
 npx nx lint ui
 npx nx build ui
 ```
-Expected: 全部 PASS（Task 1 的 55 個 + 本 task 的 8 個 = 63）
+Expected: 全部 PASS（包含 Task 1 的 55 個與本 Task 新增的開關、焦點、modal 模式測試）。
 
 **注意**：`lib-split-panel` 是元素 selector，`libs/ui/eslint.config.mjs` 要求 `lib` 前綴——符合，不需要 eslint override。
 
@@ -1101,7 +1102,7 @@ class 內追加：
   }
 ```
 
-**既有的 `openForm()` 與 `remove()` 保持不變**——actions 欄的編輯按鈕這次不移除（spec §1）。
+**既有的 `remove()` 保留確認與錯誤處理；成功刪除目前正在編輯的資料時，額外關閉面板。** actions 欄的編輯按鈕改走 `openPanel()` 後，`openForm()` 與 `AddOnDialogComponent` 若完全沒有使用者應一併移除，避免同頁留下第二套編輯容器。
 
 - [ ] **Step 7: 改頁面模板**
 
@@ -1233,6 +1234,49 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 1. **`withComponentInputBinding()`**（Task 4 Step 1）。Spec 只說「頁面讀 param」，未指定機制。查證後 `app.config.ts` 目前是 `provideRouter(routes)`，沒有開啟這個功能；開啟它可讓 query param 直接綁進 `input()`，完全避開 RxJS，比 `toSignal` 橋接更符合 signal-only 的約束。現有頁面元件都沒宣告 `input()`，不受影響。
 2. **actions 欄的「編輯」按鈕改為呼叫 `openPanel()`**（Task 4 Step 7）。Spec §1 說「不移除編輯按鈕」，但沒說它該做什麼。讓它與點列走同一條路，否則同一頁會同時存在 dialog 與面板兩種編輯體驗，反而比移除按鈕更混亂。
 
-**與 Spec 的一處實作偏離**：Spec §4.2 寫「未開啟時不綁 click」，Task 1 Step 3 改為永遠綁定、在處理器第一行提早返回。行為完全相同（不發事件、無游標樣式），模板較單純。
+**Spec §4.2 的實作決策**：Task 1 永遠綁定 click、在處理器第一行提早返回。Spec 已明確允許此作法；行為仍是未開啟時不發事件、無游標與 hover 樣式，模板較單純。
+
+**Review 後補上的必要修正（已同步回填 Spec §6、§8.3、§9.1、§10）**：
+
+1. **焦點與 modal 語意**：原 Task 2 的範例宣告了 `aria-modal="true"`，卻沒有焦點移轉或焦點陷阱，而且寬螢幕並排不應宣告 modal。Task 2 實作時改為以同一個 `max-width: 1024px` 條件控制 `CdkTrapFocus`、`role="dialog"`、`aria-modal` 與遮罩可關閉性；兩種模式都要在開啟時聚焦面板第一個可聚焦元素、關閉時還原仍存在的觸發元素。新增對應的單元與瀏覽器測試。
+2. **刪除目前資料**：Task 4 的 `remove()` 在 `store.remove(addOn.id)` 成功後，若 `editing()?.id === addOn.id` 必須呼叫 `closePanel()`。新增測試：刪除目前資料會移除 `edit` 並關閉面板；刪除其他資料不影響面板。
+3. **OnPush 一致性**：Task 4 將 `AddOnsPageComponent` 補為 `ChangeDetectionStrategy.OnPush`，與本計畫的 Angular signal 約束一致。
 
 **型別一致性檢查**：`AddOnFormResult`（Task 3 定義於 form 檔案）在 Task 4 的 `onSaved` 簽章一致；`SplitPanelComponent` 的四個 input/output 名稱在 Task 2 定義、Task 4 使用一致；`selectable` / `selectedId` / `rowClick` 在 Task 1 定義、Task 4 使用一致。
+
+### Review addendum：取代 Task 2 / Task 4 中衝突的片段
+
+下列項目優先於前述較早的程式片段；其餘 Task 步驟不變。
+
+**Task 2 — SplitPanel 焦點與 modal：** `libs/ui` 可使用既有的 `@angular/cdk/a11y`，但不得使用 Angular Material。元件匯入 `CdkTrapFocus`，以 `signal<boolean>` 保存 `window.matchMedia('(max-width: 1024px)')` 的結果，並在 `window:resize` 時更新。面板 `<aside>` 必須有 template ref；開啟時以 `afterNextRender()` 將焦點依序放到 `[autofocus]`、表單控制項、關閉鈕，關閉時還原仍 `isConnected` 的原焦點。
+
+```html
+<div class="sp-scrim" (click)="narrow() && closed.emit()"></div>
+<aside
+  #panel
+  class="sp-panel"
+  [attr.role]="narrow() ? 'dialog' : null"
+  [attr.aria-modal]="narrow() ? 'true' : null"
+  [attr.aria-label]="heading()"
+  [cdkTrapFocus]="narrow()"
+>
+```
+
+`CdkTrapFocus` 必須只在窄螢幕啟用；寬螢幕並排時不得有 `role="dialog"` 或 `aria-modal`。測試的「點遮罩」案例也只在模擬窄螢幕時斷言會發出 `closed`，並新增開關焦點與寬／窄 modal 語意案例。
+
+**Task 4 — OnPush 與刪除目前資料：** `AddOnsPageComponent` 的 core import 必須納入 `ChangeDetectionStrategy`，其 `@Component` 加上 `changeDetection: ChangeDetectionStrategy.OnPush`。現有 `remove()` 用以下邏輯取代，保留原本確認與 snackbar 錯誤處理：
+
+```ts
+async remove(addOn: AddOn): Promise<void> {
+  if (!(await confirm(this.dialog, this.t.common.deleteConfirm))) return;
+  const closesPanel = this.editing()?.id === addOn.id;
+  try {
+    this.store.remove(addOn.id);
+    if (closesPanel) this.closePanel();
+  } catch (e) {
+    this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
+  }
+}
+```
+
+`add-ons-page.component.spec.ts` 增加兩個案例：刪除目前 `editing` 的資料會導航移除 `edit` 並關閉面板；刪除其他資料時 `edit` 與面板維持不變。執行 Task 4 的瀏覽器檢查也要涵蓋這兩條。

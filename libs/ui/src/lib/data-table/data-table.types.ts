@@ -14,6 +14,12 @@ export interface DataTableColumn<T> {
 /** 元件本身不內建字串，全部由使用端傳入。 */
 export interface DataTableLabels {
   exportExcel: string;
+  selectAll: string;
+  deselectAll: string;
+  selectRow: string;
+  batchDelete: string;
+  selectedCount: string;
+  exportSelected: string;
   expandRow: string;
   collapseRow: string;
   /**

@@ -1,7 +1,6 @@
 import { Component, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
 // 同頁若有多個 app-page-toolbar 實例，input id 須各自唯一，
@@ -12,7 +11,7 @@ let nextInstanceId = 0;
 
 @Component({
   selector: 'app-page-toolbar',
-  imports: [FormsModule, MatButtonModule, MatIconModule],
+  imports: [FormsModule, MatButtonModule],
   templateUrl: './page-toolbar.component.html',
   styleUrls: ['./page-toolbar.component.scss'],
 })

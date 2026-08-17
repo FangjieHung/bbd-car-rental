@@ -29,3 +29,8 @@
     transform: scale(0.97);
   }
 }
+
+.mat-mdc-menu-item-text,
+.mdc-button__label {
+  @apply flex items-center gap-1;
+}

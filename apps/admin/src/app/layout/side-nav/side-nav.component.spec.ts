@@ -7,11 +7,11 @@ import { NavEntry } from './nav-item.model';
 
 describe('SideNavComponent', () => {
   const navItems: NavEntry[] = [
-    { route: '/dashboard', label: '總覽', icon: '◉' },
+    { route: '/dashboard', label: '總覽', icon: 'dashboard' },
     {
       label: '商品管理',
-      icon: '◫',
-      children: [{ route: '/vehicles', label: '車輛清單', icon: '◫' }],
+      icon: 'inventory_2',
+      children: [{ route: '/vehicles', label: '車輛清單', icon: 'directions_car' }],
     },
   ];
 

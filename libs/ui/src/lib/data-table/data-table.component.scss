@@ -8,8 +8,25 @@
 
 .dt-toolbar {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   justify-content: flex-end;
   padding: 0 0 0.5rem;
+}
+
+.dt-batch-toolbar {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.dt-batch-select-all {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
 }
 
 .dt-export-btn {
@@ -26,9 +43,24 @@
   background: var(--mat-sys-surface-container-high);
 }
 
+.dt-batch-delete-btn,
+.dt-export-selected-btn {
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.dt-batch-delete-btn:hover,
+.dt-export-selected-btn:hover {
+  background: var(--mat-sys-surface-container-high);
+}
+
 .dt-table {
   width: 100%;
-  border-collapse: collapse;
   font-size: 0.875rem;
 }
 
@@ -46,6 +78,39 @@
 .dt-table td {
   padding: 0.75rem 1rem;
   color: inherit;
+}
+
+.dt-selection-head,
+.dt-selection-cell {
+  width: 3rem;
+  min-width: 3rem;
+  padding-right: 0.5rem !important;
+  padding-left: 1rem !important;
+}
+
+.dt-selection-checkbox {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--mat-sys-primary);
+  cursor: pointer;
+}
+
+.dt-selection-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  cursor: pointer;
+}
+
+.dt-selection-checkbox:focus-visible,
+.dt-export-btn:focus-visible,
+.dt-batch-delete-btn:focus-visible,
+.dt-export-selected-btn:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
 }
 
 .dt-table tbody tr {
@@ -116,8 +181,7 @@
     }
 
     .dt-table tbody tr {
-      border: 1px solid var(--mat-sys-outline-variant);
-      border-radius: 1rem;
+      // border: 1px solid var(--mat-sys-outline-variant);
       padding: 0.875rem 1rem;
       margin-bottom: 0.75rem;
     }
@@ -130,6 +194,18 @@
     .dt-table td {
       padding: 0.25rem 0;
       text-align: left; // 手機版一律靠左，覆蓋 dt-align-end
+    }
+
+    .dt-table td.dt-selection-cell {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      min-width: 0;
+      padding: 0 0 0.5rem !important;
+    }
+
+    .dt-table td.dt-selection-cell::before {
+      content: none;
     }
 
     .dt-table td::before {

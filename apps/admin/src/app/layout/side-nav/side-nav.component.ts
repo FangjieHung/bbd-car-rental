@@ -1,7 +1,6 @@
 import { Component, inject, input, output } from '@angular/core';
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive } from '@angular/router';
@@ -15,7 +14,6 @@ import { NavEntry, NavGroup, isNavGroup } from './nav-item.model';
     RouterLink,
     RouterLinkActive,
     MatButtonModule,
-    MatIconModule,
     MatMenuModule,
     MatTooltipModule,
     OverlayModule,
