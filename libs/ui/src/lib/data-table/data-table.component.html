@@ -1,26 +1,38 @@
-@if (canExport() || (selectable() && !isCustom() && selectedCount() > 0)) {
-          <label class="dt-batch-select-all">
-          <input
-            type="checkbox"
-            class="dt-selection-checkbox"
-            [checked]="allSelected()"
-            [indeterminate]="partiallySelected()"
-            [attr.aria-label]="allSelected() ? labels().deselectAll : labels().selectAll"
-            (change)="toggleAllSelection()"
-          />
-        </label>
-  <div class="dt-toolbar">
-    @if (selectable() && !isCustom() && selectedCount() > 0) {
-      <div
-        class="dt-batch-toolbar"
-        role="toolbar"
-        [attr.aria-label]="labels().selectedCount.replace('{count}', selectedCount().toString())"
-      >
+<div class="dt-toolbar">
+  @if (selectable() && !isCustom()) {
+    <div class="dt-selection-head">
+      <label class="dt-batch-select-all">
+        <input
+          type="checkbox"
+          class="dt-selection-checkbox"
+          [checked]="allSelected()"
+          [indeterminate]="partiallySelected()"
+          [attr.aria-label]="allSelected() ? labels().deselectAll : labels().selectAll"
+          (change)="toggleAllSelection()"
+        />
+      </label>
+    </div>
+  }
 
-        <button type="button" class="dt-batch-delete-btn" (click)="deleteSelected()">
+  @if (canExport() || (selectable() && !isCustom() && selectedCount() > 0)) {
+    <div class="dt-batch-toolbar" role="toolbar" [attr.aria-label]="labels().selectedCount.replace('{count}', selectedCount().toString())">
+    @if (selectable() && !isCustom() && selectedCount() > 0) {
+        <button
+          type="button" matButton="tonal"
+          class="dt-batch-delete-btn"
+          [attr.aria-label]="labels().batchDelete"
+          (click)="deleteSelected()"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">delete</span>
           {{ labels().batchDelete }}
         </button>
-        <button type="button" class="dt-export-selected-btn" (click)="runSelectedExport()">
+        <button
+          type="button" matButton="tonal"
+          class="dt-export-selected-btn"
+          [attr.aria-label]="labels().exportSelected"
+          (click)="runSelectedExport()"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">download</span>
           {{ labels().exportSelected }}
         </button>
         @if (batchActionsDirective(); as batchActions) {
@@ -29,15 +41,22 @@
             [ngTemplateOutletContext]="{ $implicit: selectedRows() }"
           />
         }
-      </div>
-    }
-    @if (canExport()) {
-      <button type="button" class="dt-export-btn" (click)="runExport()">
+      }
+    
+    @if (canExport() && selectedCount() === 0) {
+      <button
+        type="button" matButton="tonal"
+        class="dt-export-btn"
+        [attr.aria-label]="labels().exportExcel"
+        (click)="runExport()"
+      >
+        <span class="material-symbols-rounded" aria-hidden="true">download</span>
         {{ labels().exportExcel }}
       </button>
     }
-  </div>
-}
+    </div>
+  }
+</div>
 <div class="dt-wrap" [class.dt-wrap--scroll]="mobileMode() === 'scroll'">
   @if (isEmpty()) {
     <p class="dt-empty">{{ emptyText() }}</p>

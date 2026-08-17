@@ -22,31 +22,31 @@
         <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
         {{ t.common.create }}{{ t.vehicle.vehicle }}
       </button>
+      <nav filters class="ui-card-titleNav ml-auto" aria-label="車輛清單顯示方式">
+        <button
+          type="button"
+          class="ui-card-titleNav__item"
+          [class.is-active]="viewMode() === 'table'"
+          [attr.aria-pressed]="viewMode() === 'table'"
+          (click)="viewMode.set('table')"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">table_rows</span>
+          <span>{{ t.vehicle.tableView }}</span>
+        </button>
+        <button
+          type="button"
+          class="ui-card-titleNav__item"
+          [class.is-active]="viewMode() === 'timeline'"
+          [attr.aria-pressed]="viewMode() === 'timeline'"
+          (click)="viewMode.set('timeline')"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">view_timeline</span>
+          <span>{{ t.vehicle.timelineView }}</span>
+        </button>
+      </nav>
     </app-page-toolbar>
   </ng-template>
 
-  <nav class="ui-card-titleNav mb-2" aria-label="車輛清單顯示方式">
-    <button
-      type="button"
-      class="ui-card-titleNav__item"
-      [class.is-active]="viewMode() === 'table'"
-      [attr.aria-pressed]="viewMode() === 'table'"
-      (click)="viewMode.set('table')"
-    >
-      <span class="material-symbols-rounded" aria-hidden="true">table_rows</span>
-      <span>{{ t.vehicle.tableView }}</span>
-    </button>
-    <button
-      type="button"
-      class="ui-card-titleNav__item"
-      [class.is-active]="viewMode() === 'timeline'"
-      [attr.aria-pressed]="viewMode() === 'timeline'"
-      (click)="viewMode.set('timeline')"
-    >
-      <span class="material-symbols-rounded" aria-hidden="true">view_timeline</span>
-      <span>{{ t.vehicle.timelineView }}</span>
-    </button>
-  </nav>
 
   @if (store.vehicles().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>

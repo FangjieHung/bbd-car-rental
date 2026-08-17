@@ -14,6 +14,8 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { DataTableCellContext, DataTableCellDirective } from './data-table-cell.directive';
 import { exportRows, exportTableElement } from './data-table-export';
 import {
@@ -27,7 +29,7 @@ type ResolvedColumn<T> = DataTableColumn<T> & { primary: boolean };
 
 @Component({
   selector: 'lib-data-table',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, MatButtonModule, MatTooltipModule],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
