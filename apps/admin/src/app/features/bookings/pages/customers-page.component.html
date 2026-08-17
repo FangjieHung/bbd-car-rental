@@ -1,7 +1,10 @@
 <div>
   <ng-template appHeaderToolbar>
     <app-page-toolbar [showSearch]="false">
-      <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+      <button actions mat-flat-button (click)="openForm(null)">
+        <span class="material-symbols-rounded" aria-hidden="true">person_add</span>
+        {{ t.common.create }}
+      </button>
     </app-page-toolbar>
   </ng-template>
 

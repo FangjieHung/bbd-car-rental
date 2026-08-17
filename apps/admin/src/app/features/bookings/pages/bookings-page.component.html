@@ -12,8 +12,14 @@
         [options]="statusOptions"
         [(value)]="statusFilter"
       />
-      <a actions mat-button routerLink="/bookings/customers">{{ t.booking.goCustomers }}</a>
-      <button actions mat-flat-button (click)="openForm(null)">{{ t.common.create }}</button>
+      <a actions mat-button routerLink="/bookings/customers">
+        <span class="material-symbols-rounded" aria-hidden="true">group</span>
+        {{ t.booking.goCustomers }}
+      </a>
+      <button actions mat-flat-button (click)="openForm(null)">
+        <span class="material-symbols-rounded" aria-hidden="true">add</span>
+        {{ t.common.create }}
+      </button>
     </app-page-toolbar>
   </ng-template>
 

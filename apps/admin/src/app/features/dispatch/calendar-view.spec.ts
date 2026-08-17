@@ -1,5 +1,7 @@
 import { beforeEach, describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { CalendarViewComponent, dayStats } from './calendar-view/calendar-view.component';
 import { Customer, MaintenanceRecord, RentalBooking, Vehicle } from '../../core/models';
 import {
@@ -9,6 +11,13 @@ import {
   VEHICLE_REPO,
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
+
+function provideBreakpoint(matches: boolean) {
+  return {
+    provide: BreakpointObserver,
+    useValue: { observe: () => of({ matches, breakpoints: {} }) },
+  };
+}
 
 const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
   id: 'b1',
@@ -110,7 +119,7 @@ describe('CalendarViewComponent supplied date', () => {
   });
 });
 
-describe('CalendarViewComponent 面板開關', () => {
+describe('CalendarViewComponent 面板開關（窄螢幕）', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<CalendarViewComponent>>;
 
   beforeEach(() => {
@@ -120,6 +129,7 @@ describe('CalendarViewComponent 面板開關', () => {
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        provideBreakpoint(true),
       ],
     });
     fixture = TestBed.createComponent(CalendarViewComponent);
@@ -171,12 +181,26 @@ describe('CalendarViewComponent 面板開關', () => {
     expect(fixture.componentInstance.panelOpen()).toBe(false);
   });
 
+  it('goToToday 會跳回當月並選取當日，開啟面板', () => {
+    const today = new Date();
+    fixture.componentInstance.shiftMonth(2);
+    fixture.componentInstance.goToToday();
+
+    expect(fixture.componentInstance.month()).toEqual(
+      new Date(today.getFullYear(), today.getMonth(), 1),
+    );
+    expect(fixture.componentInstance.selected()).toEqual(
+      new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+    );
+    expect(fixture.componentInstance.panelOpen()).toBe(true);
+  });
+
   it('panelHeading 依選取日期組字串；未選取時為空字串', () => {
     fixture.componentInstance.selected.set(null);
     expect(fixture.componentInstance.panelHeading()).toBe('');
 
     fixture.componentInstance.selectDate(new Date(2026, 6, 10));
-    expect(fixture.componentInstance.panelHeading()).toBe('當日明細（7/10）');
+    expect(fixture.componentInstance.panelHeading()).toBe('7/10 星期五');
   });
 
   it('元件建立時面板不自動開啟，但當日仍為選取狀態', () => {
@@ -192,7 +216,7 @@ describe('CalendarViewComponent 面板開關', () => {
   });
 });
 
-describe('CalendarViewComponent 面板 DOM 行為', () => {
+describe('CalendarViewComponent 面板開關（寬螢幕 split view）', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<CalendarViewComponent>>;
 
   beforeEach(() => {
@@ -202,6 +226,54 @@ describe('CalendarViewComponent 面板 DOM 行為', () => {
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        provideBreakpoint(false),
+      ],
+    });
+    fixture = TestBed.createComponent(CalendarViewComponent);
+    fixture.detectChanges();
+  });
+
+  it('元件建立時面板即為開啟狀態，顯示當日', () => {
+    const today = new Date();
+    expect(fixture.componentInstance.panelOpen()).toBe(true);
+    expect(fixture.componentInstance.selected()).toEqual(
+      new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+    );
+  });
+
+  it('點選其他日期會保持開啟並顯示新日期', () => {
+    const d = new Date(2026, 6, 10);
+    fixture.componentInstance.selectDate(d);
+
+    expect(fixture.componentInstance.selected()).toEqual(d);
+    expect(fixture.componentInstance.panelOpen()).toBe(true);
+  });
+
+  it('dismissPanel 不會收起面板', () => {
+    fixture.componentInstance.dismissPanel();
+
+    expect(fixture.componentInstance.panelOpen()).toBe(true);
+  });
+
+  it('換月清空選取日期後面板收起', () => {
+    fixture.componentInstance.shiftMonth(1);
+
+    expect(fixture.componentInstance.selected()).toBeNull();
+    expect(fixture.componentInstance.panelOpen()).toBe(false);
+  });
+});
+
+describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<CalendarViewComponent>>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        provideBreakpoint(true),
       ],
     });
     fixture = TestBed.createComponent(CalendarViewComponent);
@@ -250,5 +322,109 @@ describe('CalendarViewComponent 面板 DOM 行為', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.responsive-panel__body')).not.toBeNull();
+  });
+});
+
+describe('CalendarViewComponent 面板 DOM 行為（寬螢幕）', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<CalendarViewComponent>>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        provideBreakpoint(false),
+      ],
+    });
+    fixture = TestBed.createComponent(CalendarViewComponent);
+    fixture.detectChanges();
+  });
+
+  it('載入時面板即顯示，且無關閉鈕', () => {
+    expect(fixture.nativeElement.querySelector('.responsive-panel__body')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.responsive-panel__close')).toBeNull();
+  });
+
+  it('點選其他日期格子只換內容，不觸發開合', () => {
+    const dayButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.calendar-view__day') as NodeListOf<HTMLButtonElement>,
+    );
+    dayButtons[10].click();
+    fixture.detectChanges();
+
+    expect(dayButtons[10].classList.contains('calendar-view__day--selected')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.responsive-panel__body')).not.toBeNull();
+  });
+});
+
+describe('CalendarViewComponent 工作清單（取車／還車）', () => {
+  it('依選取日期分成取車、還車', () => {
+    const date = new Date(2026, 7, 4);
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: VEHICLE_REPO,
+          useValue: createInMemoryRepo<Vehicle>([
+            {
+              id: 'v1', plateNumber: 'MNO-345', category: 'car', model: 'Many',
+              brand: 'Test', year: 2022, status: 'available', mileage: 1, createdAt: '',
+            },
+          ]),
+        },
+        {
+          provide: BOOKING_REPO,
+          useValue: createInMemoryRepo<RentalBooking>([
+            {
+              id: 'pickup', vehicleId: 'v1', customerId: 'c1',
+              startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
+              pickupLocation: '機場', returnLocation: '港口', status: 'confirmed',
+            },
+            {
+              id: 'return-only', vehicleId: 'v1', customerId: 'c1',
+              startTime: new Date(2026, 7, 2, 10).toISOString(), endTime: new Date(2026, 7, 4, 15).toISOString(),
+              pickupLocation: '港口', returnLocation: '機場', status: 'confirmed',
+            },
+          ]),
+        },
+        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([{ id: 'c1', name: '林美惠', phone: '0900000000' }]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const component = TestBed.createComponent(CalendarViewComponent).componentInstance;
+
+    component.selectDate(date);
+
+    expect(component.pickupWorkRows().map((row) => row.booking.id)).toEqual(['pickup']);
+    expect(component.returnWorkRows().map((row) => row.booking.id)).toEqual(['return-only']);
+  });
+
+  it('只納入 confirmed 與 in_progress，電話資料提供 tel 連結值', () => {
+    const date = new Date(2026, 7, 4);
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
+        {
+          provide: BOOKING_REPO,
+          useValue: createInMemoryRepo<RentalBooking>([
+            {
+              id: 'cancelled', vehicleId: 'v1', customerId: 'c1',
+              startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
+              pickupLocation: '', returnLocation: '', status: 'cancelled',
+            },
+          ]),
+        },
+        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([{ id: 'c1', name: '王小明', phone: '0911222333' }]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const component = TestBed.createComponent(CalendarViewComponent).componentInstance;
+
+    component.selectDate(date);
+
+    expect(component.pickupWorkRows()).toEqual([]);
+    expect(component.phoneHref({ customerId: 'c1' } as RentalBooking)).toBe('tel:0911222333');
+    expect(component.phoneHref({ customerId: 'missing' } as RentalBooking)).toBeNull();
   });
 });

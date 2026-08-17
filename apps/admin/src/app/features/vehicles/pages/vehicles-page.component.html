@@ -18,23 +18,55 @@
         [options]="statusOptions"
         [(value)]="statusFilter"
       />
-      <button actions class="flex-auto" mat-flat-button (click)="openForm(null)">{{ t.common.create }}{{ t.vehicle.vehicle }}</button>
+      <button actions class="flex-auto" mat-flat-button (click)="openForm(null)">
+        <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
+        {{ t.common.create }}{{ t.vehicle.vehicle }}
+      </button>
     </app-page-toolbar>
   </ng-template>
+
+  <nav class="ui-card-titleNav mb-2" aria-label="車輛清單顯示方式">
+    <button
+      type="button"
+      class="ui-card-titleNav__item"
+      [class.is-active]="viewMode() === 'table'"
+      [attr.aria-pressed]="viewMode() === 'table'"
+      (click)="viewMode.set('table')"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">table_rows</span>
+      <span>{{ t.vehicle.tableView }}</span>
+    </button>
+    <button
+      type="button"
+      class="ui-card-titleNav__item"
+      [class.is-active]="viewMode() === 'timeline'"
+      [attr.aria-pressed]="viewMode() === 'timeline'"
+      (click)="viewMode.set('timeline')"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">view_timeline</span>
+      <span>{{ t.vehicle.timelineView }}</span>
+    </button>
+  </nav>
 
   @if (store.vehicles().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
     @if (filteredVehicles().length === 0) {
       <p class="empty-state">{{ t.common.noResults }}</p>
+    } @else if (viewMode() === 'timeline') {
+      <app-timeline-view [vehicles]="filteredVehicles()" />
     } @else {
       <div class="ui-card !p-0">
         <lib-data-table
           [columns]="columns"
           [rows]="filteredVehicles()"
           [labels]="labels"
+          [selectable]="true"
+          [selection]="selectedVehicles()"
           [emptyText]="t.common.empty"
           exportName="vehicles"
+          (selectionChange)="selectedVehicles.set($event)"
+          (batchDelete)="removeSelected($event)"
           (exportFailed)="onExportFailed($event)"
         >
           <ng-template dtCell="category" let-v>{{ t.vehicle.typeLabels[v.category] }}</ng-template>
