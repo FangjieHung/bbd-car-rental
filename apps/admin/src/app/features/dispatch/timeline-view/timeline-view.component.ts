@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { RentalBooking } from '../../../core/models';
+import { RentalBooking, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, diffDays, fmtDate, startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
@@ -51,6 +51,9 @@ export class TimelineViewComponent {
   readonly fmtDate = fmtDate;
   readonly gridCols = `120px repeat(${DAYS}, minmax(48px, 1fr))`;
   readonly targetDate = input<Date>(startOfDay(new Date()));
+  readonly vehicles = input<Vehicle[] | null>(null);
+
+  readonly rows = computed(() => this.vehicles() ?? this.vehicleStore.vehicles());
 
   readonly rangeStart = signal(startOfDay(new Date()));
   readonly days = computed(() =>

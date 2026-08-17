@@ -56,7 +56,7 @@
     } @else if (viewMode() === 'timeline') {
       <app-timeline-view [vehicles]="filteredVehicles()" />
     } @else {
-      <div class="ui-card !p-0">
+      <div class="ui-card">
         <lib-data-table
           [columns]="columns"
           [rows]="filteredVehicles()"

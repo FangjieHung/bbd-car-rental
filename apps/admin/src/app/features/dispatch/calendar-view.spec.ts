@@ -1,4 +1,4 @@
-import { beforeEach, describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -280,6 +280,12 @@ describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    // Narrow-mode panel content is relocated into a CDK overlay appended to document.body via
+    // DomPortal — destroy the fixture so it doesn't leak into later tests' document.body queries.
+    fixture.destroy();
+  });
+
   it('點日期格子開啟面板並標示選取', () => {
     const dayButtons = Array.from(
       fixture.nativeElement.querySelectorAll('.calendar-view__day') as NodeListOf<HTMLButtonElement>,
@@ -288,7 +294,7 @@ describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
     fixture.detectChanges();
 
     expect(dayButtons[10].classList.contains('calendar-view__day--selected')).toBe(true);
-    expect(fixture.nativeElement.querySelector('.responsive-panel__body')).not.toBeNull();
+    expect(document.body.querySelector('.responsive-panel__body')).not.toBeNull();
   });
 
   it('點關閉鈕收起面板但保留格子選取樣式', () => {
@@ -298,13 +304,11 @@ describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
     dayButtons[10].click();
     fixture.detectChanges();
 
-    (fixture.nativeElement
-      .querySelector('.responsive-panel__close') as HTMLButtonElement)
-      .click();
+    (document.body.querySelector('.responsive-panel__close') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     expect(dayButtons[10].classList.contains('calendar-view__day--selected')).toBe(true);
-    expect(fixture.nativeElement.querySelector('.responsive-panel__body')).toBeNull();
+    expect(document.body.querySelector('.responsive-panel__body')).toBeNull();
   });
 
   it('關閉後再點同一天會重新開啟面板', () => {
@@ -313,15 +317,13 @@ describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
     );
     dayButtons[10].click();
     fixture.detectChanges();
-    (fixture.nativeElement
-      .querySelector('.responsive-panel__close') as HTMLButtonElement)
-      .click();
+    (document.body.querySelector('.responsive-panel__close') as HTMLButtonElement).click();
     fixture.detectChanges();
 
     dayButtons[10].click();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.responsive-panel__body')).not.toBeNull();
+    expect(document.body.querySelector('.responsive-panel__body')).not.toBeNull();
   });
 });
 

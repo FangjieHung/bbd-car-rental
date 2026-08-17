@@ -1,10 +1,23 @@
 import { beforeEach, describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { computeBlocks, TimelineViewComponent } from './timeline-view/timeline-view.component';
-import { RentalBooking } from '../../core/models';
+import { RentalBooking, Vehicle } from '../../core/models';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import { MatDialog } from '@angular/material/dialog';
+
+const mkVehicle = (partial: Partial<Vehicle>): Vehicle => ({
+  id: 'v1',
+  plateNumber: 'ABC-123',
+  category: 'scooter',
+  model: 'Gogoro',
+  brand: 'Gogoro',
+  year: 2022,
+  status: 'available',
+  mileage: 100,
+  createdAt: new Date().toISOString(),
+  ...partial,
+});
 
 const rangeStart = new Date(2026, 6, 20); // 2026-07-20 local
 const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
@@ -95,5 +108,34 @@ describe('TimelineViewComponent supplied date', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.rangeStart()).toEqual(shiftedStart);
+  });
+});
+
+describe('TimelineViewComponent vehicles input', () => {
+  function createFixture(storeVehicles: Vehicle[]) {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo(storeVehicles) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
+        { provide: MatDialog, useValue: { open: () => undefined } },
+      ],
+    });
+    return TestBed.createComponent(TimelineViewComponent);
+  }
+
+  it('未提供 vehicles input 時，rows 落回 VehicleStore 的全部車輛', () => {
+    const fixture = createFixture([mkVehicle({ id: 'v1' }), mkVehicle({ id: 'v2' })]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.rows().map((v) => v.id)).toEqual(['v1', 'v2']);
+  });
+
+  it('提供 vehicles input 時，rows 改用傳入的清單而非 store', () => {
+    const fixture = createFixture([mkVehicle({ id: 'v1' }), mkVehicle({ id: 'v2' })]);
+    fixture.componentRef.setInput('vehicles', [mkVehicle({ id: 'v3' })]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.rows().map((v) => v.id)).toEqual(['v3']);
   });
 });

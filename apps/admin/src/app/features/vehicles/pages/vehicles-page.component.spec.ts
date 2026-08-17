@@ -104,4 +104,14 @@ describe('VehiclesPageComponent filtering', () => {
     expect(component.statusFilter()).toBeNull();
     expect(component.searchQuery()).toBe('gogoro');
   });
+
+  it('vehicles 頁面提供批次選取狀態，預設沒有已選車輛', () => {
+    expect(component.selectedVehicles()).toEqual([]);
+  });
+
+  it('viewMode 預設為 table，可切換為 timeline', () => {
+    expect(component.viewMode()).toBe('table');
+    component.viewMode.set('timeline');
+    expect(component.viewMode()).toBe('timeline');
+  });
 });

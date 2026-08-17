@@ -1,10 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
 import { DashboardPageComponent } from './dashboard-page.component';
-import { TimelineViewComponent } from '../../dispatch/timeline-view/timeline-view.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
 import {
   BOOKING_REPO,
@@ -16,55 +13,13 @@ import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { Customer, MaintenanceRecord, RentalBooking, Vehicle } from '../../../core/models';
 import { MatDialog } from '@angular/material/dialog';
 
-describe('DashboardPageComponent date selection', () => {
-  let component: DashboardPageComponent;
-  const resolvedTargetDate = (instance: DashboardPageComponent): Date => instance.targetDate();
-
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: ActivatedRoute, useValue: { queryParamMap: new BehaviorSubject(convertToParamMap({})).asObservable() } },
-        { provide: Router, useValue: { navigate: () => Promise.resolve(true) } },
-        { provide: MatDialog, useValue: { open: () => undefined } },
-        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
-        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
-      ],
-    });
-    component = TestBed.createComponent(DashboardPageComponent).componentInstance;
-  });
-
-  it('預設以今日作為 resolved target date', () => {
-    const today = new Date();
-
-    expect(component.selectedDate()).toBe('today');
-    expect(resolvedTargetDate(component)).toEqual(
-      new Date(today.getFullYear(), today.getMonth(), today.getDate()),
-    );
-  });
-
-  it('切換明日後 resolved target date 為明日', () => {
-    const today = new Date();
-    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-
-    component.setSelectedDate('tomorrow');
-
-    expect(resolvedTargetDate(component)).toEqual(tomorrow);
-  });
-
-});
-
 describe('DashboardPageComponent child date contract', () => {
-  function createFixture(view: 'timeline' | 'calendar') {
-    const queryParamMap = new BehaviorSubject(convertToParamMap({ view }));
+  function createFixture(bookings: RentalBooking[] = []) {
     TestBed.configureTestingModule({
       providers: [
-        { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap.asObservable() } },
-        { provide: Router, useValue: { navigate: () => Promise.resolve(true) } },
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
         { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
@@ -74,25 +29,14 @@ describe('DashboardPageComponent child date contract', () => {
     return fixture;
   }
 
-  it('切換明日時，父層會把 targetDate 傳給 timeline child', async () => {
-    const fixture = createFixture('timeline');
-    const child = fixture.debugElement.query(By.directive(TimelineViewComponent))
-      .componentInstance as TimelineViewComponent;
-
-    fixture.componentInstance.setSelectedDate('tomorrow');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    expect(child.targetDate()).toEqual(fixture.componentInstance.targetDate());
-  });
-
-  it('切換明日時，父層會把 targetDate 傳給 calendar child', async () => {
-    const fixture = createFixture('calendar');
+  it('父層 targetDate 變更會傳給 calendar child', async () => {
+    const fixture = createFixture();
     const child = fixture.debugElement.query(By.directive(CalendarViewComponent))
       .componentInstance as CalendarViewComponent;
+    const today = new Date();
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
-    fixture.componentInstance.setSelectedDate('tomorrow');
+    fixture.componentInstance.targetDate.set(tomorrow);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -100,8 +44,8 @@ describe('DashboardPageComponent child date contract', () => {
     expect(child.targetDate()).toEqual(fixture.componentInstance.targetDate());
   });
 
-  it('Calendar 點選日期後，父層 targetDate 與工作清單同步', () => {
-    const fixture = createFixture('calendar');
+  it('Calendar 點選日期後，父層與 child targetDate 同步', () => {
+    const fixture = createFixture();
     const child = fixture.debugElement.query(By.directive(CalendarViewComponent))
       .componentInstance as CalendarViewComponent;
     const selected = new Date(2026, 7, 4);
@@ -112,77 +56,67 @@ describe('DashboardPageComponent child date contract', () => {
     expect(fixture.componentInstance.targetDate()).toEqual(selected);
     expect(child.targetDate()).toEqual(selected);
   });
-
-  it('以 Material Symbols 導覽按鈕取代 Material button toggle group', () => {
-    const fixture = createFixture('timeline');
-
-    expect(fixture.nativeElement.querySelectorAll('mat-button-toggle-group')).toHaveLength(0);
-    expect(fixture.nativeElement.querySelectorAll('.material-symbols-rounded')).not.toHaveLength(0);
-    expect(fixture.nativeElement.querySelectorAll('button[aria-pressed]')).toHaveLength(4);
-  });
 });
 
-describe('DashboardPageComponent work list', () => {
-  it('依 Calendar 主日期分成取車、還車，且無還車時顯示明日預告', () => {
-    const date = new Date(2026, 7, 4);
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: ActivatedRoute, useValue: { queryParamMap: new BehaviorSubject(convertToParamMap({})).asObservable() } },
-        { provide: Router, useValue: { navigate: () => Promise.resolve(true) } },
-        { provide: MatDialog, useValue: { open: () => undefined } },
-        {
-          provide: VEHICLE_REPO,
-          useValue: createInMemoryRepo<Vehicle>([
-            { id: 'v1', plateNumber: 'MNO-345', category: 'car', model: 'Many', brand: 'Test', year: 2022, status: 'available', mileage: 1, createdAt: '' },
-          ]),
-        },
-        {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([
-            {
-              id: 'pickup', vehicleId: 'v1', customerId: 'c1',
-              startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
-              pickupLocation: '機場', returnLocation: '港口', status: 'confirmed',
-            },
-            {
-              id: 'preview', vehicleId: 'v1', customerId: 'c1',
-              startTime: new Date(2026, 7, 3, 10).toISOString(), endTime: new Date(2026, 7, 5, 9).toISOString(),
-              pickupLocation: '港口', returnLocation: '機場', status: 'in_progress',
-            },
-          ]),
-        },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([{ id: 'c1', name: '林美惠', phone: '0900000000' }]) },
-        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
-      ],
-    });
-    const component = TestBed.createComponent(DashboardPageComponent).componentInstance;
+describe('DashboardPageComponent 今日出車／還車／待整備統計', () => {
+  const today = new Date();
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  const at = (day: Date, hour: number) =>
+    new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour).toISOString();
 
-    component.selectCalendarDate(date);
-
-    expect(component.pickupWorkRows().map((row) => row.booking.id)).toEqual(['pickup']);
-    expect(component.returnWorkRows().map((row) => row.booking.id)).toEqual([]);
-    expect(component.returnPreviewRows().map((row) => row.booking.id)).toEqual(['pickup', 'preview']);
+  const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
+    id: 'b',
+    vehicleId: 'v1',
+    customerId: 'c1',
+    startTime: at(today, 9),
+    endTime: at(tomorrow, 9),
+    pickupLocation: '',
+    returnLocation: '',
+    status: 'confirmed',
+    ...partial,
   });
 
-  it('只納入 confirmed 與 in_progress，電話資料提供 tel 連結值', () => {
-    const date = new Date(2026, 7, 4);
+  function createFixture(bookings: RentalBooking[]) {
     TestBed.configureTestingModule({
       providers: [
-        { provide: ActivatedRoute, useValue: { queryParamMap: new BehaviorSubject(convertToParamMap({})).asObservable() } },
-        { provide: Router, useValue: { navigate: () => Promise.resolve(true) } },
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([{ id: 'cancelled', vehicleId: 'v1', customerId: 'c1', startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(), pickupLocation: '', returnLocation: '', status: 'cancelled' }]) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([{ id: 'c1', name: '王小明', phone: '0911222333' }]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
-    const component = TestBed.createComponent(DashboardPageComponent).componentInstance;
+    return TestBed.createComponent(DashboardPageComponent).componentInstance;
+  }
 
-    component.selectCalendarDate(date);
+  it('依 startTime 是否為今天、狀態是否已取車，計算出車進度', () => {
+    const component = createFixture([
+      mk({ id: 'confirmed', startTime: at(today, 9), status: 'confirmed' }),
+      mk({ id: 'in_progress', startTime: at(today, 10), status: 'in_progress' }),
+      mk({ id: 'completed', startTime: at(today, 8), status: 'completed' }),
+      mk({ id: 'cancelled', startTime: at(today, 11), status: 'cancelled' }),
+      mk({ id: 'pending_payment', startTime: at(today, 12), status: 'pending_payment' }),
+      mk({ id: 'yesterday', startTime: at(yesterday, 9), status: 'confirmed' }),
+    ]);
 
-    expect(component.pickupWorkRows()).toEqual([]);
-    expect(component.phoneHref({ customerId: 'c1' } as RentalBooking)).toBe('tel:0911222333');
-    expect(component.phoneHref({ customerId: 'missing' } as RentalBooking)).toBeNull();
+    expect(component.todayPickupTotal()).toBe(3);
+    expect(component.todayPickupDone()).toBe(2);
+    expect(component.todayPickupPending()).toBe(1);
+  });
+
+  it('依 endTime 是否為今天、狀態是否已還車，計算還車進度與待整備數', () => {
+    const component = createFixture([
+      mk({ id: 'in_progress', endTime: at(today, 9), status: 'in_progress' }),
+      mk({ id: 'completed', endTime: at(today, 10), status: 'completed' }),
+      mk({ id: 'not_picked_up', endTime: at(today, 15), status: 'confirmed' }),
+      mk({ id: 'cancelled', endTime: at(today, 9), status: 'cancelled' }),
+      mk({ id: 'tomorrow', endTime: at(tomorrow, 9), status: 'in_progress' }),
+    ]);
+
+    expect(component.todayReturnTotal()).toBe(2);
+    expect(component.todayReturnDone()).toBe(1);
+    expect(component.todayReturnPending()).toBe(1);
+    expect(component.todayPendingPrepCount()).toBe(1);
   });
 });

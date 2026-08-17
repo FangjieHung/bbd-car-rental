@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Component, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { ResponsivePanelComponent } from './responsive-panel.component';
 import { of, BehaviorSubject } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -105,54 +105,62 @@ function provideBreakpoint(matches: boolean) {
 }
 
 describe('ResponsivePanelComponent 響應式行為', () => {
+  let fixture: ComponentFixture<HostComponent> | undefined;
+
   function createFixture(narrow: boolean) {
     TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [provideBreakpoint(narrow)],
     });
-    const fixture = TestBed.createComponent(HostComponent);
+    fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.open.set(true);
     fixture.detectChanges();
     return fixture;
   }
 
+  afterEach(() => {
+    // Narrow-mode content is relocated into a CDK overlay appended to document.body via
+    // DomPortal — destroying the fixture disposes that overlay so it doesn't leak into the
+    // next test's document.body queries.
+    fixture?.destroy();
+    fixture = undefined;
+  });
+
   it('窄螢幕：具 role=dialog 與 aria-modal，且有遮罩', () => {
-    const fixture = createFixture(true);
-    const panel: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel');
+    createFixture(true);
+    const panel: HTMLElement = document.body.querySelector('.responsive-panel')!;
 
     expect(panel.getAttribute('role')).toBe('dialog');
     expect(panel.getAttribute('aria-modal')).toBe('true');
-    expect(fixture.nativeElement.querySelector('.responsive-panel__backdrop')).not.toBeNull();
+    expect(document.body.querySelector('.responsive-panel__backdrop')).not.toBeNull();
   });
 
   it('窄螢幕：點遮罩發出 closed', () => {
-    const fixture = createFixture(true);
-    const backdrop: HTMLElement = fixture.nativeElement.querySelector(
-      '.responsive-panel__backdrop',
-    );
+    const fx = createFixture(true);
+    const backdrop: HTMLElement = document.body.querySelector('.responsive-panel__backdrop')!;
 
     backdrop.click();
-    fixture.detectChanges();
+    fx.detectChanges();
 
-    expect(fixture.componentInstance.closedCount).toBe(1);
+    expect(fx.componentInstance.closedCount).toBe(1);
   });
 
   it('寬螢幕：無 role/aria-modal，無遮罩', () => {
-    const fixture = createFixture(false);
-    const panel: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel');
+    const fx = createFixture(false);
+    const panel: HTMLElement = fx.nativeElement.querySelector('.responsive-panel');
 
     expect(panel.hasAttribute('role')).toBe(false);
     expect(panel.hasAttribute('aria-modal')).toBe(false);
-    expect(fixture.nativeElement.querySelector('.responsive-panel__backdrop')).toBeNull();
+    expect(fx.nativeElement.querySelector('.responsive-panel__backdrop')).toBeNull();
   });
 
   it('開啟時按 Esc 發出 closed', () => {
-    const fixture = createFixture(false);
+    const fx = createFixture(false);
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    fixture.detectChanges();
+    fx.detectChanges();
 
-    expect(fixture.componentInstance.closedCount).toBe(1);
+    expect(fx.componentInstance.closedCount).toBe(1);
   });
 
   it('關閉時按 Esc 不動作', () => {
@@ -160,7 +168,7 @@ describe('ResponsivePanelComponent 響應式行為', () => {
       imports: [HostComponent],
       providers: [provideBreakpoint(false)],
     });
-    const fixture = TestBed.createComponent(HostComponent);
+    fixture = TestBed.createComponent(HostComponent);
     fixture.detectChanges();
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -173,63 +181,69 @@ describe('ResponsivePanelComponent 響應式行為', () => {
 describe('ResponsivePanelComponent 焦點與捲動', () => {
   // 每個 it() 只呼叫一次 configureTestingModule（透過這個 helper），避免在同一個
   // test 內於 fixture 建立後重新設定 TestBed（Angular 會丟錯）。
+  let fixture: ComponentFixture<HostComponent> | undefined;
+
   function createFixture(narrow: boolean) {
     TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [provideBreakpoint(narrow)],
     });
-    return TestBed.createComponent(HostComponent);
+    fixture = TestBed.createComponent(HostComponent);
+    return fixture;
   }
 
-  it('開啟時焦點移入面板內第一個可聚焦元素', () => {
-    const fixture = createFixture(false);
-    fixture.componentInstance.open.set(true);
-    fixture.detectChanges();
+  afterEach(() => {
+    fixture?.destroy();
+    fixture = undefined;
+  });
 
-    const closeButton = fixture.nativeElement.querySelector('.responsive-panel__close');
+  it('開啟時焦點移入面板內第一個可聚焦元素', () => {
+    const fx = createFixture(false);
+    fx.componentInstance.open.set(true);
+    fx.detectChanges();
+
+    const closeButton = fx.nativeElement.querySelector('.responsive-panel__close');
     expect(document.activeElement).toBe(closeButton);
   });
 
   it('關閉後焦點還原到觸發元素', () => {
-    const fixture = createFixture(false);
-    const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('.trigger');
+    const fx = createFixture(false);
+    const trigger: HTMLButtonElement = fx.nativeElement.querySelector('.trigger');
     trigger.focus();
 
-    fixture.componentInstance.open.set(true);
-    fixture.detectChanges();
-    fixture.componentInstance.open.set(false);
-    fixture.detectChanges();
+    fx.componentInstance.open.set(true);
+    fx.detectChanges();
+    fx.componentInstance.open.set(false);
+    fx.detectChanges();
 
     expect(document.activeElement).toBe(trigger);
   });
 
   it('窄螢幕下 Tab 在最後一個可聚焦元素時循環回第一個', () => {
-    const fixture = createFixture(true);
-    fixture.componentInstance.open.set(true);
-    fixture.detectChanges();
+    const fx = createFixture(true);
+    fx.componentInstance.open.set(true);
+    fx.detectChanges();
 
-    const closeButton: HTMLElement = fixture.nativeElement.querySelector(
-      '.responsive-panel__close',
-    );
-    const actionButton: HTMLElement = fixture.nativeElement.querySelector('.content-action');
+    const closeButton: HTMLElement = document.body.querySelector('.responsive-panel__close')!;
+    const actionButton: HTMLElement = document.body.querySelector('.content-action')!;
     actionButton.focus();
 
-    fixture.nativeElement
-      .querySelector('.responsive-panel')
+    document.body
+      .querySelector('.responsive-panel')!
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
 
     expect(document.activeElement).toBe(closeButton);
   });
 
   it('寬螢幕下 Tab 不被攔截（無循環）', () => {
-    const fixture = createFixture(false);
-    fixture.componentInstance.open.set(true);
-    fixture.detectChanges();
+    const fx = createFixture(false);
+    fx.componentInstance.open.set(true);
+    fx.detectChanges();
 
-    const actionButton: HTMLElement = fixture.nativeElement.querySelector('.content-action');
+    const actionButton: HTMLElement = fx.nativeElement.querySelector('.content-action');
     actionButton.focus();
 
-    fixture.nativeElement
+    fx.nativeElement
       .querySelector('.responsive-panel')
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
 
@@ -237,43 +251,44 @@ describe('ResponsivePanelComponent 焦點與捲動', () => {
   });
 
   it('窄螢幕開啟時鎖住 body 捲動，關閉後還原', () => {
-    const fixture = createFixture(true);
-    fixture.componentInstance.open.set(true);
-    fixture.detectChanges();
+    const fx = createFixture(true);
+    fx.componentInstance.open.set(true);
+    fx.detectChanges();
 
     expect(document.body.style.overflow).toBe('hidden');
 
-    fixture.componentInstance.open.set(false);
-    fixture.detectChanges();
+    fx.componentInstance.open.set(false);
+    fx.detectChanges();
 
     expect(document.body.style.overflow).toBe('');
   });
 
   it('寬螢幕開啟時不鎖住 body 捲動', () => {
-    const fixture = createFixture(false);
-    fixture.componentInstance.open.set(true);
-    fixture.detectChanges();
+    const fx = createFixture(false);
+    fx.componentInstance.open.set(true);
+    fx.detectChanges();
 
     expect(document.body.style.overflow).toBe('');
   });
 
-  it('isNarrow 在 open 期間改變不會重新搶焦點或維持捲動鎖定', () => {
+  it('isNarrow 在 open 期間改變不會重新搶焦點或維持捲動鎖定，且不重建 DOM', () => {
     const breakpoint$ = new BehaviorSubject({ matches: true, breakpoints: {} });
     TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [{ provide: BreakpointObserver, useValue: { observe: () => breakpoint$ } }],
     });
-    const fixture = TestBed.createComponent(HostComponent);
+    fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.open.set(true);
     fixture.detectChanges();
 
-    const actionButton: HTMLElement = fixture.nativeElement.querySelector('.content-action');
+    const actionButton: HTMLElement = document.body.querySelector('.content-action')!;
     actionButton.focus();
 
     breakpoint$.next({ matches: false, breakpoints: {} }); // narrow -> wide while still open
     fixture.detectChanges();
 
-    expect(document.activeElement).toBe(actionButton); // focus not stolen back
+    expect(document.activeElement).toBe(actionButton); // same DOM node, focus not stolen back
+    expect(fixture.nativeElement.contains(actionButton)).toBe(true); // moved back inline, not recreated
     expect(document.body.style.overflow).toBe(''); // scroll lock released now that it's wide
   });
 });

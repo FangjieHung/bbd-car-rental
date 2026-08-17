@@ -11,7 +11,7 @@
           <div class="timeline-view__cell-header text-xs text-center p-2">{{ fmtDate(d) }}</div>
         }
       </div>
-      @for (v of vehicleStore.vehicles(); track v.id) {
+      @for (v of rows(); track v.id) {
         <div class="timeline-view__vehicle-row relative">
           <div class="grid" [style.grid-template-columns]="gridCols">
             <div class="text-sm p-2 whitespace-nowrap">

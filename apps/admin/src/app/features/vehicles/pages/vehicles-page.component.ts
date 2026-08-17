@@ -20,6 +20,7 @@ import {
   VehicleFormDialogComponent,
   VehicleFormResult,
 } from '../dialogs/vehicle-form-dialog.component';
+import { TimelineViewComponent } from '../../dispatch/timeline-view/timeline-view.component';
 import { firstValueFrom } from 'rxjs';
 
 const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
@@ -39,6 +40,7 @@ const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
     PageToolbarComponent,
     FilterSelectComponent,
     HeaderToolbarDirective,
+    TimelineViewComponent,
   ],
   templateUrl: './vehicles-page.component.html',
   styleUrls: ['../../../app.scss'],
@@ -71,6 +73,8 @@ export class VehiclesPageComponent {
   readonly searchQuery = signal('');
   readonly typeFilter = signal<VehicleCategory | null>(null);
   readonly statusFilter = signal<VehicleStatus | null>(null);
+  readonly selectedVehicles = signal<readonly Vehicle[]>([]);
+  readonly viewMode = signal<'table' | 'timeline'>('table');
 
   readonly typeOptions: FilterOption<VehicleCategory>[] = (
     Object.entries(this.t.vehicle.typeLabels) as [VehicleCategory, string][]
@@ -135,5 +139,17 @@ export class VehiclesPageComponent {
     } catch (e) {
       this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
     }
+  }
+
+  async removeSelected(vehicles: readonly Vehicle[]): Promise<void> {
+    if (!(await confirm(this.dialog, this.t.common.deleteConfirm))) return;
+    for (const vehicle of vehicles) {
+      try {
+        this.store.remove(vehicle.id);
+      } catch (e) {
+        this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
+      }
+    }
+    this.selectedVehicles.set([]);
   }
 }
