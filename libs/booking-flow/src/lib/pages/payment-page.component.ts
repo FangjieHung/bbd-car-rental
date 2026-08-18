@@ -32,17 +32,14 @@ export class PaymentPageComponent {
   private readonly context = inject(BOOKING_CONTEXT);
   private readonly bookingRepo = inject(BOOKING_REPO);
 
-  private readonly reloadTick = signal(0);
-
   readonly bookingId = toSignal(
     this.route.paramMap.pipe(map((p) => p.get('bookingId') ?? '')),
     { initialValue: '' },
   );
 
-  readonly booking = computed<RentalBooking | null>(() => {
-    this.reloadTick();
-    return this.bookingRepo.getById(this.bookingId()) ?? null;
-  });
+  readonly booking = computed<RentalBooking | null>(
+    () => this.bookingRepo.getById(this.bookingId()) ?? null,
+  );
 
   readonly amount = computed(() => this.booking()?.priceBreakdown?.total ?? 0);
   readonly paymentMethodLabel = computed(() => {
@@ -75,7 +72,6 @@ export class PaymentPageComponent {
     this.payError.set('');
     try {
       this.catalog.markBookingPaid(this.bookingId());
-      this.reloadTick.update((n) => n + 1);
       this.goToDone();
     } catch (err) {
       this.payError.set(err instanceof Error ? err.message : '付款失敗，請稍後再試');
@@ -90,17 +86,10 @@ export class PaymentPageComponent {
 
   /**
    * 導向完成頁有兩條觸發路徑：onPaySuccess 的顯式呼叫（讓使用者按下按鈕當下就導頁，
-   * 不必等一輪 change detection），以及 guardEffect 因 reloadTick／booking() 改變而
-   * 重新求值。同一次付款成功會讓兩條路徑都想導向同一個目的地，這裡用「已導過同個
-   * 目的地就不重複呼叫」擋掉那次多餘的 router.navigate。
+   * 不必等一輪 change detection），以及 guardEffect 因 booking() 改變而重新求值。
    */
-  private lastNavigatedTo: string | null = null;
-
   private goToDone(): void {
     const target = [...this.context.basePath(), 'done', this.bookingId()];
-    const key = target.join('/');
-    if (this.lastNavigatedTo === key) return;
-    this.lastNavigatedTo = key;
     this.router.navigate(target);
   }
 }
