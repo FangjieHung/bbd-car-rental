@@ -5,6 +5,16 @@
   max-width: 360px;
   padding: 16px 0;
 
+  .time-row {
+    display: flex;
+    gap: 8px;
+
+    mat-form-field {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
   .actions {
     margin-top: 8px;
   }

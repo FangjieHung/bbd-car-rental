@@ -1,16 +1,24 @@
 <div class="date-step">
-  <mat-form-field appearance="outline">
-    <mat-label>取車時間</mat-label>
-    <input matInput type="datetime-local" [(ngModel)]="startDateTime" />
-  </mat-form-field>
+  <app-dual-month-range-picker
+    [start]="startDate"
+    [end]="endDate"
+    (rangeSelected)="onRangeSelected($event)"
+  ></app-dual-month-range-picker>
 
-  <mat-form-field appearance="outline">
-    <mat-label>還車時間</mat-label>
-    <input matInput type="datetime-local" [(ngModel)]="endDateTime" />
-  </mat-form-field>
+  <div class="time-row">
+    <mat-form-field appearance="outline">
+      <mat-label>取車時間</mat-label>
+      <input matInput type="time" [(ngModel)]="startTime" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>還車時間</mat-label>
+      <input matInput type="time" [(ngModel)]="endTime" />
+    </mat-form-field>
+  </div>
 
   <div class="actions">
-    <button mat-flat-button color="primary" [disabled]="!startDateTime || !endDateTime" (click)="confirm()">
+    <button mat-flat-button color="primary" [disabled]="!isValid" (click)="confirm()">
       確認租期
     </button>
   </div>

@@ -1,0 +1,53 @@
+<div cdkOverlayOrigin #origin="cdkOverlayOrigin">
+  <mat-form-field appearance="outline" (click)="open()">
+    <mat-label>租期</mat-label>
+    <input matInput readonly [value]="displayValue" [placeholder]="placeholder" />
+    <span matIconSuffix class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+  </mat-form-field>
+</div>
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="origin"
+  [cdkConnectedOverlayOpen]="isOpen"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  (backdropClick)="close()"
+  (detach)="close()"
+>
+  <div class="dual-calendar-panel">
+    <div class="calendars-row">
+      <div class="calendar-pane">
+        <div class="month-head">
+          <button type="button" mat-icon-button (click)="goPrev()" aria-label="上個月">
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+          </button>
+          <span class="month-label">{{ monthLabel(leftMonth) }}</span>
+          <span class="head-spacer"></span>
+        </div>
+        <mat-calendar
+          #leftCal
+          [startAt]="leftMonth"
+          [selected]="selectedRange"
+          (selectedChange)="onDateClicked($event)"
+        ></mat-calendar>
+      </div>
+
+      <div class="calendar-pane">
+        <div class="month-head">
+          <span class="head-spacer"></span>
+          <span class="month-label">{{ monthLabel(rightMonth) }}</span>
+          <button type="button" mat-icon-button (click)="goNext()" aria-label="下個月">
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+          </button>
+        </div>
+        <mat-calendar
+          #rightCal
+          [startAt]="rightMonth"
+          [selected]="selectedRange"
+          (selectedChange)="onDateClicked($event)"
+        ></mat-calendar>
+      </div>
+    </div>
+  </div>
+</ng-template>

@@ -1,0 +1,40 @@
+.dual-calendar-panel {
+  background: var(--mat-sys-surface-container-high, #fff);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 8px 12px 12px;
+}
+
+.calendars-row {
+  display: flex;
+  gap: 8px;
+}
+
+.calendar-pane {
+  width: 280px;
+}
+
+.month-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .month-label {
+    flex: 1;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  .head-spacer {
+    // Matches the icon button on the opposite side so the label stays centred.
+    width: 40px;
+    flex: none;
+  }
+}
+
+// The built-in calendar header carries its own month label and prev/next arrows;
+// navigation is centralised in `.month-head`, so hide it. Reaching into the
+// calendar's own template requires piercing encapsulation.
+.dual-calendar-panel ::ng-deep .mat-calendar-header {
+  display: none;
+}
