@@ -52,3 +52,6 @@ Thumbs.db
 
 # Git worktrees (superpowers:using-git-worktrees)
 .worktrees/
+
+# Subagent-driven development scratch
+.superpowers/
