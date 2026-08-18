@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
@@ -53,6 +53,15 @@ export class PaymentPageComponent {
   readonly payError = signal('');
   readonly paying = signal(false);
 
+  /**
+   * 進頁面就檢查一次，訂單不存在或早就不是待付款（分享的舊網址、上一步按了兩次）
+   * 不必等使用者按下按鈕才發現。付款成功那條路徑另外用 onPaySuccess 裡的顯式
+   * 呼叫立即導頁，這裡的自動檢查是給「載入當下就已經不可付款」的情況兜底。
+   */
+  private readonly guardEffect = effect(() => {
+    this.redirectIfNotPayable();
+  });
+
   /** 訂單不存在或已付過款，就沒有付款這件事可做，直接看結果頁 */
   redirectIfNotPayable(): boolean {
     const booking = this.booking();
@@ -79,7 +88,19 @@ export class PaymentPageComponent {
     this.payError.set('付款未完成，請重新嘗試或改用其他付款方式。');
   }
 
+  /**
+   * 導向完成頁有兩條觸發路徑：onPaySuccess 的顯式呼叫（讓使用者按下按鈕當下就導頁，
+   * 不必等一輪 change detection），以及 guardEffect 因 reloadTick／booking() 改變而
+   * 重新求值。同一次付款成功會讓兩條路徑都想導向同一個目的地，這裡用「已導過同個
+   * 目的地就不重複呼叫」擋掉那次多餘的 router.navigate。
+   */
+  private lastNavigatedTo: string | null = null;
+
   private goToDone(): void {
-    this.router.navigate([...this.context.basePath(), 'done', this.bookingId()]);
+    const target = [...this.context.basePath(), 'done', this.bookingId()];
+    const key = target.join('/');
+    if (this.lastNavigatedTo === key) return;
+    this.lastNavigatedTo = key;
+    this.router.navigate(target);
   }
 }

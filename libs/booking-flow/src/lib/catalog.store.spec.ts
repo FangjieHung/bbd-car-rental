@@ -218,4 +218,20 @@ describe('CatalogStore', () => {
     expect(paid.status).toBe('confirmed');
     expect(() => store.markBookingPaid('nope')).toThrow('查無訂單');
   });
+
+  it('markBookingPaid 對非待付款訂單丟錯，不覆蓋原狀態', () => {
+    const store = setup([
+      {
+        id: 'b1',
+        vehicleId: 'v1',
+        customerId: 'cust1',
+        startTime: '2026-01-05T09:00:00',
+        endTime: '2026-01-07T09:00:00',
+        pickupLocation: '',
+        returnLocation: '',
+        status: 'confirmed',
+      },
+    ]);
+    expect(() => store.markBookingPaid('b1')).toThrow('訂單狀態不允許付款');
+  });
 });

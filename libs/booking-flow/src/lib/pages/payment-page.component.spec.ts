@@ -113,4 +113,31 @@ describe('PaymentPageComponent', () => {
     component.redirectIfNotPayable();
     expect(navigate).toHaveBeenCalledWith(['/', 'done', 'b1']);
   });
+
+  it('訂單已非待付款時，一載入就自動導向完成頁，不必等使用者操作', () => {
+    const { navigate } = setup('b1', [makeBooking({ status: 'confirmed' })]);
+    TestBed.flushEffects();
+    expect(navigate).toHaveBeenCalledWith(['/', 'done', 'b1']);
+  });
+
+  it('查無訂單時，一載入就自動導向完成頁', () => {
+    const { navigate } = setup('nope', []);
+    TestBed.flushEffects();
+    expect(navigate).toHaveBeenCalledWith(['/', 'done', 'nope']);
+  });
+
+  it('訂單待付款時，載入不會被自動導向', () => {
+    const { navigate } = setup('b1', [makeBooking()]);
+    TestBed.flushEffects();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('付款成功後即使 guardEffect 隨後 flush，也只導頁一次', () => {
+    const { component, navigate } = setup('b1', [makeBooking()]);
+    TestBed.flushEffects();
+    component.onPaySuccess();
+    TestBed.flushEffects();
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith(['/', 'done', 'b1']);
+  });
 });

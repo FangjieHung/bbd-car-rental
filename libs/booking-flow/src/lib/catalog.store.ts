@@ -134,10 +134,14 @@ export class CatalogStore {
     return booking;
   }
 
-  /** 付款成功後呼叫。目前由佔位付款頁觸發，日後改由金流回調觸發。 */
+  /**
+   * 付款成功後呼叫。目前由佔位付款頁觸發，日後改由金流回調觸發 ——
+   * 回調可能遲到、重複或亂序送達，所以只接受從 pending_payment 出發的轉換。
+   */
   markBookingPaid(bookingId: string): RentalBooking {
     const booking = this.bookingRepo.getById(bookingId);
     if (!booking) throw new Error('查無訂單');
+    if (booking.status !== 'pending_payment') throw new Error('訂單狀態不允許付款');
     return this.bookingRepo.update(bookingId, { status: 'confirmed' });
   }
 }
