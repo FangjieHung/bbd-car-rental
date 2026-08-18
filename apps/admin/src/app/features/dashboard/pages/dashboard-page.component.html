@@ -11,21 +11,39 @@
         <span class="material-symbols-rounded" aria-hidden="true">build</span>
         待整備
       </button>
-      <button
-        actions
-        matButton="tonal"
+      <a actions matButton="tonal"
+        routerLink="/vehicles"
         [matBadge]="maintenanceStore.alerts().length"
         [matBadgeHidden]="maintenanceStore.alerts().length === 0"
-        matBadgeColor="warn"
-      >
+        matBadgeColor="warn">
         <span class="material-symbols-rounded" aria-hidden="true">car_repair</span>
         待保養
-      </button>
+      </a>
       <button actions matButton="tonal">
         <span class="material-symbols-rounded" aria-hidden="true">add</span>
         新增訂單
       </button>
     </app-page-toolbar>
   </ng-template>
+
+  <section class="ui-card mb-4">
+    <h2 class="text-base font-medium mb-1">{{ t.booking.quickPick }}</h2>
+    <app-date-step (dateRangeChange)="onQuickRange($event)" />
+
+    @if (pickedVehicle(); as v) {
+      <div class="mt-3 flex items-center gap-2 text-sm">
+        <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
+        <span>
+          {{ t.booking.pickedResult }}：{{ v.brand }} {{ v.model }}（{{ v.plateNumber }}）
+          <br />
+          {{ fmt(pickedRange()!.startDateTime) }} — {{ fmt(pickedRange()!.endDateTime) }}
+        </span>
+        <button mat-icon-button [matTooltip]="t.booking.clearPick" [attr.aria-label]="t.booking.clearPick" (click)="clearPick()">
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
+      </div>
+    }
+  </section>
+
   <app-calendar-view [targetDate]="targetDate()" (dateSelected)="selectCalendarDate($event)" />
 </div>

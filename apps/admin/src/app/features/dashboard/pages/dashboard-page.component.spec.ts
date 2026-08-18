@@ -12,11 +12,13 @@ import {
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { Customer, MaintenanceRecord, RentalBooking, Vehicle } from '../../../core/models';
 import { MatDialog } from '@angular/material/dialog';
+import { provideNativeDateAdapter } from '@angular/material/core';
 
 describe('DashboardPageComponent child date contract', () => {
   function createFixture(bookings: RentalBooking[] = []) {
     TestBed.configureTestingModule({
       providers: [
+        provideNativeDateAdapter(),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
@@ -80,6 +82,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
   function createFixture(bookings: RentalBooking[]) {
     TestBed.configureTestingModule({
       providers: [
+        provideNativeDateAdapter(),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },

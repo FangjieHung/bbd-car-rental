@@ -43,6 +43,7 @@ export const ZH_TW = {
     collapseRow: '收合詳細資料',
     exportFailedText: '匯出失敗，請確認網路連線後再試一次',
     closePanel: '關閉面板',
+    moreActions: '更多操作',
   },
   vehicle: {
     vehicle: '車輛',
@@ -69,6 +70,7 @@ export const ZH_TW = {
     invalidTransition: '車輛狀態不允許此操作',
     tableView: '表格',
     timelineView: '時間軸',
+    backToList: '返回車輛清單',
   },
   customer: {
     name: '姓名',
@@ -101,6 +103,11 @@ export const ZH_TW = {
     invalidTransition: '訂單狀態不允許此操作',
     notPending: '僅待付款訂單可確認收款',
     goCustomers: '客戶管理',
+    quickPick: '快速查詢可租車輛',
+    pickVehicle: '選擇車輛',
+    noVehicleAvailable: '此租期沒有可租車輛',
+    pickedResult: '已選車輛',
+    clearPick: '清除選擇',
   },
   dispatch: {
     timeline: '時間軸',
@@ -117,7 +124,6 @@ export const ZH_TW = {
     weekdays: ['日', '一', '二', '三', '四', '五', '六'],
   },
   maintenance: {
-    alerts: '保養提醒',
     records: '保養紀錄',
     type: '項目',
     typeLabels: {
@@ -133,13 +139,11 @@ export const ZH_TW = {
     nextDueDate: '下次保養日期',
     cost: '費用',
     notes: '備註',
-    overdue: '已逾期',
-    upcoming: '即將到期',
-    byMileage: '里程',
-    byDate: '日期',
     sendToMaintenance: '送修',
     completeMaintenance: '完修',
-    noAlerts: '目前沒有到期提醒',
+    addRecord: '新增保養紀錄',
+    overdueBadge: '逾期未保養',
+    upcomingBadge: '待保養',
   },
   pricing: {
     plans: '定價方案',

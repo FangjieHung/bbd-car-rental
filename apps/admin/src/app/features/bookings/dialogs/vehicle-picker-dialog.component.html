@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>{{ t.booking.pickVehicle }}</h2>
+<mat-dialog-content>
+  <p class="mb-2 text-sm opacity-70">{{ fmt(range.startDateTime) }} — {{ fmt(range.endDateTime) }}</p>
+  @if (vehicles.length === 0) {
+    <p class="empty-state">{{ t.booking.noVehicleAvailable }}</p>
+  } @else {
+    <app-vehicle-step
+      [vehicles]="vehicles"
+      [priceForVehicle]="priceForVehicle"
+      [days]="days"
+      (vehicleSelect)="ref.close($event)"
+    />
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>{{ t.common.cancel }}</button>
+</mat-dialog-actions>
