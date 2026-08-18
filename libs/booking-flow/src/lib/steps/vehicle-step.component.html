@@ -1,38 +1,111 @@
 <div class="vehicle-step">
-  @if (groups().length === 0) {
-    <p>請先選擇租期以查看可租車輛。</p>
+  @if (vehicles.length === 0) {
+    <p class="empty-hint">請先選擇租期以查看可租車輛。</p>
   }
 
-  @for (group of groups(); track group.category) {
-    <section class="vehicle-group">
-      <h3>{{ group.label }}</h3>
-      <div class="vehicle-cards">
-        @for (vehicle of group.vehicles; track vehicle.id) {
-          <mat-card
-            class="vehicle-card"
-            [class.selected]="selectedVehicle?.id === vehicle.id"
-            [class.unpriced]="isUnpriced(vehicle)"
-            (click)="select(vehicle)"
+  <div class="vehicle-cards">
+    @for (vehicle of vehicles; track vehicle.id) {
+      <article
+        class="vehicle-card"
+        [class.selected]="selectedVehicle?.id === vehicle.id"
+        [class.unpriced]="isUnpriced(vehicle)"
+        (click)="select(vehicle)"
+      >
+        <!-- 車輛照片 -->
+        <div class="v-media">
+          @if (vehicle.imageUrl) {
+            <img [src]="vehicle.imageUrl" [alt]="vehicle.brand + ' ' + vehicle.model" />
+          } @else {
+            <span class="material-symbols-rounded v-media__placeholder" aria-hidden="true">
+              {{ categoryIcon(vehicle) }}
+            </span>
+          }
+        </div>
+
+        <!-- 車款資訊 -->
+        <div class="v-body">
+          <p class="v-class">{{ classLabel(vehicle) }}</p>
+
+          <h4 class="v-title">
+            {{ vehicle.brand }} {{ vehicle.model }} {{ vehicle.year }} edition
+            <span class="v-similar">
+              或同級
+              <span
+                class="material-symbols-rounded v-info"
+                title="實際車輛以現場配車為準，將提供同等級或以上車款"
+                aria-label="實際車輛以現場配車為準，將提供同等級或以上車款"
+                >info</span
+              >
+            </span>
+          </h4>
+
+          <ul class="v-specs">
+            @if (vehicle.seats) {
+              <li>
+                <span class="material-symbols-rounded" aria-hidden="true"
+                  >airline_seat_recline_normal</span
+                >
+                {{ vehicle.seats }}人座
+              </li>
+            }
+            @if (vehicle.luggage) {
+              <li>
+                <span class="material-symbols-rounded" aria-hidden="true">luggage</span>
+                {{ vehicle.luggage }}件行李
+              </li>
+            }
+            @if (vehicle.hasAirConditioner) {
+              <li>
+                <span class="material-symbols-rounded" aria-hidden="true">ac_unit</span>
+                空調
+              </li>
+            }
+            @if (vehicle.transmission) {
+              <li>
+                <span class="v-mark" aria-hidden="true">{{ transmissionMark(vehicle) }}</span>
+                {{ transmissionLabel(vehicle) }}
+              </li>
+            }
+          </ul>
+
+          @if (vehicle.instantConfirm) {
+            <span class="v-badge">立即確認</span>
+          }
+        </div>
+
+        <!-- 價格區 -->
+        <div class="v-price">
+          <p class="v-supplier">{{ vehicle.supplierCount ?? 1 }}個供應商</p>
+
+          <div class="v-price__main">
+            @if (isUnpriced(vehicle)) {
+              <p class="v-amount v-amount--none">暫無定價</p>
+            } @else {
+              <p class="v-price__label">最低價格</p>
+              <p class="v-amount">
+                NT$ {{ dailyPrice(vehicle) | number }}<span class="v-unit">&nbsp;/ 天</span>
+              </p>
+              <p class="v-total">總計 NT$ {{ totalPrice(vehicle) | number }}</p>
+            }
+          </div>
+
+          <button
+            type="button"
+            class="v-cta"
+            [disabled]="isUnpriced(vehicle)"
+            [attr.aria-label]="
+              selectedVehicle?.id === vehicle.id
+                ? '已選擇 ' + vehicle.brand + ' ' + vehicle.model
+                : '選擇 ' + vehicle.brand + ' ' + vehicle.model
+            "
+            (click)="$event.stopPropagation(); select(vehicle)"
           >
-            <div>
-              <p>{{ vehicle.brand }} {{ vehicle.model }}</p>
-              <p>{{ vehicle.plateNumber }}</p>
-            </div>
-            <mat-card-content>
-              @if (isUnpriced(vehicle)) {
-                <p class="price">暫無定價</p>
-              } @else {
-                <p class="price">NT$ {{ priceForVehicle(vehicle) }}</p>
-              }
-            </mat-card-content>
-            <mat-card-actions>
-              <button mat-flat-button color="primary" [disabled]="isUnpriced(vehicle)">
-                {{ selectedVehicle?.id === vehicle.id ? '已選擇' : (isUnpriced(vehicle) ? '暫無定價' : '選擇') }}
-              </button>
-            </mat-card-actions>
-          </mat-card>
-        }
-      </div>
-    </section>
-  }
+            <span class="material-symbols-rounded" aria-hidden="true">
+              {{ selectedVehicle?.id === vehicle.id ? 'check' : 'chevron_right' }}
+            </span>
+          </button>
+        </div>
+      </article>
+    }
+  </div>
 </div>

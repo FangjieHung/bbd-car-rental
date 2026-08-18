@@ -25,6 +25,13 @@ export function seedVehicles(): Vehicle[] {
       mileage: 4800,
       insuranceExpiry: isoAt(120, 0),
       createdAt: isoAt(-90, 9),
+      classLabel: '電動機車',
+      seats: 2,
+      luggage: 1,
+      hasAirConditioner: false,
+      transmission: 'auto',
+      instantConfirm: true,
+      supplierCount: 1,
     },
     {
       id: 'v2',
@@ -38,6 +45,13 @@ export function seedVehicles(): Vehicle[] {
       mileage: 12100,
       insuranceExpiry: isoAt(90, 0),
       createdAt: isoAt(-80, 9),
+      classLabel: '重型機車',
+      seats: 2,
+      luggage: 1,
+      hasAirConditioner: false,
+      transmission: 'auto',
+      instantConfirm: false,
+      supplierCount: 2,
     },
     {
       id: 'v3',
@@ -51,6 +65,13 @@ export function seedVehicles(): Vehicle[] {
       nextServiceMileage: 35000,
       insuranceExpiry: isoAt(60, 0),
       createdAt: isoAt(-70, 9),
+      classLabel: '小型轎車',
+      seats: 5,
+      luggage: 2,
+      hasAirConditioner: true,
+      transmission: 'auto',
+      instantConfirm: true,
+      supplierCount: 1,
     },
     {
       id: 'v4',
@@ -64,6 +85,13 @@ export function seedVehicles(): Vehicle[] {
       nextServiceMileage: 46000,
       insuranceExpiry: isoAt(45, 0),
       createdAt: isoAt(-60, 9),
+      classLabel: '七人座休旅車',
+      seats: 7,
+      luggage: 4,
+      hasAirConditioner: true,
+      transmission: 'auto',
+      instantConfirm: false,
+      supplierCount: 1,
     },
     {
       id: 'v5',
@@ -77,6 +105,13 @@ export function seedVehicles(): Vehicle[] {
       mileage: 800,
       insuranceExpiry: isoAt(300, 0),
       createdAt: isoAt(-30, 9),
+      classLabel: '輕型機車',
+      seats: 2,
+      luggage: 1,
+      hasAirConditioner: false,
+      transmission: 'auto',
+      instantConfirm: true,
+      supplierCount: 3,
     },
     {
       id: 'v6',
@@ -90,6 +125,13 @@ export function seedVehicles(): Vehicle[] {
       nextServiceMileage: 20000,
       insuranceExpiry: isoAt(200, 0),
       createdAt: isoAt(-20, 9),
+      classLabel: '跨界休旅車',
+      seats: 5,
+      luggage: 3,
+      hasAirConditioner: true,
+      transmission: 'auto',
+      instantConfirm: true,
+      supplierCount: 2,
     },
   ];
 }
@@ -223,7 +265,9 @@ export function seedPricingPlans(): PricingPlan[] {
 }
 
 export function seedSeasonCalendar(): SeasonCalendar[] {
-  return [{ id: 'default', holidays: [], peakSeasons: [{ start: '2026-04-18', end: '2026-06-30' }] }];
+  return [
+    { id: 'default', holidays: [], peakSeasons: [{ start: '2026-04-18', end: '2026-06-30' }] },
+  ];
 }
 
 export function seedAddOns(): AddOn[] {
@@ -237,19 +281,43 @@ export function seedAddOns(): AddOn[] {
 
 export function seedCoupons(): Coupon[] {
   return [
-    { id: 'cp1', code: 'SUMMER10', type: 'percent', value: 10, minDays: 2,
-      validFrom: '2026-06-01', validTo: '2026-08-31' },
-    { id: 'cp2', code: 'CAR300', type: 'amount', value: 300, applicableCategories: ['car'],
-      validFrom: '2026-01-01', validTo: '2026-12-31' },
+    {
+      id: 'cp1',
+      code: 'SUMMER10',
+      type: 'percent',
+      value: 10,
+      minDays: 2,
+      validFrom: '2026-06-01',
+      validTo: '2026-08-31',
+    },
+    {
+      id: 'cp2',
+      code: 'CAR300',
+      type: 'amount',
+      value: 300,
+      applicableCategories: ['car'],
+      validFrom: '2026-01-01',
+      validTo: '2026-12-31',
+    },
   ];
 }
 
 export function seedPartners(): Partner[] {
   return [
-    { id: 'pt1', name: '海景民宿', slug: 'seaview', discountPercent: 8,
-      commission: { type: 'percent', value: 10 } },
-    { id: 'pt2', name: '陽光民宿', slug: 'sunshine', discountPercent: 5,
-      commission: { type: 'per_vehicle_day', value: 100 } },
+    {
+      id: 'pt1',
+      name: '海景民宿',
+      slug: 'seaview',
+      discountPercent: 8,
+      commission: { type: 'percent', value: 10 },
+    },
+    {
+      id: 'pt2',
+      name: '陽光民宿',
+      slug: 'sunshine',
+      discountPercent: 5,
+      commission: { type: 'per_vehicle_day', value: 100 },
+    },
   ];
 }
 

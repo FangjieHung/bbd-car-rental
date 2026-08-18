@@ -1,6 +1,5 @@
-import { Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
+import { DecimalPipe } from '@angular/common';
+import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { Vehicle, VehicleCategory } from '@car-rental/domain';
 
 const CATEGORY_LABEL: Record<VehicleCategory, string> = {
@@ -9,15 +8,15 @@ const CATEGORY_LABEL: Record<VehicleCategory, string> = {
   ev: '電動車',
 };
 
-interface VehicleGroup {
-  category: VehicleCategory;
-  label: string;
-  vehicles: Vehicle[];
-}
+const CATEGORY_ICON: Record<VehicleCategory, string> = {
+  car: 'directions_car',
+  scooter: 'two_wheeler',
+  ev: 'electric_moped',
+};
 
 @Component({
   selector: 'app-vehicle-step',
-  imports: [MatButtonModule, MatCardModule],
+  imports: [DecimalPipe],
   templateUrl: './vehicle-step.component.html',
   styleUrl: './vehicle-step.component.scss',
 })
@@ -31,22 +30,10 @@ export class VehicleStepComponent {
   }
 
   @Input() selectedVehicle: Vehicle | null = null;
+  /** priceForVehicle 回傳的是整段租期總價；租期天數用來換算「每日最低價格」 */
   @Input() priceForVehicle: (vehicle: Vehicle) => number | null = () => null;
+  @Input() days = 1;
   @Output() vehicleSelect = new EventEmitter<Vehicle>();
-
-  readonly groups = computed<VehicleGroup[]>(() => {
-    const byCategory = new Map<VehicleCategory, Vehicle[]>();
-    for (const v of this._vehicles()) {
-      const list = byCategory.get(v.category) ?? [];
-      list.push(v);
-      byCategory.set(v.category, list);
-    }
-    return Array.from(byCategory.entries()).map(([category, list]) => ({
-      category,
-      label: CATEGORY_LABEL[category],
-      vehicles: list,
-    }));
-  });
 
   protected select(vehicle: Vehicle): void {
     if (this.priceForVehicle(vehicle) === null) return;
@@ -55,5 +42,32 @@ export class VehicleStepComponent {
 
   protected isUnpriced(vehicle: Vehicle): boolean {
     return this.priceForVehicle(vehicle) === null;
+  }
+
+  /** 每日單價：總價 ÷ 租期天數（無定價時回 null） */
+  protected dailyPrice(vehicle: Vehicle): number | null {
+    const total = this.priceForVehicle(vehicle);
+    if (total === null) return null;
+    return Math.round(total / Math.max(1, this.days));
+  }
+
+  protected totalPrice(vehicle: Vehicle): number | null {
+    return this.priceForVehicle(vehicle);
+  }
+
+  protected classLabel(vehicle: Vehicle): string {
+    return vehicle.classLabel ?? CATEGORY_LABEL[vehicle.category];
+  }
+
+  protected categoryIcon(vehicle: Vehicle): string {
+    return CATEGORY_ICON[vehicle.category];
+  }
+
+  protected transmissionLabel(vehicle: Vehicle): string {
+    return vehicle.transmission === 'manual' ? '手排' : '自排';
+  }
+
+  protected transmissionMark(vehicle: Vehicle): string {
+    return vehicle.transmission === 'manual' ? 'M' : 'A';
   }
 }

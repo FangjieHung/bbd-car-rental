@@ -22,6 +22,7 @@
         [vehicles]="availableVehicles()"
         [selectedVehicle]="selectedVehicle()"
         [priceForVehicle]="priceForVehicle.bind(this)"
+        [days]="days()"
         (vehicleSelect)="onVehicleSelect($event)"
       ></app-vehicle-step>
       <div class="step-nav">
