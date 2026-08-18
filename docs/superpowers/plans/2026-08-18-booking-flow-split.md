@@ -12,7 +12,8 @@
 
 ## Global Constraints
 
-- **絕對不可修改**這四個檔案的內部實作（另一個 session 正在改）：`libs/booking-flow/src/lib/steps/date-step.component.*`、`vehicle-step.component.*`、`dual-month-range-picker.component.*`、`plain-month-header.ts`。只能在新 template 中引用它們。
+- **絕對不可修改**這四個檔案的內部實作：`libs/booking-flow/src/lib/steps/date-step.component.*`、`vehicle-step.component.*`、`dual-month-range-picker.component.*`、`plain-month-header.ts`。只能在新 template 中引用它們。
+  - **唯一例外（Task 9 Step 6a）**：`date-step.component.ts` 第 6 行的 import 路徑必須改，因為它從即將被刪除的 `booking-flow.component.ts` 取用 `DateRange`。只改那一行的路徑字串，該檔其他部分一律不動。
 - **絕對禁止**執行 `git checkout -- .`、`git restore`、`git stash`。工作區有其他 session 的未 commit 改動，這些指令會全部抹掉。
 - Commit 前必跑 `git diff --cached --name-only` 確認暫存區只有本任務的檔案；有其他檔案先 `git reset <file>` 移出。
 - 測試指令一律 `npx nx test booking-flow`（全 lib 約 3 秒，不需也無法過濾單檔）。
@@ -1087,7 +1088,7 @@ export class SearchPageComponent {
 </div>
 ```
 
-`search-page.component.scss`：把 `booking-flow.component.scss` 中 `.booking-flow` 與 `.partner-banner` 的規則搬過來，外層 selector 改為 `.search-page`，並加上兩個 section 的間距：
+`search-page.component.scss`：把 `booking-flow.component.scss` 中 `.booking-flow` 的規則搬過來，外層 selector 改為 `.search-page`，並加上兩個 section 的間距。（**更正**：`.partner-banner` 在 repo 中沒有任何樣式規則，舊流程的 banner 本來就是裸 div，因此無規則可搬。）
 
 ```scss
 .search-page {
@@ -1578,7 +1579,7 @@ export class OrderPageComponent {
 }
 ```
 
-`.partner-banner` 的規則從 `booking-flow.component.scss` 複製過來。
+（**更正**：`.partner-banner` 在 repo 中沒有任何樣式規則可複製，舊流程即是如此。banner 維持無樣式，與舊流程一致。）
 
 - [ ] **Step 5: 跑測試確認通過**
 
@@ -2072,6 +2073,7 @@ git commit -m "feat(booking-flow): add placeholder payment page and markBookingP
 - Create: `apps/affiliate/src/app/features/partner-booking/partner-shell.component.html`
 - Modify: `apps/affiliate/src/app/app.routes.ts`
 - Modify: `apps/booking/src/app/app.routes.ts`（移除 `/book`）
+- Modify: `libs/booking-flow/src/lib/steps/date-step.component.ts`（**僅第 6 行 import 路徑**，見 Step 6a）
 - Modify: `libs/booking-flow/src/lib/steps/confirm-step.component.ts`、`confirm-step.component.html`（移除 `showSummary` 與摘要區塊）
 - Modify: `libs/booking-flow/src/index.ts`
 - Delete: `libs/booking-flow/src/lib/booking-flow.component.{ts,html,scss}`
@@ -2225,6 +2227,30 @@ Expected: 成功。此時 affiliate 已不再使用 `BookingFlowComponent`。
 ```
 
 `canSubmit` 判斷式中的 `!!this.priceBreakdown` 仍需要 `priceBreakdown` input，因此該 input **不可刪除**，只是不再用於畫面渲染。
+
+- [ ] **Step 6a: 修正 `date-step` 的 import 路徑（刪檔前必做）**
+
+`date-step.component.ts` 第 6 行目前是：
+
+```ts
+import { DateRange } from '../booking-flow.component';
+```
+
+改為：
+
+```ts
+import { DateRange } from '../date-range';
+```
+
+**只改這一行的路徑字串。** 該檔案其他任何部分都不得更動 —— 它屬於另一條工作線，這是刪除 `booking-flow.component.ts` 所必需的最小改動。
+
+改完立刻驗證：
+
+```bash
+unset NX_WORKSPACE_ROOT_PATH && npx nx test booking-flow
+```
+
+Expected: 仍為 36 passed。
 
 - [ ] **Step 6: 刪除舊 stepper 流程**
 
