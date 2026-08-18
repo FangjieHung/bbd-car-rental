@@ -7,3 +7,4 @@ export * from './lib/steps/vehicle-step.component';
 export * from './lib/date-range';
 export * from './lib/quote.service';
 export * from './lib/booking-context';
+export * from './lib/components/order-summary-card.component';
