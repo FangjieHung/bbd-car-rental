@@ -1,1 +1,8 @@
-<router-outlet></router-outlet>
+@if (partner()) {
+  <router-outlet></router-outlet>
+} @else {
+  <div class="invalid-link">
+    <h1>連結無效</h1>
+    <p>找不到對應的合作夥伴，請確認連結是否正確。</p>
+  </div>
+}
