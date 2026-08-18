@@ -147,4 +147,10 @@ describe('OrderPageComponent', () => {
     component.ensureValidOrRedirect();
     expect(navigate).toHaveBeenCalledWith(['/', 'search'], expect.anything());
   });
+
+  it('查無車輛時一載入就自動導回搜尋頁，不必等送出', () => {
+    const { navigate } = setup({ ...validParams, vehicleId: 'nope' });
+    TestBed.flushEffects();
+    expect(navigate).toHaveBeenCalledWith(['/', 'search'], expect.anything());
+  });
 });

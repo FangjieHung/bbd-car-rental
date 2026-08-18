@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
@@ -92,6 +92,15 @@ export class OrderPageComponent {
       coupon: result?.ok ? result.coupon : undefined,
       partnerDiscountPercent: this.partner()?.discountPercent,
     });
+  });
+
+  /**
+   * 進頁面就檢查一次，車或租期壞掉（分享的舊網址、手改網址列）不必等使用者按下送出才發現。
+   * vehicleId／params 來自 toSignal 的 initialValue 只是佔位，真正的 ActivatedRoute
+   * 在訂閱當下就同步發出第一筆值，effect 排程執行時讀到的已經是那筆真值。
+   */
+  private readonly guardEffect = effect(() => {
+    this.ensureValidOrRedirect();
   });
 
   /** 車或租期不成立就沒有可下單的內容，導回搜尋頁重來 */
