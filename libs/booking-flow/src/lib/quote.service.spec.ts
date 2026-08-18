@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import {
   AddOn,
@@ -18,6 +18,7 @@ import {
   createInMemoryRepo,
 } from '@car-rental/domain';
 import { QuoteService } from './quote.service';
+import { CatalogStore } from './catalog.store';
 
 function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
   return {
@@ -134,5 +135,48 @@ describe('QuoteService', () => {
     expect(
       svc.quote({ vehicle: ev, startDate: '2026-08-20', endDate: '2026-08-23', addOnLines: [] }),
     ).toBeNull();
+  });
+
+  describe('計算過程出現未預期錯誤時', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('vehicleTotal 回 null 但會印出錯誤留下診斷線索，而不是靜默吞掉', () => {
+      const svc = setup();
+      const catalog = TestBed.inject(CatalogStore);
+      const boom = new Error('計算炸了');
+      vi.spyOn(catalog, 'price').mockImplementation(() => {
+        throw boom;
+      });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      const scooter = makeVehicle({ category: 'scooter' });
+      const total = svc.vehicleTotal(scooter, { startDate: '2026-08-20', endDate: '2026-08-23' });
+
+      expect(total).toBeNull();
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('vehicleTotal'), boom);
+    });
+
+    it('quote 回 null 但會印出錯誤留下診斷線索，而不是靜默吞掉', () => {
+      const svc = setup();
+      const catalog = TestBed.inject(CatalogStore);
+      const boom = new Error('計算炸了');
+      vi.spyOn(catalog, 'price').mockImplementation(() => {
+        throw boom;
+      });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      const scooter = makeVehicle({ category: 'scooter' });
+      const result = svc.quote({
+        vehicle: scooter,
+        startDate: '2026-08-20',
+        endDate: '2026-08-23',
+        addOnLines: [],
+      });
+
+      expect(result).toBeNull();
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('quote'), boom);
+    });
   });
 });

@@ -26,6 +26,8 @@ export class QuoteService {
     opts: { startDate: string; endDate: string; partnerDiscountPercent?: number },
   ): number | null {
     if (!opts.startDate || !opts.endDate) return null;
+    // 無定價方案是預期會發生的情況（該車型還沒設定方案），直接回 null，不必靠例外處理。
+    if (!this.catalog.planForCategory(vehicle.category)) return null;
     try {
       return this.catalog.price({
         category: vehicle.category,
@@ -34,7 +36,10 @@ export class QuoteService {
         addOns: [],
         partnerDiscountPercent: opts.partnerDiscountPercent,
       }).total;
-    } catch {
+    } catch (err) {
+      // 上面已排除唯一已知的例外來源，走到這裡代表 calculatePrice 出現未預期錯誤；
+      // 印出來以留診斷線索，而不是讓金額計算靜默變成「無法試算」。
+      console.error('[QuoteService] vehicleTotal 試算失敗', err);
       return null;
     }
   }
@@ -58,6 +63,8 @@ export class QuoteService {
     partnerDiscountPercent?: number;
   }): PriceBreakdown | null {
     if (!input.startDate || !input.endDate) return null;
+    // 無定價方案是預期會發生的情況（該車型還沒設定方案），直接回 null，不必靠例外處理。
+    if (!this.catalog.planForCategory(input.vehicle.category)) return null;
     try {
       return this.catalog.price({
         category: input.vehicle.category,
@@ -67,7 +74,10 @@ export class QuoteService {
         coupon: input.coupon,
         partnerDiscountPercent: input.partnerDiscountPercent,
       });
-    } catch {
+    } catch (err) {
+      // 上面已排除唯一已知的例外來源，走到這裡代表 calculatePrice 出現未預期錯誤；
+      // 印出來以留診斷線索，而不是讓金額計算靜默變成「無法送出」。
+      console.error('[QuoteService] quote 試算失敗', err);
       return null;
     }
   }
