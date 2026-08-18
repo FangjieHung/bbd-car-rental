@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { Coupon } from '../../../core/models';
@@ -19,6 +20,7 @@ import { CouponDialogComponent, CouponFormResult } from '../dialogs/coupon-dialo
     DataTableComponent,
     DataTableCellDirective,
     MatButtonModule,
+    MatTooltipModule,
     PageToolbarComponent,
     HeaderToolbarDirective,
   ],
@@ -72,6 +74,8 @@ export class CouponsPageComponent {
     { key: 'actions', label: this.t.common.actions, exportSkip: true },
   ];
 
+  readonly selectedCoupons = signal<readonly Coupon[]>([]);
+
   onExportFailed(e: Error): void {
     console.error('DataTable 匯出失敗', e);
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
@@ -96,5 +100,17 @@ export class CouponsPageComponent {
     } catch (e) {
       this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
     }
+  }
+
+  async removeSelected(coupons: readonly Coupon[]): Promise<void> {
+    if (!(await confirm(this.dialog, this.t.common.deleteConfirm))) return;
+    for (const coupon of coupons) {
+      try {
+        this.store.remove(coupon.id);
+      } catch (e) {
+        this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
+      }
+    }
+    this.selectedCoupons.set([]);
   }
 }

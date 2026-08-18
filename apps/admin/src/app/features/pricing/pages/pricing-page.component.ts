@@ -12,6 +12,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { PricingPlan } from '../../../core/models';
@@ -36,6 +37,7 @@ type RangeGroup = FormGroup<{ start: FormControl<string>; end: FormControl<strin
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatTooltipModule,
     ReactiveFormsModule,
     PageToolbarComponent,
     HeaderToolbarDirective,

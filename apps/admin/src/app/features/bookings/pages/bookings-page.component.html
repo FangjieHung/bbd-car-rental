@@ -34,8 +34,12 @@
           [columns]="columns"
           [rows]="filteredBookings()"
           [labels]="labels"
+          [selectable]="true"
+          [selection]="selectedBookings()"
           [emptyText]="t.common.empty"
           exportName="bookings"
+          (selectionChange)="selectedBookings.set($event)"
+          (batchDelete)="cancelSelected($event)"
           (exportFailed)="onExportFailed($event)"
         >
           <ng-template dtCell="vehicleId" let-b>{{ plateOf(b.vehicleId) }}</ng-template>
@@ -53,20 +57,38 @@
                 </button>
               }
               @if (b.status === 'confirmed') {
-                <button mat-button (click)="act(() => store.pickUp(b.id))">
+                <button matButton="tonal" (click)="act(() => store.pickUp(b.id))">
+                  <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
                   {{ t.booking.pickUp }}
                 </button>
-                <button mat-button (click)="openForm(b)">{{ t.common.edit }}</button>
               }
               @if (b.status === 'in_progress') {
-                <button mat-button (click)="act(() => store.complete(b.id))">
+                <button matButton="tonal" (click)="act(() => store.complete(b.id))">
+                  <span class="material-symbols-rounded" aria-hidden="true">assignment_turned_in</span>
                   {{ t.booking.complete }}
                 </button>
               }
               @if (b.status === 'confirmed' || b.status === 'in_progress') {
-                <button mat-button color="warn" (click)="cancelBooking(b)">
-                  {{ t.booking.cancelBooking }}
+                <button
+                  mat-icon-button
+                  [matTooltip]="t.common.moreActions"
+                  [attr.aria-label]="t.common.moreActions"
+                  [matMenuTriggerFor]="moreMenu"
+                >
+                  <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
                 </button>
+                <mat-menu #moreMenu="matMenu">
+                  @if (b.status === 'confirmed') {
+                    <button mat-menu-item (click)="openForm(b)">
+                      <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                      <span>{{ t.common.edit }}</span>
+                    </button>
+                  }
+                  <button mat-menu-item (click)="cancelBooking(b)">
+                    <span class="material-symbols-rounded" aria-hidden="true">cancel</span>
+                    <span>{{ t.booking.cancelBooking }}</span>
+                  </button>
+                </mat-menu>
               }
             </span>
           </ng-template>

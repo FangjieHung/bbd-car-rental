@@ -47,7 +47,6 @@
     </app-page-toolbar>
   </ng-template>
 
-
   @if (store.vehicles().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
@@ -59,23 +58,50 @@
       <div class="ui-card">
         <lib-data-table
           [columns]="columns"
-          [rows]="filteredVehicles()"
+          [rows]="displayVehicles()"
           [labels]="labels"
           [selectable]="true"
           [selection]="selectedVehicles()"
           [emptyText]="t.common.empty"
+          [rowClickable]="true"
+          [rowClass]="rowClassOf"
           exportName="vehicles"
           (selectionChange)="selectedVehicles.set($event)"
           (batchDelete)="removeSelected($event)"
           (exportFailed)="onExportFailed($event)"
+          (rowClick)="onRowClick($event)"
         >
           <ng-template dtCell="category" let-v>{{ t.vehicle.typeLabels[v.category] }}</ng-template>
           <ng-template dtCell="status" let-v>
             <app-status-chip [label]="t.vehicle.statusLabels[v.status]" [status]="statusKeyOf(v)" />
+            @if (hasOverdueAlert(v)) {
+              <span class="mtn-badge mtn-badge--danger">{{ t.maintenance.overdueBadge }}</span>
+            }
+            @if (hasUpcomingAlert(v)) {
+              <span class="mtn-badge mtn-badge--warning">{{ t.maintenance.upcomingBadge }}</span>
+            }
           </ng-template>
           <ng-template dtCell="actions" let-v>
-            <button mat-button (click)="openForm(v)">{{ t.common.edit }}</button>
-            <button mat-button color="warn" (click)="remove(v)">{{ t.common.delete }}</button>
+            <span class="action-cell">
+              <button mat-icon-button [matTooltip]="t.common.edit" [attr.aria-label]="t.common.edit" (click)="$event.stopPropagation(); openForm(v)">
+                <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+              </button>
+              <button mat-icon-button color="warn" [matTooltip]="t.common.delete" [attr.aria-label]="t.common.delete" (click)="$event.stopPropagation(); remove(v)">
+                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+              </button>
+              @if (v.status === 'available') {
+                <button matButton="tonal" class="ml-2" (click)="$event.stopPropagation(); send(v)">
+                  <span class="material-symbols-rounded" aria-hidden="true">build</span>
+                  {{ t.maintenance.sendToMaintenance }}
+                </button>
+              }
+              @if (v.status === 'maintenance') {
+                <button matButton="tonal" class="ml-2" (click)="$event.stopPropagation(); completeFix(v)">
+                  <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
+                  {{ t.maintenance.completeMaintenance }}
+                </button>
+              }
+            </span>
           </ng-template>
         </lib-data-table>
       </div>

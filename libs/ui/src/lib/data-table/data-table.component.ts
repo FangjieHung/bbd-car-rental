@@ -54,9 +54,12 @@ export class DataTableComponent<T> {
   readonly labels = input.required<DataTableLabels>();
   readonly selectable = input(false);
   readonly selection = input<readonly T[]>([]);
+  readonly rowClickable = input(false);
+  readonly rowClass = input<(row: T) => string>(() => '');
 
   readonly selectionChange = output<readonly T[]>();
   readonly batchDelete = output<readonly T[]>();
+  readonly rowClick = output<T>();
 
   private readonly cellDirectives = contentChildren(DataTableCellDirective<T>);
   protected readonly headDirective = contentChild(DataTableHeadDirective);
@@ -187,6 +190,17 @@ export class DataTableComponent<T> {
     else next.add(id);
     this.selectedIds.set(next);
     this.selectionChange.emit(this.rows().filter((current) => next.has(this.rowId()(current))));
+  }
+
+  protected onRowClick(row: T): void {
+    if (!this.rowClickable()) return;
+    this.rowClick.emit(row);
+  }
+
+  protected onRowKeydown(row: T, event: Event): void {
+    if (!this.rowClickable()) return;
+    event.preventDefault();
+    this.rowClick.emit(row);
   }
 
   protected toggleAllSelection(): void {

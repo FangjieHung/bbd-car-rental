@@ -82,6 +82,30 @@
   border-bottom: 0;
 }
 
+// rowClickable 為 true 時整列可點擊導航；hover 底色沿用 .ui-nav-pill / app-tab 既有的
+// --mat-sys-surface-container-high token，與其他可點擊 pill/nav 元件維持一致觀感。
+.dt-row--clickable {
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: -2px;
+  }
+}
+
+// 保養提醒的行級底色，沿用 .ui-chip--danger / .ui-chip--warning 相同的 design token
+.dt-row--danger {
+  background: var(--app-danger-bg);
+}
+
+.dt-row--warning {
+  background: var(--app-warning-bg);
+}
+
 .dt-align-start {
   text-align: left;
 }

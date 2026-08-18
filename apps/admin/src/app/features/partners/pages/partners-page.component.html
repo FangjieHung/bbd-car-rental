@@ -25,9 +25,17 @@
           {{ t.partner.commissionTypeLabels[p.commission.type] }}（{{ p.commission.value }}）
         </ng-template>
         <ng-template dtCell="actions" let-p>
-          <button mat-button (click)="copyLink(p)">{{ t.partner.copyLink }}</button>
-          <button mat-button (click)="openForm(p)">{{ t.common.edit }}</button>
-          <button mat-button color="warn" (click)="remove(p)">{{ t.common.delete }}</button>
+          <span class="action-cell">
+            <button mat-icon-button [matTooltip]="t.partner.copyLink" [attr.aria-label]="t.partner.copyLink" (click)="copyLink(p)">
+              <span class="material-symbols-rounded" aria-hidden="true">link</span>
+            </button>
+            <button mat-icon-button [matTooltip]="t.common.edit" [attr.aria-label]="t.common.edit" (click)="openForm(p)">
+              <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+            </button>
+            <button mat-icon-button color="warn" [matTooltip]="t.common.delete" [attr.aria-label]="t.common.delete" (click)="remove(p)">
+              <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+            </button>
+          </span>
         </ng-template>
       </lib-data-table>
     </div>

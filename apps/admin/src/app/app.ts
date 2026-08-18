@@ -32,7 +32,6 @@ export class App implements OnInit {
       icon: 'inventory_2',
       children: [
         { route: '/vehicles', label: this.t.nav.vehicles, icon: 'directions_car' },
-        { route: '/maintenance', label: this.t.nav.maintenance, icon: 'build' },
         { route: '/add-ons', label: this.t.nav.addOns, icon: 'extension' },
       ],
     },

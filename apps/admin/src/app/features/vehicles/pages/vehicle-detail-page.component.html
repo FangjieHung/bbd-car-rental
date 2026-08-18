@@ -1,0 +1,43 @@
+<div class="stack-block">
+  <a class="back-link" [routerLink]="['/vehicles']">← {{ t.vehicle.backToList }}</a>
+
+  @if (!vehicle()) {
+    <p class="empty-state">{{ t.common.empty }}</p>
+  } @else {
+    <section class="ui-card flex flex-col gap-1">
+      <h1 class="ui-text-title">{{ vehicle()!.model }}・{{ vehicle()!.plateNumber }}</h1>
+      <p>{{ t.vehicle.type }}：{{ t.vehicle.typeLabels[vehicle()!.category] }}</p>
+      <p>{{ t.vehicle.model }}：{{ vehicle()!.model }}</p>
+      <p>{{ t.vehicle.brand }}：{{ vehicle()!.brand }}</p>
+      <p>{{ t.vehicle.year }}：{{ vehicle()!.year }}</p>
+      <p>{{ t.vehicle.status }}：{{ t.vehicle.statusLabels[vehicle()!.status] }}</p>
+      <p>{{ t.vehicle.mileage }}：{{ vehicle()!.mileage }}</p>
+    </section>
+
+    <section class="stack-block">
+      <div class="section-header">
+        <h2 class="ui-text-caption font-semibold text-base">{{ t.maintenance.records }}</h2>
+        <button mat-flat-button (click)="addRecord()">{{ t.maintenance.addRecord }}</button>
+      </div>
+      @if (records().length === 0) {
+        <p class="empty-state">{{ t.common.empty }}</p>
+      } @else {
+        <div class="ui-card !p-0">
+          <lib-data-table
+            [columns]="columns"
+            [rows]="records()"
+            [labels]="labels"
+            [emptyText]="t.common.empty"
+            exportName="vehicle-maintenance-records"
+            (exportFailed)="onExportFailed($event)"
+          >
+            <ng-template dtCell="type" let-r>{{ t.maintenance.typeLabels[r.type] }}</ng-template>
+            <ng-template dtCell="performedAt" let-r>{{ fmt(r.performedAt) }}</ng-template>
+            <ng-template dtCell="nextDueMileage" let-r>{{ r.nextDueMileage ?? '—' }}</ng-template>
+            <ng-template dtCell="nextDueDate" let-r>{{ r.nextDueDate ? fmt(r.nextDueDate) : '—' }}</ng-template>
+          </lib-data-table>
+        </div>
+      }
+    </section>
+  }
+</div>

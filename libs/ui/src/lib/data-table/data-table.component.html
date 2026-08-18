@@ -96,9 +96,17 @@
         </thead>
         <tbody>
           @for (row of rows(); track rowId()(row)) {
-            <tr [class.is-expanded]="isExpanded(row)">
+            <tr
+              [class]="rowClass()(row)"
+              [class.is-expanded]="isExpanded(row)"
+              [class.dt-row--clickable]="rowClickable()"
+              [attr.tabindex]="rowClickable() ? 0 : null"
+              (click)="onRowClick(row)"
+              (keydown.enter)="onRowKeydown(row, $event)"
+              (keydown.space)="onRowKeydown(row, $event)"
+            >
               @if (selectable()) {
-                <td class="dt-selection-cell" data-label="">
+                <td class="dt-selection-cell" data-label="" (click)="$event.stopPropagation()">
                   <label class="dt-selection-control">
                     <input
                       type="checkbox"
@@ -127,7 +135,7 @@
                 </td>
               }
               @if (hasSecondary()) {
-                <td class="dt-expand-cell">
+                <td class="dt-expand-cell" (click)="$event.stopPropagation()">
                   <button
                     type="button"
                     class="dt-expand-btn"

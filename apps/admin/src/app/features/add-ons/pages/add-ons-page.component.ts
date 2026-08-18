@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { AddOn } from '../../../core/models';
@@ -19,6 +20,7 @@ import { AddOnDialogComponent, AddOnFormResult } from '../dialogs/add-on-dialog.
     DataTableComponent,
     DataTableCellDirective,
     MatButtonModule,
+    MatTooltipModule,
     PageToolbarComponent,
     HeaderToolbarDirective,
   ],
@@ -44,6 +46,8 @@ export class AddOnsPageComponent {
     { key: 'actions', label: this.t.common.actions, exportSkip: true },
   ];
 
+  readonly selectedAddOns = signal<readonly AddOn[]>([]);
+
   onExportFailed(e: Error): void {
     console.error('DataTable 匯出失敗', e);
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
@@ -68,5 +72,17 @@ export class AddOnsPageComponent {
     } catch (e) {
       this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
     }
+  }
+
+  async removeSelected(addOns: readonly AddOn[]): Promise<void> {
+    if (!(await confirm(this.dialog, this.t.common.deleteConfirm))) return;
+    for (const addOn of addOns) {
+      try {
+        this.store.remove(addOn.id);
+      } catch (e) {
+        this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
+      }
+    }
+    this.selectedAddOns.set([]);
   }
 }

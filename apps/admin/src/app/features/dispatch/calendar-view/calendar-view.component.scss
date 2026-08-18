@@ -38,7 +38,6 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
-  border-radius: 0.5rem;
   background: var(--mat-sys-outline-variant);
 }
 
@@ -61,6 +60,20 @@
 
 .calendar-view__muted {
   color: var(--mat-sys-on-surface-variant);
+}
+
+.calendar-view__stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  margin-top: 0.125rem;
+}
+
+.calendar-view__stat-chip {
+  gap: 0.25rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.6875rem;
 }
 
 .calendar-view__relative-chip {

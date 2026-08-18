@@ -1,11 +1,15 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { Vehicle, VehicleStatus, VehicleCategory } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
+import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { StatusKey } from '@car-rental/theme-pack';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
@@ -20,6 +24,10 @@ import {
   VehicleFormDialogComponent,
   VehicleFormResult,
 } from '../dialogs/vehicle-form-dialog.component';
+import {
+  MaintenanceRecordDialogComponent,
+  RecordFormResult,
+} from '../../maintenance/dialogs/maintenance-record-dialog.component';
 import { TimelineViewComponent } from '../../dispatch/timeline-view/timeline-view.component';
 import { firstValueFrom } from 'rxjs';
 
@@ -36,6 +44,7 @@ const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
     DataTableComponent,
     DataTableCellDirective,
     MatButtonModule,
+    MatTooltipModule,
     StatusChipComponent,
     PageToolbarComponent,
     FilterSelectComponent,
@@ -48,9 +57,12 @@ const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
 export class VehiclesPageComponent {
   protected readonly t = ZH_TW;
   readonly store = inject(VehicleStore);
+  readonly maintenanceStore = inject(MaintenanceStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
   readonly labels = ADMIN_DATA_TABLE_LABELS;
+  readonly fmt = fmtDateTime;
 
   readonly columns: DataTableColumn<Vehicle>[] = [
     { key: 'plateNumber', label: this.t.vehicle.plateNumber, primary: true },
@@ -106,6 +118,31 @@ export class VehiclesPageComponent {
     });
   });
 
+  /** 逾期提醒的車輛釘選最前，即將到期次之，其餘維持原順序（sort 為 spec-stable） */
+  readonly displayVehicles = computed(() => {
+    const rank = (v: Vehicle) => (this.hasOverdueAlert(v) ? 2 : this.hasUpcomingAlert(v) ? 1 : 0);
+    return [...this.filteredVehicles()].sort((a, b) => rank(b) - rank(a));
+  });
+
+  private alertsFor(vehicleId: string) {
+    return this.maintenanceStore.alerts().filter((a) => a.vehicleId === vehicleId);
+  }
+
+  hasOverdueAlert(v: Vehicle): boolean {
+    return this.alertsFor(v.id).some((a) => a.status === 'overdue');
+  }
+
+  hasUpcomingAlert(v: Vehicle): boolean {
+    return this.alertsFor(v.id).some((a) => a.status === 'upcoming');
+  }
+
+  readonly rowClassOf = (v: Vehicle): string =>
+    this.hasOverdueAlert(v) ? 'dt-row--danger' : this.hasUpcomingAlert(v) ? 'dt-row--warning' : '';
+
+  onRowClick(v: Vehicle): void {
+    this.router.navigate(this.vehicleDetailLink(v.id));
+  }
+
   clearFilters(): void {
     this.typeFilter.set(null);
     this.statusFilter.set(null);
@@ -151,5 +188,32 @@ export class VehiclesPageComponent {
       }
     }
     this.selectedVehicles.set([]);
+  }
+
+  plateOf(id: string): string {
+    return this.store.vehicles().find((v) => v.id === id)?.plateNumber ?? '—';
+  }
+
+  vehicleDetailLink(vehicleId: string): string[] {
+    return ['/vehicles', vehicleId];
+  }
+
+  send(v: Vehicle): void {
+    try {
+      this.maintenanceStore.sendToMaintenance(v.id);
+    } catch (e) {
+      this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
+    }
+  }
+
+  async completeFix(v: Vehicle): Promise<void> {
+    const ref = this.dialog.open(MaintenanceRecordDialogComponent, { data: v.id, width: '420px' });
+    const result: RecordFormResult | undefined = await firstValueFrom(ref.afterClosed());
+    if (!result) return;
+    try {
+      this.maintenanceStore.completeMaintenance(v.id, result);
+    } catch (e) {
+      this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
+    }
   }
 }

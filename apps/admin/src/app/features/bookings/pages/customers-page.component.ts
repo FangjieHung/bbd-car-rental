@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { Customer } from '../../../core/models';
@@ -19,6 +20,7 @@ import { CustomerFormDialogComponent } from '../dialogs/customer-form-dialog.com
     DataTableComponent,
     DataTableCellDirective,
     MatButtonModule,
+    MatTooltipModule,
     PageToolbarComponent,
     HeaderToolbarDirective,
   ],

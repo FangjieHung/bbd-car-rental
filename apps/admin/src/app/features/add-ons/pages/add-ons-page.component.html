@@ -13,14 +13,24 @@
       [columns]="columns"
       [rows]="store.addOns()"
       [labels]="labels"
+      [selectable]="true"
+      [selection]="selectedAddOns()"
       [emptyText]="t.common.empty"
       exportName="add-ons"
+      (selectionChange)="selectedAddOns.set($event)"
+      (batchDelete)="removeSelected($event)"
       (exportFailed)="onExportFailed($event)"
     >
       <ng-template dtCell="unit" let-a>{{ t.addOn.unitLabels[a.unit] }}</ng-template>
       <ng-template dtCell="actions" let-a>
-        <button mat-button (click)="openForm(a)">{{ t.common.edit }}</button>
-        <button mat-button color="warn" (click)="remove(a)">{{ t.common.delete }}</button>
+        <span class="action-cell">
+          <button mat-icon-button [matTooltip]="t.common.edit" [attr.aria-label]="t.common.edit" (click)="openForm(a)">
+            <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+          </button>
+          <button mat-icon-button color="warn" [matTooltip]="t.common.delete" [attr.aria-label]="t.common.delete" (click)="remove(a)">
+            <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+          </button>
+        </span>
       </ng-template>
     </lib-data-table>
   </div>

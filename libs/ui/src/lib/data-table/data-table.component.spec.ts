@@ -579,6 +579,130 @@ class ExportCustomHostComponent {
   }
 }
 
+@Component({
+  imports: [DataTableComponent, DataTableCellDirective],
+  template: `
+    <lib-data-table
+      [columns]="columns()"
+      [rows]="rows()"
+      [labels]="labels"
+      [selectable]="true"
+      [rowClickable]="rowClickable()"
+      [rowClass]="rowClassFn"
+      (rowClick)="onRowClick($event)"
+    >
+      <ng-template dtCell="mileage" let-row>
+        <button
+          type="button"
+          class="action-btn"
+          (click)="$event.stopPropagation(); onActionClick(row)"
+        >
+          操作
+        </button>
+      </ng-template>
+    </lib-data-table>
+  `,
+})
+class RowClickHostComponent {
+  readonly labels = LABELS;
+  readonly rowClickable = signal(true);
+  readonly columns = signal<DataTableColumn<Row>[]>([
+    { key: 'name', label: '車牌', primary: true },
+    { key: 'status', label: '狀態', primary: true },
+    { key: 'mileage', label: '里程', align: 'end' },
+  ]);
+  readonly rows = signal<Row[]>([
+    { id: 'v1', name: 'ABC-123', status: 'available', mileage: 12000 },
+    { id: 'v2', name: 'XYZ-789', status: 'rented', mileage: 34000 },
+  ]);
+  readonly clicked: Row[] = [];
+  readonly actionClicked: Row[] = [];
+  readonly rowClassFn = (row: Row): string => (row.status === 'rented' ? 'danger-row' : '');
+
+  onRowClick(row: Row): void {
+    this.clicked.push(row);
+  }
+
+  onActionClick(row: Row): void {
+    this.actionClicked.push(row);
+  }
+}
+
+describe('DataTableComponent 整列可點擊導航', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<RowClickHostComponent>>;
+  let el: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [RowClickHostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(RowClickHostComponent);
+    await fixture.whenStable();
+    el = fixture.nativeElement as HTMLElement;
+  });
+
+  it('rowClickable 為 false（預設）時，列沒有 tabindex，點擊也不會發出 rowClick', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    const defaultFixture = TestBed.createComponent(HostComponent);
+    await defaultFixture.whenStable();
+    const defaultEl = defaultFixture.nativeElement as HTMLElement;
+    const row = defaultEl.querySelector('tbody tr') as HTMLElement;
+
+    expect(row.hasAttribute('tabindex')).toBe(false);
+    expect(row.classList.contains('dt-row--clickable')).toBe(false);
+  });
+
+  it('點擊某一列（非按鈕/checkbox 區域）時發出該列資料', async () => {
+    const rows = el.querySelectorAll('tbody tr');
+    (rows[1] as HTMLElement).click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.clicked).toEqual([fixture.componentInstance.rows()[1]]);
+  });
+
+  it('點擊列上的選取 checkbox 不會同時發出 rowClick', async () => {
+    (el.querySelector('tbody .dt-selection-checkbox') as HTMLInputElement).click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.clicked).toEqual([]);
+  });
+
+  it('點擊列內動作按鈕（自行 stopPropagation）不會同時發出 rowClick', async () => {
+    (el.querySelector('.action-btn') as HTMLButtonElement).click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.actionClicked).toEqual([fixture.componentInstance.rows()[0]]);
+    expect(fixture.componentInstance.clicked).toEqual([]);
+  });
+
+  it('rowClickable 為 true 時列可用鍵盤操作：Enter 觸發 rowClick', async () => {
+    const row = el.querySelectorAll('tbody tr')[0] as HTMLElement;
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.clicked).toEqual([fixture.componentInstance.rows()[0]]);
+  });
+
+  it('rowClickable 為 true 時列可用鍵盤操作：Space 觸發 rowClick', async () => {
+    const row = el.querySelectorAll('tbody tr')[1] as HTMLElement;
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.clicked).toEqual([fixture.componentInstance.rows()[1]]);
+  });
+
+  it('rowClickable 為 true 時列有 tabindex="0" 與 dt-row--clickable class', () => {
+    const row = el.querySelector('tbody tr') as HTMLElement;
+    expect(row.getAttribute('tabindex')).toBe('0');
+    expect(row.classList.contains('dt-row--clickable')).toBe(true);
+  });
+
+  it('rowClass 回傳值套用到對應的 tr', () => {
+    const rows = el.querySelectorAll('tbody tr');
+    expect((rows[0] as HTMLElement).classList.contains('danger-row')).toBe(false);
+    expect((rows[1] as HTMLElement).classList.contains('danger-row')).toBe(true);
+  });
+});
+
 describe('DataTableComponent 匯出接線', () => {
   beforeEach(() => {
     vi.clearAllMocks();

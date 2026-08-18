@@ -16,8 +16,12 @@
         [columns]="columns"
         [rows]="store.coupons()"
         [labels]="labels"
+        [selectable]="true"
+        [selection]="selectedCoupons()"
         [emptyText]="t.common.empty"
         exportName="coupons"
+        (selectionChange)="selectedCoupons.set($event)"
+        (batchDelete)="removeSelected($event)"
         (exportFailed)="onExportFailed($event)"
       >
         <ng-template dtCell="type" let-c>{{ t.coupon.typeLabels[c.type] }}</ng-template>
@@ -28,8 +32,14 @@
         </ng-template>
         <ng-template dtCell="period" let-c>{{ c.validFrom }} ~ {{ c.validTo }}</ng-template>
         <ng-template dtCell="actions" let-c>
-          <button mat-button (click)="openForm(c)">{{ t.common.edit }}</button>
-          <button mat-button color="warn" (click)="remove(c)">{{ t.common.delete }}</button>
+          <span class="action-cell">
+            <button mat-icon-button [matTooltip]="t.common.edit" [attr.aria-label]="t.common.edit" (click)="openForm(c)">
+              <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+            </button>
+            <button mat-icon-button color="warn" [matTooltip]="t.common.delete" [attr.aria-label]="t.common.delete" (click)="remove(c)">
+              <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+            </button>
+          </span>
         </ng-template>
       </lib-data-table>
     </div>

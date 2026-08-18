@@ -34,13 +34,21 @@
             >
               {{ d.getDate() }}
             </div>
-            @if (stats.pickups > 0) {
-              <p class="calendar-view__muted">{{ t.dispatch.pickups }}{{ stats.pickups }}</p>
-            }
-            @if (stats.returns > 0) {
-              <p class="calendar-view__muted">{{ t.dispatch.returns }}{{ stats.returns }}</p>
-            }
-            <p class="calendar-view__muted">{{ t.dispatch.available }} {{ stats.available }}</p>
+            <div class="calendar-view__stats">
+              @if (stats.pickups > 0) {
+                <span class="ui-chip ui-chip--info calendar-view__stat-chip">
+                  <span class="ui-chip__dot"></span>{{ t.dispatch.pickups }}{{ stats.pickups }}
+                </span>
+              }
+              @if (stats.returns > 0) {
+                <span class="ui-chip ui-chip--warning calendar-view__stat-chip">
+                  <span class="ui-chip__dot"></span>{{ t.dispatch.returns }}{{ stats.returns }}
+                </span>
+              }
+              <span class="ui-chip ui-chip--positive calendar-view__stat-chip">
+                <span class="ui-chip__dot"></span>{{ t.dispatch.available }}{{ stats.available }}
+              </span>
+            </div>
           </button>
         }
       </div>

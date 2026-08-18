@@ -30,7 +30,10 @@
   }
 }
 
+.mdc-icon-button.mat-mdc-icon-button,
+.mat-mdc-button-base,
 .mat-mdc-menu-item-text,
 .mdc-button__label {
-  @apply flex items-center gap-1;
+  @apply flex items-center;
+  gap: 1rem;
 }

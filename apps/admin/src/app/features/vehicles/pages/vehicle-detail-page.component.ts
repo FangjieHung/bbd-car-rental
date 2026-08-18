@@ -1,43 +1,53 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
-import { MaintenanceRecord, Vehicle } from '../../../core/models';
+import { MaintenanceRecord } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
-import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
+import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
 import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
 import {
   MaintenanceRecordDialogComponent,
   RecordFormResult,
-} from '../dialogs/maintenance-record-dialog.component';
+} from '../../maintenance/dialogs/maintenance-record-dialog.component';
 
 @Component({
-  selector: 'app-maintenance-page',
-  imports: [DataTableComponent, DataTableCellDirective, MatButtonModule],
-  templateUrl: './maintenance-page.component.html',
-  styleUrls: ['../../../app.scss'],
+  selector: 'app-vehicle-detail-page',
+  imports: [DataTableComponent, DataTableCellDirective, MatButtonModule, RouterLink],
+  templateUrl: './vehicle-detail-page.component.html',
+  styleUrls: ['../../../app.scss', './vehicle-detail-page.component.scss'],
 })
-export class MaintenancePageComponent {
+export class VehicleDetailPageComponent {
   protected readonly t = ZH_TW;
-  readonly store = inject(MaintenanceStore);
+  private readonly route = inject(ActivatedRoute);
   readonly vehicleStore = inject(VehicleStore);
-  private dialog = inject(MatDialog);
-  private snackBar = inject(MatSnackBar);
+  readonly maintenanceStore = inject(MaintenanceStore);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
   readonly fmt = fmtDateTime;
-
   readonly labels = ADMIN_DATA_TABLE_LABELS;
 
+  readonly vehicleId = toSignal(
+    this.route.paramMap.pipe(map((p) => p.get('id') ?? '')),
+    { initialValue: this.route.snapshot.paramMap.get('id') ?? '' },
+  );
+
+  readonly vehicle = computed(() =>
+    this.vehicleStore.vehicles().find((v) => v.id === this.vehicleId()),
+  );
+
+  readonly records = computed(() =>
+    this.maintenanceStore.records().filter((r) => r.vehicleId === this.vehicleId()),
+  );
+
   readonly columns: DataTableColumn<MaintenanceRecord>[] = [
-    {
-      key: 'vehicleId',
-      label: this.t.booking.vehicle,
-      primary: true,
-      exportValue: (r) => this.plateOf(r.vehicleId),
-    },
     {
       key: 'type',
       label: this.t.maintenance.type,
@@ -47,6 +57,7 @@ export class MaintenancePageComponent {
     {
       key: 'performedAt',
       label: this.t.maintenance.performedAt,
+      primary: true,
       exportValue: (r) => this.fmt(r.performedAt),
     },
     { key: 'mileageAtService', label: this.t.maintenance.mileageAtService, align: 'end' },
@@ -69,32 +80,10 @@ export class MaintenancePageComponent {
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
-  plateOf(id: string): string {
-    return this.vehicleStore.vehicles().find((v) => v.id === id)?.plateNumber ?? '—';
-  }
-
-  send(v: Vehicle): void {
-    try {
-      this.store.sendToMaintenance(v.id);
-    } catch (e) {
-      this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
-    }
-  }
-
-  async completeFix(v: Vehicle): Promise<void> {
-    const ref = this.dialog.open(MaintenanceRecordDialogComponent, { data: v.id, width: '420px' });
-    const result: RecordFormResult | undefined = await firstValueFrom(ref.afterClosed());
-    if (!result) return;
-    try {
-      this.store.completeMaintenance(v.id, result);
-    } catch (e) {
-      this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
-    }
-  }
-
   async addRecord(): Promise<void> {
-    const ref = this.dialog.open(MaintenanceRecordDialogComponent, { data: null, width: '420px' });
+    const id = this.vehicleId();
+    const ref = this.dialog.open(MaintenanceRecordDialogComponent, { data: id, width: '420px' });
     const result: RecordFormResult | undefined = await firstValueFrom(ref.afterClosed());
-    if (result) this.store.addRecord(result);
+    if (result) this.maintenanceStore.addRecord(result);
   }
 }

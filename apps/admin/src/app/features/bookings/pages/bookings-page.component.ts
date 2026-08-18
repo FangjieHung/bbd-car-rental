@@ -2,7 +2,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { BookingStatus, RentalBooking } from '../../../core/models';
@@ -40,6 +42,8 @@ const STATUS_KEY: Record<BookingStatus, StatusKey> = {
     DataTableComponent,
     DataTableCellDirective,
     MatButtonModule,
+    MatMenuModule,
+    MatTooltipModule,
     RouterLink,
     StatusChipComponent,
     PageToolbarComponent,
@@ -58,7 +62,7 @@ export class BookingsPageComponent {
   private snackBar = inject(MatSnackBar);
   readonly fmt = fmtDateTime;
 
-  readonly labels = ADMIN_DATA_TABLE_LABELS;
+  readonly labels = { ...ADMIN_DATA_TABLE_LABELS, batchDelete: this.t.booking.cancelBooking };
 
   readonly columns: DataTableColumn<RentalBooking>[] = [
     {
@@ -91,6 +95,7 @@ export class BookingsPageComponent {
 
   readonly searchQuery = signal('');
   readonly statusFilter = signal<BookingStatus | null>(null);
+  readonly selectedBookings = signal<readonly RentalBooking[]>([]);
 
   readonly statusOptions: FilterOption<BookingStatus>[] = (
     Object.entries(this.t.booking.statusLabels) as [BookingStatus, string][]
@@ -135,6 +140,18 @@ export class BookingsPageComponent {
   async cancelBooking(b: RentalBooking): Promise<void> {
     if (await confirm(this.dialog, this.t.common.deleteConfirm))
       this.act(() => this.store.cancel(b.id));
+  }
+
+  async cancelSelected(bookings: readonly RentalBooking[]): Promise<void> {
+    const cancellable = bookings.filter(
+      (b) => b.status === 'confirmed' || b.status === 'in_progress',
+    );
+    if (cancellable.length === 0) return;
+    if (!(await confirm(this.dialog, this.t.common.deleteConfirm))) return;
+    for (const booking of cancellable) {
+      this.act(() => this.store.cancel(booking.id));
+    }
+    this.selectedBookings.set([]);
   }
 
   async openForm(booking: RentalBooking | null): Promise<void> {

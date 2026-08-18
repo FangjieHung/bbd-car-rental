@@ -29,6 +29,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'vehicles/:id',
+    loadComponent: () =>
+      import('./features/vehicles/pages/vehicle-detail-page.component').then(
+        (m) => m.VehicleDetailPageComponent,
+      ),
+  },
+  {
     path: 'bookings/customers',
     loadComponent: () =>
       import('./features/bookings/pages/customers-page.component').then(
@@ -40,13 +47,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/bookings/pages/bookings-page.component').then(
         (m) => m.BookingsPageComponent,
-      ),
-  },
-  {
-    path: 'maintenance',
-    loadComponent: () =>
-      import('./features/maintenance/pages/maintenance-page.component').then(
-        (m) => m.MaintenancePageComponent,
       ),
   },
   {
