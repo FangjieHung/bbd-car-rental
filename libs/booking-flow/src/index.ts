@@ -8,3 +8,4 @@ export * from './lib/date-range';
 export * from './lib/quote.service';
 export * from './lib/booking-context';
 export * from './lib/components/order-summary-card.component';
+export * from './lib/components/search-criteria-bar.component';
