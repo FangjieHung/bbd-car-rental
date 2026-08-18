@@ -1,7 +1,12 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'book', pathMatch: 'full' },
+  { path: '', redirectTo: 'search', pathMatch: 'full' },
+  {
+    path: 'search',
+    loadComponent: () =>
+      import('@car-rental/booking-flow').then((m) => m.SearchPageComponent),
+  },
   {
     path: 'book',
     loadComponent: () =>

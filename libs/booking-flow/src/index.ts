@@ -9,3 +9,4 @@ export * from './lib/quote.service';
 export * from './lib/booking-context';
 export * from './lib/components/order-summary-card.component';
 export * from './lib/components/search-criteria-bar.component';
+export * from './lib/pages/search-page.component';

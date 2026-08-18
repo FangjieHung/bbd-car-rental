@@ -1,0 +1,23 @@
+<div class="search-page">
+  @if (partner(); as p) {
+    <div class="partner-banner">{{ p.name }} 專屬預約</div>
+  }
+  <h1>租車預約</h1>
+
+  <section class="date-section">
+    <app-date-step
+      [dateRange]="dateRange()"
+      (dateRangeChange)="onDateRangeChange($event)"
+    ></app-date-step>
+  </section>
+
+  <section class="vehicle-section">
+    <app-vehicle-step
+      [vehicles]="availableVehicles()"
+      [selectedVehicle]="selectedVehicle()"
+      [priceForVehicle]="priceForVehicle"
+      [days]="days()"
+      (vehicleSelect)="onVehicleSelect($event)"
+    ></app-vehicle-step>
+  </section>
+</div>
