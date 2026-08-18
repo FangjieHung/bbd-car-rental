@@ -10,11 +10,8 @@ import { VehicleStepComponent } from './steps/vehicle-step.component';
 import { AddonStepComponent } from './steps/addon-step.component';
 import { CouponStepComponent } from './steps/coupon-step.component';
 import { ConfirmFormValue, ConfirmStepComponent } from './steps/confirm-step.component';
-
-export interface DateRange {
-  startDateTime: string;
-  endDateTime: string;
-}
+import { DateRange } from './date-range';
+export type { DateRange };
 
 @Component({
   selector: 'app-booking-flow',
