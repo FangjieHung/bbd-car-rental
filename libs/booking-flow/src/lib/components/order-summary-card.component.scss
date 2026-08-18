@@ -35,6 +35,16 @@
       border-top: 1px solid rgba(0, 0, 0, 0.12);
       margin-top: 8px;
       padding-top: 8px;
+
+      // 窄螢幕時整張卡片會在自己的容器內捲動（見 order-page 的 .checkout-aside）。
+      // 明細可以捲走，但應付總計必須始終看得見 —— 那是這張卡片存在的理由。
+      @media (max-width: 899.98px) {
+        position: sticky;
+        bottom: 0;
+        margin-top: 0;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        background: var(--mat-sys-surface-container-highest, #fff);
+      }
     }
   }
 }
