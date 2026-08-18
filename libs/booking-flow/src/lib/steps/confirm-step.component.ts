@@ -34,8 +34,6 @@ export class ConfirmStepComponent {
   @Input() priceBreakdown: PriceBreakdown | null = null;
   @Input() submitting = false;
   @Input() submitError = '';
-  /** 暫時性：下單頁改用 app-order-summary-card 顯示摘要，此開關在舊 stepper 移除後一併刪除 */
-  @Input() showSummary = true;
   @Output() confirm = new EventEmitter<ConfirmFormValue>();
 
   protected readonly paymentMethodLabel = PAYMENT_METHOD_LABEL;
