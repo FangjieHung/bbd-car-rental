@@ -196,4 +196,26 @@ describe('CatalogStore', () => {
     expect(b.priceBreakdown?.partnerDiscount).toBeGreaterThan(0);
     expect(b.priceBreakdown!.total).toBeLessThan(withoutPartner.total);
   });
+
+  it('markBookingPaid 把待付款訂單轉為已確認，查無訂單則丟錯', () => {
+    const store = setup();
+    const booking = store.submitBooking({
+      vehicleId: 'v1',
+      startTime: '2026-08-20T10:00:00',
+      endTime: '2026-08-23T10:00:00',
+      pickupLocation: '馬公',
+      returnLocation: '馬公',
+      customer: { name: '王小明', phone: '0912345678', email: 'a@b.c' },
+      category: 'scooter',
+      startDate: '2026-08-20',
+      endDate: '2026-08-23',
+      addOns: [],
+      paymentMethod: 'credit_card',
+    });
+    expect(booking.status).toBe('pending_payment');
+
+    const paid = store.markBookingPaid(booking.id);
+    expect(paid.status).toBe('confirmed');
+    expect(() => store.markBookingPaid('nope')).toThrow('查無訂單');
+  });
 });

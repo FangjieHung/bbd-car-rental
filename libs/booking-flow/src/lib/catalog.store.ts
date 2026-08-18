@@ -133,4 +133,11 @@ export class CatalogStore {
     this.bookingRepo.create(booking);
     return booking;
   }
+
+  /** 付款成功後呼叫。目前由佔位付款頁觸發，日後改由金流回調觸發。 */
+  markBookingPaid(bookingId: string): RentalBooking {
+    const booking = this.bookingRepo.getById(bookingId);
+    if (!booking) throw new Error('查無訂單');
+    return this.bookingRepo.update(bookingId, { status: 'confirmed' });
+  }
 }

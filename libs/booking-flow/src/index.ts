@@ -11,3 +11,4 @@ export * from './lib/components/order-summary-card.component';
 export * from './lib/components/search-criteria-bar.component';
 export * from './lib/pages/search-page.component';
 export * from './lib/pages/order-page.component';
+export * from './lib/pages/payment-page.component';

@@ -1,0 +1,27 @@
+<div class="payment-page">
+  <h1>付款</h1>
+
+  @if (booking(); as b) {
+    <div class="pay-summary">
+      <div class="line"><span>訂單編號</span><span>{{ b.id }}</span></div>
+      <div class="line"><span>付款方式</span><span>{{ paymentMethodLabel() }}</span></div>
+      <div class="line total"><span>應付金額</span><span>NT$ {{ amount() }}</span></div>
+    </div>
+
+    @if (payError()) {
+      <p class="pay-error">{{ payError() }}</p>
+    }
+
+    <div class="actions">
+      <button mat-flat-button color="primary" [disabled]="paying()" (click)="onPaySuccess()">
+        模擬付款成功
+      </button>
+      <button mat-stroked-button [disabled]="paying()" (click)="onPayFailure()">
+        模擬付款失敗
+      </button>
+    </div>
+    <p class="placeholder-note">此為佔位付款頁，尚未串接金流。</p>
+  } @else {
+    <p>查無此訂單。</p>
+  }
+</div>

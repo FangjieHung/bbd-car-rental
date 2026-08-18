@@ -18,7 +18,13 @@ export const routes: Routes = [
       import('@car-rental/booking-flow').then((m) => m.BookingFlowComponent),
   },
   {
-    path: 'book/done/:id',
+    path: 'pay/:bookingId',
+    loadComponent: () =>
+      import('@car-rental/booking-flow').then((m) => m.PaymentPageComponent),
+  },
+  {
+    path: 'done/:id',
     loadComponent: () => import('@car-rental/booking-flow').then((m) => m.DoneComponent),
   },
+  { path: 'book/done/:id', redirectTo: 'done/:id' },
 ];

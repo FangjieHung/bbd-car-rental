@@ -2,5 +2,5 @@
   <h1>訂單成立</h1>
   <p>您的訂單已成立，狀態為「待付款/待人工確認」，我們將盡快為您處理。</p>
   <p class="booking-id">訂單編號：{{ bookingId() }}</p>
-  <a routerLink="/book">返回首頁</a>
+  <a [routerLink]="homeLink()">返回首頁</a>
 </div>
