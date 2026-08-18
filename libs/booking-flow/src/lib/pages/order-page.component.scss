@@ -10,6 +10,25 @@
     margin-top: 2rem;
   }
 
+  // 窄螢幕：running-total 卡片固定於視窗底部，且限制高度避免蓋住表單。
+  @media (max-width: 899.98px) {
+    .checkout-main {
+      padding-bottom: 40vh;
+    }
+
+    .checkout-aside {
+      position: fixed;
+      inset: auto 0 0 0;
+      max-height: 40vh;
+      overflow-y: auto;
+      z-index: 20;
+      background: var(--mat-sys-surface-container-highest, #fff);
+      border-top: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+      box-shadow: var(--mat-sys-level2, 0 -2px 8px rgba(0, 0, 0, 0.12));
+      padding: 0 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
   @media (min-width: 900px) {
     .checkout-layout {
       grid-template-columns: minmax(0, 1fr) 20rem;

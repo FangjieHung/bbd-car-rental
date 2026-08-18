@@ -1,7 +1,10 @@
 .order-summary-card {
-  position: sticky;
-  top: 1rem;
   align-self: start;
+
+  @media (min-width: 900px) {
+    position: sticky;
+    top: 1rem;
+  }
 
   .summary-block {
     margin-bottom: 16px;
