@@ -1,0 +1,19 @@
+.order-page {
+  .checkout-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+  }
+
+  .checkout-main section + section {
+    margin-top: 2rem;
+  }
+
+  @media (min-width: 900px) {
+    .checkout-layout {
+      grid-template-columns: minmax(0, 1fr) 20rem;
+      align-items: start;
+    }
+  }
+}

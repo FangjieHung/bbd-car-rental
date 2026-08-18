@@ -1,0 +1,60 @@
+<div class="order-page">
+  @if (partner(); as p) {
+    <div class="partner-banner">{{ p.name }} 專屬預約</div>
+  }
+  <h1>填寫訂單</h1>
+
+  <app-search-criteria-bar
+    [startDate]="startDate()"
+    [endDate]="endDate()"
+    [days]="days()"
+    (edit)="goToSearch()"
+  ></app-search-criteria-bar>
+
+  <div class="checkout-layout">
+    <div class="checkout-main">
+      <section>
+        <h2>加購配件</h2>
+        <app-addon-step
+          [addOns]="addOns()"
+          [addOnQty]="addOnQty()"
+          (addOnQtyChange)="onAddOnQtyChange($event.addOnId, $event.qty)"
+        ></app-addon-step>
+      </section>
+
+      <section>
+        <h2>優惠券</h2>
+        <app-coupon-step
+          [couponCode]="couponCode()"
+          [couponResult]="couponResult()"
+          [priceBreakdown]="priceBreakdown()"
+          (couponCodeChange)="onCouponCodeChange($event)"
+        ></app-coupon-step>
+      </section>
+
+      <section>
+        <app-confirm-step
+          [vehicle]="vehicle()"
+          [startDate]="startDate()"
+          [endDate]="endDate()"
+          [selectedAddOnLines]="selectedAddOnLines()"
+          [priceBreakdown]="priceBreakdown()"
+          [submitting]="submitting()"
+          [submitError]="submitError()"
+          [showSummary]="false"
+          (confirm)="onConfirmSubmit($event)"
+        ></app-confirm-step>
+      </section>
+    </div>
+
+    <aside class="checkout-aside">
+      <app-order-summary-card
+        [vehicle]="vehicle()"
+        [startDate]="startDate()"
+        [endDate]="endDate()"
+        [selectedAddOnLines]="selectedAddOnLines()"
+        [priceBreakdown]="priceBreakdown()"
+      ></app-order-summary-card>
+    </aside>
+  </div>
+</div>

@@ -8,6 +8,11 @@ export const routes: Routes = [
       import('@car-rental/booking-flow').then((m) => m.SearchPageComponent),
   },
   {
+    path: 'order/:vehicleId',
+    loadComponent: () =>
+      import('@car-rental/booking-flow').then((m) => m.OrderPageComponent),
+  },
+  {
     path: 'book',
     loadComponent: () =>
       import('@car-rental/booking-flow').then((m) => m.BookingFlowComponent),
