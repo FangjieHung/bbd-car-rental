@@ -1,14 +1,22 @@
 <div class="date-step">
-  
-  <div class="fields">
-    <app-dual-month-range-picker
-      [start]="startDate"
-      [end]="endDate"
-      (rangeSelected)="onRangeSelected($event)"
-    ></app-dual-month-range-picker>
+  <mat-form-field appearance="fill" class="md:max-w-42">
+    <mat-label>車輛類型</mat-label>
+    <mat-select [ngModel]="vehicleGroup" (ngModelChange)="onVehicleGroupChange($event)">
+      @for (group of vehicleGroups; track group.value) {
+        <mat-option [value]="group.value">{{ group.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
 
-<div class="ui-field-group">
-      <mat-form-field appearance="fill">
+  <app-dual-month-range-picker
+    [start]="startDate"
+    [end]="endDate"
+    (rangeSelected)="onRangeSelected($event)"
+    class="min-w-80 xl:max-w-80"
+  ></app-dual-month-range-picker>
+
+  <div class="ui-field-group xl:max-w-82">
+    <mat-form-field appearance="fill">
       <mat-label>取車時間</mat-label>
       <input matInput [matTimepicker]="startPicker" [(ngModel)]="startTime" />
       <mat-timepicker-toggle matSuffix [for]="startPicker" aria-label="開啟取車時間選擇器" />
@@ -21,33 +29,11 @@
       <mat-timepicker-toggle matSuffix [for]="endPicker" aria-label="開啟還車時間選擇器" />
       <mat-timepicker #endPicker />
     </mat-form-field>
-</div>
-
-<div class="ui-field-group">
-      <mat-form-field appearance="fill">
-      <mat-label>取車地點</mat-label>
-      <mat-select [ngModel]="pickupLocation" (ngModelChange)="onPickupLocationChange($event)">
-        @for (location of locations; track location) {
-          <mat-option [value]="location">{{ location }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="fill">
-      <mat-label>還車地點</mat-label>
-      <mat-select [ngModel]="returnLocation" (ngModelChange)="onReturnLocationChange($event)">
-        @for (location of locations; track location) {
-          <mat-option [value]="location">{{ location }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-</div>
   </div>
 
-  <div class="actions">
-    <button mat-flat-button color="primary" [disabled]="!isValid" (click)="confirm()">
+  <div class="actions w-full xl:w-fit">
+    <button matButton="filled" class="min-h-14 w-full xl:w-auto" [disabled]="!isValid" (click)="confirm()">
       <span class="material-symbols-rounded" aria-hidden="true">search</span>
-      確認租期
     </button>
   </div>
 </div>

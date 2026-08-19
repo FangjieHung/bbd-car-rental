@@ -2,7 +2,7 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
-import { AddOn, Coupon, PriceBreakdown, Vehicle } from '@car-rental/domain';
+import { AddOn, Coupon, PriceBreakdown, Vehicle, VehicleCategory } from '@car-rental/domain';
 import { CatalogStore } from './catalog.store';
 import { FlowMode } from './flow-mode';
 import { DateStepComponent } from './steps/date-step.component';
@@ -11,9 +11,21 @@ import { AddonStepComponent } from './steps/addon-step.component';
 import { CouponStepComponent } from './steps/coupon-step.component';
 import { ConfirmFormValue, ConfirmStepComponent } from './steps/confirm-step.component';
 
+/** 車輛大類：對客顯示只分機車/汽車，實際車輛分類（含 ev 電動機車）再往下對應 */
+export type VehicleGroup = 'car' | 'scooter';
+
+export const VEHICLE_GROUP_CATEGORIES: Record<VehicleGroup, VehicleCategory[]> = {
+  car: ['car'],
+  scooter: ['scooter', 'ev'],
+};
+
 export interface DateRange {
   startDateTime: string;
   endDateTime: string;
+  pickupLocation: string;
+  returnLocation: string;
+  /** 預設汽車；缺省時視為不篩選（相容舊資料） */
+  vehicleGroup?: VehicleGroup;
 }
 
 @Component({
@@ -57,7 +69,10 @@ export class BookingFlowComponent {
   readonly availableVehicles = computed<Vehicle[]>(() => {
     const range = this.dateRange();
     if (!range) return [];
-    return this.catalog.availableVehicles(range.startDateTime, range.endDateTime);
+    const vehicles = this.catalog.availableVehicles(range.startDateTime, range.endDateTime);
+    if (!range.vehicleGroup) return vehicles;
+    const categories = VEHICLE_GROUP_CATEGORIES[range.vehicleGroup];
+    return vehicles.filter((v) => categories.includes(v.category));
   });
 
   readonly addOns = computed<AddOn[]>(() => this.catalog.addOns());
@@ -150,8 +165,8 @@ export class BookingFlowComponent {
         vehicleId: vehicle.id,
         startTime: range.startDateTime,
         endTime: range.endDateTime,
-        pickupLocation: '馬公',
-        returnLocation: '馬公',
+        pickupLocation: range.pickupLocation,
+        returnLocation: range.returnLocation,
         customer: { name: form.name, phone: form.phone, email: form.email },
         category: vehicle.category,
         startDate: this.startDate(),
