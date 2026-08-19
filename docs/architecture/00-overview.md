@@ -6,6 +6,7 @@
 - [`01-apps.md`](./01-apps.md) — 每個 app 對應誰在用、有哪些頁面
 - [`02-libs.md`](./02-libs.md) — `libs/` 底下共用了什麼、被誰用
 - [`03-pricing-and-commission.md`](./03-pricing-and-commission.md) — 定價與退佣的業務邏輯公式
+- [`04-booking-flow.md`](./04-booking-flow.md) — 預約流程四個路由頁的設計決策與接金流指南
 
 ## 這是什麼系統
 
@@ -25,7 +26,7 @@ apps/
 
 libs/
   domain/         # 全系統共用的 model、Repository 介面、定價/退佣純函式、seed 資料
-  booking-flow/   # 五步預約流程元件 + CatalogStore，booking 和 affiliate 都用它
+  booking-flow/   # 預約流程四個路由頁 + CatalogStore/QuoteService，booking 和 affiliate 都用它
   theme-pack/     # 雙軸主題系統（質地 × 配色），目前只有 admin 套用
 ```
 
@@ -59,9 +60,9 @@ flowchart LR
     F -->|"sourcePartnerId 有值"| H["affiliate /p/:slug/account\n民宿自己看對帳"]
 ```
 
-三個下單管道底層共用同一個 `libs/booking-flow`（見 `02-libs.md`），差別只在
-`FlowMode`（`consumer` vs `partner`）：partner 模式會套民宿的協議折扣、
-訂單多記一個 `sourcePartnerId`。
+booking 與 affiliate 底層共用同一個 `libs/booking-flow`（見 `02-libs.md`），差別靠
+`BOOKING_CONTEXT` injection token 注入——affiliate 提供夥伴身分（套協議折扣、訂單多記
+`sourcePartnerId`），booking 吃 consumer 預設值。細節見 `04-booking-flow.md`。
 
 ## 已知限制：目前是純前端 mock，三站資料不互通
 

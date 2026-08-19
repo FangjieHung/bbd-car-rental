@@ -64,48 +64,49 @@ key 統一 `cr.` 前綴（如 `cr.vehicles`、`cr.partners`）。**這是換真�
 | `isVehicleAvailable()` | `availability/is-vehicle-available.ts` | 某車在某時段是否可租（狀態 + 時間重疊） |
 | `rangesOverlap()` | `availability/ranges-overlap.ts` | 兩個時間區間是否重疊（前單 end === 後單 start 視為不重疊，可無縫接續） |
 
-## libs/booking-flow — 共用的五步預約流程
+## libs/booking-flow — 共用的預約流程
 
 別名 `@car-rental/booking-flow`。這是**booking 和 affiliate 共用同一套 UI**的地方——
-兩個 app 的「預約流程」長得一模一樣，只是套用的情境（`FlowMode`）不同。
+兩個 app 的「預約流程」長得一模一樣，只是套用的情境不同。流程本身是四個獨立路由頁
+（搜尋 → 下單 → 付款 → 完成），不是單一元件裡的精靈步驟；完整設計決策見
+[`04-booking-flow.md`](./04-booking-flow.md)，這裡只列這個 lib 裝了什麼、誰在用。
 
 ```
 libs/booking-flow/src/lib/
-  booking-flow.component.ts   # 流程容器，五個 MatStepper 步驟
-  catalog.store.ts            # CatalogStore：算價、驗優惠券、送出訂單
-  flow-mode.ts                # FlowMode 型別（模組二新增）
-  steps/
-    date-step        # 1. 選租期
-    vehicle-step      # 2. 選車款
-    addon-step         # 3. 選配件
-    coupon-step        # 4. 輸入優惠券
-    confirm-step        # 5. 填資料確認送出
-    done                 # 送出後的完成頁
+  pages/               # 四個路由頁：search / order / payment
+  components/          # 頁面用的展示元件：order-summary-card、search-criteria-bar
+  steps/               # 被頁面組合的展示元件（date-step、vehicle-step、addon-step、
+                        # coupon-step、confirm-step），以及 done（完成頁，實際是路由頁）
+  booking-context.ts    # BOOKING_CONTEXT：夥伴身分與導頁前綴
+  quote.service.ts      # QuoteService：報價計算
+  catalog.store.ts      # CatalogStore：資料存取與訂單寫入
+  date-range.ts         # DateRange 型別
 ```
 
-### FlowMode：consumer 與 partner 兩種情境
+**夥伴身分靠 `BOOKING_CONTEXT` injection token 注入**，不是 input：
 
 ```ts
-export type FlowMode =
-  | { kind: 'consumer' }
-  | { kind: 'partner'; partner: Partner };
+interface BookingContext {
+  partner: Signal<Partner | null>;   // 消費者情境恆為 null
+  basePath: Signal<string[]>;        // ['/'] 或 ['/p', slug]
+}
 ```
 
-`BookingFlowComponent` 用 `mode = input<FlowMode>({ kind: 'consumer' })` 接這個情境，
-**預設值是 consumer**，所以 booking app 不用特別傳、行為跟模組二之前完全一致。
-affiliate 的 `PartnerBookingComponent` 找到 `Partner` 後傳 `{ kind: 'partner', partner }`：
+booking app 不提供，吃 root 預設值（consumer）；affiliate 的 `PartnerShellComponent`
+在元件層 `providers` 提供夥伴版本，讓子路由的四個頁面都能讀到 `Partner` 與正確的導頁前綴。
 
-- 頁首多顯示民宿名稱。
-- 呼叫 `CatalogStore.price()`/`submitBooking()` 時多帶 `partnerDiscountPercent`
-  （= `partner.discountPercent`），套進 `calculatePrice()` 的協議折扣。
-- 送出的訂單多帶 `sourcePartnerId = partner.id`。
-- 優惠券步驟兩種模式都保留——協議折扣跟消費者優惠券可以疊加使用。
-
-`CatalogStore`（`catalog.store.ts`）是這個 lib 唯一的 Store，職責：
+**`QuoteService` 與 `CatalogStore` 分工**：`QuoteService`（`quote.service.ts`）是唯一算價
+入口，搜尋頁與下單頁都靠它試算，內部包一層 `CatalogStore.price()`；`CatalogStore`
+（`catalog.store.ts`）負責資料存取與寫入，職責：
 - `price()` — 包一層呼叫 `calculatePrice()`（domain 純函式）
 - `validateCoupon()` — 查優惠券是否存在、是否符合條件
 - `submitBooking()` — 檢查車輛可租用（`isVehicleAvailable()`）→ 算價 → 建 `Customer` →
   寫入 `pending_payment` 訂單
+- `markBookingPaid()` — 付款成功後把訂單從 `pending_payment` 轉為 `confirmed`，
+  其他狀態一律丟例外
+
+`admin` 也直接引用這個 lib 的 `DateStepComponent`、`VehicleStepComponent`、`DateRange`
+（分別用在 dashboard 與選車 dialog），所以改這三者的 input/output 會同時影響 admin。
 
 ## libs/theme-pack — 雙軸主題系統（只有 admin 套用）
 

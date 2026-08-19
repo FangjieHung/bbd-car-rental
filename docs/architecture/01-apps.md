@@ -33,13 +33,17 @@ admin 是唯一同時 provide 全部 Repository token 的 app（`apps/admin/src/
 
 路由（`apps/booking/src/app/app.routes.ts`）：
 
-| 路徑 | 說明 |
+| 路徑 | 頁面 |
 |---|---|
-| `/book` | 五步預約流程（`@car-rental/booking-flow` 的 `BookingFlowComponent`，`consumer` 模式，即不傳 `mode` 時的預設值） |
-| `/book/done/:id` | 送出完成頁（`DoneComponent`） |
+| `/search?start=&end=` | 搜尋（`SearchPageComponent`）：選租期＋選車 |
+| `/order/:vehicleId?start=&end=` | 下單（`OrderPageComponent`）：配件、優惠碼、填資料送出 |
+| `/pay/:bookingId` | 付款（`PaymentPageComponent`，目前是佔位，見 `04-booking-flow.md`） |
+| `/done/:id` | 完成頁（`DoneComponent`） |
+| `/book/done/:id` | redirect 到 `/done/:id`，接住重構前發出去的舊連結 |
 
-這個 app 本身幾乎沒有自己的業務邏輯——全部邏輯在 `libs/booking-flow`，booking 只是
-「以消費者身分」去消費它，並提供六個共用 Repository 的 provider。
+這四頁都來自 `@car-rental/booking-flow`。這個 app 本身幾乎沒有自己的業務邏輯——
+全部邏輯在 `libs/booking-flow`，booking 只是不提供 `BOOKING_CONTEXT`，吃 lib 內建的
+consumer 預設值去消費它，並提供六個共用 Repository 的 provider。
 
 ## affiliate — 民宿代訂＋對帳站（模組二新增）
 
@@ -52,9 +56,10 @@ admin 是唯一同時 provide 全部 Repository token 的 app（`apps/admin/src/
 | 路徑 | 頁面 | 功能 |
 |---|---|---|
 | `/` | 首頁 | 純說明頁 |
-| `/p/:slug` | 代訂頁 | 用網址的 `slug` 從 `PARTNER_REPO` 查 `Partner`；找不到顯示「連結無效」。找到則以 `partner` 模式渲染 `BookingFlowComponent`——頁首顯示民宿名、自動套協議折扣、送出訂單帶 `sourcePartnerId` |
-| `/p/:slug/account` | 對帳頁 | 列出 `sourcePartnerId === partner.id` 的訂單、逐筆退佣金額、累計、各月撥款進度 |
-| `/book/done/:id` | 完成頁 | `BookingFlowComponent` 送出後固定導到這個路徑（見 `libs/booking-flow/src/lib/booking-flow.component.ts`），affiliate 一定要提供這條路由，否則送單後會 404 |
+| `/p/:slug/account` | 對帳頁 | 列出 `sourcePartnerId === partner.id` 的訂單、逐筆退佣金額、累計、各月撥款進度。**必須宣告在 `/p/:slug` 之前**，否則 `account` 會被 `/p/:slug` 的子路由當成 `:slug` 值吃掉 |
+| `/p/:slug` | 夥伴 shell（`PartnerShellComponent`） | 用網址的 `slug` 從 `PARTNER_REPO` 查 `Partner`，provide 夥伴版的 `BOOKING_CONTEXT`；找不到對應 `Partner` 顯示「連結無效」，否則渲染 `<router-outlet>` |
+| `/p/:slug`（children） | 代訂四頁 | `search` / `order/:vehicleId` / `pay/:bookingId` / `done/:id`，即 `@car-rental/booking-flow` 的四個路由頁，繼承 shell 提供的夥伴情境——頁首顯示民宿名、自動套協議折扣、送出訂單帶 `sourcePartnerId`。空路徑 redirect 到 `search` |
+| `/book/done/:id` | redirect 到 `/` | 接住重構前的舊連結；舊路徑不帶 `slug`，無法對應到特定夥伴的完成頁，所以導回首頁而非某個 `done` 頁 |
 
 对帳頁邏輯在 `apps/affiliate/src/app/stores/partner-account.store.ts`
 （`PartnerAccountStore`），詳細計算方式見 `03-pricing-and-commission.md`。
