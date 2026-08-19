@@ -24,6 +24,16 @@
           </button>
           <span class="month-label">{{ monthLabel(leftMonth) }}</span>
           <span class="head-spacer"></span>
+          <!-- 窄螢幕只顯示一個月，下個月鈕在第二個月份面板裡會一起被隱藏，故在此補一顆 -->
+          <button
+            type="button"
+            mat-icon-button
+            class="nav-next-compact"
+            (click)="goNext()"
+            aria-label="下個月"
+          >
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+          </button>
         </div>
         <mat-calendar
           #leftCal
