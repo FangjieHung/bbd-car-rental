@@ -24,7 +24,7 @@
   font-weight: 500;
   color: var(--mat-sys-on-surface);
 
-  @varient md {
+  @variant min-[768px] {
     font-size: 2rem;
   }
 }

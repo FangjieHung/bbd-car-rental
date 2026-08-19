@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  height: 100%;
 
   @variant min-[1024px] {
     @variant landscape {
@@ -12,21 +13,25 @@
 }
 
 .split-view__panel {
-  overflow: hidden;
+  height: 100%;
+  overflow: auto;
   width: 0;
-  border-width: 0;
 
   @variant min-[1024px] {
     @variant landscape {
       flex: 0 1 clamp(320px, 32vw, 480px);
-      border-width: 1px;
+      border-left: 1px solid var(--mat-sys-outline-variant);
       width: auto;
     }
   }
 }
 
+.calendar-view {
+  height: 100%;
+}
+
 .calendar-view__header {
-  @apply flex items-center justify-between;
+  @apply flex items-center justify-between min-h-fit;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
 }
@@ -36,6 +41,9 @@
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  // 第一列是星期標題，照內容高度；日期列（隱含列）才平分剩餘空間。
+  grid-template-rows: auto;
+  grid-auto-rows: minmax(0, 1fr);
   gap: 1px;
   overflow: hidden;
   background: var(--mat-sys-outline-variant);
@@ -74,6 +82,32 @@
   gap: 0.25rem;
   padding: 0.05rem 0.4rem;
   font-size: 0.6875rem;
+}
+
+// vehicle-step 的三欄卡片版型是給 720px+ 內容寬設計的；side panel 只有 320–480px，
+// 靠 viewport media query 判斷不出這裡是窄容器，需強制改用堆疊版型。
+// 注意：::ng-deep 之後的選擇器不會帶 Angular 的 encapsulation 屬性，
+// 特異度會輸給 vehicle-step 元件自己的 `.vehicle-step[attr] .vehicle-card[attr]`，
+// 因此這裡把 host class 重複一次來拉高特異度。
+.calendar-view__vehicle-step.calendar-view__vehicle-step {
+  ::ng-deep .vehicle-step .vehicle-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  ::ng-deep .v-price {
+    grid-column: 1 / -1;
+    grid-template-rows: auto auto;
+    padding-left: 0;
+    padding-top: 12px;
+    border-left: none;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    text-align: left;
+  }
+
+  ::ng-deep .v-supplier {
+    text-align: right;
+  }
 }
 
 .calendar-view__relative-chip {

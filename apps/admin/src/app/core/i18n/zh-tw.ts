@@ -103,7 +103,6 @@ export const ZH_TW = {
     invalidTransition: '訂單狀態不允許此操作',
     notPending: '僅待付款訂單可確認收款',
     goCustomers: '客戶管理',
-    quickPick: '快速查詢可租車輛',
     pickVehicle: '選擇車輛',
     noVehicleAvailable: '此租期沒有可租車輛',
     pickedResult: '已選車輛',

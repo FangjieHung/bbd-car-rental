@@ -35,6 +35,14 @@
 // The built-in calendar header carries its own month label and prev/next arrows;
 // navigation is centralised in `.month-head`, so hide it. Reaching into the
 // calendar's own template requires piercing encapsulation.
-.dual-calendar-panel ::ng-deep .mat-calendar-header {
-  display: none;
+.dual-calendar-panel ::ng-deep {
+
+  .mat-calendar-header {
+    display: none;
+  }
+  
+  .mat-calendar-body-label {
+    opacity: 0;
+  }
 }
+
