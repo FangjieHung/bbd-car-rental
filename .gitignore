@@ -52,3 +52,7 @@ Thumbs.db
 
 # Git worktrees (superpowers:using-git-worktrees)
 .worktrees/
+
+# Local agent tooling artifacts
+.claude/
+.playwright-mcp/
