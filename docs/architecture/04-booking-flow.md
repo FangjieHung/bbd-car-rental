@@ -22,8 +22,17 @@
 | 完成 | `/done/:id` | `/p/:slug/done/:id` |
 
 `pickup`／`return` 是取車／還車地點，`group` 是車輛大類（`car`／`scooter`，缺省不篩選）。
-`start`／`end`／`pickup`／`return` 四者缺一，該頁就視為租期不成立（`dateRange` 回傳 `null`），
-車輛清單淨空或導回搜尋頁重來 —— 與原本只看 `start`／`end` 的判斷邏輯一致，只是條件擴大了。
+
+**兩個頁面對缺參數的寬鬆度刻意不同**：
+
+- **搜尋頁寬容** —— 只要有 `start`／`end` 就成立，地點缺省時退回預設值（`DEFAULT_LOCATION`，
+  與 `date-step` 自己的預設一致）。這讓加入地點欄位之前發出的連結仍然可用，使用者在畫面上
+  就能改地點。若這裡也要求四者齊全，舊連結會連日期一起消失。
+- **訂單頁嚴格** —— 地點缺一就導回搜尋頁，不替使用者猜。那一頁即將寫入跟金額與履約有關的
+  訂單資料，預設一個使用者沒選過的取車地點是不能接受的。
+
+`group` 來自使用者可編輯的網址字串，一律經 `toVehicleGroup()` 驗證；不認得的值當成未指定
+而非拿去查表，否則 `/search?group=truck` 會讓整頁渲染失敗。
 
 `booking` 另有 `/book/done/:id → /done/:id` 的 redirect，接住重構前發出去的舊連結。
 `affiliate` 的 `/p/:slug` 本身 redirect 到 `/p/:slug/search`。

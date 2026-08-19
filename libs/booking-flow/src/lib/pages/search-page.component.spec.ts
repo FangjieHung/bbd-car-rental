@@ -103,13 +103,32 @@ describe('SearchPageComponent', () => {
     expect(component.priceForVehicle(makeVehicle())).toBeGreaterThan(0);
   });
 
-  it('缺取還地點時視為租期不成立，車輛清單為空', () => {
+  it('只帶日期的舊連結仍然可用：地點退回預設值，日期與車輛清單都保留', () => {
     const { component } = setup({
       start: '2026-08-20T10:00:00',
       end: '2026-08-23T10:00:00',
     });
-    expect(component.dateRange()).toBeNull();
-    expect(component.availableVehicles()).toEqual([]);
+    expect(component.dateRange()).toEqual({
+      startDateTime: '2026-08-20T10:00:00',
+      endDateTime: '2026-08-23T10:00:00',
+      pickupLocation: '機場',
+      returnLocation: '機場',
+      vehicleGroup: undefined,
+    });
+    expect(component.days()).toBe(3);
+    expect(component.availableVehicles()).toHaveLength(1);
+  });
+
+  it('網址帶入無效的車輛類型時視為未指定，不篩選也不炸掉', () => {
+    const { component } = setup({
+      start: '2026-08-20T10:00:00',
+      end: '2026-08-23T10:00:00',
+      pickup: '機場',
+      return: '機場',
+      group: 'truck',
+    });
+    expect(component.dateRange()?.vehicleGroup).toBeUndefined();
+    expect(component.availableVehicles()).toHaveLength(1);
   });
 
   it('日期變更寫回 query params 而不自行保存狀態', () => {

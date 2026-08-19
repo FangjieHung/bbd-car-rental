@@ -5,7 +5,12 @@ import { map } from 'rxjs';
 import { Vehicle } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
-import { DateRange, VEHICLE_GROUP_CATEGORIES, VehicleGroup } from '../date-range';
+import {
+  DateRange,
+  DEFAULT_LOCATION,
+  VEHICLE_GROUP_CATEGORIES,
+  toVehicleGroup,
+} from '../date-range';
 import { QuoteService } from '../quote.service';
 import { DateStepComponent } from '../steps/date-step.component';
 import { VehicleStepComponent } from '../steps/vehicle-step.component';
@@ -36,7 +41,7 @@ export class SearchPageComponent {
         end: p.get('end') ?? '',
         pickup: p.get('pickup') ?? '',
         return: p.get('return') ?? '',
-        group: (p.get('group') as VehicleGroup | null) ?? undefined,
+        group: toVehicleGroup(p.get('group')),
       })),
     ),
     { initialValue: { start: '', end: '', pickup: '', return: '', group: undefined } },
@@ -44,12 +49,14 @@ export class SearchPageComponent {
 
   readonly dateRange = computed<DateRange | null>(() => {
     const { start, end, pickup, return: returnLocation, group } = this.params();
-    if (!start || !end || !pickup || !returnLocation) return null;
+    if (!start || !end) return null;
+    // 地點缺省時（例如加了取還地點之前發出的連結）退回預設值，
+    // 讓舊連結的行為等同重新進站，而不是連日期都一起消失。
     return {
       startDateTime: start,
       endDateTime: end,
-      pickupLocation: pickup,
-      returnLocation,
+      pickupLocation: pickup || DEFAULT_LOCATION,
+      returnLocation: returnLocation || DEFAULT_LOCATION,
       vehicleGroup: group,
     };
   });

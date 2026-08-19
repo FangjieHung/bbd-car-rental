@@ -5,7 +5,7 @@ import { map } from 'rxjs';
 import { AddOn, PriceBreakdown, Vehicle, VEHICLE_REPO } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
-import { VehicleGroup } from '../date-range';
+import { toVehicleGroup } from '../date-range';
 import { CouponResult, QuoteService } from '../quote.service';
 import { OrderSummaryCardComponent } from '../components/order-summary-card.component';
 import { SearchCriteriaBarComponent } from '../components/search-criteria-bar.component';
@@ -50,7 +50,7 @@ export class OrderPageComponent {
         end: p.get('end') ?? '',
         pickup: p.get('pickup') ?? '',
         return: p.get('return') ?? '',
-        group: (p.get('group') as VehicleGroup | null) ?? undefined,
+        group: toVehicleGroup(p.get('group')),
       })),
     ),
     { initialValue: { start: '', end: '', pickup: '', return: '', group: undefined } },

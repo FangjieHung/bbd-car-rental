@@ -5,11 +5,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTimepickerModule } from '@angular/material/timepicker';
-import { DateRange, VehicleGroup } from '../date-range';
+import { DateRange, DEFAULT_LOCATION, LOCATIONS, VehicleGroup } from '../date-range';
 import { DualMonthRangePickerComponent, SelectedDateRange } from './dual-month-range-picker.component';
-
-const LOCATIONS = ['機場', '港口', '店舖'] as const;
-const DEFAULT_LOCATION = '機場';
 
 const defaultTime = (hour: number): Date => {
   const date = new Date();
