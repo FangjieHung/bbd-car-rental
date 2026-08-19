@@ -148,18 +148,30 @@ export class CalendarViewComponent {
     return null;
   });
 
+  /** 自己 emit 出去、預期會由 targetDate 繞回來的日期；用來辨識 effect 收到的是不是回音。 */
+  private lastEmitted: number | null = null;
+
   constructor() {
     let isFirstRun = true;
     effect(() => {
       const date = startOfDay(this.targetDate());
+      // 只有「外部」指定的日期才自動把面板叫出來；自己 emit 繞回來的不算，
+      // 否則 goToToday 想保持面板收起也會被這裡覆蓋掉。
+      const isEcho = this.lastEmitted === date.getTime();
+      this.lastEmitted = null;
       this.month.set(new Date(date.getFullYear(), date.getMonth(), 1));
       this.selected.set(date);
       this.panelTab.set('pickup');
-      if (!isFirstRun) {
+      if (!isFirstRun && !isEcho) {
         this.panelDismissed.set(false);
       }
       isFirstRun = false;
     });
+  }
+
+  private emitSelection(date: Date): void {
+    this.lastEmitted = date.getTime();
+    this.dateSelected.emit(date);
   }
 
   shiftMonth(n: number): void {
@@ -168,10 +180,14 @@ export class CalendarViewComponent {
     this.selected.set(null);
   }
 
+  /** 只把格線定位／選取到今天，不叫出面板（窄螢幕面板是覆蓋式的，會擋住日曆）。 */
   goToToday(): void {
     const today = startOfDay(this.todayDate);
     this.month.set(new Date(today.getFullYear(), today.getMonth(), 1));
-    this.selectDate(today);
+    this.selected.set(today);
+    this.panelTab.set('pickup');
+    this.panelDismissed.set(true);
+    this.emitSelection(today);
   }
 
   dismissPanel(): void {
@@ -183,7 +199,7 @@ export class CalendarViewComponent {
     this.selected.set(normalized);
     this.panelDismissed.set(false);
     this.panelTab.set('pickup');
-    this.dateSelected.emit(normalized);
+    this.emitSelection(normalized);
   }
 
   statsOf(d: Date) {

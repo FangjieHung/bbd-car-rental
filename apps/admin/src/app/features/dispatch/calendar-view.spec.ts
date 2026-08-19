@@ -3,11 +3,20 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { CalendarViewComponent, dayStats } from './calendar-view/calendar-view.component';
-import { Customer, MaintenanceRecord, RentalBooking, Vehicle } from '../../core/models';
+import {
+  Customer,
+  MaintenanceRecord,
+  PricingPlan,
+  RentalBooking,
+  SeasonCalendar,
+  Vehicle,
+} from '../../core/models';
 import {
   BOOKING_REPO,
   CUSTOMER_REPO,
   MAINTENANCE_REPO,
+  PRICING_PLAN_REPO,
+  SEASON_CALENDAR_REPO,
   VEHICLE_REPO,
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
@@ -17,6 +26,17 @@ function provideBreakpoint(matches: boolean) {
     provide: BreakpointObserver,
     useValue: { observe: () => of({ matches, breakpoints: {} }) },
   };
+}
+
+// CalendarViewComponent 透過 priceForVehicle 用到 PricingStore，兩個 repo 都得備齊。
+function providePricing() {
+  return [
+    { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([]) },
+    {
+      provide: SEASON_CALENDAR_REPO,
+      useValue: createInMemoryRepo<SeasonCalendar>([{ id: 'cal', holidays: [], peakSeasons: [] }]),
+    },
+  ];
 }
 
 const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
@@ -77,6 +97,7 @@ describe('CalendarViewComponent supplied date', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -125,6 +146,7 @@ describe('CalendarViewComponent 面板開關（窄螢幕）', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -181,7 +203,7 @@ describe('CalendarViewComponent 面板開關（窄螢幕）', () => {
     expect(fixture.componentInstance.panelOpen()).toBe(false);
   });
 
-  it('goToToday 會跳回當月並選取當日，開啟面板', () => {
+  it('goToToday 會跳回當月並選取當日，但不叫出面板', () => {
     const today = new Date();
     fixture.componentInstance.shiftMonth(2);
     fixture.componentInstance.goToToday();
@@ -192,7 +214,16 @@ describe('CalendarViewComponent 面板開關（窄螢幕）', () => {
     expect(fixture.componentInstance.selected()).toEqual(
       new Date(today.getFullYear(), today.getMonth(), today.getDate()),
     );
+    expect(fixture.componentInstance.panelOpen()).toBe(false);
+  });
+
+  it('面板開著時按 goToToday 會把面板收起', () => {
+    fixture.componentInstance.selectDate(new Date(2026, 6, 10));
     expect(fixture.componentInstance.panelOpen()).toBe(true);
+
+    fixture.componentInstance.goToToday();
+
+    expect(fixture.componentInstance.panelOpen()).toBe(false);
   });
 
   it('panelHeading 依選取日期組字串；未選取時為空字串', () => {
@@ -222,6 +253,7 @@ describe('CalendarViewComponent 面板開關（寬螢幕 split view）', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -269,6 +301,7 @@ describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -333,6 +366,7 @@ describe('CalendarViewComponent 面板 DOM 行為（寬螢幕）', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -366,6 +400,7 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
     const date = new Date(2026, 7, 4);
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         {
           provide: VEHICLE_REPO,
           useValue: createInMemoryRepo<Vehicle>([
@@ -406,6 +441,7 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
     const date = new Date(2026, 7, 4);
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         {
           provide: BOOKING_REPO,

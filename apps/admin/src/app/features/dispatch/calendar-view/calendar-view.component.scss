@@ -7,7 +7,6 @@
   @variant min-[1024px] {
     @variant landscape {
       flex-direction: row;
-      gap: 1rem;
     }
   }
 }
@@ -59,11 +58,16 @@
 }
 
 .calendar-view__day--selected {
-  background: var(--app-positive-bg);
+  background: var(--mat-button-tonal-container-color, var(--mat-sys-secondary-container));
 }
 
 .calendar-view__day-number--today {
-  color: var(--mat-sys-primary);
+  @apply rounded-full flex items-center justify-center;
+  background-color: var(--mat-sys-primary);
+  height: 1.75rem;
+  width: 1.75rem;
+  border-radius: 10rem;
+  color: var(--mat-sys-on-primary);
 }
 
 .calendar-view__muted {
@@ -107,6 +111,10 @@
 
   ::ng-deep .v-supplier {
     text-align: right;
+  }
+
+  ::ng-deep .v-total {
+    display: none;
   }
 }
 
