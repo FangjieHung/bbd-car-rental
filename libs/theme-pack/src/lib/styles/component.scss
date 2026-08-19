@@ -16,4 +16,5 @@ body {
 .shell-container {
   @apply flex flex-col;
   height: calc(100svh - 16.5rem);
+  min-height: 100%;
 }
