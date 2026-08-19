@@ -82,7 +82,6 @@
             @if (isUnpriced(vehicle)) {
               <p class="v-amount v-amount--none">暫無定價</p>
             } @else {
-              <p class="v-price__label">最低價格</p>
               <p class="v-amount">
                 NT$ {{ dailyPrice(vehicle) | number }}<span class="v-unit">&nbsp;/ 天</span>
               </p>
