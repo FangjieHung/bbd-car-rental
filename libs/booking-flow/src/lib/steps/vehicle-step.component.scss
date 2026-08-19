@@ -76,6 +76,7 @@
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--mat-sys-primary);
+    white-space: nowrap;
   }
 
   .v-title {
@@ -143,6 +144,7 @@
   .v-badge {
     display: inline-flex;
     align-items: center;
+    flex-shrink: 0;
     margin-top: 2px;
     padding: 2px 8px;
     border-radius: 4px;
@@ -150,6 +152,7 @@
     color: var(--app-positive-fg, #1e7b40);
     font-size: 0.75rem;
     font-weight: 600;
+    white-space: nowrap;
   }
 
   .v-price {
@@ -161,13 +164,6 @@
     padding-left: 16px;
     border-left: 1px solid var(--mat-sys-outline-variant);
     text-align: right;
-  }
-
-  .v-supplier {
-    grid-column: 1 / -1;
-    margin: 0 0 4px;
-    font-size: 0.75rem;
-    color: var(--mat-sys-on-surface-variant);
   }
 
   .v-price__label {
@@ -250,10 +246,6 @@
       border-left: none;
       border-top: 1px solid var(--mat-sys-outline-variant);
       text-align: left;
-    }
-
-    .v-supplier {
-      text-align: right;
     }
   }
 }
