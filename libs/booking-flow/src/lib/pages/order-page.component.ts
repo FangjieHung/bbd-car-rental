@@ -5,6 +5,7 @@ import { map } from 'rxjs';
 import { AddOn, PriceBreakdown, Vehicle, VEHICLE_REPO } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
+import { VehicleGroup } from '../date-range';
 import { CouponResult, QuoteService } from '../quote.service';
 import { OrderSummaryCardComponent } from '../components/order-summary-card.component';
 import { SearchCriteriaBarComponent } from '../components/search-criteria-bar.component';
@@ -44,9 +45,15 @@ export class OrderPageComponent {
   );
   private readonly params = toSignal(
     this.route.queryParamMap.pipe(
-      map((p) => ({ start: p.get('start') ?? '', end: p.get('end') ?? '' })),
+      map((p) => ({
+        start: p.get('start') ?? '',
+        end: p.get('end') ?? '',
+        pickup: p.get('pickup') ?? '',
+        return: p.get('return') ?? '',
+        group: (p.get('group') as VehicleGroup | null) ?? undefined,
+      })),
     ),
-    { initialValue: { start: '', end: '' } },
+    { initialValue: { start: '', end: '', pickup: '', return: '', group: undefined } },
   );
 
   readonly vehicle = computed<Vehicle | null>(
@@ -54,6 +61,8 @@ export class OrderPageComponent {
   );
   readonly startDate = computed(() => this.params().start.slice(0, 10));
   readonly endDate = computed(() => this.params().end.slice(0, 10));
+  readonly pickupLocation = computed(() => this.params().pickup);
+  readonly returnLocation = computed(() => this.params().return);
   readonly days = computed(() => this.quote.daysBetween(this.startDate(), this.endDate()));
 
   readonly addOnQty = signal<Record<string, number>>({});
@@ -103,17 +112,28 @@ export class OrderPageComponent {
     this.ensureValidOrRedirect();
   });
 
-  /** 車或租期不成立就沒有可下單的內容，導回搜尋頁重來 */
+  /** 車、租期或取還地點不成立就沒有可下單的內容，導回搜尋頁重來 */
   ensureValidOrRedirect(): boolean {
-    if (this.vehicle() && this.startDate() && this.endDate()) return true;
+    if (
+      this.vehicle() &&
+      this.startDate() &&
+      this.endDate() &&
+      this.pickupLocation() &&
+      this.returnLocation()
+    ) {
+      return true;
+    }
     this.goToSearch();
     return false;
   }
 
   goToSearch(): void {
-    const { start, end } = this.params();
+    const { start, end, pickup, return: returnLocation, group } = this.params();
     this.router.navigate([...this.context.basePath(), 'search'], {
-      queryParams: start && end ? { start, end } : {},
+      queryParams:
+        start && end
+          ? { start, end, pickup, return: returnLocation, group: group ?? null }
+          : {},
     });
   }
 
@@ -128,7 +148,7 @@ export class OrderPageComponent {
   onConfirmSubmit(form: ConfirmFormValue): void {
     if (!this.ensureValidOrRedirect()) return;
     const vehicle = this.vehicle()!;
-    const { start, end } = this.params();
+    const { start, end, pickup, return: returnLocation } = this.params();
     this.submitting.set(true);
     this.submitError.set('');
     try {
@@ -137,8 +157,8 @@ export class OrderPageComponent {
         vehicleId: vehicle.id,
         startTime: start,
         endTime: end,
-        pickupLocation: '馬公',
-        returnLocation: '馬公',
+        pickupLocation: pickup,
+        returnLocation,
         customer: { name: form.name, phone: form.phone, email: form.email },
         category: vehicle.category,
         startDate: this.startDate(),

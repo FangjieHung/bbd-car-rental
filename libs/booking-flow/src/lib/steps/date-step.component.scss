@@ -1,21 +1,21 @@
 .date-step {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-width: 360px;
-  padding: 16px 0;
+  gap: 0 8px;
 
-  .time-row {
-    display: flex;
-    gap: 8px;
-
-    mat-form-field {
-      flex: 1;
-      min-width: 0;
-    }
+  app-dual-month-range-picker,
+  .ui-field-group,
+  mat-form-field {
+    @apply flex-auto;
   }
 
-  .actions {
-    margin-top: 8px;
+  @variant min-[768px] {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
+}
+
+.actions {
+  @apply flex justify-end;
+  margin-bottom: 1rem;
 }

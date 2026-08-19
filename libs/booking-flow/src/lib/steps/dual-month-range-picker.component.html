@@ -1,5 +1,5 @@
-<div cdkOverlayOrigin #origin="cdkOverlayOrigin">
-  <mat-form-field appearance="outline" (click)="open()">
+<div class="block w-full" cdkOverlayOrigin #origin="cdkOverlayOrigin">
+  <mat-form-field appearance="fill" (click)="open()" class="w-full">
     <mat-label>租期</mat-label>
     <input matInput readonly [value]="displayValue" [placeholder]="placeholder" />
     <span matIconSuffix class="material-symbols-rounded" aria-hidden="true">calendar_month</span>

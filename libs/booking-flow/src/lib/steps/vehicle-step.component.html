@@ -7,9 +7,12 @@
     @for (vehicle of vehicles; track vehicle.id) {
       <article
         class="vehicle-card"
+        role="button"
+        tabindex="0"
         [class.selected]="selectedVehicle?.id === vehicle.id"
         [class.unpriced]="isUnpriced(vehicle)"
         (click)="select(vehicle)"
+        (keydown.enter)="select(vehicle)"
       >
         <!-- 車輛照片 -->
         <div class="v-media">
@@ -75,13 +78,10 @@
 
         <!-- 價格區 -->
         <div class="v-price">
-          <p class="v-supplier">{{ vehicle.supplierCount ?? 1 }}個供應商</p>
-
           <div class="v-price__main">
             @if (isUnpriced(vehicle)) {
               <p class="v-amount v-amount--none">暫無定價</p>
             } @else {
-              <p class="v-price__label">最低價格</p>
               <p class="v-amount">
                 NT$ {{ dailyPrice(vehicle) | number }}<span class="v-unit">&nbsp;/ 天</span>
               </p>

@@ -16,10 +16,14 @@
 
 | | 消費者（`apps/booking`） | 民宿代訂（`apps/affiliate`） |
 |---|---|---|
-| 搜尋 | `/search?start=&end=` | `/p/:slug/search?start=&end=` |
-| 下單 | `/order/:vehicleId?start=&end=` | `/p/:slug/order/:vehicleId?start=&end=` |
+| 搜尋 | `/search?start=&end=&pickup=&return=&group=` | `/p/:slug/search?start=&end=&pickup=&return=&group=` |
+| 下單 | `/order/:vehicleId?start=&end=&pickup=&return=&group=` | `/p/:slug/order/:vehicleId?start=&end=&pickup=&return=&group=` |
 | 付款 | `/pay/:bookingId` | `/p/:slug/pay/:bookingId` |
 | 完成 | `/done/:id` | `/p/:slug/done/:id` |
+
+`pickup`／`return` 是取車／還車地點，`group` 是車輛大類（`car`／`scooter`，缺省不篩選）。
+`start`／`end`／`pickup`／`return` 四者缺一，該頁就視為租期不成立（`dateRange` 回傳 `null`），
+車輛清單淨空或導回搜尋頁重來 —— 與原本只看 `start`／`end` 的判斷邏輯一致，只是條件擴大了。
 
 `booking` 另有 `/book/done/:id → /done/:id` 的 redirect，接住重構前發出去的舊連結。
 `affiliate` 的 `/p/:slug` 本身 redirect 到 `/p/:slug/search`。
@@ -44,7 +48,7 @@ libs/booking-flow/src/lib/
   booking-context.ts            # BOOKING_CONTEXT：夥伴身分與導頁前綴
   quote.service.ts              # 所有報價計算
   catalog.store.ts              # 資料存取與訂單寫入
-  date-range.ts                 # DateRange 型別（admin 也在用）
+  date-range.ts                 # DateRange／VehicleGroup 型別（admin 也在用）
 ```
 
 ## 三個設計決定
@@ -57,6 +61,7 @@ libs/booking-flow/src/lib/
 | 資料 | 位置 | 重整後 |
 |---|---|---|
 | 取還日期 | query params | 保留 |
+| 取車／還車地點、車輛類型（機車/汽車） | query params | 保留 |
 | 選定車輛 | route param | 保留 |
 | 配件數量、優惠碼 | 下單頁元件內 signal | 遺失 |
 | 訂單 | `BOOKING_REPO`（localStorage） | 保留 |

@@ -6,14 +6,21 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { ResponsivePanelComponent } from '@car-rental/ui';
-import { RentalBooking, Vehicle } from '../../../core/models';
+import { VehicleStepComponent } from '@car-rental/booking-flow';
+import { RentalBooking, Vehicle, calculatePrice } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, fmtDateTime, isSameDay, startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { CustomerStore } from '../../../stores/customer/customer.store';
+import { PricingStore } from '../../../stores/pricing/pricing.store';
 
 const NARROW_QUERY = '(max-width: 1024px)';
+
+function toIsoDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 const ACTIVE: RentalBooking['status'][] = ['confirmed', 'in_progress'];
 
@@ -71,7 +78,13 @@ export function returnProgress(bookings: RentalBooking[], day: Date): DayProgres
 
 @Component({
   selector: 'app-calendar-view',
-  imports: [MatButtonModule, MatExpansionModule, MatTabsModule, ResponsivePanelComponent],
+  imports: [
+    MatButtonModule,
+    MatExpansionModule,
+    MatTabsModule,
+    ResponsivePanelComponent,
+    VehicleStepComponent,
+  ],
   templateUrl: './calendar-view.component.html',
   styleUrls: ['./calendar-view.component.scss', '../../../app.scss'],
 })
@@ -79,6 +92,7 @@ export class CalendarViewComponent {
   protected readonly t = ZH_TW;
   private bookingStore = inject(BookingStore);
   private vehicleStore = inject(VehicleStore);
+  private pricingStore = inject(PricingStore);
   readonly customerStore = inject(CustomerStore);
   readonly fmt = fmtDateTime;
   readonly isSameDay = isSameDay;
@@ -134,18 +148,30 @@ export class CalendarViewComponent {
     return null;
   });
 
+  /** 自己 emit 出去、預期會由 targetDate 繞回來的日期；用來辨識 effect 收到的是不是回音。 */
+  private lastEmitted: number | null = null;
+
   constructor() {
     let isFirstRun = true;
     effect(() => {
       const date = startOfDay(this.targetDate());
+      // 只有「外部」指定的日期才自動把面板叫出來；自己 emit 繞回來的不算，
+      // 否則 goToToday 想保持面板收起也會被這裡覆蓋掉。
+      const isEcho = this.lastEmitted === date.getTime();
+      this.lastEmitted = null;
       this.month.set(new Date(date.getFullYear(), date.getMonth(), 1));
       this.selected.set(date);
       this.panelTab.set('pickup');
-      if (!isFirstRun) {
+      if (!isFirstRun && !isEcho) {
         this.panelDismissed.set(false);
       }
       isFirstRun = false;
     });
+  }
+
+  private emitSelection(date: Date): void {
+    this.lastEmitted = date.getTime();
+    this.dateSelected.emit(date);
   }
 
   shiftMonth(n: number): void {
@@ -154,10 +180,14 @@ export class CalendarViewComponent {
     this.selected.set(null);
   }
 
+  /** 只把格線定位／選取到今天，不叫出面板（窄螢幕面板是覆蓋式的，會擋住日曆）。 */
   goToToday(): void {
     const today = startOfDay(this.todayDate);
     this.month.set(new Date(today.getFullYear(), today.getMonth(), 1));
-    this.selectDate(today);
+    this.selected.set(today);
+    this.panelTab.set('pickup');
+    this.panelDismissed.set(true);
+    this.emitSelection(today);
   }
 
   dismissPanel(): void {
@@ -169,7 +199,7 @@ export class CalendarViewComponent {
     this.selected.set(normalized);
     this.panelDismissed.set(false);
     this.panelTab.set('pickup');
-    this.dateSelected.emit(normalized);
+    this.emitSelection(normalized);
   }
 
   statsOf(d: Date) {
@@ -216,6 +246,26 @@ export class CalendarViewComponent {
     );
     return this.vehicleStore.vehicles().filter((v) => !occupied.has(v.id));
   });
+
+  readonly priceForVehicle = (vehicle: Vehicle): number | null => {
+    const day = this.selected();
+    if (!day) return null;
+    const plan = this.pricingStore.plans().find((p) => p.appliesToCategory === vehicle.category);
+    if (!plan) return null;
+    const start = toIsoDate(startOfDay(day));
+    const end = toIsoDate(addDays(startOfDay(day), 1));
+    try {
+      return calculatePrice({
+        plan,
+        calendar: this.pricingStore.calendar(),
+        startDate: start,
+        endDate: end,
+        addOns: [],
+      }).total;
+    } catch {
+      return null;
+    }
+  };
 
   vehicleLabel(row: WorkListRow): string {
     const vehicle = this.vehicleStore.vehicles().find((v) => v.id === row.booking.vehicleId);

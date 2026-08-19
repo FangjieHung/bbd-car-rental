@@ -54,7 +54,13 @@ const coupon: Coupon = {
 };
 const helmet: AddOn = { id: 'a1', name: '安全帽', unitPrice: 100, unit: 'per_rental' };
 
-function setup(params: { vehicleId: string; start: string; end: string }) {
+function setup(params: {
+  vehicleId: string;
+  start: string;
+  end: string;
+  pickup?: string;
+  return?: string;
+}) {
   TestBed.resetTestingModule();
   const navigate = vi.fn().mockResolvedValue(true);
   const bookingRepo = createInMemoryRepo<RentalBooking>([]);
@@ -72,7 +78,14 @@ function setup(params: { vehicleId: string; start: string; end: string }) {
         provide: ActivatedRoute,
         useValue: {
           paramMap: of(convertToParamMap({ vehicleId: params.vehicleId })),
-          queryParamMap: of(convertToParamMap({ start: params.start, end: params.end })),
+          queryParamMap: of(
+            convertToParamMap({
+              start: params.start,
+              end: params.end,
+              pickup: params.pickup ?? '',
+              return: params.return ?? '',
+            }),
+          ),
         },
       },
     ],
@@ -81,7 +94,13 @@ function setup(params: { vehicleId: string; start: string; end: string }) {
   return { component, navigate, bookingRepo };
 }
 
-const validParams = { vehicleId: 'v1', start: '2026-08-20T10:00:00', end: '2026-08-23T10:00:00' };
+const validParams = {
+  vehicleId: 'v1',
+  start: '2026-08-20T10:00:00',
+  end: '2026-08-23T10:00:00',
+  pickup: '機場',
+  return: '港口',
+};
 
 describe('OrderPageComponent', () => {
   it('載入指定車輛與租期', () => {
@@ -126,6 +145,35 @@ describe('OrderPageComponent', () => {
     expect(created).toHaveLength(1);
     expect(created[0].status).toBe('pending_payment');
     expect(navigate).toHaveBeenCalledWith(['/', 'pay', created[0].id]);
+  });
+
+  it('送出的訂單帶著網址上實際的取還地點，不是寫死的馬公', () => {
+    const { component, bookingRepo } = setup(validParams);
+    component.onConfirmSubmit({
+      name: '王小明',
+      phone: '0912345678',
+      email: 'a@b.c',
+      paymentMethod: 'credit_card',
+    });
+    const created = bookingRepo.getAll();
+    expect(created[0].pickupLocation).toBe('機場');
+    expect(created[0].returnLocation).toBe('港口');
+  });
+
+  it('缺取還地點時導回搜尋頁且不建立訂單', () => {
+    const { component, navigate, bookingRepo } = setup({
+      vehicleId: 'v1',
+      start: '2026-08-20T10:00:00',
+      end: '2026-08-23T10:00:00',
+    });
+    component.onConfirmSubmit({
+      name: '王小明',
+      phone: '0912345678',
+      email: 'a@b.c',
+      paymentMethod: 'credit_card',
+    });
+    expect(bookingRepo.getAll()).toHaveLength(0);
+    expect(navigate).toHaveBeenCalledWith(['/', 'search'], expect.anything());
   });
 
   it('缺日期時導回搜尋頁且不建立訂單', () => {

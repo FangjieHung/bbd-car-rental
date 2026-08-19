@@ -5,6 +5,8 @@
   <h1>填寫訂單</h1>
 
   <app-search-criteria-bar
+    [pickupLocation]="pickupLocation()"
+    [returnLocation]="returnLocation()"
     [startDate]="startDate()"
     [endDate]="endDate()"
     [days]="days()"

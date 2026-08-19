@@ -5,7 +5,7 @@ import { map } from 'rxjs';
 import { Vehicle } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
-import { DateRange } from '../date-range';
+import { DateRange, VEHICLE_GROUP_CATEGORIES, VehicleGroup } from '../date-range';
 import { QuoteService } from '../quote.service';
 import { DateStepComponent } from '../steps/date-step.component';
 import { VehicleStepComponent } from '../steps/vehicle-step.component';
@@ -31,14 +31,27 @@ export class SearchPageComponent {
 
   private readonly params = toSignal(
     this.route.queryParamMap.pipe(
-      map((p) => ({ start: p.get('start') ?? '', end: p.get('end') ?? '' })),
+      map((p) => ({
+        start: p.get('start') ?? '',
+        end: p.get('end') ?? '',
+        pickup: p.get('pickup') ?? '',
+        return: p.get('return') ?? '',
+        group: (p.get('group') as VehicleGroup | null) ?? undefined,
+      })),
     ),
-    { initialValue: { start: '', end: '' } },
+    { initialValue: { start: '', end: '', pickup: '', return: '', group: undefined } },
   );
 
   readonly dateRange = computed<DateRange | null>(() => {
-    const { start, end } = this.params();
-    return start && end ? { startDateTime: start, endDateTime: end } : null;
+    const { start, end, pickup, return: returnLocation, group } = this.params();
+    if (!start || !end || !pickup || !returnLocation) return null;
+    return {
+      startDateTime: start,
+      endDateTime: end,
+      pickupLocation: pickup,
+      returnLocation,
+      vehicleGroup: group,
+    };
   });
 
   readonly startDate = computed(() => this.params().start.slice(0, 10));
@@ -50,7 +63,10 @@ export class SearchPageComponent {
   readonly availableVehicles = computed<Vehicle[]>(() => {
     const range = this.dateRange();
     if (!range) return [];
-    return this.catalog.availableVehicles(range.startDateTime, range.endDateTime);
+    const vehicles = this.catalog.availableVehicles(range.startDateTime, range.endDateTime);
+    if (!range.vehicleGroup) return vehicles;
+    const categories = VEHICLE_GROUP_CATEGORIES[range.vehicleGroup];
+    return vehicles.filter((v) => categories.includes(v.category));
   });
 
   priceForVehicle = (vehicle: Vehicle): number | null =>
@@ -64,7 +80,13 @@ export class SearchPageComponent {
     this.selectedVehicle.set(null);
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { start: range.startDateTime, end: range.endDateTime },
+      queryParams: {
+        start: range.startDateTime,
+        end: range.endDateTime,
+        pickup: range.pickupLocation,
+        return: range.returnLocation,
+        group: range.vehicleGroup ?? null,
+      },
       replaceUrl: true,
     });
   }
@@ -73,7 +95,13 @@ export class SearchPageComponent {
     const range = this.dateRange();
     if (!range) return;
     this.router.navigate([...this.context.basePath(), 'order', vehicle.id], {
-      queryParams: { start: range.startDateTime, end: range.endDateTime },
+      queryParams: {
+        start: range.startDateTime,
+        end: range.endDateTime,
+        pickup: range.pickupLocation,
+        return: range.returnLocation,
+        group: range.vehicleGroup ?? null,
+      },
     });
   }
 }

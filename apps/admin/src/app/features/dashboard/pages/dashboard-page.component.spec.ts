@@ -8,16 +8,37 @@ import {
   CUSTOMER_REPO,
   MAINTENANCE_REPO,
   VEHICLE_REPO,
+  PRICING_PLAN_REPO,
+  SEASON_CALENDAR_REPO,
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
-import { Customer, MaintenanceRecord, RentalBooking, Vehicle } from '../../../core/models';
+import {
+  Customer,
+  MaintenanceRecord,
+  PricingPlan,
+  RentalBooking,
+  SeasonCalendar,
+  Vehicle,
+} from '../../../core/models';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNativeDateAdapter } from '@angular/material/core';
+
+// Dashboard 內嵌的 CalendarViewComponent 會用到 PricingStore。
+function providePricing() {
+  return [
+    { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([]) },
+    {
+      provide: SEASON_CALENDAR_REPO,
+      useValue: createInMemoryRepo<SeasonCalendar>([{ id: 'cal', holidays: [], peakSeasons: [] }]),
+    },
+  ];
+}
 
 describe('DashboardPageComponent child date contract', () => {
   function createFixture(bookings: RentalBooking[] = []) {
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         provideNativeDateAdapter(),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
@@ -82,6 +103,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
   function createFixture(bookings: RentalBooking[]) {
     TestBed.configureTestingModule({
       providers: [
+        ...providePricing(),
         provideNativeDateAdapter(),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },

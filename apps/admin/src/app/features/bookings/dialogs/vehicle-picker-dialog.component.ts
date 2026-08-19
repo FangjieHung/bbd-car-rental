@@ -7,7 +7,12 @@ import {
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { firstValueFrom } from 'rxjs';
-import { CatalogStore, DateRange, VehicleStepComponent } from '@car-rental/booking-flow';
+import {
+  CatalogStore,
+  DateRange,
+  VEHICLE_GROUP_CATEGORIES,
+  VehicleStepComponent,
+} from '@car-rental/booking-flow';
 import { Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
@@ -25,10 +30,15 @@ export class VehiclePickerDialogComponent {
   readonly range = inject<DateRange>(MAT_DIALOG_DATA);
   private catalog = inject(CatalogStore);
 
-  readonly vehicles: Vehicle[] = this.catalog.availableVehicles(
-    this.range.startDateTime,
-    this.range.endDateTime,
-  );
+  readonly vehicles: Vehicle[] = (() => {
+    const vehicles = this.catalog.availableVehicles(
+      this.range.startDateTime,
+      this.range.endDateTime,
+    );
+    if (!this.range.vehicleGroup) return vehicles;
+    const categories = VEHICLE_GROUP_CATEGORIES[this.range.vehicleGroup];
+    return vehicles.filter((v) => categories.includes(v.category));
+  })();
 
   /** 租期天數，供車款卡片把總價換算成每日單價 */
   readonly days = Math.max(

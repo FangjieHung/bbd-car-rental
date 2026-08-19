@@ -1,6 +1,6 @@
 <div class="calendar-view">
-  <div class="calendar-view__layout">
-    <section class="ui-card flex-auto">
+  <div class="ui-card calendar-view__layout">
+    <section class="flex flex-col flex-auto">
       <div class="calendar-view__header">
         <h2 class="ui-text-title">{{ monthLabel() }}</h2>
         <div class="calendar-view__toolbar flex items-center gap-2 mb-2">
@@ -54,7 +54,7 @@
       </div>
     </section>
 
-    <section class="ui-card split-view__panel">
+    <section class="split-view__panel">
       <lib-responsive-panel
         [open]="panelOpen()"
         [heading]="panelHeading()"
@@ -172,11 +172,12 @@
             <mat-tab [label]="'可用 - ' + availableVehicles().length + ' 筆'">
               <ng-template matTabContent>
                 @if (availableVehicles().length > 0) {
-                  <ul class="text-sm flex flex-col gap-1 pt-4">
-                    @for (v of availableVehicles(); track v.id) {
-                      <li class="ui-card !p-3">{{ v.plateNumber }}（{{ v.model }}）</li>
-                    }
-                  </ul>
+                  <app-vehicle-step
+                    class="calendar-view__vehicle-step"
+                    [vehicles]="availableVehicles()"
+                    [priceForVehicle]="priceForVehicle"
+                    [days]="1"
+                  />
                 } @else {
                   <p class="pb-4 pt-4 text-sm calendar-view__muted">當日無可用車輛</p>
                 }
