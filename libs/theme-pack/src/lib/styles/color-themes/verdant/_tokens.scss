@@ -84,4 +84,9 @@
 
   // topbar 半透明底（搭配 backdrop blur 的毛玻璃感，讓內容捲動時透出底色）
   --app-topbar-bg: color-mix(in srgb, var(--_cream-0) 82%, transparent);
+
+  // 日曆範圍選取／hover 預覽的連接底色。Material 預設吃 primary-container(sage-100)，
+  // 疊在面板底 surface-container-high(cream-50) 上綠色通道幾乎沒差；改用 sage-500 淡化，
+  // 維持辨識度又不搶走端點日的實心圓。
+  --app-calendar-range-fill: color-mix(in srgb, var(--_sage-500) 20%, var(--_cream-50));
 }

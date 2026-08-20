@@ -72,5 +72,10 @@
   // topbar 半透明底（搭配 backdrop blur 的毛玻璃感，讓內容捲動時透出底色）
   --app-topbar-bg: color-mix(in srgb, var(--_ink-800) 82%, transparent);
 
+  // 日曆範圍選取／hover 預覽的連接底色。Material 預設吃 primary-container，而本主題的
+  // primary-container 與面板底 surface-container-high 同為 ink-600（字面同值）→ 等於沒有底色。
+  // 改用 blue-400 疊上去；深色需要比淺色更高的混色比例才看得出來。
+  --app-calendar-range-fill: color-mix(in srgb, var(--_blue-400) 30%, var(--_ink-600));
+
   color-scheme: dark;
 }

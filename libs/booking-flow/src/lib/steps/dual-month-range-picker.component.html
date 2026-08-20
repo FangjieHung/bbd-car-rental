@@ -11,12 +11,18 @@
   [cdkConnectedOverlayOrigin]="origin"
   [cdkConnectedOverlayOpen]="isOpen"
   [cdkConnectedOverlayHasBackdrop]="true"
-  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  cdkConnectedOverlayBackdropClass="dual-calendar-backdrop"
+  cdkConnectedOverlayPanelClass="dual-calendar-overlay-pane"
   (backdropClick)="close()"
   (detach)="close()"
 >
   <div class="dual-calendar-panel">
-    <div class="calendars-row">
+    <!--
+      Clearing the hover has to be done here: once the hovered date is folded into `selected`,
+      that range has an end, so Material's own leave handler bails out and never reports it.
+      Moving between the two panes stays inside this element, so it does not clear spuriously.
+    -->
+    <div class="calendars-row" (mouseleave)="onHover(null)">
       <div class="calendar-pane">
         <div class="month-head">
           <button type="button" mat-icon-button (click)="goPrev()" aria-label="上個月">
@@ -24,16 +30,6 @@
           </button>
           <span class="month-label">{{ monthLabel(leftMonth) }}</span>
           <span class="head-spacer"></span>
-          <!-- 窄螢幕只顯示一個月，下個月鈕在第二個月份面板裡會一起被隱藏，故在此補一顆 -->
-          <button
-            type="button"
-            mat-icon-button
-            class="nav-next-compact"
-            (click)="goNext()"
-            aria-label="下個月"
-          >
-            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
-          </button>
         </div>
         <mat-calendar
           #leftCal

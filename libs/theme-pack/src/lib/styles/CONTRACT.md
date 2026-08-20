@@ -53,6 +53,7 @@
 | 狀態 tone    | `--app-{positive,info,neutral,warning,danger}-{bg,fg,dot}` |
 | 圖表／時間軸 | `--app-viz-1` … `--app-viz-4`                              |
 | 深色側欄     | `--app-shell-bg`、`--app-shell-on`、`--app-shell-on-muted` |
+| 日曆範圍底色 | `--app-calendar-range-fill`                                |
 
 ### 字體（質地包提供，中英分軌）
 

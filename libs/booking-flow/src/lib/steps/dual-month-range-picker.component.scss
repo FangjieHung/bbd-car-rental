@@ -1,10 +1,13 @@
 .dual-calendar-panel {
-  background: var(--mat-sys-surface-container-high, #fff);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  background: var(--mat-sys-surface-container-high);
+  // 陰影 token 定義在 texture 層（跨配色共用）且 alpha 很低，深色主題下幾乎看不見，
+  // 需要一條 hairline 撐出面板輪廓。
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+  box-shadow: var(--mat-sys-level3);
   padding: 8px 12px 12px;
-  // 兩個月份面板固定 280px，加上間距與內距共 592px，會撐破窄螢幕。
-  // 面板本身先夾住視窗寬度，內容再依斷點收合成單月。
+  // 兩個月並排固定 592px，桌機視窗變窄時會撐破 overlay，先夾住視窗寬度。
+  // 手機不適用——那裡是滿版貼底的 sheet，下面的斷點區塊會解除這個上限。
   max-width: calc(100vw - 24px);
   box-sizing: border-box;
 }
@@ -19,33 +22,53 @@
   max-width: 100%;
 }
 
-// 桌機兩個月並排時，補的那顆「下個月」鈕是多餘的
-.nav-next-compact {
-  display: none;
-}
-
-@media (max-width: 640px) {
-  // overlay 面板會收縮到內容寬度。只給 max-width 的話 .calendar-pane 的 100%
-  // 沒有可解的參考寬度，日曆會塌回固有寬度（實測 189px，日期格約 23px，
-  // 觸控目標太小）。明確給寬度，日曆才撐得滿可用空間。
-  .dual-calendar-panel {
-    width: calc(100vw - 24px);
-  }
-
-  .calendars-row > .calendar-pane + .calendar-pane {
-    display: none;
+/* ── 手機：面板改成貼齊視窗底部的 bottom sheet ────────────────────
+   768px 是 booking-flow 既有的手機斷點（見 date-step.component.scss）。
+   兩個月改為直向堆疊，內容因此會高過視窗，靠自身捲動而非撐破 pane。 */
+@media (max-width: 767px) {
+  .calendars-row {
+    flex-direction: column;
+    // 搭配下面的寬度上限置中。不可改用 margin-inline: auto——在 column flex 裡
+    // 自動邊界會取消 stretch，mat-calendar 沒有內在寬度，表格會直接塌掉。
+    align-items: center;
   }
 
   .calendar-pane {
+    // sheet 本身滿版，但日曆不跟著無限撐大：mat-calendar 的格子接近正方形，
+    // 寬度愈大列高愈高，兩個月疊起來會長到要捲很久。
+    width: min(100%, 340px);
+  }
+
+  .dual-calendar-panel {
+    // .cdk-overlay-pane 是 row 方向的 flex 容器，子元素主軸上預設依內容寬度收縮，
+    // 光把 pane 拉成滿版不夠，面板本身也要撐開才會是整條 sheet。
     width: 100%;
+    // 解除桌機那條防溢出上限，否則 sheet 會左右各縮 12px、貼不齊視窗邊。
+    max-width: none;
+    max-height: 85vh;
+    overflow-y: auto;
+    // 貼齊視窗底後，左右與下緣已無外框可言，只保留上緣圓角與分隔線。
+    border-inline: 0;
+    border-bottom: 0;
+    border-radius: var(--mat-sys-corner-large) var(--mat-sys-corner-large) 0 0;
+    // iOS home indicator 會蓋住貼底內容；repo 尚無 safe-area 先例，此為首例。
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    animation: dual-calendar-slide-up 0.2s ease-out;
   }
+}
 
-  .month-head .head-spacer {
-    display: none;
+@keyframes dual-calendar-slide-up {
+  from {
+    transform: translateY(100%);
   }
+  to {
+    transform: translateY(0);
+  }
+}
 
-  .nav-next-compact {
-    display: inline-flex;
+@media (prefers-reduced-motion: reduce) {
+  .dual-calendar-panel {
+    animation: none;
   }
 }
 
@@ -67,6 +90,31 @@
   }
 }
 
+/* ── overlay pane 本體的手機定位 ──────────────────────────────────
+   `.cdk-overlay-pane` 是 CDK 建的、不在本元件模板裡，拿不到 encapsulation 屬性，
+   所以這兩條 ::ng-deep 必須「不帶前綴」才選得到（等同全域）。class 名稱是本元件
+   專屬的，不會誤傷其他 overlay。
+
+   pane 的容器 .cdk-overlay-container 本身是 position: fixed + inset: 0，
+   所以 absolute 貼底就等於貼齊視窗底部。CDK 的 flexible-connected 策略會把
+   top/left/transform 寫成 inline style，只有 !important 蓋得掉——這正是目前
+   手機版會被推出視窗外、點不到的原因。 */
+::ng-deep .dual-calendar-overlay-pane {
+  @media (max-width: 767px) {
+    position: absolute !important;
+    inset: auto 0 0 0 !important;
+    transform: none !important;
+    max-width: none !important;
+  }
+}
+
+// 桌機維持原本的透明 backdrop（僅用來接點擊關閉）；手機比照 bottom sheet 壓暗背景。
+::ng-deep .dual-calendar-backdrop {
+  @media (max-width: 767px) {
+    background: rgb(0 0 0 / 40%);
+  }
+}
+
 // The built-in calendar header carries its own month label and prev/next arrows;
 // navigation is centralised in `.month-head`, so hide it. Reaching into the
 // calendar's own template requires piercing encapsulation.
@@ -76,8 +124,20 @@
     display: none;
   }
   
+  /* 月份名稱由 `.month-head` 提供，內建的要收掉。但它有兩種長法，處理方式不同：
+
+     月初空格 <3 時，它會獨立成一整列 `<tr aria-hidden="true">` 疊在格線上方；
+     只調透明度會留下一條空列，得整列移除。tbody 裡只有這一列是 aria-hidden
+     （thead 的分隔列在 .mat-calendar-table-header 內，選不到），且它本來就標示為裝飾性，
+     移除沒有 a11y 代價。 */
+  .mat-calendar-body tr[aria-hidden='true'] {
+    display: none;
+  }
+
+  /* 空格 >=3 時改為內嵌在第一列。這顆的 colspan 就是月初空格數，是排版用的 spacer，
+     收掉會讓整排日期左移、對不到星期欄——所以只能藏字，不能收格子。 */
   .mat-calendar-body-label {
-    opacity: 0;
+    visibility: hidden;
   }
 }
 
