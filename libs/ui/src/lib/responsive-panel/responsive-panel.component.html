@@ -28,19 +28,22 @@
             <h2 [id]="headingId" class="responsive-panel__heading">{{ heading() }}</h2>
           }
           <ng-content select="[panelHeaderExtra]" />
+
+          @if (showCloseButton()) {
+            <button
+              type="button"
+              class="responsive-panel__close"
+              [attr.aria-label]="closeLabel()"
+              (click)="closed.emit()"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">close</span>
+            </button>
+          }
         </div>
-        @if (showCloseButton()) {
-          <button
-            type="button"
-            class="responsive-panel__close"
-            [attr.aria-label]="closeLabel()"
-            (click)="closed.emit()"
-          >
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" />
-            </svg>
-          </button>
-        }
+
+        <div class="responsive-panel__header-tabs">
+          <ng-content select="[panelHeaderTabs]" />
+        </div>
       </div>
       <div class="responsive-panel__body">
         <ng-content />

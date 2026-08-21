@@ -3,8 +3,9 @@
   flex-direction: column;
   align-items: stretch;
   height: 100%;
+  overflow: auto;
 
-  @variant min-[1024px] {
+  @variant min-[1280px] {
     @variant landscape {
       flex-direction: row;
     }
@@ -16,9 +17,9 @@
   overflow: auto;
   width: 0;
 
-  @variant min-[1024px] {
+  @variant min-[1280px] {
     @variant landscape {
-      flex: 0 1 clamp(320px, 32vw, 480px);
+      flex: 0 1 clamp(320px, 32vw, 560px);
       border-left: 1px solid var(--mat-sys-outline-variant);
       width: auto;
     }
@@ -29,10 +30,25 @@
   height: 100%;
 }
 
+.calendar-view__sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex: 0 0 auto;
+  background: var(--mat-sys-surface);
+}
+
 .calendar-view__header {
   @apply flex items-center justify-between min-h-fit;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
+}
+
+.calendar-view__weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--mat-sys-outline-variant);
 }
 
 .calendar-view__grid {
@@ -40,8 +56,6 @@
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  // 第一列是星期標題，照內容高度；日期列（隱含列）才平分剩餘空間。
-  grid-template-rows: auto;
   grid-auto-rows: minmax(0, 1fr);
   gap: 1px;
   overflow: hidden;
@@ -55,6 +69,7 @@
 .calendar-view__day {
   @apply flex flex-col;
   background: var(--mat-sys-surface);
+  font-size: .875rem;
 }
 
 .calendar-view__day--selected {
@@ -68,6 +83,7 @@
   width: 1.75rem;
   border-radius: 10rem;
   color: var(--mat-sys-on-primary);
+  font-size: .85rem;
 }
 
 .calendar-view__muted {
@@ -76,7 +92,7 @@
 
 .calendar-view__stats {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.125rem;
   margin-top: 0.125rem;
@@ -84,8 +100,8 @@
 
 .calendar-view__stat-chip {
   gap: 0.25rem;
-  padding: 0.05rem 0.4rem;
-  font-size: 0.6875rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.85rem;
 }
 
 // vehicle-step 的三欄卡片版型是給 720px+ 內容寬設計的；side panel 只有 320–480px，
