@@ -15,22 +15,6 @@
     class="min-w-80 xl:max-w-80"
   ></app-dual-month-range-picker>
 
-  <div class="ui-field-group xl:max-w-82">
-    <mat-form-field appearance="fill">
-      <mat-label>取車時間</mat-label>
-      <input matInput [matTimepicker]="startPicker" [(ngModel)]="startTime" />
-      <mat-timepicker-toggle matSuffix [for]="startPicker" aria-label="開啟取車時間選擇器" />
-      <mat-timepicker #startPicker />
-    </mat-form-field>
-
-    <mat-form-field appearance="fill">
-      <mat-label>還車時間</mat-label>
-      <input matInput [matTimepicker]="endPicker" [(ngModel)]="endTime" />
-      <mat-timepicker-toggle matSuffix [for]="endPicker" aria-label="開啟還車時間選擇器" />
-      <mat-timepicker #endPicker />
-    </mat-form-field>
-  </div>
-
   <div class="actions w-full xl:w-fit">
     <button matButton="filled" class="min-h-14 w-full xl:w-auto" [disabled]="!isValid" (click)="confirm()">
       <span class="material-symbols-rounded" aria-hidden="true">search</span>

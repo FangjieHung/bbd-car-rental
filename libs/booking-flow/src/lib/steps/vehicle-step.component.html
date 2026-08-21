@@ -1,10 +1,121 @@
 <div class="vehicle-step">
+  @if (startTime && endTime) {
+    <div class="ui-field-group mb-4 xl:max-w-82">
+      <mat-form-field appearance="fill">
+        <mat-label>取車時間</mat-label>
+        <input matInput [matTimepicker]="startPicker" [ngModel]="startTime" (ngModelChange)="onStartTimeChange($event)" />
+        <mat-timepicker-toggle matSuffix [for]="startPicker" aria-label="開啟取車時間選擇器" />
+        <mat-timepicker #startPicker />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>還車時間</mat-label>
+        <input matInput [matTimepicker]="endPicker" [ngModel]="endTime" (ngModelChange)="onEndTimeChange($event)" />
+        <mat-timepicker-toggle matSuffix [for]="endPicker" aria-label="開啟還車時間選擇器" />
+        <mat-timepicker #endPicker />
+      </mat-form-field>
+    </div>
+  }
+
+  @if (vehicles.length > 0) {
+    <div class="vehicle-step__type-tabs">
+      <button
+        type="button"
+        class="ui-nav-pill"
+        [class.is-active]="selectedType() === null"
+        (click)="onTypeChange(null)"
+      >
+        全部
+      </button>
+      @for (opt of typeOptions(); track opt.label) {
+        <button
+          type="button"
+          class="ui-nav-pill vehicle-step__type-tab"
+          [class.is-active]="selectedType() === opt.label"
+          (click)="onTypeChange(opt.label)"
+        >
+          <span>{{ opt.label }}</span>
+          @if (opt.minPrice !== null) {
+            <span class="vehicle-step__type-price">最低 NT$ {{ opt.minPrice | number }}</span>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="vehicle-step__filter-bar">
+      @if (priceBounds().max > priceBounds().min) {
+        <button type="button" matButton="outlined" [matMenuTriggerFor]="priceMenu">
+          價格：NT$ {{ effectivePriceLow() | number }} - NT$ {{ effectivePriceHigh() | number }}
+        </button>
+        <mat-menu #priceMenu="matMenu">
+          <div class="vehicle-step__price-panel">
+            <mat-slider [min]="priceBounds().min" [max]="priceBounds().max" [step]="priceStep()">
+              <input matSliderStartThumb [ngModel]="effectivePriceLow()" (ngModelChange)="onPriceLowChange($event)" />
+              <input matSliderEndThumb [ngModel]="effectivePriceHigh()" (ngModelChange)="onPriceHighChange($event)" />
+            </mat-slider>
+            <div class="vehicle-step__price-inputs">
+              <mat-form-field appearance="fill" subscriptSizing="dynamic">
+                <mat-label>最低</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [ngModel]="effectivePriceLow()"
+                  (ngModelChange)="onPriceLowChange($event)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="fill" subscriptSizing="dynamic">
+                <mat-label>最高</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [ngModel]="effectivePriceHigh()"
+                  (ngModelChange)="onPriceHighChange($event)"
+                />
+              </mat-form-field>
+            </div>
+          </div>
+        </mat-menu>
+      }
+
+      <mat-form-field appearance="fill" subscriptSizing="dynamic" class="vehicle-step__filter-select">
+        <mat-label>座位數</mat-label>
+        <mat-select [ngModel]="selectedSeatBucket()" (ngModelChange)="selectedSeatBucket.set($event)">
+          <mat-option [value]="null">不限</mat-option>
+          @for (bucket of seatBuckets; track bucket.value) {
+            <mat-option [value]="bucket.value">{{ bucket.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" subscriptSizing="dynamic" class="vehicle-step__filter-select">
+        <mat-label>取車地點</mat-label>
+        <mat-select [ngModel]="selectedLocation()" (ngModelChange)="selectedLocation.set($event)">
+          <mat-option [value]="null">不限</mat-option>
+          @for (loc of locations; track loc) {
+            <mat-option [value]="loc">{{ loc }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" subscriptSizing="dynamic" class="vehicle-step__filter-select">
+        <mat-label>排序</mat-label>
+        <mat-select [ngModel]="sortOrder()" (ngModelChange)="sortOrder.set($event)">
+          @for (opt of sortOptions; track opt.value) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
+
   @if (vehicles.length === 0) {
     <p class="empty-hint">請先選擇租期以查看可租車輛。</p>
+  } @else if (filteredVehicles().length === 0) {
+    <p class="empty-hint">沒有符合篩選條件的車輛，請試著調整篩選條件。</p>
   }
 
   <div class="vehicle-cards">
-    @for (vehicle of vehicles; track vehicle.id) {
+    @for (vehicle of filteredVehicles(); track vehicle.id) {
       <article
         class="vehicle-card"
         role="button"
@@ -67,6 +178,12 @@
               <li>
                 <span class="v-mark" aria-hidden="true">{{ transmissionMark(vehicle) }}</span>
                 {{ transmissionLabel(vehicle) }}
+              </li>
+            }
+            @if (vehicle.location) {
+              <li>
+                <span class="material-symbols-rounded" aria-hidden="true">location_on</span>
+                {{ vehicle.location }}
               </li>
             }
           </ul>

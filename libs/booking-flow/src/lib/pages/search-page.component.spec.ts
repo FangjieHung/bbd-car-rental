@@ -103,7 +103,7 @@ describe('SearchPageComponent', () => {
     expect(component.priceForVehicle(makeVehicle())).toBeGreaterThan(0);
   });
 
-  it('只帶日期的舊連結仍然可用：地點退回預設值，日期與車輛清單都保留', () => {
+  it('只帶日期的連結仍然可用：日期與車輛清單都保留', () => {
     const { component } = setup({
       start: '2026-08-20T10:00:00',
       end: '2026-08-23T10:00:00',
@@ -111,8 +111,6 @@ describe('SearchPageComponent', () => {
     expect(component.dateRange()).toEqual({
       startDateTime: '2026-08-20T10:00:00',
       endDateTime: '2026-08-23T10:00:00',
-      pickupLocation: '機場',
-      returnLocation: '機場',
       vehicleGroup: undefined,
     });
     expect(component.days()).toBe(3);
@@ -136,8 +134,6 @@ describe('SearchPageComponent', () => {
     component.onDateRangeChange({
       startDateTime: '2026-09-01T10:00:00',
       endDateTime: '2026-09-04T10:00:00',
-      pickupLocation: '機場',
-      returnLocation: '港口',
       vehicleGroup: 'scooter',
     });
     expect(navigate).toHaveBeenCalledWith(
@@ -146,8 +142,6 @@ describe('SearchPageComponent', () => {
         queryParams: {
           start: '2026-09-01T10:00:00',
           end: '2026-09-04T10:00:00',
-          pickup: '機場',
-          return: '港口',
           group: 'scooter',
         },
         replaceUrl: true,
@@ -155,20 +149,16 @@ describe('SearchPageComponent', () => {
     );
   });
 
-  it('consumer 情境選車導向 /order/:id 並帶著日期與取還地點', () => {
+  it('consumer 情境選車導向 /order/:id 並帶著日期', () => {
     const { component, navigate } = setup({
       start: '2026-08-20T10:00:00',
       end: '2026-08-23T10:00:00',
-      pickup: '機場',
-      return: '港口',
     });
     component.onVehicleSelect(makeVehicle({ id: 'v9' }));
     expect(navigate).toHaveBeenCalledWith(['/', 'order', 'v9'], {
       queryParams: {
         start: '2026-08-20T10:00:00',
         end: '2026-08-23T10:00:00',
-        pickup: '機場',
-        return: '港口',
         group: null,
       },
     });
@@ -179,8 +169,6 @@ describe('SearchPageComponent', () => {
       {
         start: '2026-08-20T10:00:00',
         end: '2026-08-23T10:00:00',
-        pickup: '機場',
-        return: '港口',
       },
       { partnerContext: true },
     );
@@ -189,8 +177,6 @@ describe('SearchPageComponent', () => {
       queryParams: {
         start: '2026-08-20T10:00:00',
         end: '2026-08-23T10:00:00',
-        pickup: '機場',
-        return: '港口',
         group: null,
       },
     });

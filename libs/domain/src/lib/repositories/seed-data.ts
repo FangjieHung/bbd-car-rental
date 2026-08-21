@@ -32,6 +32,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: true,
       supplierCount: 1,
+      location: '機場',
     },
     {
       id: 'v2',
@@ -52,6 +53,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: false,
       supplierCount: 2,
+      location: '店舖',
     },
     {
       id: 'v3',
@@ -72,6 +74,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: true,
       supplierCount: 1,
+      location: '機場',
     },
     {
       id: 'v4',
@@ -92,6 +95,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: false,
       supplierCount: 1,
+      location: '港口',
     },
     {
       id: 'v5',
@@ -112,6 +116,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: true,
       supplierCount: 3,
+      location: '機場',
     },
     {
       id: 'v6',
@@ -132,6 +137,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: true,
       supplierCount: 2,
+      location: '港口',
     },
   ];
 }
