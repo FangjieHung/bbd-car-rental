@@ -32,6 +32,7 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
     status: 'available',
     mileage: 100,
     createdAt: new Date().toISOString(),
+    location: '機場',
     ...partial,
   };
 }
@@ -54,19 +55,16 @@ const coupon: Coupon = {
 };
 const helmet: AddOn = { id: 'a1', name: '安全帽', unitPrice: 100, unit: 'per_rental' };
 
-function setup(params: {
-  vehicleId: string;
-  start: string;
-  end: string;
-  pickup?: string;
-  return?: string;
-}) {
+function setup(
+  params: { vehicleId: string; start: string; end: string },
+  vehicle: Vehicle = makeVehicle(),
+) {
   TestBed.resetTestingModule();
   const navigate = vi.fn().mockResolvedValue(true);
   const bookingRepo = createInMemoryRepo<RentalBooking>([]);
   TestBed.configureTestingModule({
     providers: [
-      { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
+      { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
       { provide: BOOKING_REPO, useValue: bookingRepo },
       { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([plan]) },
@@ -82,8 +80,6 @@ function setup(params: {
             convertToParamMap({
               start: params.start,
               end: params.end,
-              pickup: params.pickup ?? '',
-              return: params.return ?? '',
             }),
           ),
         },
@@ -98,8 +94,14 @@ const validParams = {
   vehicleId: 'v1',
   start: '2026-08-20T10:00:00',
   end: '2026-08-23T10:00:00',
-  pickup: '機場',
-  return: '港口',
+};
+
+const confirmForm = {
+  name: '王小明',
+  phone: '0912345678',
+  email: 'a@b.c',
+  paymentMethod: 'credit_card' as const,
+  returnLocation: '港口' as const,
 };
 
 describe('OrderPageComponent', () => {
@@ -135,56 +137,33 @@ describe('OrderPageComponent', () => {
 
   it('送出後建立 pending_payment 訂單並導向付款頁', () => {
     const { component, navigate, bookingRepo } = setup(validParams);
-    component.onConfirmSubmit({
-      name: '王小明',
-      phone: '0912345678',
-      email: 'a@b.c',
-      paymentMethod: 'credit_card',
-    });
+    component.onConfirmSubmit(confirmForm);
     const created = bookingRepo.getAll();
     expect(created).toHaveLength(1);
     expect(created[0].status).toBe('pending_payment');
     expect(navigate).toHaveBeenCalledWith(['/', 'pay', created[0].id]);
   });
 
-  it('送出的訂單帶著網址上實際的取還地點，不是寫死的馬公', () => {
+  it('送出的訂單取車地點吃車輛所屬據點，還車地點吃使用者在確認頁選的值', () => {
     const { component, bookingRepo } = setup(validParams);
-    component.onConfirmSubmit({
-      name: '王小明',
-      phone: '0912345678',
-      email: 'a@b.c',
-      paymentMethod: 'credit_card',
-    });
+    component.onConfirmSubmit(confirmForm);
     const created = bookingRepo.getAll();
     expect(created[0].pickupLocation).toBe('機場');
     expect(created[0].returnLocation).toBe('港口');
   });
 
-  it('缺取還地點時導回搜尋頁且不建立訂單', () => {
-    const { component, navigate, bookingRepo } = setup({
-      vehicleId: 'v1',
-      start: '2026-08-20T10:00:00',
-      end: '2026-08-23T10:00:00',
-    });
-    component.onConfirmSubmit({
-      name: '王小明',
-      phone: '0912345678',
-      email: 'a@b.c',
-      paymentMethod: 'credit_card',
-    });
-    expect(bookingRepo.getAll()).toHaveLength(0);
-    expect(navigate).toHaveBeenCalledWith(['/', 'search'], expect.anything());
+  it('選到的車沒有據點資料時，取車地點退回預設值仍可送出', () => {
+    const { component, bookingRepo } = setup(validParams, makeVehicle({ location: undefined }));
+    component.onConfirmSubmit(confirmForm);
+    const created = bookingRepo.getAll();
+    expect(created).toHaveLength(1);
+    expect(created[0].pickupLocation).toBe('機場');
   });
 
   it('缺日期時導回搜尋頁且不建立訂單', () => {
     const { component, navigate, bookingRepo } = setup({ vehicleId: 'v1', start: '', end: '' });
     expect(component.priceBreakdown()).toBeNull();
-    component.onConfirmSubmit({
-      name: '王小明',
-      phone: '0912345678',
-      email: 'a@b.c',
-      paymentMethod: 'credit_card',
-    });
+    component.onConfirmSubmit(confirmForm);
     expect(bookingRepo.getAll()).toHaveLength(0);
     expect(navigate).toHaveBeenCalledWith(['/', 'search'], expect.anything());
   });

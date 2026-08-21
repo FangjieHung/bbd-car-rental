@@ -16,7 +16,7 @@ import { DomPortal } from '@angular/cdk/portal';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 
-const NARROW_QUERY = '(max-width: 1024px)';
+const NARROW_QUERY = '(max-width: 1280px)';
 const FOCUSABLE_SELECTOR =
   'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 

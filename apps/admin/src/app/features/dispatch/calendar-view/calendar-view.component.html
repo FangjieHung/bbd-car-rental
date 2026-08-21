@@ -1,25 +1,30 @@
 <div class="calendar-view">
   <div class="ui-card calendar-view__layout">
     <section class="flex flex-col flex-auto">
-      <div class="calendar-view__header">
-        <h2 class="ui-text-title">{{ monthLabel() }}</h2>
-        <div class="calendar-view__toolbar flex items-center gap-2 mb-2">
-          <button mat-icon-button [attr.aria-label]="t.dispatch.prevMonth" (click)="shiftMonth(-1)">
-            <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
-          </button>
-          <button matButton="outlined" (click)="goToToday()">{{ t.dispatch.today }}</button>
-          <button mat-icon-button [attr.aria-label]="t.dispatch.nextMonth" (click)="shiftMonth(1)">
-            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
-          </button>
+      <div class="calendar-view__sticky-top">
+        <div class="calendar-view__header">
+          <h2 class="ui-text-title">{{ monthLabel() }}</h2>
+          <div class="calendar-view__toolbar flex items-center gap-2 mb-2">
+            <button mat-icon-button [attr.aria-label]="t.dispatch.prevMonth" (click)="shiftMonth(-1)">
+              <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+            </button>
+            <button matButton="outlined" (click)="goToToday()">{{ t.dispatch.today }}</button>
+            <button mat-icon-button [attr.aria-label]="t.dispatch.nextMonth" (click)="shiftMonth(1)">
+              <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="calendar-view__weekday-row">
+          @for (label of t.dispatch.weekdays; track label) {
+            <div class="calendar-view__weekday p-2 text-center font-bold calendar-view__muted">
+              {{ label }}
+            </div>
+          }
         </div>
       </div>
 
       <div class="calendar-view__grid">
-        @for (label of t.dispatch.weekdays; track label) {
-          <div class="calendar-view__weekday p-2 text-center font-bold calendar-view__muted">
-            {{ label }}
-          </div>
-        }
         @for (d of monthDays(); track d.getTime()) {
           @let stats = statsOf(d);
           <button
@@ -37,16 +42,16 @@
             <div class="calendar-view__stats">
               @if (stats.pickups > 0) {
                 <span class="ui-chip ui-chip--info calendar-view__stat-chip">
-                  <span class="ui-chip__dot"></span>{{ t.dispatch.pickups }}{{ stats.pickups }}
+                  {{ t.dispatch.pickups }} {{ stats.pickups }}
                 </span>
               }
               @if (stats.returns > 0) {
                 <span class="ui-chip ui-chip--warning calendar-view__stat-chip">
-                  <span class="ui-chip__dot"></span>{{ t.dispatch.returns }}{{ stats.returns }}
+                  {{ t.dispatch.returns }} {{ stats.returns }}
                 </span>
               }
-              <span class="ui-chip ui-chip--positive calendar-view__stat-chip">
-                <span class="ui-chip__dot"></span>{{ t.dispatch.available }}{{ stats.available }}
+              <span class="ui-chip ui-chip--positive calendar-view__stat-chip w-full">
+                {{ t.dispatch.available }} {{ stats.available }}
               </span>
             </div>
           </button>

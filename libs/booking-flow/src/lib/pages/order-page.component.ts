@@ -48,12 +48,10 @@ export class OrderPageComponent {
       map((p) => ({
         start: p.get('start') ?? '',
         end: p.get('end') ?? '',
-        pickup: p.get('pickup') ?? '',
-        return: p.get('return') ?? '',
         group: toVehicleGroup(p.get('group')),
       })),
     ),
-    { initialValue: { start: '', end: '', pickup: '', return: '', group: undefined } },
+    { initialValue: { start: '', end: '', group: undefined } },
   );
 
   readonly vehicle = computed<Vehicle | null>(
@@ -61,8 +59,8 @@ export class OrderPageComponent {
   );
   readonly startDate = computed(() => this.params().start.slice(0, 10));
   readonly endDate = computed(() => this.params().end.slice(0, 10));
-  readonly pickupLocation = computed(() => this.params().pickup);
-  readonly returnLocation = computed(() => this.params().return);
+  /** 取車地點直接吃該車的所屬據點，不再讓使用者另外選 */
+  readonly pickupLocation = computed(() => this.vehicle()?.location ?? '');
   readonly days = computed(() => this.quote.daysBetween(this.startDate(), this.endDate()));
 
   readonly addOnQty = signal<Record<string, number>>({});
@@ -112,15 +110,9 @@ export class OrderPageComponent {
     this.ensureValidOrRedirect();
   });
 
-  /** 車、租期或取還地點不成立就沒有可下單的內容，導回搜尋頁重來 */
+  /** 車或租期不成立就沒有可下單的內容，導回搜尋頁重來 */
   ensureValidOrRedirect(): boolean {
-    if (
-      this.vehicle() &&
-      this.startDate() &&
-      this.endDate() &&
-      this.pickupLocation() &&
-      this.returnLocation()
-    ) {
+    if (this.vehicle() && this.startDate() && this.endDate()) {
       return true;
     }
     this.goToSearch();
@@ -128,12 +120,9 @@ export class OrderPageComponent {
   }
 
   goToSearch(): void {
-    const { start, end, pickup, return: returnLocation, group } = this.params();
+    const { start, end, group } = this.params();
     this.router.navigate([...this.context.basePath(), 'search'], {
-      queryParams:
-        start && end
-          ? { start, end, pickup, return: returnLocation, group: group ?? null }
-          : {},
+      queryParams: start && end ? { start, end, group: group ?? null } : {},
     });
   }
 
@@ -148,7 +137,7 @@ export class OrderPageComponent {
   onConfirmSubmit(form: ConfirmFormValue): void {
     if (!this.ensureValidOrRedirect()) return;
     const vehicle = this.vehicle()!;
-    const { start, end, pickup, return: returnLocation } = this.params();
+    const { start, end } = this.params();
     this.submitting.set(true);
     this.submitError.set('');
     try {
@@ -157,8 +146,8 @@ export class OrderPageComponent {
         vehicleId: vehicle.id,
         startTime: start,
         endTime: end,
-        pickupLocation: pickup,
-        returnLocation,
+        pickupLocation: this.pickupLocation() || '機場',
+        returnLocation: form.returnLocation,
         customer: { name: form.name, phone: form.phone, email: form.email },
         category: vehicle.category,
         startDate: this.startDate(),

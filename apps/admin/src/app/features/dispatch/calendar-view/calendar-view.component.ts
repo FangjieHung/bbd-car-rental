@@ -15,7 +15,7 @@ import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { CustomerStore } from '../../../stores/customer/customer.store';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 
-const NARROW_QUERY = '(max-width: 1024px)';
+const NARROW_QUERY = '(max-width: 1280px)';
 
 function toIsoDate(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');

@@ -15,17 +15,15 @@
 }
 
 .responsive-panel__header {
-  display: flex;
-  align-items: center;
+  @apply flex flex-col items-center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1rem 0;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .responsive-panel__heading-group {
-  display: flex;
-  align-items: center;
+  @apply flex items-center w-full;
   gap: 0.5rem;
   min-width: 0;
 }
@@ -33,6 +31,22 @@
 .responsive-panel__heading {
   margin: 0;
   font-weight: 700;
+}
+
+.responsive-panel__header-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+  // Projected content (e.g. mat-tab-nav-bar) manages its own overflow/pagination based on its
+  // *own* measured width, not on flex-shrink (Material tab headers ship with flex-shrink: 0).
+  // Without forcing it to fill this wrapper, it renders at its intrinsic content width and just
+  // gets hard-clipped by .responsive-panel's overflow: hidden instead of showing pagination arrows.
+  ::ng-deep > * {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .responsive-panel__close {
@@ -43,6 +57,7 @@
   border: none;
   cursor: pointer;
   padding: 0.25rem;
+  margin-left: auto;
   color: var(--mat-sys-on-surface-variant);
 }
 

@@ -13,8 +13,12 @@ body {
   height: 100%;
 }
 
+.mat-drawer-content {
+  max-height: 100svh;
+}
+
 .shell-container {
   @apply flex flex-col;
-  height: calc(100svh - 16.5rem);
+  height: 100%;
   min-height: 100%;
 }

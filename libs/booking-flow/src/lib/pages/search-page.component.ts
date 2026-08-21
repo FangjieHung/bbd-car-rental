@@ -5,12 +5,7 @@ import { map } from 'rxjs';
 import { Vehicle } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
-import {
-  DateRange,
-  DEFAULT_LOCATION,
-  VEHICLE_GROUP_CATEGORIES,
-  toVehicleGroup,
-} from '../date-range';
+import { DateRange, VEHICLE_GROUP_CATEGORIES, toVehicleGroup } from '../date-range';
 import { QuoteService } from '../quote.service';
 import { DateStepComponent } from '../steps/date-step.component';
 import { VehicleStepComponent } from '../steps/vehicle-step.component';
@@ -18,6 +13,7 @@ import { VehicleStepComponent } from '../steps/vehicle-step.component';
 /**
  * 搜尋頁：選租期 + 挑車。
  * 租期是 URL query params 的投影,元件本身不保存狀態 —— 使用者才能分享網址、重整、按上一頁。
+ * 取車地點不在這裡選——選車時直接吃該車的所屬據點；還車地點留到下單頁的 confirm-step 再選。
  */
 @Component({
   selector: 'app-search-page',
@@ -39,24 +35,18 @@ export class SearchPageComponent {
       map((p) => ({
         start: p.get('start') ?? '',
         end: p.get('end') ?? '',
-        pickup: p.get('pickup') ?? '',
-        return: p.get('return') ?? '',
         group: toVehicleGroup(p.get('group')),
       })),
     ),
-    { initialValue: { start: '', end: '', pickup: '', return: '', group: undefined } },
+    { initialValue: { start: '', end: '', group: undefined } },
   );
 
   readonly dateRange = computed<DateRange | null>(() => {
-    const { start, end, pickup, return: returnLocation, group } = this.params();
+    const { start, end, group } = this.params();
     if (!start || !end) return null;
-    // 地點缺省時（例如加了取還地點之前發出的連結）退回預設值，
-    // 讓舊連結的行為等同重新進站，而不是連日期都一起消失。
     return {
       startDateTime: start,
       endDateTime: end,
-      pickupLocation: pickup || DEFAULT_LOCATION,
-      returnLocation: returnLocation || DEFAULT_LOCATION,
       vehicleGroup: group,
     };
   });
@@ -64,6 +54,15 @@ export class SearchPageComponent {
   readonly startDate = computed(() => this.params().start.slice(0, 10));
   readonly endDate = computed(() => this.params().end.slice(0, 10));
   readonly days = computed(() => this.quote.daysBetween(this.startDate(), this.endDate()));
+
+  readonly startTime = computed<Date | null>(() => {
+    const start = this.params().start;
+    return start ? new Date(start) : null;
+  });
+  readonly endTime = computed<Date | null>(() => {
+    const end = this.params().end;
+    return end ? new Date(end) : null;
+  });
 
   readonly selectedVehicle = signal<Vehicle | null>(null);
 
@@ -90,9 +89,21 @@ export class SearchPageComponent {
       queryParams: {
         start: range.startDateTime,
         end: range.endDateTime,
-        pickup: range.pickupLocation,
-        return: range.returnLocation,
         group: range.vehicleGroup ?? null,
+      },
+      replaceUrl: true,
+    });
+  }
+
+  onTimeChange(times: { startTime: Date; endTime: Date }): void {
+    const { start, end, group } = this.params();
+    if (!start || !end) return;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        start: this.combine(start, times.startTime),
+        end: this.combine(end, times.endTime),
+        group: group ?? null,
       },
       replaceUrl: true,
     });
@@ -105,10 +116,15 @@ export class SearchPageComponent {
       queryParams: {
         start: range.startDateTime,
         end: range.endDateTime,
-        pickup: range.pickupLocation,
-        return: range.returnLocation,
         group: range.vehicleGroup ?? null,
       },
     });
+  }
+
+  private combine(dateTimeIso: string, time: Date): string {
+    const combined = new Date(dateTimeIso);
+    combined.setHours(time.getHours(), time.getMinutes(), 0, 0);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${combined.getFullYear()}-${pad(combined.getMonth() + 1)}-${pad(combined.getDate())}T${pad(combined.getHours())}:${pad(combined.getMinutes())}`;
   }
 }
