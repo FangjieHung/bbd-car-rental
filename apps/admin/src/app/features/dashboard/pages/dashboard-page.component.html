@@ -31,24 +31,6 @@
 
   <section class="ui-card px-5 pt-5 mb-4 min-h-fit xl:w-fit">
     <app-date-step (dateRangeChange)="onQuickRange($event)" />
-    @if (pickedVehicle(); as v) {
-      <div class="mt-3 flex items-center gap-2 text-sm">
-        <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
-        <span>
-          {{ t.booking.pickedResult }}：{{ v.brand }} {{ v.model }}（{{ v.plateNumber }}）
-          <br />
-          {{ fmt(pickedRange()!.startDateTime) }} — {{ fmt(pickedRange()!.endDateTime) }}
-        </span>
-        <button
-          mat-icon-button
-          [matTooltip]="t.booking.clearPick"
-          [attr.aria-label]="t.booking.clearPick"
-          (click)="clearPick()"
-        >
-          <span class="material-symbols-rounded" aria-hidden="true">close</span>
-        </button>
-      </div>
-    }
   </section>
 
   <app-calendar-view class="flex-auto" [targetDate]="targetDate()" (dateSelected)="selectCalendarDate($event)" />

@@ -3,11 +3,8 @@ import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDialog } from '@angular/material/dialog';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { DateRange, DateStepComponent } from '@car-rental/booking-flow';
-import { Vehicle } from '../../../core/models';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { fmtDateTime, startOfDay } from '../../../core/date-utils';
+import { startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { CustomerStore } from '../../../stores/customer/customer.store';
 import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
@@ -28,7 +25,6 @@ import { pickVehicle } from '../../bookings/dialogs/vehicle-picker-dialog.compon
     HeaderToolbarDirective,
     MatButtonModule,
     MatBadgeModule,
-    MatTooltipModule,
     RouterLink,
     DateStepComponent,
   ],
@@ -36,30 +32,17 @@ import { pickVehicle } from '../../bookings/dialogs/vehicle-picker-dialog.compon
   styleUrls: ['../../../app.scss'],
 })
 export class DashboardPageComponent {
-  protected readonly t = ZH_TW;
   readonly bookingStore = inject(BookingStore);
   readonly customerStore = inject(CustomerStore);
   readonly maintenanceStore = inject(MaintenanceStore);
   private readonly todayDate = startOfDay(new Date());
 
   private readonly dialog = inject(MatDialog);
-  protected readonly fmt = fmtDateTime;
 
   readonly targetDate = signal(startOfDay(new Date()));
 
-  readonly pickedRange = signal<DateRange | null>(null);
-  readonly pickedVehicle = signal<Vehicle | null>(null);
-
   async onQuickRange(range: DateRange): Promise<void> {
-    this.pickedRange.set(range);
-    this.pickedVehicle.set(null);
-    const vehicle = await pickVehicle(this.dialog, range);
-    if (vehicle) this.pickedVehicle.set(vehicle);
-  }
-
-  clearPick(): void {
-    this.pickedRange.set(null);
-    this.pickedVehicle.set(null);
+    await pickVehicle(this.dialog, range);
   }
 
   selectCalendarDate(date: Date): void {
