@@ -27,6 +27,8 @@ export class PlanPageComponent {
   private readonly context = inject(BOOKING_CONTEXT);
   private readonly vehicleRepo = inject(VEHICLE_REPO);
 
+  readonly partner = this.context.partner;
+
   private readonly vehicleId = toSignal(
     this.route.paramMap.pipe(map((p) => p.get('vehicleId') ?? '')),
     { initialValue: '' },
@@ -64,6 +66,7 @@ export class PlanPageComponent {
       endDate: this.endDate(),
       addOnLines: [],
       insurancePlan: this.selectedPlan() ?? undefined,
+      partnerDiscountPercent: this.partner()?.discountPercent,
     });
   });
 

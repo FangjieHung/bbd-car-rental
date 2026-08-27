@@ -1,4 +1,7 @@
 <div class="plan-page max-w-xl">
+  @if (partner(); as p) {
+    <div class="partner-banner">{{ p.name }} 專屬預約</div>
+  }
   @if (vehicle(); as v) {
     <div class="plan-layout">
       <div class="plan-main">

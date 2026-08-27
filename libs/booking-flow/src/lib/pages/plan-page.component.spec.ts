@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
@@ -6,6 +7,7 @@ import {
   AddOn,
   Coupon,
   Customer,
+  Partner,
   PricingPlan,
   RentalBooking,
   SeasonCalendar,
@@ -19,6 +21,7 @@ import {
   COUPON_REPO,
   createInMemoryRepo,
 } from '@car-rental/domain';
+import { providePartnerBookingContext } from '../booking-context';
 import { PlanPageComponent } from './plan-page.component';
 
 function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
@@ -45,10 +48,18 @@ const plan: PricingPlan = {
   tiers: [],
 };
 const calendar: SeasonCalendar = { id: 'default', holidays: [], peakSeasons: [] };
+const partner: Partner = {
+  id: 'pt1',
+  name: '海景民宿',
+  slug: 'seaview',
+  discountPercent: 10,
+  commission: { type: 'percent', value: 5 },
+};
 
 function setup(
   params: { vehicleId: string; start: string; end: string },
   vehicle: Vehicle = makeVehicle(),
+  opts: { partnerContext?: boolean } = {},
 ) {
   TestBed.resetTestingModule();
   const navigate = vi.fn().mockResolvedValue(true);
@@ -69,6 +80,9 @@ function setup(
           queryParamMap: of(convertToParamMap({ start: params.start, end: params.end })),
         },
       },
+      ...(opts.partnerContext
+        ? [providePartnerBookingContext(signal(partner), signal('seaview'))]
+        : []),
     ],
   });
   const component = TestBed.runInInjectionContext(() => new PlanPageComponent());
@@ -115,6 +129,17 @@ describe('PlanPageComponent', () => {
     const { component } = setup(validParams);
     expect(component.selectedPlan()).toBeNull();
     expect(component.priceBreakdown()?.insuranceSubtotal).toBe(0);
+  });
+
+  it('夥伴情境下 partner() 反映該夥伴，priceBreakdown 套用夥伴折扣後總價較低', () => {
+    const { component: consumerPage } = setup(validParams);
+    expect(consumerPage.partner()).toBeNull();
+
+    const { component: partnerPage } = setup(validParams, makeVehicle(), { partnerContext: true });
+    expect(partnerPage.partner()?.id).toBe('pt1');
+    expect(partnerPage.priceBreakdown()?.total).toBeLessThan(
+      consumerPage.priceBreakdown()?.total ?? 0,
+    );
   });
 
   it('下一步導向 order/:vehicleId，帶上原本的日期與選定的 planId', () => {
