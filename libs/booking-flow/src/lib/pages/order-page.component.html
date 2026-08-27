@@ -52,6 +52,7 @@
         [vehicle]="vehicle()"
         [startDate]="startDate()"
         [endDate]="endDate()"
+        [returnLocation]="vehicle()?.location ?? ''"
         [selectedAddOnLines]="selectedAddOnLines()"
         [priceBreakdown]="priceBreakdown()"
       ></app-order-summary-card>
