@@ -49,9 +49,10 @@ export class OrderPageComponent {
         start: p.get('start') ?? '',
         end: p.get('end') ?? '',
         group: toVehicleGroup(p.get('group')),
+        planId: p.get('planId') ?? undefined,
       })),
     ),
-    { initialValue: { start: '', end: '', group: undefined } },
+    { initialValue: { start: '', end: '', group: undefined, planId: undefined } },
   );
 
   readonly vehicle = computed<Vehicle | null>(
@@ -91,6 +92,7 @@ export class OrderPageComponent {
     const vehicle = this.vehicle();
     if (!vehicle) return null;
     const result = this.couponResult();
+    const insurancePlan = vehicle.insurancePlans?.find((p) => p.id === this.params().planId);
     return this.quote.quote({
       vehicle,
       startDate: this.startDate(),
@@ -98,6 +100,7 @@ export class OrderPageComponent {
       addOnLines: this.selectedAddOnLines(),
       coupon: result?.ok ? result.coupon : undefined,
       partnerDiscountPercent: this.partner()?.discountPercent,
+      insurancePlan,
     });
   });
 
@@ -137,7 +140,7 @@ export class OrderPageComponent {
   onConfirmSubmit(form: ConfirmFormValue): void {
     if (!this.ensureValidOrRedirect()) return;
     const vehicle = this.vehicle()!;
-    const { start, end } = this.params();
+    const { start, end, planId } = this.params();
     this.submitting.set(true);
     this.submitError.set('');
     try {
@@ -157,8 +160,13 @@ export class OrderPageComponent {
         paymentMethod: form.paymentMethod,
         partnerDiscountPercent: this.partner()?.discountPercent,
         sourcePartnerId: this.partner()?.id,
+        insurancePlanId: planId,
       });
-      this.router.navigate([...this.context.basePath(), 'pay', booking.id]);
+      const target =
+        form.paymentMethod === 'on_site'
+          ? [...this.context.basePath(), 'done', booking.id]
+          : [...this.context.basePath(), 'pay', booking.id];
+      this.router.navigate(target);
     } catch (err) {
       this.submitError.set(err instanceof Error ? err.message : '送出失敗，請稍後再試');
     } finally {
