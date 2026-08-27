@@ -1,0 +1,144 @@
+<div class="plan-page max-w-xl">
+  @if (vehicle(); as v) {
+    <div class="plan-layout">
+      <div class="plan-main">
+        <article class="ui-card vehicle-detail">
+          <div class="vehicle-detail__media">
+            @if (v.imageUrl) {
+              <img [src]="v.imageUrl" [alt]="v.brand + ' ' + v.model" />
+              <span class="vehicle-detail__media-tag">實拍照</span>
+            } @else {
+              <span class="material-symbols-rounded vehicle-detail__placeholder" aria-hidden="true">directions_car</span>
+            }
+          </div>
+
+          <div class="vehicle-detail__body">
+            @if (v.classLabel) {
+              <p class="ui-text-caption">{{ v.classLabel }}</p>
+            }
+            <h1 class="vehicle-detail__title ui-text-title">
+              {{ v.brand }} {{ v.model }}
+              <span class="vehicle-detail__similar">
+                或同級
+                <span
+                  class="material-symbols-rounded"
+                  aria-hidden="true"
+                  title="實際車輛以現場配車為準，將提供同等級或以上車款"
+                  >info</span
+                >
+              </span>
+            </h1>
+
+            <ul class="vehicle-detail__specs">
+              @if (v.seats) {
+                <li><span class="material-symbols-rounded" aria-hidden="true">airline_seat_recline_normal</span>{{ v.seats }}人座</li>
+              }
+              @if (v.luggage) {
+                <li><span class="material-symbols-rounded" aria-hidden="true">luggage</span>{{ v.luggage }}件行李</li>
+              }
+              @if (v.hasAirConditioner) {
+                <li><span class="material-symbols-rounded" aria-hidden="true">ac_unit</span>空調</li>
+              }
+              @if (v.transmission) {
+                <li>{{ v.transmission === 'manual' ? '手排' : '自排' }}</li>
+              }
+            </ul>
+
+            <p class="vehicle-detail__notice ui-text-caption">
+              特別提醒 如超過預約的時間，於額外收費時段取車，需額外支付服務費
+            </p>
+          </div>
+        </article>
+
+        @if (v.insurancePlans && v.insurancePlans.length > 0) {
+          <section class="ui-card plan-select">
+            <div class="ui-card-header">
+              <h2 class="ui-card-title ui-text-title">選擇方案</h2>
+            </div>
+
+            @for (plan of v.insurancePlans; track plan.id) {
+              <label class="plan-option" [class.plan-option--selected]="selectedPlan()?.id === plan.id">
+                <div class="plan-option__head">
+                  <div>
+                    <p class="plan-option__name">{{ plan.name }}</p>
+                    <p class="plan-option__price">NT$ {{ plan.dailyPriceFrom | number }}起 / 天</p>
+                  </div>
+                  <input
+                    type="radio"
+                    name="insurancePlan"
+                    [value]="plan.id"
+                    [checked]="selectedPlan()?.id === plan.id"
+                    (change)="selectPlan(plan.id)"
+                  />
+                </div>
+
+                @if (plan.tags.length > 0) {
+                  <div class="plan-option__tags">
+                    @for (tag of plan.tags; track tag) {
+                      <span class="ui-chip ui-chip--neutral">{{ tag }}</span>
+                    }
+                  </div>
+                }
+
+                @if (plan.coverageItems.length > 0) {
+                  <div class="plan-option__coverage">
+                    @for (item of plan.coverageItems; track item.name) {
+                      <div class="plan-option__coverage-item">
+                        <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
+                        <div>
+                          <p>{{ item.name }}</p>
+                          <p class="ui-text-caption">
+                            自付額 {{ item.currency === 'JPY' ? '¥' : 'NT$' }}{{ item.deductibleMin | number }} -
+                            {{ item.currency === 'JPY' ? '¥' : 'NT$' }}{{ item.deductibleMax | number }}
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (plan.detailsUrl) {
+                  <a class="plan-option__details-link" [href]="plan.detailsUrl" target="_blank" rel="noopener"
+                    >查看保險詳情</a
+                  >
+                }
+              </label>
+            }
+          </section>
+        }
+
+        <section class="plan-settings">
+          @if (v.fuelPolicy) {
+            <div class="plan-settings__row">
+              <span>燃油規定</span>
+              <span class="ui-chip ui-chip--neutral">{{ v.fuelPolicy === 'full_to_full' ? '滿油取還車' : v.fuelPolicy === 'full_to_empty' ? '滿油取車、可空車還車' : '原油量還車' }}</span>
+            </div>
+          }
+          @if (v.mileagePolicy) {
+            <div class="plan-settings__row">
+              <span>里程政策</span>
+              <span class="ui-chip ui-chip--neutral">{{ v.mileagePolicy === 'unlimited' ? '無限里程' : '有里程限制' }}</span>
+            </div>
+          }
+          <div class="plan-settings__row">
+            <span>付款方式</span>
+            <span class="ui-chip ui-chip--neutral">線上付款</span>
+          </div>
+        </section>
+      </div>
+
+      <aside class="plan-aside">
+        <app-order-summary-card
+          [vehicle]="v"
+          [startDate]="startDate()"
+          [endDate]="endDate()"
+          [returnLocation]="v.location ?? ''"
+          [showVehicleHeader]="false"
+          [priceBreakdown]="priceBreakdown()"
+        ></app-order-summary-card>
+
+        <button type="button" mat-flat-button color="primary" class="plan-page__next" (click)="onNext()">下一步</button>
+      </aside>
+    </div>
+  }
+</div>
