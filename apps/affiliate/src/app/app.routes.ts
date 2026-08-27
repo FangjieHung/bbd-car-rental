@@ -26,6 +26,11 @@ export const routes: Routes = [
           import('@car-rental/booking-flow').then((m) => m.SearchPageComponent),
       },
       {
+        path: 'vehicle/:vehicleId/plan',
+        loadComponent: () =>
+          import('@car-rental/booking-flow').then((m) => m.PlanPageComponent),
+      },
+      {
         path: 'order/:vehicleId',
         loadComponent: () =>
           import('@car-rental/booking-flow').then((m) => m.OrderPageComponent),

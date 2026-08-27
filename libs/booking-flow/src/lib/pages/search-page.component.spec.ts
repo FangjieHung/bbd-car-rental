@@ -149,13 +149,13 @@ describe('SearchPageComponent', () => {
     );
   });
 
-  it('consumer 情境選車導向 /order/:id 並帶著日期', () => {
+  it('consumer 情境選車導向 /vehicle/:id/plan 並帶著日期', () => {
     const { component, navigate } = setup({
       start: '2026-08-20T10:00:00',
       end: '2026-08-23T10:00:00',
     });
     component.onVehicleSelect(makeVehicle({ id: 'v9' }));
-    expect(navigate).toHaveBeenCalledWith(['/', 'order', 'v9'], {
+    expect(navigate).toHaveBeenCalledWith(['/', 'vehicle', 'v9', 'plan'], {
       queryParams: {
         start: '2026-08-20T10:00:00',
         end: '2026-08-23T10:00:00',
@@ -164,7 +164,7 @@ describe('SearchPageComponent', () => {
     });
   });
 
-  it('夥伴情境選車導向 /p/:slug/order/:id', () => {
+  it('夥伴情境選車導向 /p/:slug/vehicle/:id/plan', () => {
     const { component, navigate } = setup(
       {
         start: '2026-08-20T10:00:00',
@@ -173,7 +173,7 @@ describe('SearchPageComponent', () => {
       { partnerContext: true },
     );
     component.onVehicleSelect(makeVehicle({ id: 'v9' }));
-    expect(navigate).toHaveBeenCalledWith(['/p', 'seaview', 'order', 'v9'], {
+    expect(navigate).toHaveBeenCalledWith(['/p', 'seaview', 'vehicle', 'v9', 'plan'], {
       queryParams: {
         start: '2026-08-20T10:00:00',
         end: '2026-08-23T10:00:00',
