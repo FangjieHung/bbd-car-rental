@@ -33,6 +33,20 @@ export function seedVehicles(): Vehicle[] {
       instantConfirm: true,
       supplierCount: 1,
       location: '機場',
+      insurancePlans: [
+        {
+          id: 'ins-basic',
+          name: '基本保障',
+          dailyPriceFrom: 662,
+          tags: ['有自負額', '最低保障'],
+          coverageItems: [
+            { name: '租車自負額', deductibleMin: 100000, deductibleMax: 800000, currency: 'JPY' },
+            { name: '第三人責任險', deductibleMin: 100000, deductibleMax: 800000, currency: 'JPY' },
+          ],
+        },
+      ],
+      fuelPolicy: 'full_to_full',
+      mileagePolicy: 'unlimited',
     },
     {
       id: 'v2',
