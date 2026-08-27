@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { AddOn, Coupon, PriceBreakdown, Vehicle, VehicleCategory } from '@car-rental/domain';
+import { AddOn, Coupon, InsurancePlan, PriceBreakdown, Vehicle, VehicleCategory } from '@car-rental/domain';
 import { CatalogStore } from './catalog.store';
 
 export interface CouponResult {
@@ -61,6 +61,7 @@ export class QuoteService {
     addOnLines: { addOn: AddOn; qty: number }[];
     coupon?: Coupon;
     partnerDiscountPercent?: number;
+    insurancePlan?: InsurancePlan;
   }): PriceBreakdown | null {
     if (!input.startDate || !input.endDate) return null;
     // 無定價方案是預期會發生的情況（該車型還沒設定方案），直接回 null，不必靠例外處理。
@@ -73,6 +74,7 @@ export class QuoteService {
         addOns: input.addOnLines,
         coupon: input.coupon,
         partnerDiscountPercent: input.partnerDiscountPercent,
+        insurancePlan: input.insurancePlan,
       });
     } catch (err) {
       // 上面已排除唯一已知的例外來源，走到這裡代表 calculatePrice 出現未預期錯誤；

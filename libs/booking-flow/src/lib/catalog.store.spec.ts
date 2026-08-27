@@ -42,6 +42,7 @@ const plan: PricingPlan = {
   tiers: [],
 };
 const calendar: SeasonCalendar = { id: 'default', holidays: [], peakSeasons: [] };
+const insurancePlan = { id: 'ins1', name: '基本保障', dailyPriceFrom: 200, tags: [], coverageItems: [] };
 const coupon: Coupon = {
   id: 'c1',
   code: 'SUMMER',
@@ -51,11 +52,11 @@ const coupon: Coupon = {
   validTo: '2026-12-31',
 };
 
-function setup(bookings: RentalBooking[] = []): CatalogStore {
+function setup(bookings: RentalBooking[] = [], vehicles: Vehicle[] = [makeVehicle()]): CatalogStore {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
+      { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
       { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
       { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([plan]) },
@@ -97,6 +98,16 @@ describe('CatalogStore', () => {
     expect(r.total).toBeGreaterThan(0);
   });
 
+  it('price 帶 insurancePlan 時，total 併入保費', () => {
+    const store = setup();
+    const without = store.price({ category: 'scooter', startDate: '2026-01-05', endDate: '2026-01-07', addOns: [] });
+    const withIns = store.price({
+      category: 'scooter', startDate: '2026-01-05', endDate: '2026-01-07', addOns: [], insurancePlan: insurancePlan,
+    });
+    expect(withIns.insuranceSubtotal).toBe(400); // 2 天 x 200
+    expect(withIns.total).toBe(without.total + 400);
+  });
+
   it('price 找不到對應車型 plan 時應 throw', () => {
     const store = setup();
     expect(() =>
@@ -134,6 +145,47 @@ describe('CatalogStore', () => {
     });
     expect(b.status).toBe('pending_payment');
     expect(b.priceBreakdown?.total).toBeGreaterThan(0);
+  });
+
+  it('submitBooking 帶 insurancePlanId 對應到車輛的方案時，booking 與 priceBreakdown 都記下保費', () => {
+    const store = setup([], [{ ...makeVehicle(), insurancePlans: [insurancePlan] }]);
+    const b = store.submitBooking({
+      vehicleId: 'v1',
+      startTime: '2026-01-05T09:00:00',
+      endTime: '2026-01-07T09:00:00',
+      pickupLocation: '馬公',
+      returnLocation: '馬公',
+      customer: { name: '測試', phone: '0900000000', email: 't@t.com' },
+      category: 'scooter',
+      startDate: '2026-01-05',
+      endDate: '2026-01-07',
+      addOns: [],
+      couponCode: undefined,
+      paymentMethod: 'on_site',
+      insurancePlanId: 'ins1',
+    });
+    expect(b.insurancePlanId).toBe('ins1');
+    expect(b.priceBreakdown?.insuranceSubtotal).toBe(400);
+  });
+
+  it('submitBooking 帶不存在的 insurancePlanId 時，視為未選保險，不丟例外', () => {
+    const store = setup();
+    const b = store.submitBooking({
+      vehicleId: 'v1',
+      startTime: '2026-01-05T09:00:00',
+      endTime: '2026-01-07T09:00:00',
+      pickupLocation: '馬公',
+      returnLocation: '馬公',
+      customer: { name: '測試', phone: '0900000000', email: 't@t.com' },
+      category: 'scooter',
+      startDate: '2026-01-05',
+      endDate: '2026-01-07',
+      addOns: [],
+      couponCode: undefined,
+      paymentMethod: 'on_site',
+      insurancePlanId: 'not-exist',
+    });
+    expect(b.priceBreakdown?.insuranceSubtotal).toBe(0);
   });
 
   it('submitBooking 車已被佔用 → 丟錯', () => {

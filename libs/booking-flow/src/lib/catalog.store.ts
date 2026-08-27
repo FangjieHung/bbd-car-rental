@@ -3,6 +3,7 @@ import {
   AddOn,
   Coupon,
   Customer,
+  InsurancePlan,
   PaymentMethod,
   PriceBreakdown,
   PricingPlan,
@@ -53,6 +54,7 @@ export class CatalogStore {
     addOns: { addOn: AddOn; qty: number }[];
     coupon?: Coupon;
     partnerDiscountPercent?: number;
+    insurancePlan?: InsurancePlan;
   }): PriceBreakdown {
     const plan = this.planForCategory(input.category);
     if (!plan) throw new Error('無此車型定價');
@@ -85,6 +87,7 @@ export class CatalogStore {
     paymentMethod: PaymentMethod;
     partnerDiscountPercent?: number;
     sourcePartnerId?: string;
+    insurancePlanId?: string;
   }): RentalBooking {
     const vehicle = this.vehicleRepo.getById(input.vehicleId);
     if (!vehicle) throw new Error('查無車輛');
@@ -100,6 +103,9 @@ export class CatalogStore {
     const coupon = input.couponCode
       ? this.couponRepo.getAll().find((c) => c.code.toLowerCase() === input.couponCode!.toLowerCase())
       : undefined;
+    const insurancePlan = input.insurancePlanId
+      ? vehicle.insurancePlans?.find((p) => p.id === input.insurancePlanId)
+      : undefined;
     const priceBreakdown = this.price({
       category: input.category,
       startDate: input.startDate,
@@ -107,6 +113,7 @@ export class CatalogStore {
       addOns: input.addOns,
       coupon,
       partnerDiscountPercent: input.partnerDiscountPercent,
+      insurancePlan,
     });
     const customer: Customer = {
       id: crypto.randomUUID(),
@@ -129,6 +136,7 @@ export class CatalogStore {
       priceBreakdown,
       paymentMethod: input.paymentMethod,
       ...(input.sourcePartnerId ? { sourcePartnerId: input.sourcePartnerId } : {}),
+      ...(input.insurancePlanId ? { insurancePlanId: input.insurancePlanId } : {}),
     };
     this.bookingRepo.create(booking);
     return booking;
