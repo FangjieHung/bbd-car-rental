@@ -1,16 +1,6 @@
-import { Component, effect, inject } from '@angular/core';
-import {
-  FormArray,
-  FormControl,
-  FormGroup,
-  NonNullableFormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
@@ -27,18 +17,13 @@ import {
   PricingPlanFormResult,
 } from '../dialogs/pricing-plan-dialog.component';
 
-type RangeGroup = FormGroup<{ start: FormControl<string>; end: FormControl<string> }>;
-
 @Component({
   selector: 'app-pricing-page',
   imports: [
     DataTableComponent,
     DataTableCellDirective,
     MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatTooltipModule,
-    ReactiveFormsModule,
     PageToolbarComponent,
     HeaderToolbarDirective,
   ],
@@ -50,7 +35,6 @@ export class PricingPageComponent {
   readonly store = inject(PricingStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
-  private fb = inject(NonNullableFormBuilder);
 
   readonly labels = ADMIN_DATA_TABLE_LABELS;
 
@@ -73,62 +57,6 @@ export class PricingPageComponent {
   onExportFailed(e: Error): void {
     console.error('DataTable 匯出失敗', e);
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
-  }
-
-  readonly calendarForm = this.fb.group({
-    holidays: this.fb.array<RangeGroup>([]),
-    peakSeasons: this.fb.array<RangeGroup>([]),
-  });
-
-  constructor() {
-    effect(() => {
-      const cal = this.store.calendar();
-      this.holidays.clear();
-      cal.holidays.forEach((r) => this.holidays.push(this.rangeGroup(r.start, r.end)));
-      this.peakSeasons.clear();
-      cal.peakSeasons.forEach((r) => this.peakSeasons.push(this.rangeGroup(r.start, r.end)));
-    });
-  }
-
-  get holidays(): FormArray<RangeGroup> {
-    return this.calendarForm.controls.holidays;
-  }
-
-  get peakSeasons(): FormArray<RangeGroup> {
-    return this.calendarForm.controls.peakSeasons;
-  }
-
-  private rangeGroup(start = '', end = ''): RangeGroup {
-    return this.fb.group({
-      start: [start, Validators.required],
-      end: [end, Validators.required],
-    });
-  }
-
-  addHoliday(): void {
-    this.holidays.push(this.rangeGroup());
-  }
-
-  removeHoliday(index: number): void {
-    this.holidays.removeAt(index);
-  }
-
-  addPeakSeason(): void {
-    this.peakSeasons.push(this.rangeGroup());
-  }
-
-  removePeakSeason(index: number): void {
-    this.peakSeasons.removeAt(index);
-  }
-
-  saveCalendar(): void {
-    if (this.calendarForm.invalid) return;
-    const raw = this.calendarForm.getRawValue();
-    try {
-      this.store.updateCalendar({ holidays: raw.holidays, peakSeasons: raw.peakSeasons });
-    } catch (e) {
-      this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
-    }
   }
 
   async openForm(plan: PricingPlan | null): Promise<void> {

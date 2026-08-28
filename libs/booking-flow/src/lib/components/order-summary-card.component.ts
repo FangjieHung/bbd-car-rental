@@ -14,4 +14,17 @@ export class OrderSummaryCardComponent {
   @Input() endDate = '';
   @Input() selectedAddOnLines: { addOn: AddOn; qty: number }[] = [];
   @Input() priceBreakdown: PriceBreakdown | null = null;
+
+  /** 三種折扣的合計，用來判斷是否需要顯示劃線的原價 */
+  get discountTotal(): number {
+    if (!this.priceBreakdown) return 0;
+    const { tierDiscountAmount, partnerDiscount, couponDiscount } = this.priceBreakdown;
+    return tierDiscountAmount + partnerDiscount + couponDiscount;
+  }
+
+  /** 完全沒有任何折扣時的應付總計（租金原價 + 配件小計），供劃線價對照 */
+  get originalTotal(): number {
+    if (!this.priceBreakdown) return 0;
+    return this.priceBreakdown.rentalRaw + this.priceBreakdown.addOnSubtotal;
+  }
 }

@@ -1,18 +1,27 @@
 .coupon-step {
-  padding: 16px 0;
-  max-width: 400px;
+  padding: 1.25rem;
 
-  .coupon-ok {
-    color: #2e7d32;
+  &__banner {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--mat-sys-corner-medium);
+    background: var(--app-info-bg);
   }
 
-  .coupon-error {
-    color: #c62828;
+  &__field {
+    flex: 1 1 220px;
+    min-width: 0;
+    // 抵銷 mat-form-field 預設 hint/subscript 區塊留白，讓 banner 高度貼合輸入框
+    margin-bottom: -1.25em;
   }
 
   .summary {
     margin-top: 16px;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    border-top: 1px solid var(--mat-sys-outline-variant);
     padding-top: 12px;
 
     .line {
@@ -22,13 +31,11 @@
     }
 
     .discount {
-      color: #2e7d32;
+      color: var(--app-positive-fg);
     }
 
     .total {
-      font-weight: 700;
-      font-size: 1.1em;
-      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      border-top: 1px solid var(--mat-sys-outline-variant);
       margin-top: 8px;
       padding-top: 8px;
     }

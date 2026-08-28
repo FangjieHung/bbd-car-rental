@@ -1,4 +1,10 @@
 .order-page {
+  @apply mx-auto;
+
+  &__title {
+    margin: 0 0 1rem;
+  }
+
   .checkout-layout {
     display: grid;
     grid-template-columns: 1fr;
@@ -6,8 +12,8 @@
     margin-top: 1.5rem;
   }
 
-  .checkout-main section + section {
-    margin-top: 2rem;
+  .checkout-main .checkout-section + .checkout-section {
+    margin-top: 1.5rem;
   }
 
   // 窄螢幕：running-total 卡片固定於視窗底部，且限制高度避免蓋住表單。

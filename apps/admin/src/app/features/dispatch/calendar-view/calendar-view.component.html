@@ -71,8 +71,8 @@
           <span panelHeaderExtra class="calendar-view__relative-chip">{{ label }}</span>
         }
         @if (selected()) {
-          @let pickup = todayPickupProgress();
-          @let ret = todayReturnProgress();
+          @let pickup = selectedPickupProgress();
+          @let ret = selectedReturnProgress();
           <mat-tab-group
             [selectedIndex]="panelTabIndex()"
             (selectedIndexChange)="onPanelTabIndexChange($event)"

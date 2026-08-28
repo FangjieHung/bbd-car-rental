@@ -1,26 +1,25 @@
 .addon-step {
-  padding: 16px 0;
-  max-width: 480px;
+  padding: 1.25rem;
 
   .addon-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 8px;
+    gap: 1rem;
+    padding: 0.75rem 0;
+
+    & + .addon-row {
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
   }
 
   .addon-info {
     display: flex;
     flex-direction: column;
+    gap: 0.125rem;
 
-    .name {
+    &__name {
       font-weight: 600;
-    }
-
-    .price {
-      font-size: 0.85em;
-      opacity: 0.7;
     }
   }
 

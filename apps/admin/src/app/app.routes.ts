@@ -57,6 +57,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'pricing/calendar',
+    loadComponent: () =>
+      import('./features/pricing/pages/pricing-calendar-page.component').then(
+        (m) => m.PricingCalendarPageComponent,
+      ),
+  },
+  {
     path: 'add-ons',
     loadComponent: () =>
       import('./features/add-ons/pages/add-ons-page.component').then(

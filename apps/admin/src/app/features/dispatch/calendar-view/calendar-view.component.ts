@@ -70,7 +70,8 @@ export function pickupProgress(bookings: RentalBooking[], day: Date): DayProgres
 export function returnProgress(bookings: RentalBooking[], day: Date): DayProgress {
   const relevant = bookings.filter(
     (b) =>
-      isSameDay(new Date(b.endTime), day) && (b.status === 'in_progress' || b.status === 'completed'),
+      isSameDay(new Date(b.endTime), day) &&
+      (b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'completed'),
   );
   const done = relevant.filter((b) => b.status === 'completed').length;
   return { total: relevant.length, done, pending: relevant.length - done };
@@ -206,12 +207,12 @@ export class CalendarViewComponent {
     return dayStats(this.bookingStore.bookings(), this.vehicleStore.vehicles().length, d);
   }
 
-  readonly todayPickupProgress = computed(() =>
-    pickupProgress(this.bookingStore.bookings(), this.todayDate),
+  readonly selectedPickupProgress = computed(() =>
+    pickupProgress(this.bookingStore.bookings(), this.selected() ?? this.todayDate),
   );
 
-  readonly todayReturnProgress = computed(() =>
-    returnProgress(this.bookingStore.bookings(), this.todayDate),
+  readonly selectedReturnProgress = computed(() =>
+    returnProgress(this.bookingStore.bookings(), this.selected() ?? this.todayDate),
   );
 
   private readonly activeBookings = computed(() =>

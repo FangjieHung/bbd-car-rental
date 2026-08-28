@@ -1,8 +1,8 @@
-<div class="order-page">
+<div class="order-page max-w-xl w-full mx-auto">
   @if (partner(); as p) {
     <div class="partner-banner">{{ p.name }} 專屬預約</div>
   }
-  <h1>填寫訂單</h1>
+  <h1 class="order-page__title ui-text-title">填寫訂單</h1>
 
   <app-search-criteria-bar
     [pickupLocation]="pickupLocation()"
@@ -14,8 +14,7 @@
 
   <div class="checkout-layout">
     <div class="checkout-main">
-      <section>
-        <h2>加購配件</h2>
+      <section class="checkout-section">
         <app-addon-step
           [addOns]="addOns()"
           [addOnQty]="addOnQty()"
@@ -23,8 +22,7 @@
         ></app-addon-step>
       </section>
 
-      <section>
-        <h2>優惠券</h2>
+      <section class="checkout-section">
         <app-coupon-step
           [couponCode]="couponCode()"
           [couponResult]="couponResult()"
@@ -33,7 +31,7 @@
         ></app-coupon-step>
       </section>
 
-      <section>
+      <section class="checkout-section">
         <app-confirm-step
           [vehicle]="vehicle()"
           [startDate]="startDate()"

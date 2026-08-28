@@ -41,6 +41,7 @@ export class App implements OnInit {
       icon: 'payments',
       children: [
         { route: '/pricing', label: this.t.nav.pricing, icon: 'payments' },
+        { route: '/pricing/calendar', label: this.t.nav.pricingCalendar, icon: 'event' },
         { route: '/coupons', label: this.t.nav.coupons, icon: 'sell' },
       ],
     },
@@ -90,9 +91,11 @@ export class App implements OnInit {
         map(() => this.router.url),
       )
       .subscribe((url) => {
-        const active = this.navLeaves.find(
-          (item) => item.route === url || url.startsWith(`${item.route}/`),
-        );
+        const active =
+          this.navLeaves.find((item) => item.route === url) ??
+          this.navLeaves
+            .filter((item) => url.startsWith(`${item.route}/`))
+            .sort((a, b) => b.route.length - a.route.length)[0];
         this.currentTitle = active?.label ?? this.t.nav.dashboard;
 
         const activeGroup = active

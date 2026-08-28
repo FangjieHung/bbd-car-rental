@@ -44,15 +44,17 @@
 
   .vehicle-step__filter-select {
     width: 140px;
+  }
 
-    @include mat.form-field-overrides(
-      (
-        container-height: 44px,
-        container-vertical-padding: 10px,
-        filled-with-label-container-padding-top: 10px,
-        filled-with-label-container-padding-bottom: 10px,
-      )
-    );
+  .vehicle-step__type-select {
+    width: 200px;
+
+    .mat-mdc-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
   }
 
   .vehicle-step__price-panel {

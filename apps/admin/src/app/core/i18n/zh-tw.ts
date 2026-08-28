@@ -8,6 +8,7 @@ export const ZH_TW = {
     maintenance: '保養管理',
     pricingGroup: '定價管理',
     pricing: '定價規則',
+    pricingCalendar: '假日及旺季',
     addOns: '配件清單',
     coupons: '優惠券設定',
     partnerGroup: '合作通路',
@@ -145,7 +146,6 @@ export const ZH_TW = {
     upcomingBadge: '待保養',
   },
   pricing: {
-    plans: '定價方案',
     name: '方案名稱',
     appliesToCategory: '適用車型',
     dayTypeRates: '每日價格',

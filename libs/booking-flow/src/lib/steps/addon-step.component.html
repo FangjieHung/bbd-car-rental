@@ -1,13 +1,17 @@
-<div class="addon-step">
+<div class="addon-step ui-card">
+  <div class="ui-card-header">
+    <h2 class="ui-card-title ui-text-title">加購配件</h2>
+  </div>
+
   @if (addOns.length === 0) {
-    <p>目前無可加購配件。</p>
+    <p class="ui-text-caption">目前無可加購配件。</p>
   }
 
   @for (addOn of addOns; track addOn.id) {
     <div class="addon-row">
       <div class="addon-info">
-        <span class="name">{{ addOn.name }}</span>
-        <span class="price">NT$ {{ addOn.unitPrice }} / {{ unitLabel[addOn.unit] }}</span>
+        <span class="addon-info__name">{{ addOn.name }}</span>
+        <span class="ui-text-caption">NT$ {{ addOn.unitPrice }} / {{ unitLabel[addOn.unit] }}</span>
       </div>
       <mat-form-field appearance="outline" class="qty-field">
         <mat-label>數量</mat-label>

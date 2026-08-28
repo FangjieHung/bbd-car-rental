@@ -26,6 +26,7 @@
           class="nav-link"
           [routerLink]="item.route"
           routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
           [matTooltip]="collapsed() ? item.label : ''"
           matTooltipPosition="right"
           (click)="navClick.emit()"
@@ -70,6 +71,7 @@
                 class="nav-sublink"
                 [routerLink]="child.route"
                 routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
                 (click)="navClick.emit()"
               >
                 <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ child.icon }}</span>
@@ -96,6 +98,7 @@
                   class="nav-flyout-item"
                   [routerLink]="child.route"
                   routerLinkActive="active"
+                  [routerLinkActiveOptions]="{ exact: true }"
                   (click)="navClick.emit()"
                 >
                   <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ child.icon }}</span>
