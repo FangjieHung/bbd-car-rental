@@ -99,6 +99,11 @@
   &__date {
     font-weight: 600;
   }
+
+  &__location a {
+    margin-left: 0.375rem;
+    color: var(--mat-sys-primary);
+  }
 }
 
 .empty-state {
@@ -109,19 +114,73 @@
 .price-card {
   padding: 1.25rem;
 
-  &__lines {
+  .line {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+  }
+
+  .discount {
+    color: var(--app-positive-fg);
+  }
+
+  &__price-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0 0.75rem;
+  }
+
+  &__group {
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    padding: 0.5rem 0;
+
+    &:last-of-type {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+
+  &__group-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  &__group-amount {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  &__group-detail {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
+    gap: 0.25rem;
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.875rem;
 
-    .line {
+    li {
       display: flex;
       justify-content: space-between;
-      padding: 4px 0;
     }
+  }
 
-    .discount {
-      color: var(--app-positive-fg);
-    }
+  &__badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--app-positive-fg);
+    color: var(--app-positive-fg);
   }
 
   &__total {
@@ -132,8 +191,6 @@
     padding-top: 0.75rem;
     border-top: 1px solid var(--mat-sys-outline-variant);
 
-    // 窄螢幕時整張卡片會在自己的容器內捲動（見 order-page 的 .checkout-aside）。
-    // 明細可以捲走，但應付總計必須始終看得見 —— 那是這張卡片存在的理由。
     @media (max-width: 899.98px) {
       position: sticky;
       bottom: 0;

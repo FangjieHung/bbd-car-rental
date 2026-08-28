@@ -41,6 +41,7 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
       partnerDiscount: 0,
       addOnLines: [],
       addOnSubtotal: 0,
+      insuranceSubtotal: 0,
       couponDiscount: 0,
       total: 1000,
     },

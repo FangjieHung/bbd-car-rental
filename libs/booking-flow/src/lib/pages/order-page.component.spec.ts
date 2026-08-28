@@ -56,7 +56,7 @@ const coupon: Coupon = {
 const helmet: AddOn = { id: 'a1', name: '安全帽', unitPrice: 100, unit: 'per_rental' };
 
 function setup(
-  params: { vehicleId: string; start: string; end: string },
+  params: { vehicleId: string; start: string; end: string; planId?: string },
   vehicle: Vehicle = makeVehicle(),
 ) {
   TestBed.resetTestingModule();
@@ -80,6 +80,7 @@ function setup(
             convertToParamMap({
               start: params.start,
               end: params.end,
+              ...(params.planId ? { planId: params.planId } : {}),
             }),
           ),
         },
@@ -142,6 +143,30 @@ describe('OrderPageComponent', () => {
     expect(created).toHaveLength(1);
     expect(created[0].status).toBe('pending_payment');
     expect(navigate).toHaveBeenCalledWith(['/', 'pay', created[0].id]);
+  });
+
+  it('現場付款送出後直接導向訂單成立頁，不經過付款頁', () => {
+    const { component, navigate, bookingRepo } = setup(validParams);
+    component.onConfirmSubmit({ ...confirmForm, paymentMethod: 'on_site' });
+    const created = bookingRepo.getAll();
+    expect(navigate).toHaveBeenCalledWith(['/', 'done', created[0].id]);
+  });
+
+  it('planId 對應到車輛的保險方案時，priceBreakdown 反映保費，送出的訂單也記下 insurancePlanId', () => {
+    const vehicleWithPlan = makeVehicle({
+      insurancePlans: [{ id: 'ins1', name: '基本保障', dailyPriceFrom: 100, tags: [], coverageItems: [] }],
+    });
+    const { component, bookingRepo } = setup({ ...validParams, planId: 'ins1' }, vehicleWithPlan);
+    expect(component.priceBreakdown()?.insuranceSubtotal).toBe(100 * component.days());
+    component.onConfirmSubmit(confirmForm);
+    expect(bookingRepo.getAll()[0].insurancePlanId).toBe('ins1');
+  });
+
+  it('沒有 planId 時 priceBreakdown 保費為 0，送出的訂單不記 insurancePlanId', () => {
+    const { component, bookingRepo } = setup(validParams);
+    expect(component.priceBreakdown()?.insuranceSubtotal).toBe(0);
+    component.onConfirmSubmit(confirmForm);
+    expect(bookingRepo.getAll()[0].insurancePlanId).toBeUndefined();
   });
 
   it('送出的訂單取車地點吃車輛所屬據點，還車地點吃使用者在確認頁選的值', () => {
