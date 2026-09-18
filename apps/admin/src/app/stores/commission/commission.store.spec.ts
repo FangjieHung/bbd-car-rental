@@ -34,6 +34,7 @@ const bookingInMonth: RentalBooking = {
   pickupLocation: '馬公門市',
   returnLocation: '馬公門市',
   status: 'completed',
+  depositRequired: 0,
   sourcePartnerId: 'pt1',
   priceBreakdown: {
     dailyLines: [
@@ -49,6 +50,7 @@ const bookingInMonth: RentalBooking = {
     partnerDiscount: 240,
     addOnLines: [],
     addOnSubtotal: 0,
+    insuranceSubtotal: 0,
     couponDiscount: 0,
     total: 2760,
   },

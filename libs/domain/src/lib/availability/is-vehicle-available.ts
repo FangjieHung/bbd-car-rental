@@ -1,6 +1,6 @@
 import { Vehicle, RentalBooking, BookingStatus } from '../models';
 import { rangesOverlap } from './ranges-overlap';
-const OCCUPYING: BookingStatus[] = ['pending_payment', 'confirmed', 'in_progress'];
+const OCCUPYING: BookingStatus[] = ['reserved', 'in_progress'];
 export function isVehicleAvailable(input: {
   vehicle: Vehicle; startTime: string; endTime: string; bookings: RentalBooking[];
 }): boolean {

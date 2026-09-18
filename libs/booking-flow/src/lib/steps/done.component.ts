@@ -24,15 +24,12 @@ export class DoneComponent {
   private readonly booking = computed(() => this.bookingRepo.getById(this.bookingId()) ?? null);
 
   /**
-   * 正常路徑（search → order → pay 成功 → done）走到這裡時訂單已是 confirmed，
-   * 文案要如實反映；PaymentPageComponent 對非待付款訂單、以及舊版
-   * /book/done/:id 連結，也會落在這頁，此時訂單仍是 pending_payment，
-   * 沿用「待付款/待人工確認」的文案。查無訂單（例如假的訂單編號）也視同待處理。
+   * 訂單的履約狀態（reserved）不代表付款是否完成 —— 在 Task 7 接上真正的付款分類帳、
+   * 讓這頁可以查詢實際付款結果之前，不能再用 status 猜「已確認」還是「待付款」，
+   * 一律顯示中性文案。查無訂單（例如假的訂單編號）也沿用同一段文案。
    */
-  protected readonly statusMessage = computed(() =>
-    this.booking()?.status === 'confirmed'
-      ? '您的訂單已成立並確認，我們將盡快為您準備車輛。'
-      : '您的訂單已成立，狀態為「待付款/待人工確認」，我們將盡快為您處理。',
+  protected readonly statusMessage = computed(
+    () => '您的訂單已成立，我們將盡快為您準備車輛，並確認後續付款事宜。',
   );
 
   /** 夥伴情境要回到夥伴的搜尋頁，不能把客人踢出夥伴品牌的網址 */

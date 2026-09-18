@@ -11,7 +11,8 @@ function bk(partial: Partial<RentalBooking>): RentalBooking {
     endTime: '2026-07-08T09:00:00',
     pickupLocation: '',
     returnLocation: '',
-    status: 'confirmed',
+    status: 'reserved',
+    depositRequired: 0,
     ...partial,
   };
 }

@@ -35,7 +35,8 @@ function makeBooking(partial: Partial<RentalBooking>): RentalBooking {
     endTime: new Date().toISOString(),
     pickupLocation: '馬公',
     returnLocation: '馬公',
-    status: 'confirmed',
+    status: 'reserved',
+    depositRequired: 0,
     ...partial,
   };
 }
@@ -64,7 +65,7 @@ describe('BookingsPageComponent filtering', () => {
         {
           provide: BOOKING_REPO,
           useValue: createInMemoryRepo<RentalBooking>([
-            makeBooking({ id: 'b1', vehicleId: 'v1', memberId: 'c1', status: 'confirmed' }),
+            makeBooking({ id: 'b1', vehicleId: 'v1', memberId: 'c1', status: 'reserved' }),
             makeBooking({ id: 'b2', vehicleId: 'v2', memberId: 'c2', status: 'in_progress' }),
             makeBooking({ id: 'b3', vehicleId: 'v1', memberId: 'c2', status: 'cancelled' }),
           ]),
@@ -102,7 +103,7 @@ describe('BookingsPageComponent filtering', () => {
 
   it('clearFilters 只清除篩選，不清除搜尋文字', () => {
     component.searchQuery.set('王小明');
-    component.statusFilter.set('confirmed');
+    component.statusFilter.set('reserved');
     component.clearFilters();
     expect(component.statusFilter()).toBeNull();
     expect(component.searchQuery()).toBe('王小明');

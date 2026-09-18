@@ -22,7 +22,7 @@ function toIsoDate(d: Date): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-const ACTIVE: RentalBooking['status'][] = ['confirmed', 'in_progress'];
+const ACTIVE: RentalBooking['status'][] = ['reserved', 'in_progress'];
 
 interface WorkListRow {
   id: string;
@@ -61,9 +61,9 @@ export function pickupProgress(bookings: RentalBooking[], day: Date): DayProgres
   const relevant = bookings.filter(
     (b) =>
       isSameDay(new Date(b.startTime), day) &&
-      (b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'completed'),
+      (b.status === 'reserved' || b.status === 'in_progress' || b.status === 'completed'),
   );
-  const done = relevant.filter((b) => b.status !== 'confirmed').length;
+  const done = relevant.filter((b) => b.status !== 'reserved').length;
   return { total: relevant.length, done, pending: relevant.length - done };
 }
 
@@ -71,7 +71,7 @@ export function returnProgress(bookings: RentalBooking[], day: Date): DayProgres
   const relevant = bookings.filter(
     (b) =>
       isSameDay(new Date(b.endTime), day) &&
-      (b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'completed'),
+      (b.status === 'reserved' || b.status === 'in_progress' || b.status === 'completed'),
   );
   const done = relevant.filter((b) => b.status === 'completed').length;
   return { total: relevant.length, done, pending: relevant.length - done };

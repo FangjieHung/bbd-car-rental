@@ -125,11 +125,12 @@ export class CatalogStore {
       endTime: input.endTime,
       pickupLocation: input.pickupLocation,
       returnLocation: input.returnLocation,
-      status: 'pending_payment',
+      status: 'reserved',
       addOns: input.addOns.filter((a) => a.qty > 0).map((a) => ({ addOnId: a.addOn.id, qty: a.qty })),
       couponCode: priceBreakdown.couponCode,
       priceBreakdown,
-      paymentMethod: input.paymentMethod,
+      paymentPreference: input.paymentMethod,
+      depositRequired: 0,
       ...(input.sourcePartnerId ? { sourcePartnerId: input.sourcePartnerId } : {}),
     };
     this.bookingRepo.create(booking);
@@ -137,13 +138,14 @@ export class CatalogStore {
   }
 
   /**
-   * 付款成功後呼叫。目前由佔位付款頁觸發，日後改由金流回調觸發 ——
-   * 回調可能遲到、重複或亂序送達，所以只接受從 pending_payment 出發的轉換。
+   * 付款成功後呼叫。目前由佔位付款頁觸發，日後改由金流回調觸發。
+   * 訂單的履約狀態（reserved）本來就不代表付款是否完成 —— 這裡先維持原狀不動 status，
+   * 只回傳訂單本身；Task 7 會在這裡接上真正的付款分類帳寫入（PaymentRecord），
+   * 取代這個先佔位的窄接縫。
    */
   markBookingPaid(bookingId: string): RentalBooking {
     const booking = this.bookingRepo.getById(bookingId);
     if (!booking) throw new Error('查無訂單');
-    if (booking.status !== 'pending_payment') throw new Error('訂單狀態不允許付款');
-    return this.bookingRepo.update(bookingId, { status: 'confirmed' });
+    return booking;
   }
 }

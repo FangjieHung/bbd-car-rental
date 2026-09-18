@@ -15,7 +15,7 @@ import { ConfirmFormValue, ConfirmStepComponent } from '../steps/confirm-step.co
 
 /**
  * 下單頁：單頁 checkout。車與租期來自 URL，配件與優惠碼只活在這一頁。
- * 送出後訂單狀態為 pending_payment，實際扣款由付款頁負責。
+ * 送出後訂單履約狀態為 reserved，實際扣款由付款頁負責。
  */
 @Component({
   selector: 'app-order-page',

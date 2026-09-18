@@ -11,7 +11,7 @@ import { BookingDetailDialogComponent } from '../dialogs/booking-detail-dialog.c
 export interface TimelineBlock {
   startCol: number;
   span: number;
-  kind: 'confirmed' | 'in_progress';
+  kind: 'reserved' | 'in_progress';
   bookingId: string;
 }
 
@@ -24,7 +24,7 @@ export function computeBlocks(
   const blocks: TimelineBlock[] = [];
   for (const b of bookings) {
     if (b.vehicleId !== vehicleId) continue;
-    if (b.status !== 'confirmed' && b.status !== 'in_progress') continue;
+    if (b.status !== 'reserved' && b.status !== 'in_progress') continue;
     const startIdx = diffDays(new Date(b.startTime), rangeStart);
     const endIdx = diffDays(new Date(b.endTime), rangeStart);
     if (endIdx < 0 || startIdx > days - 1) continue;

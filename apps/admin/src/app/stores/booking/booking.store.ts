@@ -4,7 +4,7 @@ import { BOOKING_REPO } from '../../core/repositories/tokens';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
-const ACTIVE: RentalBooking['status'][] = ['confirmed', 'in_progress'];
+const ACTIVE: RentalBooking['status'][] = ['reserved', 'in_progress'];
 
 @Injectable({ providedIn: 'root' })
 export class BookingStore {
@@ -36,7 +36,7 @@ export class BookingStore {
 
   create(input: Omit<RentalBooking, 'id' | 'status'>): RentalBooking {
     this.validate(input.vehicleId, input.startTime, input.endTime);
-    const booking: RentalBooking = { id: crypto.randomUUID(), ...input, status: 'confirmed' };
+    const booking: RentalBooking = { id: crypto.randomUUID(), ...input, status: 'reserved' };
     this.repo.create(booking);
     this.reload();
     return booking;
@@ -51,16 +51,9 @@ export class BookingStore {
     this.reload();
   }
 
-  confirmPayment(id: string): void {
-    const b = this.mustGet(id);
-    if (b.status !== 'pending_payment') throw new Error(ZH_TW.booking.notPending);
-    this.repo.update(id, { status: 'confirmed' });
-    this.reload();
-  }
-
   pickUp(id: string): void {
     const b = this.mustGet(id);
-    if (b.status !== 'confirmed') throw new Error(ZH_TW.booking.invalidTransition);
+    if (b.status !== 'reserved') throw new Error(ZH_TW.booking.invalidTransition);
     this.vehicleStore.transition(b.vehicleId, 'rented');
     this.repo.update(id, { status: 'in_progress' });
     this.reload();
@@ -74,13 +67,15 @@ export class BookingStore {
     this.reload();
   }
 
+  /**
+   * 一般取消只開放 reserved（車還沒交出去，取消不影響車輛狀態）。
+   * in_progress 的訂單已經交車，要結束租期必須走「還車」流程（含費用結算），
+   * 不能用這個通用取消繞過去 —— 還車流程在後續任務才會補上。
+   */
   cancel(id: string): void {
     const b = this.mustGet(id);
-    if (b.status === 'completed' || b.status === 'cancelled') {
+    if (b.status !== 'reserved') {
       throw new Error(ZH_TW.booking.invalidTransition);
-    }
-    if (b.status === 'in_progress') {
-      this.vehicleStore.transition(b.vehicleId, 'available');
     }
     this.repo.update(id, { status: 'cancelled' });
     this.reload();

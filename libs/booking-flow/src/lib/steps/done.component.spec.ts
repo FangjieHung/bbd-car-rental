@@ -24,7 +24,8 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
     endTime: '2026-08-23T10:00:00',
     pickupLocation: '馬公',
     returnLocation: '馬公',
-    status: 'pending_payment',
+    status: 'reserved',
+    depositRequired: 0,
     ...partial,
   };
 }
@@ -57,22 +58,17 @@ describe('DoneComponent', () => {
     expect(component['homeLink']()).toEqual(['/p', 'seaview']);
   });
 
-  it('訂單狀態為 confirmed 時顯示已確認文案，不再說待付款', () => {
-    const component = setup({ bookings: [makeBooking({ status: 'confirmed' })] });
-    expect(component['statusMessage']()).toBe('您的訂單已成立並確認，我們將盡快為您準備車輛。');
-  });
-
-  it('訂單狀態仍是 pending_payment 時（例如舊版 /book/done/:id 連結）維持待付款文案', () => {
-    const component = setup({ bookings: [makeBooking({ status: 'pending_payment' })] });
+  it('訂單狀態為 reserved 時顯示中性文案（履約狀態不代表已付款）', () => {
+    const component = setup({ bookings: [makeBooking({ status: 'reserved' })] });
     expect(component['statusMessage']()).toBe(
-      '您的訂單已成立，狀態為「待付款/待人工確認」，我們將盡快為您處理。',
+      '您的訂單已成立，我們將盡快為您準備車輛，並確認後續付款事宜。',
     );
   });
 
-  it('查無訂單時仍顯示待付款文案，不因找不到資料而出錯', () => {
+  it('查無訂單時仍顯示同一段文案，不因找不到資料而出錯', () => {
     const component = setup({ bookings: [], id: 'nope' });
     expect(component['statusMessage']()).toBe(
-      '您的訂單已成立，狀態為「待付款/待人工確認」，我們將盡快為您處理。',
+      '您的訂單已成立，我們將盡快為您準備車輛，並確認後續付款事宜。',
     );
   });
 });

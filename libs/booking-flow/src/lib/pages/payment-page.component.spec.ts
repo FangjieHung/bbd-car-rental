@@ -46,10 +46,11 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
     endTime: '2026-08-23T10:00:00',
     pickupLocation: '馬公',
     returnLocation: '馬公',
-    status: 'pending_payment',
+    status: 'reserved',
+    depositRequired: 0,
     addOns: [],
     priceBreakdown: emptyBreakdown,
-    paymentMethod: 'credit_card',
+    paymentPreference: 'credit_card',
     ...partial,
   };
 }
@@ -85,21 +86,21 @@ describe('PaymentPageComponent', () => {
     expect(component.amount()).toBe(1300);
   });
 
-  it('模擬付款成功後訂單轉為 confirmed 並導向完成頁', () => {
+  it('模擬付款成功後訂單履約狀態維持 reserved（付款不影響履約狀態）並導向完成頁', () => {
     const { component, navigate, bookingRepo } = setup('b1', [makeBooking()]);
     component.onPaySuccess();
-    expect(bookingRepo.getById('b1')!.status).toBe('confirmed');
+    expect(bookingRepo.getById('b1')!.status).toBe('reserved');
     expect(navigate).toHaveBeenCalledWith(['/', 'done', 'b1']);
   });
 
   it('模擬付款失敗時狀態不變且顯示錯誤，可重試', () => {
     const { component, bookingRepo } = setup('b1', [makeBooking()]);
     component.onPayFailure();
-    expect(bookingRepo.getById('b1')!.status).toBe('pending_payment');
+    expect(bookingRepo.getById('b1')!.status).toBe('reserved');
     expect(component.payError()).not.toBe('');
 
     component.onPaySuccess();
-    expect(bookingRepo.getById('b1')!.status).toBe('confirmed');
+    expect(bookingRepo.getById('b1')!.status).toBe('reserved');
     expect(component.payError()).toBe('');
   });
 
@@ -109,14 +110,14 @@ describe('PaymentPageComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/', 'done', 'nope']);
   });
 
-  it('訂單已非待付款時導向完成頁', () => {
-    const { component, navigate } = setup('b1', [makeBooking({ status: 'confirmed' })]);
+  it('訂單已離開 reserved 履約狀態時導向完成頁', () => {
+    const { component, navigate } = setup('b1', [makeBooking({ status: 'in_progress' })]);
     component.redirectIfNotPayable();
     expect(navigate).toHaveBeenCalledWith(['/', 'done', 'b1']);
   });
 
-  it('訂單已非待付款時，一載入就自動導向完成頁，不必等使用者操作', () => {
-    const { navigate } = setup('b1', [makeBooking({ status: 'confirmed' })]);
+  it('訂單已離開 reserved 履約狀態時，一載入就自動導向完成頁，不必等使用者操作', () => {
+    const { navigate } = setup('b1', [makeBooking({ status: 'in_progress' })]);
     TestBed.flushEffects();
     expect(navigate).toHaveBeenCalledWith(['/', 'done', 'b1']);
   });
@@ -127,7 +128,7 @@ describe('PaymentPageComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/', 'done', 'nope']);
   });
 
-  it('訂單待付款時，載入不會被自動導向', () => {
+  it('訂單為 reserved 時，載入不會被自動導向', () => {
     const { navigate } = setup('b1', [makeBooking()]);
     TestBed.flushEffects();
     expect(navigate).not.toHaveBeenCalled();

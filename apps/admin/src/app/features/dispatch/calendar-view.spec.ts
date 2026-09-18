@@ -47,7 +47,8 @@ const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
   endTime: new Date(2026, 6, 23, 18).toISOString(),
   pickupLocation: '',
   returnLocation: '',
-  status: 'confirmed',
+  status: 'reserved',
+  depositRequired: 0,
   ...partial,
 });
 
@@ -416,12 +417,12 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
             {
               id: 'pickup', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
-              pickupLocation: '機場', returnLocation: '港口', status: 'confirmed',
+              pickupLocation: '機場', returnLocation: '港口', status: 'reserved', depositRequired: 0,
             },
             {
               id: 'return-only', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 2, 10).toISOString(), endTime: new Date(2026, 7, 4, 15).toISOString(),
-              pickupLocation: '港口', returnLocation: '機場', status: 'confirmed',
+              pickupLocation: '港口', returnLocation: '機場', status: 'reserved', depositRequired: 0,
             },
           ]),
         },
@@ -437,7 +438,7 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
     expect(component.returnWorkRows().map((row) => row.booking.id)).toEqual(['return-only']);
   });
 
-  it('只納入 confirmed 與 in_progress，電話資料提供 tel 連結值', () => {
+  it('只納入 reserved 與 in_progress，電話資料提供 tel 連結值', () => {
     const date = new Date(2026, 7, 4);
     TestBed.configureTestingModule({
       providers: [
@@ -449,7 +450,7 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
             {
               id: 'cancelled', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
-              pickupLocation: '', returnLocation: '', status: 'cancelled',
+              pickupLocation: '', returnLocation: '', status: 'cancelled', depositRequired: 0,
             },
           ]),
         },
@@ -497,7 +498,8 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
           endTime: new Date(2026, 7, 5, 18, 0).toISOString(),
           pickupLocation: '',
           returnLocation: '',
-          status: 'confirmed',
+          status: 'reserved',
+          depositRequired: 0,
         },
       ],
       [{ id: 'c1', name: '陳先生', phone: '0900000000' }],
@@ -553,7 +555,8 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
           endTime: new Date(2026, 7, 4, 18, 30).toISOString(),
           pickupLocation: '',
           returnLocation: '',
-          status: 'confirmed',
+          status: 'reserved',
+          depositRequired: 0,
         },
       ],
       [{ id: 'c1', name: '陳先生', phone: '0900000000' }],

@@ -75,7 +75,7 @@ describe('VehicleStore', () => {
     );
   });
 
-  it('有未完成訂單不可刪', () => {
+  it('有 reserved 訂單不可刪', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -91,7 +91,8 @@ describe('VehicleStore', () => {
               endTime: '2026-07-12T09:00:00Z',
               pickupLocation: '',
               returnLocation: '',
-              status: 'confirmed',
+              status: 'reserved',
+              depositRequired: 0,
             },
           ]),
         },
@@ -102,7 +103,7 @@ describe('VehicleStore', () => {
     expect(() => s.remove('v1')).toThrowError(ZH_TW.vehicle.deleteBlocked);
   });
 
-  it('有待付款訂單不可刪', () => {
+  it('有 in_progress 訂單不可刪', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -118,7 +119,8 @@ describe('VehicleStore', () => {
               endTime: '2026-07-12T09:00:00Z',
               pickupLocation: '',
               returnLocation: '',
-              status: 'pending_payment',
+              status: 'in_progress',
+              depositRequired: 0,
             },
           ]),
         },

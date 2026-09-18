@@ -26,6 +26,8 @@ export interface BookingFormResult {
   endTime: string; // ISO
   pickupLocation: string;
   returnLocation: string;
+  // TODO(Task 9): 目前先固定 0，待訂金試算/上限規則的完整表單進來後改用真正算出的值。
+  depositRequired: number;
 }
 
 function toLocalInputValue(iso: string): string {
@@ -141,6 +143,7 @@ export class BookingFormDialogComponent {
       endTime: new Date(v.endLocal).toISOString(),
       pickupLocation: v.pickupLocation,
       returnLocation: v.returnLocation,
+      depositRequired: this.data?.depositRequired ?? 0,
     };
     this.ref.close(result);
   }

@@ -29,8 +29,7 @@ import {
 } from '../dialogs/booking-form-dialog.component';
 
 const STATUS_KEY: Record<BookingStatus, StatusKey> = {
-  pending_payment: 'pending',
-  confirmed: 'warning',
+  reserved: 'warning',
   in_progress: 'processing',
   completed: 'completed',
   cancelled: 'archived',
@@ -143,9 +142,7 @@ export class BookingsPageComponent {
   }
 
   async cancelSelected(bookings: readonly RentalBooking[]): Promise<void> {
-    const cancellable = bookings.filter(
-      (b) => b.status === 'confirmed' || b.status === 'in_progress',
-    );
+    const cancellable = bookings.filter((b) => b.status === 'reserved');
     if (cancellable.length === 0) return;
     if (!(await confirm(this.dialog, this.t.common.deleteConfirm))) return;
     for (const booking of cancellable) {

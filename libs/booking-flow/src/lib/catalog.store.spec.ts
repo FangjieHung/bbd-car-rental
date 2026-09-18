@@ -78,7 +78,8 @@ describe('CatalogStore', () => {
         endTime: '2026-01-07T09:00:00',
         pickupLocation: '',
         returnLocation: '',
-        status: 'confirmed',
+        status: 'reserved',
+        depositRequired: 0,
       },
     ]);
     expect(
@@ -116,7 +117,7 @@ describe('CatalogStore', () => {
     ).toBe(false);
   });
 
-  it('submitBooking 寫入 pending_payment 訂單並帶 priceBreakdown', () => {
+  it('submitBooking 寫入 reserved 訂單並帶 priceBreakdown', () => {
     const store = setup();
     const b = store.submitBooking({
       vehicleId: 'v1',
@@ -132,7 +133,8 @@ describe('CatalogStore', () => {
       couponCode: undefined,
       paymentMethod: 'on_site',
     });
-    expect(b.status).toBe('pending_payment');
+    expect(b.status).toBe('reserved');
+    expect(b.paymentPreference).toBe('on_site');
     expect(b.priceBreakdown?.total).toBeGreaterThan(0);
   });
 
@@ -146,7 +148,8 @@ describe('CatalogStore', () => {
         endTime: '2026-01-07T09:00:00',
         pickupLocation: '',
         returnLocation: '',
-        status: 'confirmed',
+        status: 'reserved',
+        depositRequired: 0,
       },
     ]);
     expect(() =>
@@ -197,7 +200,7 @@ describe('CatalogStore', () => {
     expect(b.priceBreakdown!.total).toBeLessThan(withoutPartner.total);
   });
 
-  it('markBookingPaid 把待付款訂單轉為已確認，查無訂單則丟錯', () => {
+  it('markBookingPaid 回傳未變動的 reserved 訂單，查無訂單則丟錯', () => {
     const store = setup();
     const booking = store.submitBooking({
       vehicleId: 'v1',
@@ -212,26 +215,11 @@ describe('CatalogStore', () => {
       addOns: [],
       paymentMethod: 'credit_card',
     });
-    expect(booking.status).toBe('pending_payment');
+    expect(booking.status).toBe('reserved');
 
     const paid = store.markBookingPaid(booking.id);
-    expect(paid.status).toBe('confirmed');
+    expect(paid.status).toBe('reserved');
+    expect(paid.id).toBe(booking.id);
     expect(() => store.markBookingPaid('nope')).toThrow('查無訂單');
-  });
-
-  it('markBookingPaid 對非待付款訂單丟錯，不覆蓋原狀態', () => {
-    const store = setup([
-      {
-        id: 'b1',
-        vehicleId: 'v1',
-        memberId: 'cust1',
-        startTime: '2026-01-05T09:00:00',
-        endTime: '2026-01-07T09:00:00',
-        pickupLocation: '',
-        returnLocation: '',
-        status: 'confirmed',
-      },
-    ]);
-    expect(() => store.markBookingPaid('b1')).toThrow('訂單狀態不允許付款');
   });
 });

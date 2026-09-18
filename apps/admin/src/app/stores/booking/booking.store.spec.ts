@@ -22,6 +22,7 @@ function baseInput(partial: Partial<Omit<RentalBooking, 'id' | 'status'>> = {}) 
     endTime: T1,
     pickupLocation: '馬公',
     returnLocation: '馬公',
+    depositRequired: 0,
     ...partial,
   };
 }
@@ -99,23 +100,11 @@ describe('BookingStore', () => {
     expect(() => store.cancel(b.id)).toThrowError(ZH_TW.booking.invalidTransition);
   });
 
-  it('出租中取消訂單，車輛回 available', () => {
+  it('出租中的訂單不可用一般取消，須走還車流程', () => {
     const b = store.create(baseInput());
     store.pickUp(b.id);
-    store.cancel(b.id);
+    expect(() => store.cancel(b.id)).toThrowError(ZH_TW.booking.invalidTransition);
     const vehicleStore = (store as any).vehicleStore;
-    expect(vehicleStore.vehicles()[0].status).toBe('available');
-  });
-
-  it('confirmPayment 把 pending_payment 轉 confirmed', () => {
-    const bookingRepo = TestBed.inject(BOOKING_REPO);
-    bookingRepo.create({ ...baseInput(), id: 'bp', status: 'pending_payment' } as RentalBooking);
-    store.confirmPayment('bp');
-    expect(store.bookings().find((b) => b.id === 'bp')?.status).toBe('confirmed');
-  });
-
-  it('confirmPayment 對非 pending_payment 應丟錯', () => {
-    const b = store.create(baseInput());
-    expect(() => store.confirmPayment(b.id)).toThrowError(ZH_TW.booking.notPending);
+    expect(vehicleStore.vehicles()[0].status).toBe('rented');
   });
 });

@@ -162,6 +162,7 @@ export function seedBookings(): RentalBooking[] {
       pickupLocation: '馬公門市',
       returnLocation: '馬公門市',
       status: 'in_progress',
+      depositRequired: 0,
     },
     {
       id: 'b2',
@@ -171,7 +172,8 @@ export function seedBookings(): RentalBooking[] {
       endTime: isoAt(2, 17),
       pickupLocation: '機場',
       returnLocation: '馬公門市',
-      status: 'confirmed',
+      status: 'reserved',
+      depositRequired: 0,
       sourcePartnerId: 'pt1',
     },
     {
@@ -182,7 +184,8 @@ export function seedBookings(): RentalBooking[] {
       endTime: isoAt(4, 18),
       pickupLocation: '馬公門市',
       returnLocation: '馬公門市',
-      status: 'confirmed',
+      status: 'reserved',
+      depositRequired: 0,
     },
     {
       id: 'b4',
@@ -192,7 +195,8 @@ export function seedBookings(): RentalBooking[] {
       endTime: isoAt(6, 12),
       pickupLocation: '機場',
       returnLocation: '機場',
-      status: 'confirmed',
+      status: 'reserved',
+      depositRequired: 1000,
     },
     {
       id: 'b5',
@@ -203,6 +207,7 @@ export function seedBookings(): RentalBooking[] {
       pickupLocation: '馬公門市',
       returnLocation: '馬公門市',
       status: 'completed',
+      depositRequired: 0,
       sourcePartnerId: 'pt1',
     },
     {
@@ -213,7 +218,8 @@ export function seedBookings(): RentalBooking[] {
       endTime: isoAt(0, 18),
       pickupLocation: '馬公門市',
       returnLocation: '馬公門市',
-      status: 'confirmed',
+      status: 'reserved',
+      depositRequired: 1500,
     },
     {
       id: 'b7',
@@ -224,6 +230,7 @@ export function seedBookings(): RentalBooking[] {
       pickupLocation: '馬公門市',
       returnLocation: '馬公門市',
       status: 'cancelled',
+      depositRequired: 1000,
     },
     {
       id: 'b8',
@@ -233,7 +240,8 @@ export function seedBookings(): RentalBooking[] {
       endTime: isoAt(9, 18),
       pickupLocation: '機場',
       returnLocation: '機場',
-      status: 'confirmed',
+      status: 'reserved',
+      depositRequired: 1500,
     },
   ];
 }

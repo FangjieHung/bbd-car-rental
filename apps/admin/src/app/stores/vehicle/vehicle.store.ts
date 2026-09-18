@@ -91,13 +91,7 @@ export class VehicleStore {
   remove(id: string): void {
     const hasActiveBooking = this.bookingRepo
       .getAll()
-      .some(
-        (b) =>
-          b.vehicleId === id &&
-          (b.status === 'pending_payment' ||
-            b.status === 'confirmed' ||
-            b.status === 'in_progress'),
-      );
+      .some((b) => b.vehicleId === id && (b.status === 'reserved' || b.status === 'in_progress'));
     const hasRecords = this.maintenanceRepo.getAll().some((r) => r.vehicleId === id);
     if (hasActiveBooking || hasRecords) throw new Error(ZH_TW.vehicle.deleteBlocked);
     this.repo.remove(id);

@@ -43,7 +43,7 @@ export class PaymentPageComponent {
 
   readonly amount = computed(() => this.booking()?.priceBreakdown?.total ?? 0);
   readonly paymentMethodLabel = computed(() => {
-    const method = this.booking()?.paymentMethod;
+    const method = this.booking()?.paymentPreference;
     return method ? PAYMENT_METHOD_LABEL[method] : '未指定';
   });
 
@@ -51,18 +51,21 @@ export class PaymentPageComponent {
   readonly paying = signal(false);
 
   /**
-   * 進頁面就檢查一次，訂單不存在或早就不是待付款（分享的舊網址、上一步按了兩次）
+   * 進頁面就檢查一次，訂單不存在或狀態不是可付款的 reserved（分享的舊網址、上一步按了兩次）
    * 不必等使用者按下按鈕才發現。付款成功那條路徑另外用 onPaySuccess 裡的顯式
    * 呼叫立即導頁，這裡的自動檢查是給「載入當下就已經不可付款」的情況兜底。
+   *
+   * 注意：reserved 只代表「還沒交車」的履約狀態，不代表付款與否 —— 在 Task 7
+   * 接上真正的付款分類帳之前，這裡沒有別的欄位可用來判斷是否已付款。
    */
   private readonly guardEffect = effect(() => {
     this.redirectIfNotPayable();
   });
 
-  /** 訂單不存在或已付過款，就沒有付款這件事可做，直接看結果頁 */
+  /** 訂單不存在或已離開可付款的履約狀態，就沒有付款這件事可做，直接看結果頁 */
   redirectIfNotPayable(): boolean {
     const booking = this.booking();
-    if (booking && booking.status === 'pending_payment') return true;
+    if (booking && booking.status === 'reserved') return true;
     this.goToDone();
     return false;
   }

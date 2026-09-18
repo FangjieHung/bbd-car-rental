@@ -51,12 +51,7 @@
           </ng-template>
           <ng-template dtCell="actions" let-b>
             <span class="action-cell">
-              @if (b.status === 'pending_payment') {
-                <button mat-button (click)="act(() => store.confirmPayment(b.id))">
-                  {{ t.booking.confirmPayment }}
-                </button>
-              }
-              @if (b.status === 'confirmed') {
+              @if (b.status === 'reserved') {
                 <button matButton="tonal" (click)="act(() => store.pickUp(b.id))">
                   <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
                   {{ t.booking.pickUp }}
@@ -68,7 +63,7 @@
                   {{ t.booking.complete }}
                 </button>
               }
-              @if (b.status === 'confirmed' || b.status === 'in_progress') {
+              @if (b.status === 'reserved' || b.status === 'in_progress') {
                 <button
                   mat-icon-button
                   [matTooltip]="t.common.moreActions"
@@ -78,16 +73,16 @@
                   <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
                 </button>
                 <mat-menu #moreMenu="matMenu">
-                  @if (b.status === 'confirmed') {
+                  @if (b.status === 'reserved') {
                     <button mat-menu-item (click)="openForm(b)">
                       <span class="material-symbols-rounded" aria-hidden="true">edit</span>
                       <span>{{ t.common.edit }}</span>
                     </button>
+                    <button mat-menu-item (click)="cancelBooking(b)">
+                      <span class="material-symbols-rounded" aria-hidden="true">cancel</span>
+                      <span>{{ t.booking.cancelBooking }}</span>
+                    </button>
                   }
-                  <button mat-menu-item (click)="cancelBooking(b)">
-                    <span class="material-symbols-rounded" aria-hidden="true">cancel</span>
-                    <span>{{ t.booking.cancelBooking }}</span>
-                  </button>
                 </mat-menu>
               }
             </span>

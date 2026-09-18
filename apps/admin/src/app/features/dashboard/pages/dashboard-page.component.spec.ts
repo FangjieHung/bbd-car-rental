@@ -96,7 +96,8 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     endTime: at(tomorrow, 9),
     pickupLocation: '',
     returnLocation: '',
-    status: 'confirmed',
+    status: 'reserved',
+    depositRequired: 0,
     ...partial,
   });
 
@@ -117,12 +118,11 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
 
   it('依 startTime 是否為今天、狀態是否已取車，計算出車進度', () => {
     const component = createFixture([
-      mk({ id: 'confirmed', startTime: at(today, 9), status: 'confirmed' }),
+      mk({ id: 'reserved', startTime: at(today, 9), status: 'reserved' }),
       mk({ id: 'in_progress', startTime: at(today, 10), status: 'in_progress' }),
       mk({ id: 'completed', startTime: at(today, 8), status: 'completed' }),
       mk({ id: 'cancelled', startTime: at(today, 11), status: 'cancelled' }),
-      mk({ id: 'pending_payment', startTime: at(today, 12), status: 'pending_payment' }),
-      mk({ id: 'yesterday', startTime: at(yesterday, 9), status: 'confirmed' }),
+      mk({ id: 'yesterday', startTime: at(yesterday, 9), status: 'reserved' }),
     ]);
 
     expect(component.todayPickupTotal()).toBe(3);
@@ -134,7 +134,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     const component = createFixture([
       mk({ id: 'in_progress', endTime: at(today, 9), status: 'in_progress' }),
       mk({ id: 'completed', endTime: at(today, 10), status: 'completed' }),
-      mk({ id: 'not_picked_up', endTime: at(today, 15), status: 'confirmed' }),
+      mk({ id: 'not_picked_up', endTime: at(today, 15), status: 'reserved' }),
       mk({ id: 'cancelled', endTime: at(today, 9), status: 'cancelled' }),
       mk({ id: 'tomorrow', endTime: at(tomorrow, 9), status: 'in_progress' }),
     ]);

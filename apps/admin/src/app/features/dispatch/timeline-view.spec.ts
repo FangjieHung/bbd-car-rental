@@ -28,14 +28,15 @@ const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
   endTime: new Date(2026, 6, 23, 18).toISOString(),
   pickupLocation: '',
   returnLocation: '',
-  status: 'confirmed',
+  status: 'reserved',
+  depositRequired: 0,
   ...partial,
 });
 
 describe('computeBlocks', () => {
   it('範圍內的訂單：startCol 依日差、span 含首尾日', () => {
     const blocks = computeBlocks([mk({})], 'v1', rangeStart, 14);
-    expect(blocks).toEqual([{ startCol: 2, span: 3, kind: 'confirmed', bookingId: 'b1' }]);
+    expect(blocks).toEqual([{ startCol: 2, span: 3, kind: 'reserved', bookingId: 'b1' }]);
   });
 
   it('跨範圍起點的訂單被裁切到第 1 欄', () => {

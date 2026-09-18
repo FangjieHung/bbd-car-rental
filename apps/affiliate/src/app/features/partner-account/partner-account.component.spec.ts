@@ -30,7 +30,8 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
     endTime: '2026-07-07T09:00:00',
     pickupLocation: '馬公',
     returnLocation: '馬公',
-    status: 'confirmed',
+    status: 'reserved',
+    depositRequired: 0,
     priceBreakdown: {
       dailyLines: [],
       rentalRaw: 1000,
@@ -41,6 +42,7 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
       partnerDiscount: 0,
       addOnLines: [],
       addOnSubtotal: 0,
+      insuranceSubtotal: 0,
       couponDiscount: 0,
       total: 1000,
     },

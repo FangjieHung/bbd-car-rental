@@ -135,12 +135,12 @@ describe('OrderPageComponent', () => {
     expect(component.priceBreakdown()!.total).toBe(before);
   });
 
-  it('送出後建立 pending_payment 訂單並導向付款頁', () => {
+  it('送出後建立 reserved 訂單並導向付款頁', () => {
     const { component, navigate, bookingRepo } = setup(validParams);
     component.onConfirmSubmit(confirmForm);
     const created = bookingRepo.getAll();
     expect(created).toHaveLength(1);
-    expect(created[0].status).toBe('pending_payment');
+    expect(created[0].status).toBe('reserved');
     expect(navigate).toHaveBeenCalledWith(['/', 'pay', created[0].id]);
   });
 

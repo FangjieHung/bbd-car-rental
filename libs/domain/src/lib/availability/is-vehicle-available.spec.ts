@@ -6,17 +6,18 @@ const v: Vehicle = { id: 'v1', plateNumber: 'A', category: 'scooter', model: 'G'
   brand: 'G', year: 2022, status: 'available', mileage: 0, createdAt: '' };
 function bk(p: Partial<RentalBooking>): RentalBooking {
   return { id: 'b', vehicleId: 'v1', memberId: 'c', startTime: '2026-01-05T09:00:00',
-    endTime: '2026-01-08T09:00:00', pickupLocation: '', returnLocation: '', status: 'confirmed', ...p };
+    endTime: '2026-01-08T09:00:00', pickupLocation: '', returnLocation: '', status: 'reserved',
+    depositRequired: 0, ...p };
 }
 
 describe('isVehicleAvailable', () => {
   const req = { startTime: '2026-01-06T09:00:00', endTime: '2026-01-07T09:00:00' };
   it('maintenance 車 → 不可租', () =>
     expect(isVehicleAvailable({ vehicle: { ...v, status: 'maintenance' }, ...req, bookings: [] })).toBe(false));
-  it('confirmed 訂單重疊 → 不可租', () =>
+  it('reserved 訂單重疊 → 不可租', () =>
     expect(isVehicleAvailable({ vehicle: v, ...req, bookings: [bk({})] })).toBe(false));
-  it('pending_payment 訂單重疊 → 不可租', () =>
-    expect(isVehicleAvailable({ vehicle: v, ...req, bookings: [bk({ status: 'pending_payment' })] })).toBe(false));
+  it('in_progress 訂單重疊 → 不可租', () =>
+    expect(isVehicleAvailable({ vehicle: v, ...req, bookings: [bk({ status: 'in_progress' })] })).toBe(false));
   it('cancelled 訂單不佔用 → 可租', () =>
     expect(isVehicleAvailable({ vehicle: v, ...req, bookings: [bk({ status: 'cancelled' })] })).toBe(true));
   it('completed 訂單不佔用 → 可租', () =>

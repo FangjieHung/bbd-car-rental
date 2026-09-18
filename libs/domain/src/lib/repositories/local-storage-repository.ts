@@ -5,6 +5,7 @@ export class LocalStorageRepository<T extends { id: string }> implements Reposit
     private readonly key: string,
     private readonly seed: () => T[],
     private readonly onReset?: () => void,
+    private readonly normalize?: (item: unknown) => T,
   ) {}
 
   getAll(): T[] {
@@ -13,7 +14,7 @@ export class LocalStorageRepository<T extends { id: string }> implements Reposit
     try {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return this.reset(true);
-      return parsed as T[];
+      return this.normalize ? parsed.map((item) => this.normalize!(item)) : (parsed as T[]);
     } catch {
       return this.reset(true);
     }
