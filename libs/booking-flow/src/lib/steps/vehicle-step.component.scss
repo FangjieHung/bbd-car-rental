@@ -7,6 +7,26 @@
     color: var(--mat-sys-on-surface-variant);
   }
 
+  .vehicle-step__times {
+    display: flex;
+    gap: 0.5rem;
+
+    > mat-form-field {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  @media (max-width: 374px) {
+    .vehicle-step__times {
+      flex-direction: column;
+
+      > mat-form-field {
+        flex-basis: auto;
+      }
+    }
+  }
+
   .vehicle-cards {
     display: flex;
     flex-direction: column;
@@ -288,11 +308,20 @@
     }
   }
 
-  /* 窄螢幕：三欄改為上下堆疊 */
-  @media (max-width: 720px) {
+  /* 手機：圖片、車輛資訊、價格依閱讀順序垂直排列。 */
+  @media (max-width: 767px) {
     .vehicle-card {
-      grid-template-columns: 96px minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
       gap: 12px;
+    }
+
+    .v-media {
+      min-height: 8rem;
+
+      img {
+        height: 10rem;
+        max-height: 10rem;
+      }
     }
 
     .v-price {

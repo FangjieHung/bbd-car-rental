@@ -20,6 +20,7 @@
 | `.ui-nav-pill`                  | 導覽膠囊；啟用態疊加 `.is-active`（原 `.v-nav-pill + .active`）                   |
 | `.ui-text-display`              | 大數字（StatCard 的 hero number，原 `.v-stat-number`）                            |
 | `.ui-text-title`                | 頁面大標（原 `.v-page-title`）                                                    |
+| `.ui-text-subtitle`             | 卡片與表單的小節標題（字級、字重由質地包提供）                                    |
 | `.ui-text-caption`              | 卡片內小節標／quiet label（原 `.v-card-label`）                                   |
 | `.ui-chip` + `.ui-chip--{tone}` | 狀態徽章 + tone 變體（tone：`positive`/`info`/`neutral`/`warning`/`danger`）      |
 | `.ui-btn`                       | 按鈕（未來擴充：`--sm`/`--md`/`--lg` × `--solid`/`--outline`/`--ghost`/`--text`） |

@@ -1,15 +1,23 @@
 <div class="calendar-view">
   <div class="ui-card calendar-view__layout">
-    <section class="flex flex-col flex-auto">
+    <section class="flex flex-col flex-auto min-w-0">
       <div class="calendar-view__sticky-top">
         <div class="calendar-view__header">
           <h2 class="ui-text-title">{{ monthLabel() }}</h2>
           <div class="calendar-view__toolbar flex items-center gap-2 mb-2">
-            <button mat-icon-button [attr.aria-label]="t.dispatch.prevMonth" (click)="shiftMonth(-1)">
+            <button
+              mat-icon-button
+              [attr.aria-label]="t.dispatch.prevMonth"
+              (click)="shiftMonth(-1)"
+            >
               <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
             </button>
             <button matButton="outlined" (click)="goToToday()">{{ t.dispatch.today }}</button>
-            <button mat-icon-button [attr.aria-label]="t.dispatch.nextMonth" (click)="shiftMonth(1)">
+            <button
+              mat-icon-button
+              [attr.aria-label]="t.dispatch.nextMonth"
+              (click)="shiftMonth(1)"
+            >
               <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
             </button>
           </div>

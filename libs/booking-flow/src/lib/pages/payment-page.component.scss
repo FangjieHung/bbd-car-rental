@@ -6,6 +6,13 @@
       display: flex;
       justify-content: space-between;
       padding: 0.5rem 0;
+      gap: 1rem;
+
+      > :last-child {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        text-align: right;
+      }
     }
 
     .total {
@@ -15,6 +22,7 @@
 
   .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.75rem;
   }
 

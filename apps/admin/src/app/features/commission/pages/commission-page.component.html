@@ -1,5 +1,5 @@
-<div >
-  <div class="ui-card form-shell filter-row">
+<div class="flex flex-col gap-4">
+  <div class="ui-card grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 sm:p-6">
     <mat-form-field>
       <mat-label>{{ t.commission.partner }}</mat-label>
       <mat-select [ngModel]="selectedPartnerId()" (ngModelChange)="onPartnerChange($event)">
@@ -10,7 +10,12 @@
     </mat-form-field>
     <mat-form-field>
       <mat-label>{{ t.commission.month }}</mat-label>
-      <input matInput type="month" [ngModel]="selectedMonth()" (ngModelChange)="onMonthChange($event)" />
+      <input
+        matInput
+        type="month"
+        [ngModel]="selectedMonth()"
+        (ngModelChange)="onMonthChange($event)"
+      />
     </mat-form-field>
   </div>
 

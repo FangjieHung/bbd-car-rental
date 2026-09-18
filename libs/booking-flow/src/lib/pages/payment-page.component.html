@@ -1,11 +1,17 @@
-<div class="payment-page">
-  <h1>付款</h1>
+<div class="payment-page max-w-2xl mx-auto p-4 sm:p-6">
+  <h1 class="ui-text-title">付款</h1>
 
   @if (booking(); as b) {
     <div class="pay-summary">
-      <div class="line"><span>訂單編號</span><span>{{ b.id }}</span></div>
-      <div class="line"><span>付款方式</span><span>{{ paymentMethodLabel() }}</span></div>
-      <div class="line total"><span>應付金額</span><span>NT$ {{ amount() }}</span></div>
+      <div class="line">
+        <span>訂單編號</span><span>{{ b.id }}</span>
+      </div>
+      <div class="line">
+        <span>付款方式</span><span>{{ paymentMethodLabel() }}</span>
+      </div>
+      <div class="line total">
+        <span>應付金額</span><span>NT$ {{ amount() }}</span>
+      </div>
     </div>
 
     @if (payError()) {

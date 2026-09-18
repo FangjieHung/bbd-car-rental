@@ -1,6 +1,22 @@
 :host {
   display: block;
+  min-width: 0;
+}
+
+:host(app-root) {
   height: 100%;
+}
+
+:host(app-dashboard-page) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  > .shell-container {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+  }
 }
 
 .app-shell {
@@ -41,7 +57,7 @@
   display: flex;
   flex-direction: column;
   padding: 0 1.5rem 1.5rem;
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   min-height: 0;
 }
 
@@ -150,14 +166,20 @@ app-dashboard-page {
   }
 
   .mat-expansion-panel-header {
+    height: auto;
+    min-height: 3.5rem;
     padding: 0.75rem 0;
   }
 
   mat-panel-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-weight: 600;
   }
 
   mat-panel-description {
+    min-width: 0;
+    overflow-wrap: anywhere;
     color: var(--mat-sys-on-surface-variant);
     justify-content: flex-end;
   }
@@ -230,8 +252,24 @@ app-dashboard-page {
 .tier-row,
 .range-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 0.75rem;
+
+  > mat-form-field {
+    flex: 1 1 12rem;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  > button {
+    flex: 0 0 auto;
+  }
+}
+
+.tier-row + .tier-row,
+.range-row + .range-row {
+  margin-top: 0.75rem;
 }
 
 .error-message {
@@ -242,6 +280,7 @@ app-dashboard-page {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem;
 }
@@ -287,6 +326,8 @@ app-dashboard-page {
 
 .section-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   align-items: center;
   justify-content: space-between;
 }
@@ -318,7 +359,8 @@ app-dashboard-page {
 }
 
 .action-cell {
-  @apply flex items-center;
+  @apply flex flex-wrap items-center;
+  gap: 0.25rem;
 }
 
 .text-secondary {
@@ -338,5 +380,22 @@ app-dashboard-page {
 @media (min-width: 768px) {
   .stat-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  // 固定操作列必須有對應留白，最後一列資料與頁尾才可捲到可見處。
+  .content-area:has(.toolbar-actions:not(:empty)) {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 639px) {
+  .range-row > mat-form-field {
+    flex-basis: 100%;
+  }
+
+  .range-row > button {
+    margin-left: auto;
   }
 }

@@ -1,16 +1,26 @@
 <div class="vehicle-step">
   @if (startTime && endTime) {
-    <div class="ui-field-group mb-4 xl:max-w-82">
+    <div class="vehicle-step__times mb-4 max-w-lg">
       <mat-form-field appearance="fill">
         <mat-label>取車時間</mat-label>
-        <input matInput [matTimepicker]="startPicker" [ngModel]="startTime" (ngModelChange)="onStartTimeChange($event)" />
+        <input
+          matInput
+          [matTimepicker]="startPicker"
+          [ngModel]="startTime"
+          (ngModelChange)="onStartTimeChange($event)"
+        />
         <mat-timepicker-toggle matSuffix [for]="startPicker" aria-label="開啟取車時間選擇器" />
         <mat-timepicker #startPicker />
       </mat-form-field>
 
       <mat-form-field appearance="fill">
         <mat-label>還車時間</mat-label>
-        <input matInput [matTimepicker]="endPicker" [ngModel]="endTime" (ngModelChange)="onEndTimeChange($event)" />
+        <input
+          matInput
+          [matTimepicker]="endPicker"
+          [ngModel]="endTime"
+          (ngModelChange)="onEndTimeChange($event)"
+        />
         <mat-timepicker-toggle matSuffix [for]="endPicker" aria-label="開啟還車時間選擇器" />
         <mat-timepicker #endPicker />
       </mat-form-field>
@@ -41,8 +51,16 @@
         <mat-menu #priceMenu="matMenu">
           <div class="vehicle-step__price-panel">
             <mat-slider [min]="priceBounds().min" [max]="priceBounds().max" [step]="priceStep()">
-              <input matSliderStartThumb [ngModel]="effectivePriceLow()" (ngModelChange)="onPriceLowChange($event)" />
-              <input matSliderEndThumb [ngModel]="effectivePriceHigh()" (ngModelChange)="onPriceHighChange($event)" />
+              <input
+                matSliderStartThumb
+                [ngModel]="effectivePriceLow()"
+                (ngModelChange)="onPriceLowChange($event)"
+              />
+              <input
+                matSliderEndThumb
+                [ngModel]="effectivePriceHigh()"
+                (ngModelChange)="onPriceHighChange($event)"
+              />
             </mat-slider>
             <div class="vehicle-step__price-inputs">
               <mat-form-field appearance="fill" subscriptSizing="dynamic">
@@ -68,9 +86,16 @@
         </mat-menu>
       }
 
-      <mat-form-field appearance="fill" subscriptSizing="dynamic" class="vehicle-step__filter-select">
+      <mat-form-field
+        appearance="fill"
+        subscriptSizing="dynamic"
+        class="vehicle-step__filter-select"
+      >
         <mat-label>座位數</mat-label>
-        <mat-select [ngModel]="selectedSeatBucket()" (ngModelChange)="selectedSeatBucket.set($event)">
+        <mat-select
+          [ngModel]="selectedSeatBucket()"
+          (ngModelChange)="selectedSeatBucket.set($event)"
+        >
           <mat-option [value]="null">不限</mat-option>
           @for (bucket of seatBuckets; track bucket.value) {
             <mat-option [value]="bucket.value">{{ bucket.label }}</mat-option>
@@ -78,7 +103,11 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="fill" subscriptSizing="dynamic" class="vehicle-step__filter-select">
+      <mat-form-field
+        appearance="fill"
+        subscriptSizing="dynamic"
+        class="vehicle-step__filter-select"
+      >
         <mat-label>取車地點</mat-label>
         <mat-select [ngModel]="selectedLocation()" (ngModelChange)="selectedLocation.set($event)">
           <mat-option [value]="null">不限</mat-option>

@@ -1,3 +1,5 @@
+@use 'tailwindcss';
+@use 'assets/style/tailwind-base';
 @use '@angular/material' as mat;
 @use 'theme-pack/src/lib/styles/texture/registry' as *;
 @use 'theme-pack/src/lib/styles/color-themes/verdant/tokens' as *;

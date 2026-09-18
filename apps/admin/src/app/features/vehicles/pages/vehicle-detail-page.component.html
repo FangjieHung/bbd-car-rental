@@ -4,7 +4,7 @@
   @if (!vehicle()) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
-    <section class="ui-card flex flex-col gap-1">
+    <section class="ui-card flex flex-col gap-1 p-4 sm:p-6 break-words">
       <h1 class="ui-text-title">{{ vehicle()!.model }}・{{ vehicle()!.plateNumber }}</h1>
       <p>{{ t.vehicle.type }}：{{ t.vehicle.typeLabels[vehicle()!.category] }}</p>
       <p>{{ t.vehicle.model }}：{{ vehicle()!.model }}</p>
@@ -34,7 +34,9 @@
             <ng-template dtCell="type" let-r>{{ t.maintenance.typeLabels[r.type] }}</ng-template>
             <ng-template dtCell="performedAt" let-r>{{ fmt(r.performedAt) }}</ng-template>
             <ng-template dtCell="nextDueMileage" let-r>{{ r.nextDueMileage ?? '—' }}</ng-template>
-            <ng-template dtCell="nextDueDate" let-r>{{ r.nextDueDate ? fmt(r.nextDueDate) : '—' }}</ng-template>
+            <ng-template dtCell="nextDueDate" let-r>{{
+              r.nextDueDate ? fmt(r.nextDueDate) : '—'
+            }}</ng-template>
           </lib-data-table>
         </div>
       }

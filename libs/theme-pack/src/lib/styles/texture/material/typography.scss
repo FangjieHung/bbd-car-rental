@@ -17,6 +17,15 @@
     color: var(--mat-sys-on-surface);
   }
 
+  .ui-text-subtitle {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--mat-sys-on-surface);
+  }
+
   /* 卡片內小節標（quiet label + bold heading 的 quiet 半部） */
   .ui-text-caption {
     font-size: 13px;

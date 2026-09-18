@@ -169,13 +169,27 @@
 .toolbar-actions {
   @apply fixed left-0 bottom-0 w-full z-10 px-3 py-4 flex items-center justify-center gap-2;
   background: var(--mat-sys-surface-container-highest);
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+
+  &:empty {
+    display: none;
+  }
 
   @variant md {
     @apply relative min-w-fit bg-transparent w-auto px-0 py-0;
   }
 
-  button {
-    @apply flex-1;
+  > button,
+  > a {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 374px) {
+    gap: 0.25rem;
+    padding-inline: 0.5rem;
+    --mat-button-tonal-horizontal-padding: 0.5rem;
   }
 }
 

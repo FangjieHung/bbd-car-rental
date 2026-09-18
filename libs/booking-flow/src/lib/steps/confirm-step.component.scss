@@ -1,6 +1,11 @@
 .confirm-step {
   padding: 1.25rem;
 
+  mat-form-field {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   &__group {
     & + & {
       margin-top: 1.25rem;

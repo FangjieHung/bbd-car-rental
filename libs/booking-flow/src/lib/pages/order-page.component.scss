@@ -16,6 +16,11 @@
     margin-top: 1.5rem;
   }
 
+  .checkout-main,
+  .checkout-aside {
+    min-width: 0;
+  }
+
   // 窄螢幕：running-total 卡片固定於視窗底部，且限制高度避免蓋住表單。
   @media (max-width: 899.98px) {
     .checkout-main {
