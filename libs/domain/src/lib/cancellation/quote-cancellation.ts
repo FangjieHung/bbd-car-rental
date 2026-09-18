@@ -85,6 +85,13 @@ function passengerCarDepositRefundRate(daysBeforePickup: number): number {
   return tier ? tier.rate : 0;
 }
 
+/** 新台幣沒有小數位；本函式是金額進出的最後一道防線，輸入若非整數一律直接拒絕，不做隱性四捨五入。 */
+function assertIntegerMoney(value: number, fieldName: string): void {
+  if (!Number.isInteger(value)) {
+    throw new RangeError(`${fieldName} must be an integer amount of TWD, got ${value}`);
+  }
+}
+
 function manualReviewQuote(reason: string): CancellationQuote {
   return {
     status: 'manual_review',
@@ -110,9 +117,16 @@ export function quoteCancellation(input: CancellationQuoteInput): CancellationQu
   const { depositPaid, otherPrepayment } = input;
   const requestedTransferFee = input.transferFee ?? 0;
 
+  assertIntegerMoney(depositPaid, 'depositPaid');
+  assertIntegerMoney(otherPrepayment, 'otherPrepayment');
+  if (input.agreedRentalTotal != null) {
+    assertIntegerMoney(input.agreedRentalTotal, 'agreedRentalTotal');
+  }
+
   if (requestedTransferFee < 0 || requestedTransferFee > 100) {
     throw new RangeError(`transferFee must be between 0 and 100, got ${requestedTransferFee}`);
   }
+  assertIntegerMoney(requestedTransferFee, 'transferFee');
 
   if (input.additionalCustomerDamageClaimed) {
     return manualReviewQuote('additional_customer_damage_claimed');
@@ -195,7 +209,8 @@ export function quoteCancellation(input: CancellationQuoteInput): CancellationQu
 
   const daysBeforePickup = calendarDaysBeforePickup(input.cancellationRequestedAt, input.pickupAt);
   const rate = passengerCarDepositRefundRate(daysBeforePickup);
-  const depositRefund = Math.round(depositPaid * rate * 100) / 100;
+  // 新台幣無小數位：四捨五入到最接近的整數元，不是最接近的 0.01（那樣仍會留下小數）。
+  const depositRefund = Math.round(depositPaid * rate);
   const otherPrepaymentRefund = otherPrepayment;
   const totalCashDue = depositRefund + otherPrepaymentRefund - requestedTransferFee;
 

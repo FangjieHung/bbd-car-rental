@@ -101,6 +101,76 @@ describe('quoteCancellation', () => {
         }),
       ).toThrow();
     });
+
+    it('rounds the deposit refund to the nearest whole TWD, never fractional NT dollars', () => {
+      // 333 * 0.3 = 99.9 — 舊版 Math.round(x*100)/100 會留下 99.9 這種非整數結果，
+      // 新版 Math.round(x) 才會正確捨入成整數元。
+      const quote = quoteCancellation({
+        contractKind: 'passenger_car',
+        responsibility: 'customer',
+        cancellationRequestedAt: '2026-10-12T10:00:00+08:00', // 3 天前 → 2～3 日前級距 30%
+        pickupAt: PICKUP,
+        depositPaid: 333,
+        otherPrepayment: 0,
+        transferFee: 0,
+      });
+
+      expect(quote.depositRefund).toBe(100);
+      expect(Number.isInteger(quote.depositRefund)).toBe(true);
+    });
+
+    it('rejects a non-integer transfer fee', () => {
+      expect(() =>
+        quoteCancellation({
+          contractKind: 'passenger_car',
+          responsibility: 'customer',
+          cancellationRequestedAt: '2026-10-05T10:00:00+08:00',
+          pickupAt: PICKUP,
+          depositPaid: 1_000,
+          otherPrepayment: 500,
+          transferFee: 33.5,
+        }),
+      ).toThrow();
+    });
+
+    it('rejects non-integer money inputs (depositPaid, otherPrepayment, agreedRentalTotal)', () => {
+      expect(() =>
+        quoteCancellation({
+          contractKind: 'passenger_car',
+          responsibility: 'customer',
+          cancellationRequestedAt: '2026-10-05T10:00:00+08:00',
+          pickupAt: PICKUP,
+          depositPaid: 900.5,
+          otherPrepayment: 500,
+          transferFee: 0,
+        }),
+      ).toThrow();
+
+      expect(() =>
+        quoteCancellation({
+          contractKind: 'passenger_car',
+          responsibility: 'customer',
+          cancellationRequestedAt: '2026-10-05T10:00:00+08:00',
+          pickupAt: PICKUP,
+          depositPaid: 900,
+          otherPrepayment: 500.25,
+          transferFee: 0,
+        }),
+      ).toThrow();
+
+      expect(() =>
+        quoteCancellation({
+          contractKind: 'passenger_car',
+          responsibility: 'operator_fault',
+          cancellationRequestedAt: '2026-10-14T10:00:00+08:00',
+          pickupAt: PICKUP,
+          depositPaid: 0,
+          otherPrepayment: 2_100,
+          transferFee: 0,
+          agreedRentalTotal: 3_000.5,
+        }),
+      ).toThrow();
+    });
   });
 
   it('force majeure refunds everything in full and zeroes the fee', () => {
