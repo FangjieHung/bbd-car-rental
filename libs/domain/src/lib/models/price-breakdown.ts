@@ -8,5 +8,6 @@ export interface PriceBreakdown {
   partnerDiscountPercent: number;
   partnerDiscount: number;
   addOnLines: PriceLineAddOn[]; addOnSubtotal: number;
+  insuranceSubtotal: number;
   couponCode?: string; couponDiscount: number; total: number;
 }

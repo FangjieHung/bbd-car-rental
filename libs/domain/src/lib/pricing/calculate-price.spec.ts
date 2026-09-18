@@ -87,6 +87,25 @@ describe('calculatePrice', () => {
     expect(r.rentalSubtotal).toBe(1140);
     expect(r.total).toBe(1140);
   });
+
+  it('adds the selected insurance plan for every rental day', () => {
+    const result = calculatePrice({
+      plan,
+      calendar: cal,
+      startDate: '2026-01-05',
+      endDate: '2026-01-08',
+      addOns: [],
+      insurancePlan: { id: 'safe', name: '安心方案', dailyPriceFrom: 200, tags: [], coverageItems: [] },
+    });
+
+    expect(result.insuranceSubtotal).toBe(600);
+    expect(result.total).toBe(result.rentalSubtotal - result.couponDiscount + 600);
+  });
+
+  it('未選保險方案 → insuranceSubtotal 為 0', () => {
+    const r = calculatePrice({ plan, calendar: cal, startDate: '2026-01-05', endDate: '2026-01-08', addOns: [] });
+    expect(r.insuranceSubtotal).toBe(0);
+  });
 });
 
 describe('isCouponValid', () => {

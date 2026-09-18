@@ -1,15 +1,17 @@
 <div class="order-summary-card">
   @if (vehicle) {
     <div class="ui-card trip-card">
-      <div class="trip-card__header">
-        @if (vehicle.imageUrl) {
-          <img class="trip-card__thumb" [src]="vehicle.imageUrl" [alt]="vehicle.brand + ' ' + vehicle.model" />
-        }
-        <div class="trip-card__vehicle">
-          <span class="ui-text-title trip-card__model">{{ vehicle.brand }} {{ vehicle.model }}</span>
-          <span class="ui-text-caption">{{ vehicle.plateNumber }}</span>
+      @if (showVehicleHeader) {
+        <div class="trip-card__header">
+          @if (vehicle.imageUrl) {
+            <img class="trip-card__thumb" [src]="vehicle.imageUrl" [alt]="vehicle.brand + ' ' + vehicle.model" />
+          }
+          <div class="trip-card__vehicle">
+            <span class="ui-text-title trip-card__model">{{ vehicle.brand }} {{ vehicle.model }}</span>
+            <span class="ui-text-caption">{{ vehicle.plateNumber }}</span>
+          </div>
         </div>
-      </div>
+      }
 
       <ol class="trip-timeline">
         <li class="trip-timeline__stop">
@@ -18,7 +20,7 @@
             <span class="ui-text-caption">取車</span>
             <span class="trip-timeline__date">{{ startDate }}</span>
             @if (vehicle.location) {
-              <span class="ui-text-caption">{{ vehicle.location }}</span>
+              <a class="ui-text-caption" [href]="mapUrl(vehicle.location)" target="_blank" rel="noopener">{{ vehicle.location }}</a>
             }
           </div>
         </li>
@@ -27,6 +29,9 @@
           <div class="trip-timeline__body">
             <span class="ui-text-caption">還車</span>
             <span class="trip-timeline__date">{{ endDate }}</span>
+            @if (returnLocation) {
+              <a class="ui-text-caption" [href]="mapUrl(returnLocation)" target="_blank" rel="noopener">{{ returnLocation }}</a>
+            }
           </div>
         </li>
       </ol>
@@ -74,6 +79,9 @@
         }
         @if (priceBreakdown.addOnSubtotal > 0) {
           <div class="line"><span class="ui-text-caption">配件費用小計</span><span>NT$ {{ priceBreakdown.addOnSubtotal }}</span></div>
+        }
+        @if (priceBreakdown.insuranceSubtotal > 0) {
+          <div class="line"><span class="ui-text-caption">保險費用</span><span>NT$ {{ priceBreakdown.insuranceSubtotal }}</span></div>
         }
         @if (priceBreakdown.couponDiscount > 0) {
           <div class="line discount">

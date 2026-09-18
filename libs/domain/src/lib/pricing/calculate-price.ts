@@ -1,6 +1,7 @@
 import {
   PricingPlan, SeasonCalendar, AddOn, Coupon, DayTier,
   PriceBreakdown, PriceLineDay, PriceLineAddOn, VehicleCategory,
+  InsurancePlan,
 } from '../models';
 import { classifyDay } from './date-classify';
 
@@ -39,8 +40,9 @@ export function calculatePrice(input: {
   addOns: { addOn: AddOn; qty: number }[];
   coupon?: Coupon;
   partnerDiscountPercent?: number;
+  insurancePlan?: InsurancePlan;
 }): PriceBreakdown {
-  const { plan, calendar, startDate, endDate, addOns, coupon } = input;
+  const { plan, calendar, startDate, endDate, addOns, coupon, insurancePlan } = input;
   const nights = eachNight(startDate, endDate);
   const days = nights.length;
 
@@ -66,6 +68,8 @@ export function calculatePrice(input: {
     }));
   const addOnSubtotal = addOnLines.reduce((s, l) => s + l.amount, 0);
 
+  const insuranceSubtotal = insurancePlan ? insurancePlan.dailyPriceFrom * days : 0;
+
   let couponDiscount = 0;
   let couponCode: string | undefined;
   if (coupon && isCouponValid(coupon, { startDate, days, category: plan.appliesToCategory })) {
@@ -75,10 +79,10 @@ export function calculatePrice(input: {
     couponCode = coupon.code;
   }
 
-  const total = afterPartner - couponDiscount + addOnSubtotal;
+  const total = afterPartner - couponDiscount + addOnSubtotal + insuranceSubtotal;
   return {
     dailyLines, rentalRaw, tierDiscountPercent, tierDiscountAmount, rentalSubtotal,
     partnerDiscountPercent, partnerDiscount,
-    addOnLines, addOnSubtotal, couponCode, couponDiscount, total,
+    addOnLines, addOnSubtotal, insuranceSubtotal, couponCode, couponDiscount, total,
   };
 }

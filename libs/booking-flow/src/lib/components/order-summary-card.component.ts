@@ -12,6 +12,8 @@ export class OrderSummaryCardComponent {
   @Input() vehicle: Vehicle | null = null;
   @Input() startDate = '';
   @Input() endDate = '';
+  @Input() returnLocation = '';
+  @Input() showVehicleHeader = true;
   @Input() selectedAddOnLines: { addOn: AddOn; qty: number }[] = [];
   @Input() priceBreakdown: PriceBreakdown | null = null;
 
@@ -22,9 +24,24 @@ export class OrderSummaryCardComponent {
     return tierDiscountAmount + partnerDiscount + couponDiscount;
   }
 
-  /** 完全沒有任何折扣時的應付總計（租金原價 + 配件小計），供劃線價對照 */
+  /** 完全沒有任何折扣時的應付總計（租金原價 + 配件小計 + 保費），供劃線價對照 */
   get originalTotal(): number {
-    if (!this.priceBreakdown) return 0;
-    return this.priceBreakdown.rentalRaw + this.priceBreakdown.addOnSubtotal;
+    const price = this.priceBreakdown;
+    return price ? price.rentalRaw + price.addOnSubtotal + price.insuranceSubtotal : 0;
+  }
+
+  /** 扣除協議折扣、加上保費後的租金基本費用 */
+  get baseFareAmount(): number {
+    const price = this.priceBreakdown;
+    return price ? price.rentalSubtotal - price.partnerDiscount + price.insuranceSubtotal : 0;
+  }
+
+  /** 折扣佔原價的百分比，用於顯示「折 X%」徽章 */
+  get discountPercent(): number {
+    return this.originalTotal === 0 ? 0 : Math.round((this.discountTotal / this.originalTotal) * 100);
+  }
+
+  protected mapUrl(location: string): string {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
   }
 }

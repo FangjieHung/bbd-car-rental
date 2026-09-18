@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import {
   AddOn,
   Coupon,
+  InsurancePlan,
   Member,
   PaymentMethod,
   PriceBreakdown,
@@ -53,6 +54,7 @@ export class CatalogStore {
     addOns: { addOn: AddOn; qty: number }[];
     coupon?: Coupon;
     partnerDiscountPercent?: number;
+    insurancePlan?: InsurancePlan;
   }): PriceBreakdown {
     const plan = this.planForCategory(input.category);
     if (!plan) throw new Error('無此車型定價');

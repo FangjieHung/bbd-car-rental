@@ -1,4 +1,5 @@
 import { VehicleStatus } from './enums';
+import { InsurancePlan } from './insurance-plan';
 
 export type VehicleCategory = 'car' | 'scooter' | 'ev';
 
@@ -9,6 +10,12 @@ export type Transmission = 'auto' | 'manual';
 export type RentalLocation = '機場' | '港口' | '店舖';
 
 export const RENTAL_LOCATIONS: RentalLocation[] = ['機場', '港口', '店舖'];
+
+/** 油量政策 */
+export type FuelPolicy = 'full_to_full' | 'full_to_empty' | 'same_level';
+
+/** 里程政策 */
+export type MileagePolicy = 'unlimited' | 'limited';
 
 export interface Vehicle {
   id: string;
@@ -43,4 +50,10 @@ export interface Vehicle {
   supplierCount?: number;
   /** 車輛所屬據點；未填時視為不確定，篩選特定據點時不會出現 */
   location?: RentalLocation;
+  /** 可選購的保險方案 */
+  insurancePlans?: InsurancePlan[];
+  /** 油量政策 */
+  fuelPolicy?: FuelPolicy;
+  /** 里程政策 */
+  mileagePolicy?: MileagePolicy;
 }
