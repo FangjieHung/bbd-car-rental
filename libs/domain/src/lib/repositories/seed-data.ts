@@ -144,10 +144,10 @@ export function seedVehicles(): Vehicle[] {
 
 export function seedMembers(): Member[] {
   return [
-    { id: 'c1', name: '王小明', phone: '0912-345-678' },
-    { id: 'c2', name: '林美惠', phone: '0922-111-222', idNumber: 'A123456789' },
-    { id: 'c3', name: '陳大同', phone: '0933-333-444', note: '常客' },
-    { id: 'c4', name: '佐藤健', phone: '+81-90-1234-5678', note: '日本旅客' },
+    { id: 'c1', name: '王小明', phone: '0912-345-678', kind: 'local' },
+    { id: 'c2', name: '林美惠', phone: '0922-111-222', idNumber: 'A123456789', kind: 'local' },
+    { id: 'c3', name: '陳大同', phone: '0933-333-444', note: '常客', kind: 'local' },
+    { id: 'c4', name: '佐藤健', phone: '+81-90-1234-5678', note: '日本旅客', kind: 'foreign_visitor' },
   ];
 }
 

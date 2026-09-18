@@ -8,3 +8,4 @@ export * from './lib/commission';
 export * from './lib/payments';
 export * from './lib/cancellation';
 export * from './lib/handover';
+export * from './lib/contracts';
