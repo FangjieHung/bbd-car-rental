@@ -1,7 +1,7 @@
 # 租車營運工作流：後端 Hand-off
 
-**日期：** 2026-09-18  
-**上游設計：** `docs/plans/2026-09-18-rental-operations-workflow-design.md`  
+**日期：** 2026-09-18
+**上游設計：** `docs/plans/2026-09-18-rental-operations-workflow-design.md`
 **目的：** 集中記錄前端 MVP 無法安全或可靠完成、必須由後端與營運共同承接的能力。本文不是 API 最終規格；實作前仍需確認身分驗證、權限、資料庫、儲存、郵件與金流供應商。
 
 ## 1. 交接原則
