@@ -1,5 +1,5 @@
 <div class="order-summary-card">
-  @if (vehicle && showVehicleHeader) {
+  @if (vehicle) {
     <div class="ui-card trip-card">
       <div class="trip-card__header">
         @if (vehicle.imageUrl) {
@@ -10,14 +10,6 @@
           <span class="ui-text-caption">{{ vehicle.plateNumber }}</span>
         </div>
       </div>
-    </div>
-  }
-
-  @if (vehicle) {
-    <div class="ui-card trip-card">
-      <div class="ui-card-header">
-        <h3 class="ui-card-title ui-text-title">取車＆還車詳情</h3>
-      </div>
 
       <ol class="trip-timeline">
         <li class="trip-timeline__stop">
@@ -25,12 +17,8 @@
           <div class="trip-timeline__body">
             <span class="ui-text-caption">取車</span>
             <span class="trip-timeline__date">{{ startDate }}</span>
-            <span class="ui-text-caption">24小時個人租車</span>
             @if (vehicle.location) {
-              <span class="ui-text-caption trip-timeline__location">
-                {{ vehicle.location }}
-                <a [href]="mapUrl(vehicle.location)" target="_blank" rel="noopener">地圖</a>
-              </span>
+              <span class="ui-text-caption">{{ vehicle.location }}</span>
             }
           </div>
         </li>
@@ -39,13 +27,6 @@
           <div class="trip-timeline__body">
             <span class="ui-text-caption">還車</span>
             <span class="trip-timeline__date">{{ endDate }}</span>
-            <span class="ui-text-caption">24小時個人租車</span>
-            @if (returnLocation) {
-              <span class="ui-text-caption trip-timeline__location">
-                {{ returnLocation }}
-                <a [href]="mapUrl(returnLocation)" target="_blank" rel="noopener">地圖</a>
-              </span>
-            }
           </div>
         </li>
       </ol>
@@ -70,70 +51,41 @@
   @if (priceBreakdown) {
     <div class="ui-card price-card">
       <div class="ui-card-header">
-        <h3 class="ui-card-title ui-text-title">付款詳情</h3>
+        <h3 class="ui-card-title ui-text-title">試算明細</h3>
       </div>
 
-      <div class="price-card__price-row">
-        <span class="ui-text-caption">價格</span>
-        <span>NT$ {{ priceBreakdown.total }}</span>
-      </div>
-
-      <div class="price-card__group">
-        <button type="button" class="price-card__group-toggle" (click)="toggleBaseFare()">
-          <span>基本費用</span>
-          <span class="price-card__group-amount">
-            NT$ {{ baseFareAmount }}
-            <span class="material-symbols-rounded" aria-hidden="true">{{
-              baseFareExpanded() ? 'expand_less' : 'expand_more'
-            }}</span>
-          </span>
-        </button>
-        @if (baseFareExpanded()) {
-          <ul class="price-card__group-detail">
-            <li>租車費＆保險費</li>
-            @if (fuelPolicyLabel(vehicle?.fuelPolicy); as label) {
-              <li>{{ label }}</li>
-            }
-            @if (mileagePolicyLabel(vehicle?.mileagePolicy); as label) {
-              <li>{{ label }}</li>
-            }
-            <li>當地稅費</li>
-          </ul>
+      <div class="price-card__lines">
+        <div class="line"><span class="ui-text-caption">租金原價</span><span>NT$ {{ priceBreakdown.rentalRaw }}</span></div>
+        @if (priceBreakdown.tierDiscountAmount > 0) {
+          <div class="line discount">
+            <span class="ui-text-caption">累租折扣（{{ priceBreakdown.tierDiscountPercent }}%）</span>
+            <span>-NT$ {{ priceBreakdown.tierDiscountAmount }}</span>
+          </div>
+        }
+        <div class="line"><span class="ui-text-caption">租金小計</span><span>NT$ {{ priceBreakdown.rentalSubtotal }}</span></div>
+        @if (priceBreakdown.partnerDiscount > 0) {
+          <div class="line discount">
+            <span class="ui-text-caption">夥伴折扣（{{ priceBreakdown.partnerDiscountPercent }}%）</span>
+            <span>-NT$ {{ priceBreakdown.partnerDiscount }}</span>
+          </div>
+        }
+        @for (addOnLine of priceBreakdown.addOnLines; track addOnLine.addOnId) {
+          <div class="line"><span class="ui-text-caption">{{ addOnLine.name }} x{{ addOnLine.qty }}</span><span>NT$ {{ addOnLine.amount }}</span></div>
+        }
+        @if (priceBreakdown.addOnSubtotal > 0) {
+          <div class="line"><span class="ui-text-caption">配件費用小計</span><span>NT$ {{ priceBreakdown.addOnSubtotal }}</span></div>
+        }
+        @if (priceBreakdown.couponDiscount > 0) {
+          <div class="line discount">
+            <span class="ui-text-caption">優惠折抵（{{ priceBreakdown.couponCode }}）</span>
+            <span>-NT$ {{ priceBreakdown.couponDiscount }}</span>
+          </div>
         }
       </div>
-
-      <div class="price-card__group">
-        <button type="button" class="price-card__group-toggle" (click)="toggleAddOns()">
-          <span>加購項目</span>
-          <span class="price-card__group-amount">
-            NT$ {{ priceBreakdown.addOnSubtotal }}
-            <span class="material-symbols-rounded" aria-hidden="true">{{
-              addOnsExpanded() ? 'expand_less' : 'expand_more'
-            }}</span>
-          </span>
-        </button>
-        @if (addOnsExpanded() && priceBreakdown.addOnLines.length > 0) {
-          <ul class="price-card__group-detail">
-            @for (addOnLine of priceBreakdown.addOnLines; track addOnLine.addOnId) {
-              <li><span>{{ addOnLine.name }} x{{ addOnLine.qty }}</span><span>NT$ {{ addOnLine.amount }}</span></li>
-            }
-          </ul>
-        }
-      </div>
-
-      @if (priceBreakdown.couponDiscount > 0) {
-        <div class="line discount">
-          <span class="ui-text-caption">優惠折抵（{{ priceBreakdown.couponCode }}）</span>
-          <span>-NT$ {{ priceBreakdown.couponDiscount }}</span>
-        </div>
-      }
 
       <div class="price-card__total">
         <span class="ui-text-title">應付總計</span>
         <span class="price-card__total-amount">
-          @if (discountPercent > 0) {
-            <span class="price-card__badge">Sale {{ discountPercent }}% OFF</span>
-          }
           @if (discountTotal > 0) {
             <span class="price-card__original">NT$ {{ originalTotal }}</span>
           }

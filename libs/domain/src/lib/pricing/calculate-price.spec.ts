@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { calculatePrice, isCouponValid } from './calculate-price';
 import { PricingPlan, SeasonCalendar, AddOn, Coupon } from '../models';
 
-const basicInsurance = { id: 'ins1', name: '基本保障', dailyPriceFrom: 200, tags: [], coverageItems: [] };
-
 const plan: PricingPlan = {
   id: 'p1', name: '機車 125', appliesToCategory: 'scooter',
   dayTypeRates: { weekday: 400, weekend: 500, holiday: 600, peak: 700 },
@@ -88,24 +86,6 @@ describe('calculatePrice', () => {
     expect(r.partnerDiscountPercent).toBe(0);
     expect(r.rentalSubtotal).toBe(1140);
     expect(r.total).toBe(1140);
-  });
-
-  it('帶保險方案：保費 = 天數 x dailyPriceFrom，計入 total，且不受 tier/partner 折扣影響', () => {
-    // 3 天，200/天 → insuranceSubtotal 600
-    const r = calculatePrice({
-      plan, calendar: cal, startDate: '2026-01-05', endDate: '2026-01-08', addOns: [],
-      partnerDiscountPercent: 10, insurancePlan: basicInsurance,
-    });
-    expect(r.insuranceSubtotal).toBe(600);
-    expect(r.insurance).toEqual({ planId: 'ins1', name: '基本保障', amount: 600 });
-    // rentalSubtotal 1140，partnerDiscount 10%=114 → afterPartner 1026；+ 保費 600 → total 1626
-    expect(r.total).toBe(1626);
-  });
-
-  it('未帶保險方案：insuranceSubtotal 為 0，insurance 為 undefined', () => {
-    const r = calculatePrice({ plan, calendar: cal, startDate: '2026-01-05', endDate: '2026-01-08', addOns: [] });
-    expect(r.insuranceSubtotal).toBe(0);
-    expect(r.insurance).toBeUndefined();
   });
 });
 

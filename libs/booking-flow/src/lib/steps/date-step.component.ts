@@ -61,7 +61,7 @@ export class DateStepComponent {
     this.endDate = range.end;
   }
 
-  protected confirm(): void {
+  protected search(): void {
     if (!this.isValid) return;
     this.dateRangeChange.emit({
       startDateTime: this.combine(this.startDate!, this.startTime),

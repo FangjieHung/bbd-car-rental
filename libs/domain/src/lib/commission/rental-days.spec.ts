@@ -26,7 +26,7 @@ describe('rentalDaysOf', () => {
         ],
         rentalRaw: 2000, tierDiscountPercent: 0, tierDiscountAmount: 0, rentalSubtotal: 2000,
         partnerDiscountPercent: 0, partnerDiscount: 0, addOnLines: [], addOnSubtotal: 0,
-        insuranceSubtotal: 0, couponDiscount: 0, total: 2000,
+        couponDiscount: 0, total: 2000,
       },
     });
     expect(rentalDaysOf(booking)).toBe(2);
@@ -44,7 +44,7 @@ describe('rentalDaysOf', () => {
       priceBreakdown: {
         dailyLines: [], rentalRaw: 0, tierDiscountPercent: 0, tierDiscountAmount: 0,
         rentalSubtotal: 0, partnerDiscountPercent: 0, partnerDiscount: 0, addOnLines: [],
-        addOnSubtotal: 0, insuranceSubtotal: 0, couponDiscount: 0, total: 0,
+        addOnSubtotal: 0, couponDiscount: 0, total: 0,
       },
     });
     expect(rentalDaysOf(booking)).toBe(2);

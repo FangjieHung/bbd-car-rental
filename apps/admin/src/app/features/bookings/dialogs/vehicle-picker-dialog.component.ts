@@ -68,6 +68,10 @@ export async function pickVehicle(
   dialog: MatDialog,
   range: DateRange,
 ): Promise<Vehicle | undefined> {
-  const ref = dialog.open(VehiclePickerDialogComponent, { data: range, width: '720px' });
+  const ref = dialog.open(VehiclePickerDialogComponent, {
+    data: range,
+    width: '80vw',
+    maxWidth: '800px',
+  });
   return firstValueFrom(ref.afterClosed());
 }

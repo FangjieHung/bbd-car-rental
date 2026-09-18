@@ -1,7 +1,6 @@
 import { DayType } from './pricing-plan';
 export interface PriceLineDay { date: string; dayType: DayType; price: number; }
 export interface PriceLineAddOn { addOnId: string; name: string; qty: number; amount: number; }
-export interface PriceLineInsurance { planId: string; name: string; amount: number; }
 export interface PriceBreakdown {
   dailyLines: PriceLineDay[];
   rentalRaw: number; tierDiscountPercent: number; tierDiscountAmount: number;
@@ -9,6 +8,5 @@ export interface PriceBreakdown {
   partnerDiscountPercent: number;
   partnerDiscount: number;
   addOnLines: PriceLineAddOn[]; addOnSubtotal: number;
-  insurance?: PriceLineInsurance; insuranceSubtotal: number;
   couponCode?: string; couponDiscount: number; total: number;
 }

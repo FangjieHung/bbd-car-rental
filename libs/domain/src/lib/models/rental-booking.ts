@@ -20,5 +20,4 @@ export interface RentalBooking {
   priceBreakdown?: PriceBreakdown;
   paymentMethod?: PaymentMethod;
   sourcePartnerId?: string;
-  insurancePlanId?: string;
 }

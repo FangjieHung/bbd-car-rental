@@ -54,7 +54,7 @@ describe('DateStepComponent 確認租期按鈕的啟用條件', () => {
     expect(component['isValid']).toBe(true);
   });
 
-  it('選好日期後 confirm 會帶著預設時間送出', () => {
+  it('選好日期後 search 會帶著預設時間送出', () => {
     const component = new DateStepComponent();
     const emitted: unknown[] = [];
     component.dateRangeChange.subscribe((range) => emitted.push(range));
@@ -63,7 +63,7 @@ describe('DateStepComponent 確認租期按鈕的啟用條件', () => {
       start: new Date(2026, 7, 20),
       end: new Date(2026, 7, 22),
     });
-    component['confirm']();
+    component['search']();
 
     expect(emitted).toEqual([
       expect.objectContaining({

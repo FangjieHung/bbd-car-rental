@@ -36,9 +36,6 @@
       @if (priceBreakdown.addOnSubtotal > 0) {
         <div class="line"><span class="ui-text-caption">配件費用</span><span>NT$ {{ priceBreakdown.addOnSubtotal }}</span></div>
       }
-      @if (priceBreakdown.insuranceSubtotal > 0) {
-        <div class="line"><span>保險費</span><span>NT$ {{ priceBreakdown.insuranceSubtotal }}</span></div>
-      }
       @if (priceBreakdown.couponDiscount > 0) {
         <div class="line discount">
           <span class="ui-text-caption">優惠折抵（{{ priceBreakdown.couponCode }}）</span>

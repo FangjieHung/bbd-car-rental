@@ -49,7 +49,6 @@ const bookingInMonth: RentalBooking = {
     partnerDiscount: 240,
     addOnLines: [],
     addOnSubtotal: 0,
-    insuranceSubtotal: 0,
     couponDiscount: 0,
     total: 2760,
   },

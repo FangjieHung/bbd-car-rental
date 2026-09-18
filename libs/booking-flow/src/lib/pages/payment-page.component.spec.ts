@@ -32,7 +32,6 @@ const emptyBreakdown: PriceBreakdown = {
   partnerDiscount: 0,
   addOnLines: [],
   addOnSubtotal: 0,
-  insuranceSubtotal: 0,
   couponDiscount: 0,
   total: 1300,
 };
