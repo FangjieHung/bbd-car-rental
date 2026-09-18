@@ -17,6 +17,18 @@ export type FuelPolicy = 'full_to_full' | 'full_to_empty' | 'same_level';
 /** 里程政策 */
 export type MileagePolicy = 'unlimited' | 'limited';
 
+/** 能源種類：汽油／燃油車（含機車）或電動車。決定還車能源讀數用油量八分格還是電量百分比。 */
+export type EnergyType = 'gasoline' | 'electric';
+
+/**
+ * 依車輛分類推導能源種類的預設值：既有資料沒有 energyType 欄位時，'ev' 分類視為電動車，
+ * 其餘（car／scooter）視為汽油車。呼叫端（例如 calculateReturnCharges）在讀到未設定
+ * energyType 的舊資料時應套用這個 fallback，而不是直接視為 undefined。
+ */
+export function deriveEnergyTypeFallback(category: VehicleCategory): EnergyType {
+  return category === 'ev' ? 'electric' : 'gasoline';
+}
+
 export interface Vehicle {
   id: string;
   plateNumber: string;
@@ -56,4 +68,6 @@ export interface Vehicle {
   fuelPolicy?: FuelPolicy;
   /** 里程政策 */
   mileagePolicy?: MileagePolicy;
+  /** 能源種類；既有資料未填時，呼叫端以 deriveEnergyTypeFallback(category) 推導預設值。 */
+  energyType?: EnergyType;
 }

@@ -13,3 +13,4 @@ export * from './insurance-plan';
 export * from './payment-record';
 export * from './cancellation-case';
 export * from './customer-credit';
+export * from './handover-record';
