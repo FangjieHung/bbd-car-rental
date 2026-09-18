@@ -135,6 +135,9 @@ export class BookingFormDialogComponent {
         name: v.name,
         phone: v.phone,
         idNumber: v.idNumber || undefined,
+        // 佔位預設值：後台訂單表單目前尚未收集承租人類型（本國人／外國旅客／持居留證者），
+        // Task 9/10 會補上實際的會員類型表單後，這裡應改用操作人員實際選擇的值。
+        kind: 'local',
       }).id;
     const result: BookingFormResult = {
       vehicleId: v.vehicleId,

@@ -115,6 +115,9 @@ export class CatalogStore {
       name: input.member.name,
       phone: input.member.phone,
       note: input.member.email,
+      // 佔位預設值：公開訂房流程目前尚未收集承租人類型（本國人／外國旅客／持居留證者），
+      // Task 9/10 會補上實際的會員類型表單後，這裡應改用使用者實際輸入的值。
+      kind: 'local',
     };
     this.memberRepo.create(member);
     const booking: RentalBooking = {

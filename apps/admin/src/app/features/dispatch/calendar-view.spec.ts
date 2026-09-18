@@ -426,7 +426,7 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
             },
           ]),
         },
-        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '林美惠', phone: '0900000000' }]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '林美惠', phone: '0900000000', kind: 'local' }]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -454,7 +454,7 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
             },
           ]),
         },
-        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '0911222333' }]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '0911222333', kind: 'local' }]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -502,7 +502,7 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
           depositRequired: 0,
         },
       ],
-      [{ id: 'c1', name: '陳先生', phone: '0900000000' }],
+      [{ id: 'c1', name: '陳先生', phone: '0900000000', kind: 'local' }],
     );
     fixture.componentInstance.selectDate(date);
     fixture.detectChanges();
@@ -559,7 +559,7 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
           depositRequired: 0,
         },
       ],
-      [{ id: 'c1', name: '陳先生', phone: '0900000000' }],
+      [{ id: 'c1', name: '陳先生', phone: '0900000000', kind: 'local' }],
     );
     fixture.componentInstance.selectDate(date);
     fixture.detectChanges();

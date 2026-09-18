@@ -61,7 +61,7 @@ describe('BookingFormDialogComponent 會員挑選', () => {
 
   it('選到既有會員後鎖定姓名/電話/證件號三欄，送出直接沿用該會員 id', () => {
     const component = createFixture([
-      { id: 'm1', name: '王小明', phone: '0912345678', idNumber: 'A123456789' },
+      { id: 'm1', name: '王小明', phone: '0912345678', idNumber: 'A123456789', kind: 'local' },
     ]);
 
     component.onMemberSelected(selectedEvent('m1'));
@@ -99,7 +99,7 @@ describe('BookingFormDialogComponent 會員挑選', () => {
   });
 
   it('鎖定後點「換一位」會清空三欄並解除鎖定，回到新會員狀態', () => {
-    const component = createFixture([{ id: 'm1', name: '王小明', phone: '0912345678' }]);
+    const component = createFixture([{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }]);
 
     component.onMemberSelected(selectedEvent('m1'));
     component.changeMember();
@@ -114,7 +114,7 @@ describe('BookingFormDialogComponent 會員挑選', () => {
 
   it('編輯既有訂單時預設鎖定原本的會員', () => {
     const component = createFixture(
-      [{ id: 'm1', name: '王小明', phone: '0912345678' }],
+      [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }],
       { id: 'b1', vehicleId: 'v1', memberId: 'm1', startTime: '2026-01-01T01:00:00.000Z', endTime: '2026-01-02T01:00:00.000Z', pickupLocation: '機場', returnLocation: '機場' },
     );
 

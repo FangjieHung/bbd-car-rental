@@ -16,7 +16,7 @@ describe('MemberStore', () => {
   });
 
   it('CRUD 與 nameOf', () => {
-    const c = store.create({ name: '王小明', phone: '0912' });
+    const c = store.create({ name: '王小明', phone: '0912', kind: 'local' });
     expect(store.members()).toHaveLength(1);
     expect(store.nameOf(c.id)).toBe('王小明');
     expect(store.nameOf('nope')).toBe('—');

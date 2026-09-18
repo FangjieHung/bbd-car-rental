@@ -58,8 +58,8 @@ describe('BookingsPageComponent filtering', () => {
         {
           provide: MEMBER_REPO,
           useValue: createInMemoryRepo<Member>([
-            { id: 'c1', name: '王小明', phone: '0912000111' },
-            { id: 'c2', name: '陳大文', phone: '0922000222' },
+            { id: 'c1', name: '王小明', phone: '0912000111', kind: 'local' },
+            { id: 'c2', name: '陳大文', phone: '0922000222', kind: 'local' },
           ]),
         },
         {
