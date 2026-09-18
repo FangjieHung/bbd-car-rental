@@ -6,6 +6,7 @@ import {
   AddOn,
   Coupon,
   Member,
+  PaymentRecord,
   PriceBreakdown,
   PricingPlan,
   RentalBooking,
@@ -14,6 +15,7 @@ import {
   VEHICLE_REPO,
   BOOKING_REPO,
   MEMBER_REPO,
+  PAYMENT_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
@@ -59,11 +61,13 @@ function setup(bookingId: string, bookings: RentalBooking[]) {
   TestBed.resetTestingModule();
   const navigate = vi.fn().mockResolvedValue(true);
   const bookingRepo = createInMemoryRepo<RentalBooking>(bookings);
+  const paymentRepo = createInMemoryRepo<PaymentRecord>([]);
   TestBed.configureTestingModule({
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
       { provide: BOOKING_REPO, useValue: bookingRepo },
       { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
+      { provide: PAYMENT_REPO, useValue: paymentRepo },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([]) },
       { provide: SEASON_CALENDAR_REPO, useValue: createInMemoryRepo<SeasonCalendar>([]) },
       { provide: ADDON_REPO, useValue: createInMemoryRepo<AddOn>([]) },
@@ -76,7 +80,7 @@ function setup(bookingId: string, bookings: RentalBooking[]) {
     ],
   });
   const component = TestBed.runInInjectionContext(() => new PaymentPageComponent());
-  return { component, navigate, bookingRepo };
+  return { component, navigate, bookingRepo, paymentRepo };
 }
 
 describe('PaymentPageComponent', () => {

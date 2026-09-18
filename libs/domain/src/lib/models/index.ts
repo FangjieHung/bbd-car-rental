@@ -18,3 +18,4 @@ export * from './identity-document';
 export * from './contract-version';
 export * from './reminder-status';
 export * from './audit-entry';
+export * from './operator-recovery-case';

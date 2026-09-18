@@ -4,13 +4,16 @@ import {
   Coupon,
   InsurancePlan,
   Member,
+  PaymentMethod,
   PaymentPreference,
+  PaymentRecord,
   PriceBreakdown,
   PricingPlan,
   RentalBooking,
   VEHICLE_REPO,
   BOOKING_REPO,
   MEMBER_REPO,
+  PAYMENT_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
@@ -22,11 +25,24 @@ import {
   isVehicleAvailable,
 } from '@car-rental/domain';
 
+/**
+ * 訂單建立時記錄的付款偏好（PaymentPreference）與付款分類帳實際採用的付款方式
+ * （PaymentMethod）是兩個獨立的列舉 —— 分類帳沒有 'on_site' 這個值（現場付款當下
+ * 一定會落地成某個具體方式，例如現金），所以需要顯式對應，不能直接假設兩邊相容。
+ */
+const PAYMENT_METHOD_FOR_PREFERENCE: Record<PaymentPreference, PaymentMethod> = {
+  credit_card: 'credit_card',
+  line_pay: 'line_pay',
+  bank_transfer: 'bank_transfer',
+  on_site: 'cash',
+};
+
 @Injectable({ providedIn: 'root' })
 export class CatalogStore {
   private readonly vehicleRepo = inject(VEHICLE_REPO);
   private readonly bookingRepo = inject(BOOKING_REPO);
   private readonly memberRepo = inject(MEMBER_REPO);
+  private readonly paymentRepo = inject(PAYMENT_REPO);
   private readonly planRepo = inject(PRICING_PLAN_REPO);
   private readonly calRepo = inject(SEASON_CALENDAR_REPO);
   private readonly addOnRepo = inject(ADDON_REPO);
@@ -142,13 +158,27 @@ export class CatalogStore {
 
   /**
    * 付款成功後呼叫。目前由佔位付款頁觸發，日後改由金流回調觸發。
-   * 訂單的履約狀態（reserved）本來就不代表付款是否完成 —— 這裡先維持原狀不動 status，
-   * 只回傳訂單本身；Task 7 會在這裡接上真正的付款分類帳寫入（PaymentRecord），
-   * 取代這個先佔位的窄接縫。
+   * 訂單的履約狀態（reserved）本來就不代表付款是否完成 —— 這裡不動 status，
+   * 只在付款分類帳（PaymentRecord）追加一筆已確認付款，讓 PaymentStore.summaryFor
+   * 之後能算出正確的已付金額。付款方式優先採用訂單建立時記錄的 paymentPreference，
+   * 查無報價明細時金額退回 0（沒有更好的數字可用，寧可留 0 讓後續人工核對）。
    */
   markBookingPaid(bookingId: string): RentalBooking {
     const booking = this.bookingRepo.getById(bookingId);
     if (!booking) throw new Error('查無訂單');
+
+    const payment: PaymentRecord = {
+      id: crypto.randomUUID(),
+      bookingId: booking.id,
+      amount: booking.priceBreakdown?.total ?? 0,
+      method: booking.paymentPreference ? PAYMENT_METHOD_FOR_PREFERENCE[booking.paymentPreference] : 'credit_card',
+      purpose: 'balance',
+      status: 'confirmed',
+      receivedAt: new Date().toISOString(),
+      handledBy: 'online_payment',
+    };
+    this.paymentRepo.create(payment);
+
     return booking;
   }
 }

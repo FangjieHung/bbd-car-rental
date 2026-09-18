@@ -4,6 +4,7 @@ import {
   AddOn,
   Coupon,
   Member,
+  PaymentRecord,
   PricingPlan,
   RentalBooking,
   SeasonCalendar,
@@ -11,6 +12,7 @@ import {
   VEHICLE_REPO,
   BOOKING_REPO,
   MEMBER_REPO,
+  PAYMENT_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
@@ -58,6 +60,7 @@ function setup(bookings: RentalBooking[] = []): CatalogStore {
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
       { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
       { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
+      { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([plan]) },
       { provide: SEASON_CALENDAR_REPO, useValue: createInMemoryRepo<SeasonCalendar>([calendar]) },
       { provide: ADDON_REPO, useValue: createInMemoryRepo<AddOn>([]) },
@@ -200,7 +203,7 @@ describe('CatalogStore', () => {
     expect(b.priceBreakdown!.total).toBeLessThan(withoutPartner.total);
   });
 
-  it('markBookingPaid 回傳未變動的 reserved 訂單，查無訂單則丟錯', () => {
+  it('markBookingPaid 回傳未變動的 reserved 訂單並追加一筆已確認付款，查無訂單則丟錯', () => {
     const store = setup();
     const booking = store.submitBooking({
       vehicleId: 'v1',
@@ -220,6 +223,14 @@ describe('CatalogStore', () => {
     const paid = store.markBookingPaid(booking.id);
     expect(paid.status).toBe('reserved');
     expect(paid.id).toBe(booking.id);
+
+    const paymentRepo = TestBed.inject(PAYMENT_REPO);
+    const payments = paymentRepo.getAll().filter((p) => p.bookingId === booking.id);
+    expect(payments).toHaveLength(1);
+    expect(payments[0].status).toBe('confirmed');
+    expect(payments[0].method).toBe('credit_card');
+    expect(payments[0].amount).toBe(booking.priceBreakdown?.total);
+
     expect(() => store.markBookingPaid('nope')).toThrow('查無訂單');
   });
 });
