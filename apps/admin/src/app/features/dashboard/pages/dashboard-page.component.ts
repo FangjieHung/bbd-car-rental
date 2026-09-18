@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { firstValueFrom } from 'rxjs';
 import { DateRange, DateStepComponent } from '@car-rental/booking-flow';
 import { startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
@@ -16,6 +18,10 @@ import {
   returnProgress,
 } from '../../dispatch/calendar-view/calendar-view.component';
 import { pickVehicle } from '../../bookings/dialogs/vehicle-picker-dialog.component';
+import {
+  BookingFormDialogComponent,
+  BookingFormResult,
+} from '../../bookings/dialogs/booking-form-dialog.component';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -38,11 +44,27 @@ export class DashboardPageComponent {
   private readonly todayDate = startOfDay(new Date());
 
   private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
   readonly targetDate = signal(startOfDay(new Date()));
 
+  /** 快速查詢選到車輛後，直接開建單表單並預填車輛與時段，讓查詢直接接上建立訂單 */
   async onQuickRange(range: DateRange): Promise<void> {
-    await pickVehicle(this.dialog, range);
+    const vehicle = await pickVehicle(this.dialog, range);
+    if (!vehicle) return;
+
+    const formRef = this.dialog.open(BookingFormDialogComponent, {
+      data: { vehicleId: vehicle.id, startTime: range.startDateTime, endTime: range.endDateTime },
+      width: '440px',
+    });
+    const result: BookingFormResult | undefined = await firstValueFrom(formRef.afterClosed());
+    if (!result) return;
+
+    try {
+      this.bookingStore.create(result);
+    } catch (e) {
+      this.snackBar.open((e as Error).message, undefined, { duration: 4000 });
+    }
   }
 
   selectCalendarDate(date: Date): void {

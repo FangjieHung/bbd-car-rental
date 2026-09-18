@@ -48,7 +48,7 @@ function toLocalInputValue(iso: string): string {
 export class BookingFormDialogComponent {
   protected readonly t = ZH_TW;
   readonly ref = inject(MatDialogRef<BookingFormDialogComponent>);
-  readonly data = inject<RentalBooking | null>(MAT_DIALOG_DATA);
+  readonly data = inject<Partial<RentalBooking> | null>(MAT_DIALOG_DATA);
   readonly vehicleStore = inject(VehicleStore);
   readonly customerStore = inject(CustomerStore);
   private dialog = inject(MatDialog);
@@ -58,8 +58,14 @@ export class BookingFormDialogComponent {
   form = this.fb.group({
     vehicleId: [this.data?.vehicleId ?? '', Validators.required],
     customerId: [this.data?.customerId ?? '', Validators.required],
-    startLocal: [this.data ? toLocalInputValue(this.data.startTime) : '', Validators.required],
-    endLocal: [this.data ? toLocalInputValue(this.data.endTime) : '', Validators.required],
+    startLocal: [
+      this.data?.startTime ? toLocalInputValue(this.data.startTime) : '',
+      Validators.required,
+    ],
+    endLocal: [
+      this.data?.endTime ? toLocalInputValue(this.data.endTime) : '',
+      Validators.required,
+    ],
     pickupLocation: [this.data?.pickupLocation ?? '', Validators.required],
     returnLocation: [this.data?.returnLocation ?? '', Validators.required],
   });

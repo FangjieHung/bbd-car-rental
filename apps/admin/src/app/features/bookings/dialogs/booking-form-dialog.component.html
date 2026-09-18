@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>{{ data ? t.common.edit : t.common.create }}</h2>
+<h2 mat-dialog-title>{{ data?.id ? t.common.edit : t.common.create }}</h2>
 <form [formGroup]="form" (ngSubmit)="save()" mat-dialog-content class="form-shell">
   <mat-form-field>
     <mat-label>{{ t.booking.vehicle }}</mat-label>
