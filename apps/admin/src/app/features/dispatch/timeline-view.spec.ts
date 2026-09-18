@@ -23,7 +23,7 @@ const rangeStart = new Date(2026, 6, 20); // 2026-07-20 local
 const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
   id: 'b1',
   vehicleId: 'v1',
-  customerId: 'c1',
+  memberId: 'c1',
   startTime: new Date(2026, 6, 21, 9).toISOString(),
   endTime: new Date(2026, 6, 23, 18).toISOString(),
   pickupLocation: '',

@@ -73,16 +73,16 @@ export const ZH_TW = {
     timelineView: '時間軸',
     backToList: '返回車輛清單',
   },
-  customer: {
+  member: {
     name: '姓名',
     phone: '電話',
     idNumber: '證件號',
     note: '備註',
-    newInline: '＋ 新增客戶',
+    changeMember: '換一位',
   },
   booking: {
     vehicle: '車輛',
-    customer: '客戶',
+    member: '會員',
     startTime: '開始時間',
     endTime: '結束時間',
     pickupLocation: '取車地點',
@@ -103,7 +103,7 @@ export const ZH_TW = {
     endBeforeStart: '結束時間必須晚於開始時間',
     invalidTransition: '訂單狀態不允許此操作',
     notPending: '僅待付款訂單可確認收款',
-    goCustomers: '客戶管理',
+    goMembers: '會員管理',
     pickVehicle: '選擇車輛',
     noVehicleAvailable: '此租期沒有可租車輛',
     pickedResult: '已選車輛',

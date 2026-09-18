@@ -1,6 +1,6 @@
 export * from './enums';
 export * from './vehicle';
-export * from './customer';
+export * from './member';
 export * from './rental-booking';
 export * from './pricing-plan';
 export * from './add-on';

@@ -9,16 +9,27 @@
     </mat-select>
   </mat-form-field>
   <mat-form-field>
-    <mat-label>{{ t.booking.customer }}</mat-label>
-    <mat-select formControlName="customerId">
-      @for (c of customerStore.customers(); track c.id) {
-        <mat-option [value]="c.id">{{ c.name }}（{{ c.phone }}）</mat-option>
+    <mat-label>{{ t.member.name }}</mat-label>
+    <input matInput formControlName="name" [matAutocomplete]="memberAuto" />
+    <mat-autocomplete #memberAuto="matAutocomplete" (optionSelected)="onMemberSelected($event)">
+      @for (m of memberSuggestions(); track m.id) {
+        <mat-option [value]="m.id">{{ m.name }}（{{ m.phone }}）</mat-option>
       }
-    </mat-select>
+    </mat-autocomplete>
   </mat-form-field>
-  <button mat-button type="button" class="self-start" (click)="createCustomer()">
-    {{ t.customer.newInline }}
-  </button>
+  <mat-form-field>
+    <mat-label>{{ t.member.phone }}</mat-label>
+    <input matInput formControlName="phone" />
+  </mat-form-field>
+  <mat-form-field>
+    <mat-label>{{ t.member.idNumber }}</mat-label>
+    <input matInput formControlName="idNumber" />
+  </mat-form-field>
+  @if (lockedMemberId()) {
+    <button mat-button type="button" class="self-start" (click)="changeMember()">
+      {{ t.member.changeMember }}
+    </button>
+  }
   <mat-form-field>
     <mat-label>{{ t.booking.startTime }}</mat-label>
     <input matInput type="datetime-local" formControlName="startLocal" />

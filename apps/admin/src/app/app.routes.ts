@@ -36,10 +36,10 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'bookings/customers',
+    path: 'bookings/members',
     loadComponent: () =>
-      import('./features/bookings/pages/customers-page.component').then(
-        (m) => m.CustomersPageComponent,
+      import('./features/bookings/pages/members-page.component').then(
+        (m) => m.MembersPageComponent,
       ),
   },
   {

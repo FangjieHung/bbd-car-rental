@@ -6,7 +6,7 @@ import { of } from 'rxjs';
 import {
   AddOn,
   Coupon,
-  Customer,
+  Member,
   Partner,
   PricingPlan,
   RentalBooking,
@@ -14,7 +14,7 @@ import {
   Vehicle,
   VEHICLE_REPO,
   BOOKING_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
@@ -67,7 +67,7 @@ function setup(
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
       { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
-      { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+      { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([plan]) },
       { provide: SEASON_CALENDAR_REPO, useValue: createInMemoryRepo<SeasonCalendar>([calendar]) },
       { provide: ADDON_REPO, useValue: createInMemoryRepo<AddOn>([]) },

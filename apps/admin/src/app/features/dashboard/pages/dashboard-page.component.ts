@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { DateRange, DateStepComponent } from '@car-rental/booking-flow';
 import { startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
-import { CustomerStore } from '../../../stores/customer/customer.store';
+import { MemberStore } from '../../../stores/member/member.store';
 import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
@@ -39,7 +39,7 @@ import {
 })
 export class DashboardPageComponent {
   readonly bookingStore = inject(BookingStore);
-  readonly customerStore = inject(CustomerStore);
+  readonly memberStore = inject(MemberStore);
   readonly maintenanceStore = inject(MaintenanceStore);
   private readonly todayDate = startOfDay(new Date());
 

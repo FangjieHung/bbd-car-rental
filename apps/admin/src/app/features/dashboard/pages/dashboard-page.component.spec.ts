@@ -5,7 +5,7 @@ import { DashboardPageComponent } from './dashboard-page.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
 import {
   BOOKING_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
   MAINTENANCE_REPO,
   VEHICLE_REPO,
   PRICING_PLAN_REPO,
@@ -13,7 +13,7 @@ import {
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import {
-  Customer,
+  Member,
   MaintenanceRecord,
   PricingPlan,
   RentalBooking,
@@ -43,7 +43,7 @@ describe('DashboardPageComponent child date contract', () => {
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -91,7 +91,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
   const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
     id: 'b',
     vehicleId: 'v1',
-    customerId: 'c1',
+    memberId: 'c1',
     startTime: at(today, 9),
     endTime: at(tomorrow, 9),
     pickupLocation: '',
@@ -108,7 +108,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });

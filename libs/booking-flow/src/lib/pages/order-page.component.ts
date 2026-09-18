@@ -148,7 +148,7 @@ export class OrderPageComponent {
         endTime: end,
         pickupLocation: this.pickupLocation() || '機場',
         returnLocation: form.returnLocation,
-        customer: { name: form.name, phone: form.phone, email: form.email },
+        member: { name: form.name, phone: form.phone, email: form.email },
         category: vehicle.category,
         startDate: this.startDate(),
         endDate: this.endDate(),

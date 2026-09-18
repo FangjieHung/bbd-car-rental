@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { CalendarViewComponent, dayStats } from './calendar-view/calendar-view.component';
 import {
-  Customer,
+  Member,
   MaintenanceRecord,
   PricingPlan,
   RentalBooking,
@@ -13,7 +13,7 @@ import {
 } from '../../core/models';
 import {
   BOOKING_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
   MAINTENANCE_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
@@ -42,7 +42,7 @@ function providePricing() {
 const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
   id: 'b1',
   vehicleId: 'v1',
-  customerId: 'c1',
+  memberId: 'c1',
   startTime: new Date(2026, 6, 21, 9).toISOString(),
   endTime: new Date(2026, 6, 23, 18).toISOString(),
   pickupLocation: '',
@@ -101,7 +101,7 @@ describe('CalendarViewComponent supplied date', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
       ],
     });
     fixture = TestBed.createComponent(CalendarViewComponent);
@@ -150,7 +150,7 @@ describe('CalendarViewComponent 面板開關（窄螢幕）', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         provideBreakpoint(true),
       ],
     });
@@ -257,7 +257,7 @@ describe('CalendarViewComponent 面板開關（寬螢幕 split view）', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         provideBreakpoint(false),
       ],
     });
@@ -305,7 +305,7 @@ describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         provideBreakpoint(true),
       ],
     });
@@ -370,7 +370,7 @@ describe('CalendarViewComponent 面板 DOM 行為（寬螢幕）', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         provideBreakpoint(false),
       ],
     });
@@ -414,18 +414,18 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
           provide: BOOKING_REPO,
           useValue: createInMemoryRepo<RentalBooking>([
             {
-              id: 'pickup', vehicleId: 'v1', customerId: 'c1',
+              id: 'pickup', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
               pickupLocation: '機場', returnLocation: '港口', status: 'confirmed',
             },
             {
-              id: 'return-only', vehicleId: 'v1', customerId: 'c1',
+              id: 'return-only', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 2, 10).toISOString(), endTime: new Date(2026, 7, 4, 15).toISOString(),
               pickupLocation: '港口', returnLocation: '機場', status: 'confirmed',
             },
           ]),
         },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([{ id: 'c1', name: '林美惠', phone: '0900000000' }]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '林美惠', phone: '0900000000' }]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -447,13 +447,13 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
           provide: BOOKING_REPO,
           useValue: createInMemoryRepo<RentalBooking>([
             {
-              id: 'cancelled', vehicleId: 'v1', customerId: 'c1',
+              id: 'cancelled', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
               pickupLocation: '', returnLocation: '', status: 'cancelled',
             },
           ]),
         },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([{ id: 'c1', name: '王小明', phone: '0911222333' }]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '0911222333' }]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -462,19 +462,19 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
     component.selectDate(date);
 
     expect(component.pickupWorkRows()).toEqual([]);
-    expect(component.phoneHref({ customerId: 'c1' } as RentalBooking)).toBe('tel:0911222333');
-    expect(component.phoneHref({ customerId: 'missing' } as RentalBooking)).toBeNull();
+    expect(component.phoneHref({ memberId: 'c1' } as RentalBooking)).toBe('tel:0911222333');
+    expect(component.phoneHref({ memberId: 'missing' } as RentalBooking)).toBeNull();
   });
 });
 
 describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () => {
-  function setup(vehicles: Vehicle[], bookings: RentalBooking[], customers: Customer[]) {
+  function setup(vehicles: Vehicle[], bookings: RentalBooking[], members: Member[]) {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>(customers) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>(members) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         provideBreakpoint(false),
       ],
@@ -492,7 +492,7 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
         {
           id: 'b1',
           vehicleId: 'missing-vehicle',
-          customerId: 'c1',
+          memberId: 'c1',
           startTime: new Date(2026, 7, 4, 9, 5).toISOString(),
           endTime: new Date(2026, 7, 5, 18, 0).toISOString(),
           pickupLocation: '',
@@ -547,7 +547,7 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
         {
           id: 'b1',
           vehicleId: 'v1',
-          customerId: 'c1',
+          memberId: 'c1',
           // 同一天取車又還車，確保兩個 tab 各自讀取自己的時間欄位而非共用同一個值。
           startTime: new Date(2026, 7, 4, 9, 5).toISOString(),
           endTime: new Date(2026, 7, 4, 18, 30).toISOString(),

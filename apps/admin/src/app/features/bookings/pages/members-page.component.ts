@@ -5,17 +5,17 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
-import { Customer } from '../../../core/models';
+import { Member } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { CustomerStore } from '../../../stores/customer/customer.store';
+import { MemberStore } from '../../../stores/member/member.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
 import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
-import { CustomerFormDialogComponent } from '../dialogs/customer-form-dialog.component';
+import { MemberFormDialogComponent } from '../dialogs/member-form-dialog.component';
 
 @Component({
-  selector: 'app-customers-page',
+  selector: 'app-members-page',
   imports: [
     DataTableComponent,
     DataTableCellDirective,
@@ -24,22 +24,22 @@ import { CustomerFormDialogComponent } from '../dialogs/customer-form-dialog.com
     PageToolbarComponent,
     HeaderToolbarDirective,
   ],
-  templateUrl: './customers-page.component.html',
+  templateUrl: './members-page.component.html',
   styleUrls: ['../../../app.scss'],
 })
-export class CustomersPageComponent {
+export class MembersPageComponent {
   protected readonly t = ZH_TW;
-  readonly store = inject(CustomerStore);
+  readonly store = inject(MemberStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
   readonly labels = ADMIN_DATA_TABLE_LABELS;
 
-  readonly columns: DataTableColumn<Customer>[] = [
-    { key: 'name', label: this.t.customer.name, primary: true },
-    { key: 'phone', label: this.t.customer.phone, primary: true },
-    { key: 'idNumber', label: this.t.customer.idNumber, exportValue: (c) => c.idNumber ?? '—' },
-    { key: 'note', label: this.t.customer.note, exportValue: (c) => c.note ?? '' },
+  readonly columns: DataTableColumn<Member>[] = [
+    { key: 'name', label: this.t.member.name, primary: true },
+    { key: 'phone', label: this.t.member.phone, primary: true },
+    { key: 'idNumber', label: this.t.member.idNumber, exportValue: (c) => c.idNumber ?? '—' },
+    { key: 'note', label: this.t.member.note, exportValue: (c) => c.note ?? '' },
     { key: 'actions', label: this.t.common.actions, exportSkip: true },
   ];
 
@@ -48,15 +48,15 @@ export class CustomersPageComponent {
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
-  async openForm(customer: Customer | null): Promise<void> {
-    const ref = this.dialog.open(CustomerFormDialogComponent, { data: customer, width: '400px' });
+  async openForm(member: Member | null): Promise<void> {
+    const ref = this.dialog.open(MemberFormDialogComponent, { data: member, width: '400px' });
     const result = await firstValueFrom(ref.afterClosed());
     if (!result) return;
-    if (customer) this.store.update(customer.id, result);
+    if (member) this.store.update(member.id, result);
     else this.store.create(result);
   }
 
-  async remove(customer: Customer): Promise<void> {
-    if (await confirm(this.dialog, this.t.common.deleteConfirm)) this.store.remove(customer.id);
+  async remove(member: Member): Promise<void> {
+    if (await confirm(this.dialog, this.t.common.deleteConfirm)) this.store.remove(member.id);
   }
 }

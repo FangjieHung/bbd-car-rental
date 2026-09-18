@@ -5,7 +5,7 @@ import { Vehicle, RentalBooking } from '../models';
 const v: Vehicle = { id: 'v1', plateNumber: 'A', category: 'scooter', model: 'G',
   brand: 'G', year: 2022, status: 'available', mileage: 0, createdAt: '' };
 function bk(p: Partial<RentalBooking>): RentalBooking {
-  return { id: 'b', vehicleId: 'v1', customerId: 'c', startTime: '2026-01-05T09:00:00',
+  return { id: 'b', vehicleId: 'v1', memberId: 'c', startTime: '2026-01-05T09:00:00',
     endTime: '2026-01-08T09:00:00', pickupLocation: '', returnLocation: '', status: 'confirmed', ...p };
 }
 

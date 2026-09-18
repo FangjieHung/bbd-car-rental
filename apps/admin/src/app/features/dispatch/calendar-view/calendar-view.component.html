@@ -98,7 +98,7 @@
                             vehicle?.plateNumber ?? '—'
                           }}</span>
                           <span class="work-list-row__meta"
-                            >{{ vehicle?.model ?? '—' }} · {{ customerName(row) }}</span
+                            >{{ vehicle?.model ?? '—' }} · {{ memberName(row) }}</span
                           >
                         </mat-panel-title>
                         <mat-panel-description class="work-list-row__time">{{
@@ -108,14 +108,14 @@
                       <dl class="work-list-detail">
                         <div>
                           <dt>客人</dt>
-                          <dd class="work-list-detail__customer">
-                            <span>{{ customerName(row) }}</span>
+                          <dd class="work-list-detail__member">
+                            <span>{{ memberName(row) }}</span>
                             @if (phoneHref(row.booking); as href) {
                               <a
                                 class="work-list-detail__phone-link underline"
                                 [href]="href"
                                 [attr.aria-label]="
-                                  customerName(row) + '，撥打電話 ' + phoneLabel(row.booking)
+                                  memberName(row) + '，撥打電話 ' + phoneLabel(row.booking)
                                 "
                               >
                                 <span class="material-symbols-rounded" aria-hidden="true"
@@ -163,7 +163,7 @@
                               vehicle?.plateNumber ?? '—'
                             }}</span>
                             <span class="work-list-row__meta"
-                              >{{ vehicle?.model ?? '—' }} · {{ customerName(row) }}</span
+                              >{{ vehicle?.model ?? '—' }} · {{ memberName(row) }}</span
                             >
                           </mat-panel-title>
                           <mat-panel-description class="work-list-row__time">{{
@@ -173,14 +173,14 @@
                         <dl class="work-list-detail">
                           <div>
                             <dt>客人</dt>
-                            <dd class="work-list-detail__customer">
-                              <span>{{ customerName(row) }}</span>
+                            <dd class="work-list-detail__member">
+                              <span>{{ memberName(row) }}</span>
                               @if (phoneHref(row.booking); as href) {
                                 <a
                                   class="work-list-detail__phone-link underline"
                                   [href]="href"
                                   [attr.aria-label]="
-                                    customerName(row) + '，撥打電話 ' + phoneLabel(row.booking)
+                                    memberName(row) + '，撥打電話 ' + phoneLabel(row.booking)
                                   "
                                 >
                                   <span class="material-symbols-rounded" aria-hidden="true"

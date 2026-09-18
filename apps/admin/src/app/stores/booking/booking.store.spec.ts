@@ -3,12 +3,12 @@ import { TestBed } from '@angular/core/testing';
 import { BookingStore } from './booking.store';
 import {
   VEHICLE_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
   BOOKING_REPO,
   MAINTENANCE_REPO,
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord, Customer } from '../../core/models';
+import { Vehicle, RentalBooking, MaintenanceRecord, Member } from '../../core/models';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
 const T0 = '2026-07-20T09:00:00.000Z';
@@ -17,7 +17,7 @@ const T1 = '2026-07-22T18:00:00.000Z';
 function baseInput(partial: Partial<Omit<RentalBooking, 'id' | 'status'>> = {}) {
   return {
     vehicleId: 'v1',
-    customerId: 'c1',
+    memberId: 'c1',
     startTime: T0,
     endTime: T1,
     pickupLocation: '馬公',
@@ -48,7 +48,7 @@ describe('BookingStore', () => {
             },
           ]),
         },
-        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>() },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>() },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>() },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>() },
       ],

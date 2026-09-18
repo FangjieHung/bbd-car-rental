@@ -12,7 +12,7 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
-import { CustomerStore } from '../../../stores/customer/customer.store';
+import { MemberStore } from '../../../stores/member/member.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { StatusKey } from '@car-rental/theme-pack';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
@@ -56,7 +56,7 @@ const STATUS_KEY: Record<BookingStatus, StatusKey> = {
 export class BookingsPageComponent {
   protected readonly t = ZH_TW;
   readonly store = inject(BookingStore);
-  readonly customerStore = inject(CustomerStore);
+  readonly memberStore = inject(MemberStore);
   private vehicleStore = inject(VehicleStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
@@ -72,10 +72,10 @@ export class BookingsPageComponent {
       exportValue: (b) => this.plateOf(b.vehicleId),
     },
     {
-      key: 'customerId',
-      label: this.t.booking.customer,
+      key: 'memberId',
+      label: this.t.booking.member,
       primary: true,
-      exportValue: (b) => this.customerStore.nameOf(b.customerId),
+      exportValue: (b) => this.memberStore.nameOf(b.memberId),
     },
     { key: 'startTime', label: this.t.booking.startTime, exportValue: (b) => this.fmt(b.startTime) },
     { key: 'endTime', label: this.t.booking.endTime, exportValue: (b) => this.fmt(b.endTime) },
@@ -109,9 +109,9 @@ export class BookingsPageComponent {
     return this.store.bookings().filter((b) => {
       if (status && b.status !== status) return false;
       if (query) {
-        const customerName = this.customerStore.nameOf(b.customerId).toLowerCase();
+        const memberName = this.memberStore.nameOf(b.memberId).toLowerCase();
         const plate = this.plateOf(b.vehicleId).toLowerCase();
-        if (!customerName.includes(query) && !plate.includes(query)) return false;
+        if (!memberName.includes(query) && !plate.includes(query)) return false;
       }
       return true;
     });

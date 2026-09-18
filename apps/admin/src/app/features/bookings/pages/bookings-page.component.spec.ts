@@ -5,11 +5,11 @@ import { BookingsPageComponent } from './bookings-page.component';
 import {
   VEHICLE_REPO,
   BOOKING_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
   MAINTENANCE_REPO,
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
-import { Vehicle, RentalBooking, Customer, MaintenanceRecord } from '../../../core/models';
+import { Vehicle, RentalBooking, Member, MaintenanceRecord } from '../../../core/models';
 
 function makeVehicle(partial: Partial<Vehicle>): Vehicle {
   return {
@@ -30,7 +30,7 @@ function makeBooking(partial: Partial<RentalBooking>): RentalBooking {
   return {
     id: partial.id ?? 'b1',
     vehicleId: 'v1',
-    customerId: 'c1',
+    memberId: 'c1',
     startTime: new Date().toISOString(),
     endTime: new Date().toISOString(),
     pickupLocation: '馬公',
@@ -55,8 +55,8 @@ describe('BookingsPageComponent filtering', () => {
           ]),
         },
         {
-          provide: CUSTOMER_REPO,
-          useValue: createInMemoryRepo<Customer>([
+          provide: MEMBER_REPO,
+          useValue: createInMemoryRepo<Member>([
             { id: 'c1', name: '王小明', phone: '0912000111' },
             { id: 'c2', name: '陳大文', phone: '0922000222' },
           ]),
@@ -64,9 +64,9 @@ describe('BookingsPageComponent filtering', () => {
         {
           provide: BOOKING_REPO,
           useValue: createInMemoryRepo<RentalBooking>([
-            makeBooking({ id: 'b1', vehicleId: 'v1', customerId: 'c1', status: 'confirmed' }),
-            makeBooking({ id: 'b2', vehicleId: 'v2', customerId: 'c2', status: 'in_progress' }),
-            makeBooking({ id: 'b3', vehicleId: 'v1', customerId: 'c2', status: 'cancelled' }),
+            makeBooking({ id: 'b1', vehicleId: 'v1', memberId: 'c1', status: 'confirmed' }),
+            makeBooking({ id: 'b2', vehicleId: 'v2', memberId: 'c2', status: 'in_progress' }),
+            makeBooking({ id: 'b3', vehicleId: 'v1', memberId: 'c2', status: 'cancelled' }),
           ]),
         },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -79,7 +79,7 @@ describe('BookingsPageComponent filtering', () => {
     expect(component.filteredBookings()).toHaveLength(3);
   });
 
-  it('依客戶姓名搜尋', () => {
+  it('依會員姓名搜尋', () => {
     component.searchQuery.set('王小明');
     expect(component.filteredBookings().map((b) => b.id)).toEqual(['b1']);
   });

@@ -1,6 +1,6 @@
 import {
   Vehicle,
-  Customer,
+  Member,
   RentalBooking,
   PricingPlan,
   SeasonCalendar,
@@ -142,7 +142,7 @@ export function seedVehicles(): Vehicle[] {
   ];
 }
 
-export function seedCustomers(): Customer[] {
+export function seedMembers(): Member[] {
   return [
     { id: 'c1', name: '王小明', phone: '0912-345-678' },
     { id: 'c2', name: '林美惠', phone: '0922-111-222', idNumber: 'A123456789' },
@@ -156,7 +156,7 @@ export function seedBookings(): RentalBooking[] {
     {
       id: 'b1',
       vehicleId: 'v2',
-      customerId: 'c1',
+      memberId: 'c1',
       startTime: isoAt(-1, 9),
       endTime: isoAt(1, 18),
       pickupLocation: '馬公門市',
@@ -166,7 +166,7 @@ export function seedBookings(): RentalBooking[] {
     {
       id: 'b2',
       vehicleId: 'v5',
-      customerId: 'c2',
+      memberId: 'c2',
       startTime: isoAt(0, 10),
       endTime: isoAt(2, 17),
       pickupLocation: '機場',
@@ -177,7 +177,7 @@ export function seedBookings(): RentalBooking[] {
     {
       id: 'b3',
       vehicleId: 'v1',
-      customerId: 'c3',
+      memberId: 'c3',
       startTime: isoAt(2, 9),
       endTime: isoAt(4, 18),
       pickupLocation: '馬公門市',
@@ -187,7 +187,7 @@ export function seedBookings(): RentalBooking[] {
     {
       id: 'b4',
       vehicleId: 'v3',
-      customerId: 'c4',
+      memberId: 'c4',
       startTime: isoAt(3, 9),
       endTime: isoAt(6, 12),
       pickupLocation: '機場',
@@ -197,7 +197,7 @@ export function seedBookings(): RentalBooking[] {
     {
       id: 'b5',
       vehicleId: 'v1',
-      customerId: 'c2',
+      memberId: 'c2',
       startTime: isoAt(-5, 9),
       endTime: isoAt(-3, 18),
       pickupLocation: '馬公門市',
@@ -208,7 +208,7 @@ export function seedBookings(): RentalBooking[] {
     {
       id: 'b6',
       vehicleId: 'v6',
-      customerId: 'c1',
+      memberId: 'c1',
       startTime: isoAt(0, 14),
       endTime: isoAt(0, 18),
       pickupLocation: '馬公門市',
@@ -218,7 +218,7 @@ export function seedBookings(): RentalBooking[] {
     {
       id: 'b7',
       vehicleId: 'v3',
-      customerId: 'c3',
+      memberId: 'c3',
       startTime: isoAt(-10, 9),
       endTime: isoAt(-8, 18),
       pickupLocation: '馬公門市',
@@ -228,7 +228,7 @@ export function seedBookings(): RentalBooking[] {
     {
       id: 'b8',
       vehicleId: 'v6',
-      customerId: 'c4',
+      memberId: 'c4',
       startTime: isoAt(7, 9),
       endTime: isoAt(9, 18),
       pickupLocation: '機場',

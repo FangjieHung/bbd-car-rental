@@ -9,7 +9,7 @@ export interface BookingAddOnLine {
 export interface RentalBooking {
   id: string;
   vehicleId: string;
-  customerId: string;
+  memberId: string;
   startTime: string; // ISO
   endTime: string; // ISO
   pickupLocation: string;

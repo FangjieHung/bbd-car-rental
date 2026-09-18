@@ -8,16 +8,16 @@
     </app-page-toolbar>
   </ng-template>
 
-  @if (store.customers().length === 0) {
+  @if (store.members().length === 0) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
     <div class="ui-card !p-0">
       <lib-data-table
         [columns]="columns"
-        [rows]="store.customers()"
+        [rows]="store.members()"
         [labels]="labels"
         [emptyText]="t.common.empty"
-        exportName="customers"
+        exportName="members"
         (exportFailed)="onExportFailed($event)"
       >
         <ng-template dtCell="phone" let-c><span class="text-secondary">{{ c.phone }}</span></ng-template>

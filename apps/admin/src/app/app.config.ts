@@ -11,7 +11,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { routes } from './app.routes';
 import {
   VEHICLE_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
   BOOKING_REPO,
   MAINTENANCE_REPO,
   PRICING_PLAN_REPO,
@@ -24,7 +24,7 @@ import {
 import { LocalStorageRepository } from './core/repositories/local-storage-repository';
 import {
   seedVehicles,
-  seedCustomers,
+  seedMembers,
   seedBookings,
   seedMaintenanceRecords,
   seedPricingPlans,
@@ -57,11 +57,11 @@ export const appConfig: ApplicationConfig = {
         ),
     },
     {
-      provide: CUSTOMER_REPO,
+      provide: MEMBER_REPO,
       useFactory: () =>
         new LocalStorageRepository(
-          'cr.customers',
-          seedCustomers,
+          'cr.members',
+          seedMembers,
           notifyStorageReset(inject(MatSnackBar)),
         ),
     },

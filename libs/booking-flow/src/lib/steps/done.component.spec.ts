@@ -19,7 +19,7 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
   return {
     id: 'b1',
     vehicleId: 'v1',
-    customerId: 'c1',
+    memberId: 'c1',
     startTime: '2026-08-20T10:00:00',
     endTime: '2026-08-23T10:00:00',
     pickupLocation: '馬公',

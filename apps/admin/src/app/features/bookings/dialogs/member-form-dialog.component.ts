@@ -4,11 +4,11 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Customer } from '../../../core/models';
+import { Member } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 @Component({
-  selector: 'app-customer-form-dialog',
+  selector: 'app-member-form-dialog',
   imports: [
     ReactiveFormsModule,
     MatDialogModule,
@@ -16,13 +16,13 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
     MatFormFieldModule,
     MatInputModule,
   ],
-  templateUrl: './customer-form-dialog.component.html',
+  templateUrl: './member-form-dialog.component.html',
   styleUrls: ['../../../app.scss'],
 })
-export class CustomerFormDialogComponent {
+export class MemberFormDialogComponent {
   protected readonly t = ZH_TW;
-  readonly ref = inject(MatDialogRef<CustomerFormDialogComponent>);
-  readonly data = inject<Customer | null>(MAT_DIALOG_DATA);
+  readonly ref = inject(MatDialogRef<MemberFormDialogComponent>);
+  readonly data = inject<Member | null>(MAT_DIALOG_DATA);
   private fb = inject(NonNullableFormBuilder);
 
   form = this.fb.group({

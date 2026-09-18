@@ -5,7 +5,7 @@ import { of } from 'rxjs';
 import {
   AddOn,
   Coupon,
-  Customer,
+  Member,
   PriceBreakdown,
   PricingPlan,
   RentalBooking,
@@ -13,7 +13,7 @@ import {
   Vehicle,
   VEHICLE_REPO,
   BOOKING_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
@@ -40,7 +40,7 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
   return {
     id: 'b1',
     vehicleId: 'v1',
-    customerId: 'c1',
+    memberId: 'c1',
     startTime: '2026-08-20T10:00:00',
     endTime: '2026-08-23T10:00:00',
     pickupLocation: '馬公',
@@ -61,7 +61,7 @@ function setup(bookingId: string, bookings: RentalBooking[]) {
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
       { provide: BOOKING_REPO, useValue: bookingRepo },
-      { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>([]) },
+      { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([]) },
       { provide: SEASON_CALENDAR_REPO, useValue: createInMemoryRepo<SeasonCalendar>([]) },
       { provide: ADDON_REPO, useValue: createInMemoryRepo<AddOn>([]) },

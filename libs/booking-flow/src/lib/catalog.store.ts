@@ -2,14 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import {
   AddOn,
   Coupon,
-  Customer,
+  Member,
   PaymentMethod,
   PriceBreakdown,
   PricingPlan,
   RentalBooking,
   VEHICLE_REPO,
   BOOKING_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,
@@ -25,7 +25,7 @@ import {
 export class CatalogStore {
   private readonly vehicleRepo = inject(VEHICLE_REPO);
   private readonly bookingRepo = inject(BOOKING_REPO);
-  private readonly customerRepo = inject(CUSTOMER_REPO);
+  private readonly memberRepo = inject(MEMBER_REPO);
   private readonly planRepo = inject(PRICING_PLAN_REPO);
   private readonly calRepo = inject(SEASON_CALENDAR_REPO);
   private readonly addOnRepo = inject(ADDON_REPO);
@@ -76,7 +76,7 @@ export class CatalogStore {
     endTime: string;
     pickupLocation: string;
     returnLocation: string;
-    customer: { name: string; phone: string; email: string };
+    member: { name: string; phone: string; email: string };
     category: VehicleCategory;
     startDate: string;
     endDate: string;
@@ -108,17 +108,17 @@ export class CatalogStore {
       coupon,
       partnerDiscountPercent: input.partnerDiscountPercent,
     });
-    const customer: Customer = {
+    const member: Member = {
       id: crypto.randomUUID(),
-      name: input.customer.name,
-      phone: input.customer.phone,
-      note: input.customer.email,
+      name: input.member.name,
+      phone: input.member.phone,
+      note: input.member.email,
     };
-    this.customerRepo.create(customer);
+    this.memberRepo.create(member);
     const booking: RentalBooking = {
       id: crypto.randomUUID(),
       vehicleId: input.vehicleId,
-      customerId: customer.id,
+      memberId: member.id,
       startTime: input.startTime,
       endTime: input.endTime,
       pickupLocation: input.pickupLocation,

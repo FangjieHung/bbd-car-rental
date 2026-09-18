@@ -169,7 +169,8 @@
 }
 
 // 取車／還車工作清單（accordion + 展開明細）共用樣式。
-// app.scss 的規則透過 CalendarViewComponent 的 styleUrls 已套用至此。
+// 這兩組樣式原本位於 app.scss，本次移入此檔集中管理；app.scss 仍透過
+// styleUrls 一併載入，故移動不改變套用範圍。
 // 下列新增的 margin/padding 覆寫是 Material 預設的必要調整（見各規則下方詳述）。
 .work-list-accordion {
   display: block;
@@ -201,14 +202,12 @@
   mat-panel-title {
     min-width: 0;
     overflow-wrap: anywhere;
-    font-weight: 600;
   }
 
   mat-panel-description {
     min-width: 0;
     overflow-wrap: anywhere;
     color: var(--mat-sys-on-surface-variant);
-    justify-content: flex-end;
   }
 
   // .mat-expansion-panel-body 是 MatExpansionPanel 自己模板內部生出的 div（不是
@@ -233,6 +232,9 @@
   gap: 4px;
   flex: 1 1 0;
   min-width: 0;
+  // 覆寫 Material 的 align-items: center；改成 column 後該屬性轉為控制水平軸，
+  // 不重設會讓車牌/meta 兩行被水平置中，而非靠左對齊。
+  align-items: flex-start;
 }
 
 .work-list-accordion mat-panel-description.work-list-row__time {
@@ -281,10 +283,16 @@
     min-width: 0;
     overflow-wrap: anywhere;
   }
+
+  // 「客人」永遠是第一列；其 dd 是內含 44px 高電話連結的 flex 列，
+  // 比其他列高，會被外層 align-items: start 頂到偏上，這裡讓 dt 垂直置中對齊。
+  > div:first-child dt {
+    align-self: center;
+  }
 }
 
 // 「客人」列：姓名與電話連結放一起，空間不足時允許換行。
-.work-list-detail__customer {
+.work-list-detail__member {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -300,6 +308,11 @@
 
   .material-symbols-rounded {
     font-size: 18px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
   }
 }
 

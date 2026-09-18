@@ -12,7 +12,7 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, isSameDay, startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
-import { CustomerStore } from '../../../stores/customer/customer.store';
+import { MemberStore } from '../../../stores/member/member.store';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 
 const NARROW_QUERY = '(max-width: 1280px)';
@@ -94,7 +94,7 @@ export class CalendarViewComponent {
   private bookingStore = inject(BookingStore);
   private vehicleStore = inject(VehicleStore);
   private pricingStore = inject(PricingStore);
-  readonly customerStore = inject(CustomerStore);
+  readonly memberStore = inject(MemberStore);
   readonly isSameDay = isSameDay;
 
   readonly month = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -281,8 +281,8 @@ export class CalendarViewComponent {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  customerName(row: WorkListRow): string {
-    return this.customerStore.nameOf(row.booking.customerId);
+  memberName(row: WorkListRow): string {
+    return this.memberStore.nameOf(row.booking.memberId);
   }
 
   location(row: WorkListRow): string {
@@ -292,12 +292,12 @@ export class CalendarViewComponent {
   }
 
   phoneHref(booking: RentalBooking): string | null {
-    const phone = this.customerStore.customers().find((c) => c.id === booking.customerId)?.phone;
+    const phone = this.memberStore.members().find((c) => c.id === booking.memberId)?.phone;
     return phone ? `tel:${phone}` : null;
   }
 
   phoneLabel(booking: RentalBooking): string {
-    return this.customerStore.customers().find((c) => c.id === booking.customerId)?.phone ?? '—';
+    return this.memberStore.members().find((c) => c.id === booking.memberId)?.phone ?? '—';
   }
 
   paymentLabel(): string {

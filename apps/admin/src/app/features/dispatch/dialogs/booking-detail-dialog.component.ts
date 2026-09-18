@@ -5,7 +5,7 @@ import { RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
-import { CustomerStore } from '../../../stores/customer/customer.store';
+import { MemberStore } from '../../../stores/member/member.store';
 
 @Component({
   selector: 'app-booking-detail-dialog',
@@ -16,7 +16,7 @@ import { CustomerStore } from '../../../stores/customer/customer.store';
 export class BookingDetailDialogComponent {
   protected readonly t = ZH_TW;
   readonly data = inject<RentalBooking>(MAT_DIALOG_DATA);
-  readonly customerStore = inject(CustomerStore);
+  readonly memberStore = inject(MemberStore);
   private vehicleStore = inject(VehicleStore);
   readonly fmt = fmtDateTime;
   get plate(): string {

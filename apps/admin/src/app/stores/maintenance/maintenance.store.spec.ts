@@ -6,10 +6,10 @@ import {
   VEHICLE_REPO,
   BOOKING_REPO,
   MAINTENANCE_REPO,
-  CUSTOMER_REPO,
+  MEMBER_REPO,
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord, Customer } from '../../core/models';
+import { Vehicle, RentalBooking, MaintenanceRecord, Member } from '../../core/models';
 
 const NOW = new Date('2026-07-20T12:00:00.000Z');
 
@@ -18,7 +18,7 @@ function setup(vehicles: Vehicle[], records: MaintenanceRecord[]) {
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
       { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>() },
-      { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>() },
+      { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>() },
       { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
     ],
   });

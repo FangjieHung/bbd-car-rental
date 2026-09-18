@@ -86,7 +86,7 @@ describe('VehicleStore', () => {
             {
               id: 'b1',
               vehicleId: 'v1',
-              customerId: 'c1',
+              memberId: 'c1',
               startTime: '2026-07-11T09:00:00Z',
               endTime: '2026-07-12T09:00:00Z',
               pickupLocation: '',
@@ -113,7 +113,7 @@ describe('VehicleStore', () => {
             {
               id: 'b1',
               vehicleId: 'v1',
-              customerId: 'c1',
+              memberId: 'c1',
               startTime: '2026-07-11T09:00:00Z',
               endTime: '2026-07-12T09:00:00Z',
               pickupLocation: '',
