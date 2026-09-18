@@ -233,4 +233,29 @@ describe('CatalogStore', () => {
 
     expect(() => store.markBookingPaid('nope')).toThrow('查無訂單');
   });
+
+  it('markBookingPaid 重複呼叫（連點、重整、未來金流回調重試）不會重複入帳', () => {
+    const store = setup();
+    const booking = store.submitBooking({
+      vehicleId: 'v1',
+      startTime: '2026-08-20T10:00:00',
+      endTime: '2026-08-23T10:00:00',
+      pickupLocation: '馬公',
+      returnLocation: '馬公',
+      member: { name: '王小明', phone: '0912345678', email: 'a@b.c' },
+      category: 'scooter',
+      startDate: '2026-08-20',
+      endDate: '2026-08-23',
+      addOns: [],
+      paymentMethod: 'credit_card',
+    });
+
+    store.markBookingPaid(booking.id);
+    store.markBookingPaid(booking.id);
+    store.markBookingPaid(booking.id);
+
+    const paymentRepo = TestBed.inject(PAYMENT_REPO);
+    const payments = paymentRepo.getAll().filter((p) => p.bookingId === booking.id);
+    expect(payments).toHaveLength(1);
+  });
 });

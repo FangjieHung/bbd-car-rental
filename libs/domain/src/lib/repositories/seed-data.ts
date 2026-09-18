@@ -35,8 +35,7 @@ export function seedVehicles(): Vehicle[] {
       brand: 'Gogoro',
       displacement: 0,
       year: 2022,
-      // 目前正由 b9 出租中（已逾還車時間未還車，見 seedHandoverRecords 的逾期還車示範案例）。
-      status: 'rented',
+      status: 'available',
       mileage: 4800,
       insuranceExpiry: isoAt(120, 0),
       createdAt: isoAt(-90, 9),
@@ -120,7 +119,10 @@ export function seedVehicles(): Vehicle[] {
       brand: 'SYM',
       displacement: 125,
       year: 2023,
-      status: 'reserved',
+      // 目前正由 b9 出租中（已逾還車時間未還車，見 seedHandoverRecords 的逾期還車示範案例）。
+      // b2 是同一台車的未來訂單，時段在 b9 之後不重疊，但車輛「目前」狀態仍是逾期未還，
+      // 不因未來已有訂單就變回 available。
+      status: 'rented',
       mileage: 800,
       insuranceExpiry: isoAt(300, 0),
       createdAt: isoAt(-30, 9),
@@ -259,10 +261,11 @@ export function seedBookings(): RentalBooking[] {
       depositRequired: 1500,
     },
     // 逾期還車示範案例：已取車、預定還車時間已過但尚未還車（見 seedHandoverRecords 只有
-    // pickup 紀錄、沒有 return 紀錄）。
+    // pickup 紀錄、沒有 return 紀錄）。刻意不用 v1 —— v1 是 b3 取車就緒示範案例的車，
+    // 若逾期車輛也是 v1，b3 會被 v1 目前的 rented 狀態誤判為阻擋。
     {
       id: 'b9',
-      vehicleId: 'v1',
+      vehicleId: 'v5',
       memberId: 'c2',
       startTime: isoAt(-3, 9),
       endTime: isoAt(-1, 18),
@@ -560,7 +563,7 @@ export function seedDriverCredentials(): DriverCredential[] {
       documentNumber: 'TL-0002',
       issuingCountry: 'TW',
       originalVehicleClassText: '普通輕型機車',
-      standardizedVehicleClass: 'ev',
+      standardizedVehicleClass: 'scooter',
       verification: { state: 'verified', verifiedAt: isoAt(-20, 10), verifiedBy: 'staff1' },
       reciprocityStatus: 'eligible',
       matchesRentedVehicleClass: true,
@@ -817,11 +820,11 @@ export function seedContractVersions(): ContractVersion[] {
         name: '林美惠',
         phone: '0922-111-222',
         idNumber: 'A123456789',
-        vehicleId: 'v1',
-        plateNumber: 'ABC-123',
-        brand: 'Gogoro',
-        model: 'Gogoro 3',
-        category: 'ev',
+        vehicleId: 'v5',
+        plateNumber: 'MNO-345',
+        brand: 'SYM',
+        model: 'SYM 4MICA',
+        category: 'scooter',
         rentalStartTime: isoAt(-3, 9),
         rentalEndTime: isoAt(-1, 18),
         pickupLocation: '馬公門市',
@@ -856,8 +859,8 @@ export function seedHandoverRecords(): HandoverRecord[] {
       bookingId: 'b9',
       kind: 'pickup',
       actualAt: isoAt(-3, 9),
-      mileage: 4700,
-      energyLevel: 100,
+      mileage: 750,
+      energyLevel: 8,
       photoAssetIds: [],
       originalDocumentChecked: true,
       operatorConfirmation: { confirmedBy: 'staff1', confirmedAt: isoAt(-3, 9) },

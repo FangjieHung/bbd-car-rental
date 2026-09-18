@@ -91,6 +91,14 @@ export class IndexedDbDocumentAssetGateway implements DocumentAssetGateway {
     return this.dbPromise;
   }
 
+  /**
+   * `request.onsuccess` 只代表這筆操作在交易內部排入成功，不代表交易已經真正 commit——
+   * 瀏覽器可能在 commit 階段才發現配額超過或其他錯誤而讓整個交易 abort，這時 request
+   * 本身可能早就 onsuccess 過了。若只等 request.onsuccess 就 resolve，呼叫端會拿到一個
+   * 實際上沒有真正落地的 assetId，寫回 localStorage 後留下一個永遠解析不到內容的懸空參照。
+   * 因此一律等到 tx.oncomplete 才 resolve，tx.onerror／tx.onabort 或 request.onerror
+   * 都視為失敗並 reject——寧可讓呼叫端知道存檔失敗，也不要假裝成功。
+   */
   private runRequest<T>(
     db: IDBDatabase,
     mode: IDBTransactionMode,
@@ -100,8 +108,28 @@ export class IndexedDbDocumentAssetGateway implements DocumentAssetGateway {
       const tx = db.transaction(STORE_NAME, mode);
       const store = tx.objectStore(STORE_NAME);
       const request = action(store);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+
+      let result: T;
+      let settled = false;
+
+      const fail = (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        reject(error instanceof Error ? error : new Error(String(error ?? 'IndexedDB operation failed')));
+      };
+
+      request.onsuccess = () => {
+        result = request.result;
+      };
+      request.onerror = () => fail(request.error);
+
+      tx.oncomplete = () => {
+        if (settled) return;
+        settled = true;
+        resolve(result);
+      };
+      tx.onerror = () => fail(tx.error);
+      tx.onabort = () => fail(tx.error ?? 'IndexedDB transaction aborted');
     });
   }
 }

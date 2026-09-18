@@ -65,7 +65,9 @@ export class DocumentStore {
 
     if (input.frontImageAssetId) {
       const ocr = await this.ocrGateway.extract(input.frontImageAssetId, 'identity_document');
-      this.applyIdentityOcrResult(document.id, ocr);
+      // 回傳 OCR 寫回後的最新狀態，不是上面剛建立、還沒套用 OCR 結果的舊物件——
+      // 呼叫端拿到的值必須跟 repository 裡實際存的一致。
+      return this.applyIdentityOcrResult(document.id, ocr);
     }
     return document;
   }
@@ -114,7 +116,8 @@ export class DocumentStore {
 
     if (input.frontImageAssetId) {
       const ocr = await this.ocrGateway.extract(input.frontImageAssetId, 'driver_credential');
-      this.applyCredentialOcrResult(credential.id, ocr);
+      // 回傳 OCR 寫回後的最新狀態，理由同 uploadIdentityDocument。
+      return this.applyCredentialOcrResult(credential.id, ocr);
     }
     return credential;
   }
@@ -163,9 +166,9 @@ export class DocumentStore {
     return updated;
   }
 
-  private applyIdentityOcrResult(id: string, ocr: OcrExtractionResult): void {
+  private applyIdentityOcrResult(id: string, ocr: OcrExtractionResult): IdentityDocument {
     const state: DocumentVerificationState = ocr.status === 'failed' ? 'unverified' : 'ocr_extracted';
-    this.identityRepo.update(id, {
+    const updated = this.identityRepo.update(id, {
       verification: { state, ocrConfidence: ocr.confidence },
       ...(ocr.documentNumber ? { documentNumber: ocr.documentNumber } : {}),
       ...(ocr.issuingCountry ? { issuingCountry: ocr.issuingCountry } : {}),
@@ -173,11 +176,12 @@ export class DocumentStore {
       updatedAt: new Date().toISOString(),
     });
     this.reloadIdentityDocuments();
+    return updated;
   }
 
-  private applyCredentialOcrResult(id: string, ocr: OcrExtractionResult): void {
+  private applyCredentialOcrResult(id: string, ocr: OcrExtractionResult): DriverCredential {
     const state: DocumentVerificationState = ocr.status === 'failed' ? 'unverified' : 'ocr_extracted';
-    this.credentialRepo.update(id, {
+    const updated = this.credentialRepo.update(id, {
       verification: { state, ocrConfidence: ocr.confidence },
       ...(ocr.documentNumber ? { documentNumber: ocr.documentNumber } : {}),
       ...(ocr.issuingCountry ? { issuingCountry: ocr.issuingCountry } : {}),
@@ -185,6 +189,7 @@ export class DocumentStore {
       updatedAt: new Date().toISOString(),
     });
     this.reloadDriverCredentials();
+    return updated;
   }
 
   private reloadIdentityDocuments(): void {

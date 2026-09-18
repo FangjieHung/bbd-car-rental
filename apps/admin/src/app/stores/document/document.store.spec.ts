@@ -43,11 +43,15 @@ describe('DocumentStore', () => {
       frontImageAssetId: 'asset-front-1',
     });
 
-    const afterOcr = store.identityDocumentsFor('c1')[0];
-    expect(afterOcr.verification.state).toBe('ocr_extracted');
-    expect(afterOcr.verification.ocrConfidence).toBe(0.5);
+    // uploadIdentityDocument 的回傳值本身就必須是套用 OCR 結果之後的狀態，
+    // 不是上傳當下、還沒跑 OCR 的舊物件——呼叫端不該還要另外重讀一次才拿得到正確資料。
+    expect(doc.verification.state).toBe('ocr_extracted');
+    expect(doc.verification.ocrConfidence).toBe(0.5);
     // OCR 誤判：號碼少讀一碼，先暫存 OCR 讀到的（錯誤）結果。
-    expect(afterOcr.documentNumber).toBe('A100000009');
+    expect(doc.documentNumber).toBe('A100000009');
+
+    const afterOcr = store.identityDocumentsFor('c1')[0];
+    expect(afterOcr).toEqual(doc);
 
     const confirmed = store.confirmIdentityDocument(doc.id, 'staff1', {
       documentNumber: 'A100000001',
@@ -67,8 +71,34 @@ describe('DocumentStore', () => {
       frontImageAssetId: 'asset-unknown',
     });
 
+    expect(doc.verification.state).toBe('ocr_extracted');
+    expect(doc.verification.ocrConfidence).toBe(0.4);
+
     const stored = store.identityDocumentsFor('c2').find((d) => d.id === doc.id);
-    expect(stored?.verification.state).toBe('ocr_extracted');
-    expect(stored?.verification.ocrConfidence).toBe(0.4);
+    expect(stored).toEqual(doc);
+  });
+
+  it('uploadDriverCredential 的回傳值也是套用 OCR 結果之後的狀態', async () => {
+    ocr.setFixture('asset-license-1', {
+      status: 'succeeded',
+      documentNumber: 'TL-9999',
+      confidence: 0.95,
+    });
+
+    const credential = await store.uploadDriverCredential({
+      memberId: 'c1',
+      type: 'taiwan_license',
+      documentNumber: 'TL-0000',
+      issuingCountry: 'TW',
+      originalVehicleClassText: '普通輕型機車',
+      standardizedVehicleClass: 'scooter',
+      frontImageAssetId: 'asset-license-1',
+    });
+
+    expect(credential.verification.state).toBe('ocr_extracted');
+    expect(credential.documentNumber).toBe('TL-9999');
+
+    const stored = store.driverCredentialsFor('c1').find((d) => d.id === credential.id);
+    expect(stored).toEqual(credential);
   });
 });

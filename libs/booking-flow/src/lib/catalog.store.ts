@@ -162,10 +162,19 @@ export class CatalogStore {
    * 只在付款分類帳（PaymentRecord）追加一筆已確認付款，讓 PaymentStore.summaryFor
    * 之後能算出正確的已付金額。付款方式優先採用訂單建立時記錄的 paymentPreference，
    * 查無報價明細時金額退回 0（沒有更好的數字可用，寧可留 0 讓後續人工核對）。
+   *
+   * 冪等性：這是財務分類帳，不能因為使用者連點兩下付款按鈕、重新整理後回到這一頁、
+   * 或未來真金流回調重試，就多記一筆重複的已確認付款。呼叫前先查是否已有該訂單的
+   * confirmed balance 付款紀錄，有的話直接視為已完成、不再新增。
    */
   markBookingPaid(bookingId: string): RentalBooking {
     const booking = this.bookingRepo.getById(bookingId);
     if (!booking) throw new Error('查無訂單');
+
+    const alreadyPaid = this.paymentRepo
+      .getAll()
+      .some((p) => p.bookingId === bookingId && p.purpose === 'balance' && p.status === 'confirmed');
+    if (alreadyPaid) return booking;
 
     const payment: PaymentRecord = {
       id: crypto.randomUUID(),
