@@ -13,6 +13,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
       [open]="open()"
       [heading]="heading()"
       closeLabel="關閉面板"
+      [showHeaderDivider]="showHeaderDivider()"
       (closed)="onClosed()"
     >
       <p class="content">內容</p>
@@ -23,10 +24,26 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 class HostComponent {
   readonly open = signal(false);
   readonly heading = signal('標題');
+  readonly showHeaderDivider = signal(true);
   closedCount = 0;
   onClosed(): void {
     this.closedCount++;
   }
+}
+
+@Component({
+  imports: [ResponsivePanelComponent],
+  template: `
+    <lib-responsive-panel [open]="true" heading="標題" closeLabel="關閉面板">
+      @if (withTabs()) {
+        <span panelHeaderTabs class="header-tab">分頁</span>
+      }
+      <p class="content">內容</p>
+    </lib-responsive-panel>
+  `,
+})
+class HeaderTabsHostComponent {
+  readonly withTabs = signal(false);
 }
 
 describe('ResponsivePanelComponent', () => {
@@ -94,6 +111,60 @@ describe('ResponsivePanelComponent', () => {
     const panel: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel');
     expect(panel.getAttribute('aria-label')).toBe('關閉面板');
     expect(panel.hasAttribute('aria-labelledby')).toBe(false);
+  });
+});
+
+describe('ResponsivePanelComponent 表頭分隔線', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<HostComponent>>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [HostComponent] });
+    fixture = TestBed.createComponent(HostComponent);
+    fixture.componentInstance.open.set(true);
+  });
+
+  it('showHeaderDivider 預設為 true，header 不帶 borderless class', () => {
+    fixture.detectChanges();
+
+    const header: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel__header');
+    expect(header.classList.contains('responsive-panel__header--borderless')).toBe(false);
+  });
+
+  it('showHeaderDivider 為 false 時，header 帶上 borderless class', () => {
+    fixture.componentInstance.showHeaderDivider.set(false);
+    fixture.detectChanges();
+
+    const header: HTMLElement = fixture.nativeElement.querySelector('.responsive-panel__header');
+    expect(header.classList.contains('responsive-panel__header--borderless')).toBe(true);
+  });
+});
+
+describe('ResponsivePanelComponent header-tabs 插槽', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<HeaderTabsHostComponent>>;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [HeaderTabsHostComponent] });
+    fixture = TestBed.createComponent(HeaderTabsHostComponent);
+  });
+
+  it('未投影 panelHeaderTabs 內容時，wrapper 符合 :empty（會被 CSS 隱藏）', () => {
+    fixture.detectChanges();
+
+    const wrapper: HTMLElement = fixture.nativeElement.querySelector(
+      '.responsive-panel__header-tabs',
+    );
+    expect(wrapper.matches(':empty')).toBe(true);
+  });
+
+  it('有投影 panelHeaderTabs 內容時，wrapper 不符合 :empty 且內容被渲染', () => {
+    fixture.componentInstance.withTabs.set(true);
+    fixture.detectChanges();
+
+    const wrapper: HTMLElement = fixture.nativeElement.querySelector(
+      '.responsive-panel__header-tabs',
+    );
+    expect(wrapper.matches(':empty')).toBe(false);
+    expect(wrapper.querySelector('.header-tab')?.textContent).toContain('分頁');
   });
 });
 

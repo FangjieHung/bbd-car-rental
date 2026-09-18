@@ -22,7 +22,10 @@
       [attr.aria-label]="heading() ? null : closeLabel()"
       (keydown)="onTrapKeydown($event)"
     >
-      <div class="responsive-panel__header">
+      <div
+        class="responsive-panel__header"
+        [class.responsive-panel__header--borderless]="!showHeaderDivider()"
+      >
         <div class="responsive-panel__heading-group">
           @if (heading()) {
             <h2 [id]="headingId" class="responsive-panel__heading">{{ heading() }}</h2>

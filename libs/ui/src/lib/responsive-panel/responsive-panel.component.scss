@@ -22,6 +22,15 @@
   border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
+// Opt-in (see showHeaderDivider input): drops the border-bottom for consumers whose header
+// visually continues into projected tab content (e.g. calendar-view's mat-tab-group in the body)
+// instead of a hard rule. The padding-bottom replaces the ~8px the border used to visually
+// close off, so the heading doesn't sit flush against whatever renders directly below it.
+.responsive-panel__header--borderless {
+  border-bottom: none;
+  padding-bottom: 0.5rem;
+}
+
 .responsive-panel__heading-group {
   @apply flex items-center w-full;
   gap: 0.5rem;
@@ -39,6 +48,13 @@
   min-width: 0;
   overflow: hidden;
   width: 100%;
+
+  // No content projected into [panelHeaderTabs] (e.g. calendar-view, which puts its
+  // mat-tab-group in the panel body instead): collapse the wrapper so it doesn't reserve the
+  // flex gap from .responsive-panel__header or any box of its own.
+  &:empty {
+    display: none;
+  }
   // Projected content (e.g. mat-tab-nav-bar) manages its own overflow/pagination based on its
   // *own* measured width, not on flex-shrink (Material tab headers ship with flex-shrink: 0).
   // Without forcing it to fill this wrapper, it renders at its intrinsic content width and just

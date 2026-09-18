@@ -73,6 +73,7 @@
         [heading]="panelHeading()"
         [closeLabel]="t.common.closePanel"
         [showCloseButton]="isNarrow()"
+        [showHeaderDivider]="false"
         (closed)="dismissPanel()"
       >
         @if (relativeDayLabel(); as label) {
@@ -85,7 +86,7 @@
             [selectedIndex]="panelTabIndex()"
             (selectedIndexChange)="onPanelTabIndexChange($event)"
           >
-            <mat-tab [label]="'取車 - ' + pickup.done + '/' + pickup.total">
+            <mat-tab [label]="'取車 ' + pickup.done + '/' + pickup.total">
               <ng-template matTabContent>
                 <mat-accordion class="work-list-accordion">
                   @for (row of pickupWorkRows(); track row.id) {
@@ -133,7 +134,7 @@
                 </mat-accordion>
               </ng-template>
             </mat-tab>
-            <mat-tab [label]="'還車 - ' + ret.done + '/' + ret.total">
+            <mat-tab [label]="'還車 ' + ret.done + '/' + ret.total">
               <ng-template matTabContent>
                 @if (returnWorkRows().length > 0) {
                   <mat-accordion class="work-list-accordion">
@@ -182,7 +183,7 @@
                 }
               </ng-template>
             </mat-tab>
-            <mat-tab [label]="'可用 - ' + availableVehicles().length + ' 筆'">
+            <mat-tab [label]="'可用 ' + availableVehicles().length + ' 筆'">
               <ng-template matTabContent>
                 @if (availableVehicles().length > 0) {
                   <app-vehicle-step

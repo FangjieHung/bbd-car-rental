@@ -30,6 +30,7 @@ export class ResponsivePanelComponent {
   readonly heading = input('');
   readonly closeLabel = input.required<string>();
   readonly showCloseButton = input(true);
+  readonly showHeaderDivider = input(true);
   readonly closed = output<void>();
 
   private static nextId = 0;
