@@ -1,5 +1,6 @@
 import { BookingStatus, PaymentPreference } from '../models/enums';
 import { RentalBooking } from '../models/rental-booking';
+import { VehicleCategory } from '../models/vehicle';
 
 /** 舊版曾經出現過、現在已經併入 reserved 的履約狀態。 */
 const LEGACY_STATUS_MIGRATION: Partial<Record<string, BookingStatus>> = {
@@ -7,10 +8,11 @@ const LEGACY_STATUS_MIGRATION: Partial<Record<string, BookingStatus>> = {
   confirmed: 'reserved',
 };
 
-/** 沒有 depositRequired 的舊資料，用報價總額的固定比例當安全預設值。 */
+/** 沒有 depositRequired 的舊資料，小客車用報價總額的固定比例當安全預設值。 */
 const LEGACY_DEPOSIT_DEFAULT_PERCENT = 0.3;
 
 interface LegacyRentalBookingShape extends Record<string, unknown> {
+  vehicleId: string;
   status: string;
   paymentMethod?: PaymentPreference;
   paymentPreference?: PaymentPreference;
@@ -19,25 +21,42 @@ interface LegacyRentalBookingShape extends Record<string, unknown> {
 }
 
 /**
+ * 查詢某台車的車型分類；沒有 depositRequired 的舊資料要靠它判斷是否套用小客車訂金上限。
+ * 選填是因為 normalizeRentalBooking 目前尚未接到任何真正的 Repository（見 local-storage-repository.ts
+ * 的 normalize hook）——沒有車輛清單可查時，寧可保守預設 0，也不要對機車/電動機車錯課訂金。
+ */
+export type VehicleCategoryLookup = (vehicleId: string) => VehicleCategory | undefined;
+
+/**
  * 把 localStorage 裡可能還是舊 schema 的訂單資料，轉成目前的 RentalBooking 形狀：
  * - status：pending_payment/confirmed 併入 reserved，其餘狀態原樣保留。
  * - paymentMethod 欄位改名為 paymentPreference。
- * - depositRequired 缺漏時，用報價總額的 30% 當安全預設值（無報價則為 0）；
- *   已有 depositRequired 的資料視為已由建立當下的規則算過，不重新覆蓋。
+ * - depositRequired 缺漏時：
+ *   - 車型分類確定是 'car'（小客車）時，用報價總額的 30% 當安全預設值（無報價則為 0）——
+ *     對應設計文件「小客車訂金預設不得超過總租金 30%」這條只針對小客車的規則。
+ *   - 車型分類是 'scooter'/'ev'，或查不到車輛（未提供 getVehicleCategory、或該 vehicleId
+ *     不在清單裡）時，一律預設 0——目前沒有任何機車/電動機車的訂金規則，猜測套用小客車的
+ *     30% 上限反而是錯的，0 才是不會多收的安全預設值。
+ *   已有 depositRequired 的資料視為已由建立當下的規則算過，不重新覆蓋、也不查車型。
  * - 其餘欄位（couponCode、sourcePartnerId、addOns…）原樣保留，不因未知而遺失。
  */
-export function normalizeRentalBooking(item: unknown): RentalBooking {
+export function normalizeRentalBooking(
+  item: unknown,
+  getVehicleCategory?: VehicleCategoryLookup,
+): RentalBooking {
   const raw = item as LegacyRentalBookingShape;
   const { status, paymentMethod, paymentPreference, depositRequired, ...rest } = raw;
 
   const normalizedStatus = LEGACY_STATUS_MIGRATION[status] ?? (status as BookingStatus);
   const normalizedPaymentPreference = paymentPreference ?? paymentMethod;
 
-  const total = typeof rest.priceBreakdown?.total === 'number' ? rest.priceBreakdown.total : 0;
+  const computeLegacyDepositDefault = (): number => {
+    const isPassengerCar = getVehicleCategory?.(raw.vehicleId) === 'car';
+    const total = typeof rest.priceBreakdown?.total === 'number' ? rest.priceBreakdown.total : 0;
+    return isPassengerCar ? Math.round(total * LEGACY_DEPOSIT_DEFAULT_PERCENT) : 0;
+  };
   const normalizedDeposit =
-    typeof depositRequired === 'number'
-      ? depositRequired
-      : Math.round(total * LEGACY_DEPOSIT_DEFAULT_PERCENT);
+    typeof depositRequired === 'number' ? depositRequired : computeLegacyDepositDefault();
 
   return {
     ...(rest as unknown as RentalBooking),

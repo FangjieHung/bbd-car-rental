@@ -78,17 +78,38 @@ describe('normalizeRentalBooking', () => {
     expect(normalizeRentalBooking(current).paymentPreference).toBe('line_pay');
   });
 
-  it('舊資料沒有 depositRequired 時，用報價總額的 30% 當安全預設值', () => {
-    expect(normalizeRentalBooking(legacy).depositRequired).toBe(900);
+  it('舊資料沒有 depositRequired 時，確認是小客車才用報價總額的 30% 當安全預設值', () => {
+    const carLookup = () => 'car' as const;
+    expect(normalizeRentalBooking(legacy, carLookup).depositRequired).toBe(900);
   });
 
-  it('沒有 priceBreakdown 的舊資料，安全預設訂金為 0', () => {
+  it('確認是機車/電動機車時，即使有報價也不套用小客車的 30% 上限，安全預設為 0', () => {
+    const scooterLookup = () => 'scooter' as const;
+    const evLookup = () => 'ev' as const;
+    expect(normalizeRentalBooking(legacy, scooterLookup).depositRequired).toBe(0);
+    expect(normalizeRentalBooking(legacy, evLookup).depositRequired).toBe(0);
+  });
+
+  it('沒有提供車型查詢函式時，無法確認是否為小客車，安全預設為 0（不對機車/電動機車錯課訂金）', () => {
+    expect(normalizeRentalBooking(legacy).depositRequired).toBe(0);
+  });
+
+  it('車型查詢函式查不到該車輛時，安全預設為 0', () => {
+    const notFoundLookup = () => undefined;
+    expect(normalizeRentalBooking(legacy, notFoundLookup).depositRequired).toBe(0);
+  });
+
+  it('沒有 priceBreakdown 的舊資料，即使是小客車，安全預設訂金也是 0', () => {
     const { priceBreakdown, ...withoutBreakdown } = legacy;
-    expect(normalizeRentalBooking(withoutBreakdown).depositRequired).toBe(0);
+    const carLookup = () => 'car' as const;
+    expect(normalizeRentalBooking(withoutBreakdown, carLookup).depositRequired).toBe(0);
   });
 
-  it('現行資料已有 depositRequired 時保留原值，不重新計算', () => {
-    expect(normalizeRentalBooking(current).depositRequired).toBe(500);
+  it('現行資料已有 depositRequired 時保留原值，不重新計算、也不查車型', () => {
+    const lookupThatMustNotBeCalled = () => {
+      throw new Error('depositRequired 已存在時不該查車型');
+    };
+    expect(normalizeRentalBooking(current, lookupThatMustNotBeCalled).depositRequired).toBe(500);
   });
 
   it('保留未知的選填欄位（couponCode、sourcePartnerId）', () => {
