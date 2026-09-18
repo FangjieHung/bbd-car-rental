@@ -169,10 +169,8 @@
 }
 
 // 取車／還車工作清單（accordion + 展開明細）共用樣式。
-// 原本放在 app.scss（掛在 AppComponent 上），但 CalendarViewComponent 是透過路由渲染、
-// 隔了好幾層元件，Angular emulated encapsulation 會替選擇器兩端都加上各自元件的
-// _ngcontent 屬性——app.scss 版本實際上從未真的命中過這裡的 DOM（屬性對不上）。
-// 搬進這個檔案後才會用 CalendarViewComponent 自己的 _ngcontent 屬性正確命中。
+// app.scss 的規則透過 CalendarViewComponent 的 styleUrls 已套用至此。
+// 下列新增的 margin/padding 覆寫是 Material 預設的必要調整（見各規則下方詳述）。
 .work-list-accordion {
   display: block;
   background: transparent;
