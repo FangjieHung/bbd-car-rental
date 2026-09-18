@@ -13,6 +13,12 @@ export interface CancellationQuoteInput {
   transferFee?: number;
   /** 顧客另有造成額外損害待鑑定時，無法自動試算，一律轉人工審核。 */
   additionalCustomerDamageClaimed?: boolean;
+  /**
+   * 約定總租金；僅在 responsibility 為 operator_fault 且未收定金時需要 —— 設計文件第 10 節
+   * 「未收定金：以約定總租金一倍進入賠償流程」的計算基礎。未提供時無法依法試算，轉人工審核，
+   * 不會拿 otherPrepayment（顧客當下實付金額，可能小於約定總租金）矇混當作總租金使用。
+   */
+  agreedRentalTotal?: number;
 }
 
 export interface CancellationQuote {
@@ -51,18 +57,26 @@ function calendarDaysBeforePickup(requestedAt: string, pickupAt: string): number
 }
 
 /**
- * 小客車顧客取消的訂金退費級距表：取車前「至少」達到某天數門檻，即適用該檔退費比例。
- * 未列出的天數（例如 8、5 天）比照下一個較低的門檻 —— 表訂天數本身就是門檻，不是逐日連續公式。
+ * 小客車顧客取消的訂金退費級距表 —— 設計文件第 9.1 節「小客車顧客取消預設規則」逐字對應：
+ *
+ * | 取消通知時間        | 訂金退還比例 |
+ * | ------------------ | -----------: |
+ * | 10 日前（含）以上   |         100% |
+ * | 7～9 日前           |          50% |
+ * | 4～6 日前           |          40% |
+ * | 2～3 日前           |          30% |
+ * | 前 1 日             |          20% |
+ * | 當日或未通知        |           0% |
+ *
+ * 是「級距」而非逐日遞減公式：7～9 日前同屬一檔 50%，不是 9 天 90%、7 天 70% 的線性遞減。
+ * 找出取車前天數落在哪一個「至少達到」的門檻（門檻本身即級距下界）即為命中比例。
  */
 const PASSENGER_CAR_DEPOSIT_REFUND_TIERS: ReadonlyArray<{ minDays: number; rate: number }> = [
   { minDays: 10, rate: 1.0 },
-  { minDays: 9, rate: 0.9 },
-  { minDays: 7, rate: 0.7 },
-  { minDays: 6, rate: 0.6 },
+  { minDays: 7, rate: 0.5 },
   { minDays: 4, rate: 0.4 },
-  { minDays: 3, rate: 0.3 },
-  { minDays: 2, rate: 0.2 },
-  { minDays: 1, rate: 0.1 },
+  { minDays: 2, rate: 0.3 },
+  { minDays: 1, rate: 0.2 },
   { minDays: 0, rate: 0 },
 ];
 
@@ -126,22 +140,51 @@ export function quoteCancellation(input: CancellationQuoteInput): CancellationQu
 
   if (input.responsibility === 'operator_fault') {
     const hasDeposit = depositPaid > 0;
-    const statutoryCompensation = hasDeposit ? depositPaid : 0;
-    const depositRefund = hasDeposit ? depositPaid * 2 : 0;
+
+    if (hasDeposit) {
+      // 已收定金：返還原定金，另加同額賠償，合計定金兩倍。
+      const statutoryCompensation = depositPaid;
+      const depositRefund = depositPaid * 2;
+      const otherPrepaymentRefund = otherPrepayment;
+
+      return {
+        status: 'quoted',
+        disposition: 'refund',
+        daysBeforePickup: null,
+        depositRefundRate: 2,
+        depositRefund,
+        otherPrepaymentRefund,
+        statutoryCompensation,
+        goodwillCompensation: 0,
+        transferFee: 0,
+        totalCashDue: depositRefund + otherPrepaymentRefund,
+        reason: 'operator_fault_double_deposit',
+      };
+    }
+
+    // 未收定金：以約定總租金一倍進入賠償流程。這是一筆獨立的法定賠償金額，不是
+    // otherPrepayment（顧客當下實付金額，可能少於約定總租金）本身。沒有 agreedRentalTotal
+    // 就無法依法試算出正確金額 —— 寧可轉人工審核，也不要用「剛好手上有的數字」矇混賠償基礎，
+    // 避免靜默少賠而使業者違反法定義務。
+    if (input.agreedRentalTotal == null) {
+      return manualReviewQuote('operator_fault_missing_agreed_rental_total');
+    }
+
+    const statutoryCompensation = input.agreedRentalTotal;
     const otherPrepaymentRefund = otherPrepayment;
 
     return {
       status: 'quoted',
       disposition: 'refund',
       daysBeforePickup: null,
-      depositRefundRate: hasDeposit ? 2 : null,
-      depositRefund,
+      depositRefundRate: null,
+      depositRefund: 0,
       otherPrepaymentRefund,
       statutoryCompensation,
       goodwillCompensation: 0,
       transferFee: 0,
-      totalCashDue: depositRefund + otherPrepaymentRefund,
-      reason: hasDeposit ? 'operator_fault_double_deposit' : 'operator_fault_one_rental_amount',
+      totalCashDue: otherPrepaymentRefund + statutoryCompensation,
+      reason: 'operator_fault_one_rental_amount',
     };
   }
 

@@ -5,17 +5,19 @@ const PICKUP = '2026-10-15T09:00:00+08:00';
 
 describe('quoteCancellation', () => {
   describe('passenger_car customer-cancellation day-boundary schedule (Asia/Taipei calendar days)', () => {
-    // 取車前完整日曆天數 → 訂金退費比例。表訂 10 個級距（10/9/7/6/4/3/2/1/0 天），
-    // 落在未列出天數（例如 8 天、5 天）者比照「下一個較低的級距」，見下方工作範例測試。
+    // 取車前完整日曆天數 → 訂金退費比例，逐字對應設計文件第 9.1 節的級距表：
+    // 10 日前(含)以上 100%／7～9 日前 50%／4～6 日前 40%／2～3 日前 30%／前 1 日 20%／當日或未通知 0%。
+    // 測 9 個點是為了驗證每個級距的兩端（例如 9 與 7 同屬「7～9 日前」50%），
+    // 不是 9 個各自獨立的比例。
     const tiers: Array<[days: number, ratePercent: number]> = [
       [10, 100],
-      [9, 90],
-      [7, 70],
-      [6, 60],
+      [9, 50],
+      [7, 50],
+      [6, 40],
       [4, 40],
       [3, 30],
-      [2, 20],
-      [1, 10],
+      [2, 30],
+      [1, 20],
       [0, 0],
     ];
 
@@ -68,7 +70,7 @@ describe('quoteCancellation', () => {
       });
 
       expect(quote.daysBeforePickup).toBe(1);
-      expect(quote.depositRefund).toBe(100);
+      expect(quote.depositRefund).toBe(200); // 前 1 日 → 20%
     });
 
     it('deducts the transfer fee from the total cash due', () => {
@@ -140,7 +142,26 @@ describe('quoteCancellation', () => {
       expect(quote.status).toBe('quoted');
     });
 
-    it('uses one total rental amount when no deposit was collected', () => {
+    it('uses one agreed rental total as statutory compensation when no deposit was collected', () => {
+      const quote = quoteCancellation({
+        contractKind: 'passenger_car',
+        responsibility: 'operator_fault',
+        cancellationRequestedAt: '2026-10-14T10:00:00+08:00',
+        pickupAt: PICKUP,
+        depositPaid: 0,
+        otherPrepayment: 2_100,
+        transferFee: 0,
+        agreedRentalTotal: 3_000,
+      });
+
+      expect(quote.depositRefund).toBe(0);
+      expect(quote.otherPrepaymentRefund).toBe(2_100);
+      expect(quote.statutoryCompensation).toBe(3_000);
+      expect(quote.totalCashDue).toBe(5_100);
+      expect(quote.status).toBe('quoted');
+    });
+
+    it('cannot compute the no-deposit statutory compensation without agreedRentalTotal, so it goes to manual_review', () => {
       const quote = quoteCancellation({
         contractKind: 'passenger_car',
         responsibility: 'operator_fault',
@@ -151,10 +172,7 @@ describe('quoteCancellation', () => {
         transferFee: 0,
       });
 
-      expect(quote.depositRefund).toBe(0);
-      expect(quote.otherPrepaymentRefund).toBe(2_100);
-      expect(quote.totalCashDue).toBe(2_100);
-      expect(quote.status).toBe('quoted');
+      expect(quote.status).toBe('manual_review');
     });
   });
 
