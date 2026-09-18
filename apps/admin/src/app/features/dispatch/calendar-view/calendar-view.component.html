@@ -107,8 +107,28 @@
                       </mat-expansion-panel-header>
                       <dl class="work-list-detail">
                         <div>
-                          <dt>地點</dt>
-                          <dd>取：{{ location(row) }}（—）</dd>
+                          <dt>客人</dt>
+                          <dd class="work-list-detail__customer">
+                            <span>{{ customerName(row) }}</span>
+                            @if (phoneHref(row.booking); as href) {
+                              <a
+                                class="work-list-detail__phone-link underline"
+                                [href]="href"
+                                [attr.aria-label]="
+                                  customerName(row) + '，撥打電話 ' + phoneLabel(row.booking)
+                                "
+                              >
+                                <span class="material-symbols-rounded" aria-hidden="true"
+                                  >call</span
+                                >
+                                打電話
+                              </a>
+                            }
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>取車地點</dt>
+                          <dd>{{ location(row) }}</dd>
                         </div>
                         <div>
                           <dt>班次</dt>
@@ -117,17 +137,6 @@
                         <div>
                           <dt>洗車</dt>
                           <dd>—</dd>
-                        </div>
-                        <div>
-                          <dt>聯絡</dt>
-                          <dd>
-                            @if (phoneHref(row.booking); as href) {
-                              <a class="underline" [href]="href">📞 打電話</a>
-                              <span class="sr-only">{{ phoneLabel(row.booking) }}</span>
-                            } @else {
-                              —
-                            }
-                          </dd>
                         </div>
                         <div>
                           <dt>付款</dt>
@@ -163,8 +172,28 @@
                         </mat-expansion-panel-header>
                         <dl class="work-list-detail">
                           <div>
-                            <dt>地點</dt>
-                            <dd>還：{{ location(row) }}（—）</dd>
+                            <dt>客人</dt>
+                            <dd class="work-list-detail__customer">
+                              <span>{{ customerName(row) }}</span>
+                              @if (phoneHref(row.booking); as href) {
+                                <a
+                                  class="work-list-detail__phone-link underline"
+                                  [href]="href"
+                                  [attr.aria-label]="
+                                    customerName(row) + '，撥打電話 ' + phoneLabel(row.booking)
+                                  "
+                                >
+                                  <span class="material-symbols-rounded" aria-hidden="true"
+                                    >call</span
+                                  >
+                                  打電話
+                                </a>
+                              }
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>還車地點</dt>
+                            <dd>{{ location(row) }}</dd>
                           </div>
                           <div>
                             <dt>班次</dt>
@@ -173,16 +202,6 @@
                           <div>
                             <dt>洗車</dt>
                             <dd>—</dd>
-                          </div>
-                          <div>
-                            <dt>聯絡</dt>
-                            <dd>
-                              @if (phoneHref(row.booking); as href) {
-                                <a class="underline" [href]="href">📞 打電話</a>
-                              } @else {
-                                —
-                              }
-                            </dd>
                           </div>
                           <div>
                             <dt>付款</dt>

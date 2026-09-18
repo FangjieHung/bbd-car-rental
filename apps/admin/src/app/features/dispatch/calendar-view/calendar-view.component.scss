@@ -168,11 +168,63 @@
   }
 }
 
+// 取車／還車工作清單（accordion + 展開明細）共用樣式。
+// 原本放在 app.scss（掛在 AppComponent 上），但 CalendarViewComponent 是透過路由渲染、
+// 隔了好幾層元件，Angular emulated encapsulation 會替選擇器兩端都加上各自元件的
+// _ngcontent 屬性——app.scss 版本實際上從未真的命中過這裡的 DOM（屬性對不上）。
+// 搬進這個檔案後才會用 CalendarViewComponent 自己的 _ngcontent 屬性正確命中。
+.work-list-accordion {
+  display: block;
+  background: transparent;
+
+  .mat-expansion-panel {
+    background: transparent;
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 0 !important;
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+  }
+
+  // MatAccordion 預設 displayMode 會在展開的 panel 外加 16px 上下 margin
+  // （卡片式懸浮效果），這份清單走扁平列表 + 分隔線，需要拿掉才不會跳版。
+  .mat-expansion-panel-spacing {
+    margin: 0;
+  }
+
+  .mat-expansion-panel-header {
+    height: auto;
+    min-height: 3.5rem;
+    padding: 0.75rem;
+  }
+
+  mat-panel-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-weight: 600;
+  }
+
+  mat-panel-description {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--mat-sys-on-surface-variant);
+    justify-content: flex-end;
+  }
+
+  // .mat-expansion-panel-body 是 MatExpansionPanel 自己模板內部生出的 div（不是
+  // 我們自己模板裡寫的標籤），emulated encapsulation 屬性選擇器搆不到，需要 ::ng-deep。
+  // 預設 padding 是 `0 24px 16px`，這裡改成左右 16px，與 header 的實際內距（見下方
+  // .work-list-row-header 規則）對齊，底部維持 16px 留白。
+  ::ng-deep .mat-expansion-panel-body {
+    padding: 0 16px 16px;
+  }
+}
+
 // 取車／還車摘要列：以車牌為主視覺，車型/客人次要，時間右側靠齊。
-// app.scss 裡既有的 .work-list-accordion 規則（Task 3 範圍，不動它）
-// 對 header padding／title・description flex 比例下了 0-2-0 左右的特異度，
-// 這裡刻意疊上 .work-list-accordion 這層祖先 class + 自訂 class，
-// 讓特異度略高一階，才蓋得過去，不受 styleUrls 陣列順序影響。
+// 下面這條選擇器比上面 .work-list-accordion .mat-expansion-panel-header 多一個
+// class，特異度較高，用來覆蓋成 12px/16px 的非對稱內距。
 .work-list-accordion .work-list-row-header.mat-expansion-panel-header {
   padding: 12px 16px;
 }
@@ -198,14 +250,59 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--mat-sys-on-surface);
-  overflow-wrap: anywhere;
 }
 
 .work-list-row__meta {
   font-size: 13px;
   font-weight: 400;
   color: var(--mat-sys-on-surface-variant);
-  overflow-wrap: anywhere;
+}
+
+// 展開明細：dt/dd 以 grid 就近配對、靠左，取代原本 justify-content: space-between
+// 造成的「標籤在左、值飄在最右」。
+.work-list-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  font-size: 0.875rem;
+
+  > div {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: start;
+  }
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+// 「客人」列：姓名與電話連結放一起，空間不足時允許換行。
+.work-list-detail__customer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+}
+
+.work-list-detail__phone-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
 }
 
 .calendar-view__relative-chip {
