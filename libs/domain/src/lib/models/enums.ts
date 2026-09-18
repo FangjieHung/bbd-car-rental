@@ -5,4 +5,4 @@ export type BookingStatus =
   | 'in_progress'
   | 'completed'
   | 'cancelled';
-export type PaymentMethod = 'credit_card' | 'line_pay' | 'on_site' | 'bank_transfer';
+export type PaymentPreference = 'credit_card' | 'line_pay' | 'on_site' | 'bank_transfer';

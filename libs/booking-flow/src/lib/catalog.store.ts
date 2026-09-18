@@ -4,7 +4,7 @@ import {
   Coupon,
   InsurancePlan,
   Member,
-  PaymentMethod,
+  PaymentPreference,
   PriceBreakdown,
   PricingPlan,
   RentalBooking,
@@ -84,7 +84,7 @@ export class CatalogStore {
     endDate: string;
     addOns: { addOn: AddOn; qty: number }[];
     couponCode?: string;
-    paymentMethod: PaymentMethod;
+    paymentMethod: PaymentPreference;
     partnerDiscountPercent?: number;
     sourcePartnerId?: string;
   }): RentalBooking {

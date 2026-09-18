@@ -3,11 +3,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { BOOKING_REPO, PaymentMethod, RentalBooking } from '@car-rental/domain';
+import { BOOKING_REPO, PaymentPreference, RentalBooking } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
 
-const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+const PAYMENT_METHOD_LABEL: Record<PaymentPreference, string> = {
   credit_card: '信用卡',
   line_pay: 'LINE Pay',
   on_site: '現場付款',

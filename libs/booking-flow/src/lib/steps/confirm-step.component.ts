@@ -5,17 +5,17 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
-import { AddOn, PaymentMethod, PriceBreakdown, RENTAL_LOCATIONS, RentalLocation, Vehicle } from '@car-rental/domain';
+import { AddOn, PaymentPreference, PriceBreakdown, RENTAL_LOCATIONS, RentalLocation, Vehicle } from '@car-rental/domain';
 
 export interface ConfirmFormValue {
   name: string;
   phone: string;
   email: string;
-  paymentMethod: PaymentMethod;
+  paymentMethod: PaymentPreference;
   returnLocation: RentalLocation;
 }
 
-const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+const PAYMENT_METHOD_LABEL: Record<PaymentPreference, string> = {
   credit_card: '信用卡',
   line_pay: 'LINE Pay',
   on_site: '現場付款',
@@ -52,7 +52,7 @@ export class ConfirmStepComponent {
   @Output() confirm = new EventEmitter<ConfirmFormValue>();
 
   protected readonly paymentMethodLabel = PAYMENT_METHOD_LABEL;
-  protected readonly paymentMethods: PaymentMethod[] = [
+  protected readonly paymentMethods: PaymentPreference[] = [
     'credit_card',
     'line_pay',
     'on_site',

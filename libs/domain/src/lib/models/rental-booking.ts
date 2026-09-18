@@ -1,4 +1,4 @@
-import { BookingStatus, PaymentMethod } from './enums';
+import { BookingStatus, PaymentPreference } from './enums';
 import { PriceBreakdown } from './price-breakdown';
 
 export interface BookingAddOnLine {
@@ -18,6 +18,6 @@ export interface RentalBooking {
   addOns?: BookingAddOnLine[];
   couponCode?: string;
   priceBreakdown?: PriceBreakdown;
-  paymentMethod?: PaymentMethod;
+  paymentMethod?: PaymentPreference;
   sourcePartnerId?: string;
 }

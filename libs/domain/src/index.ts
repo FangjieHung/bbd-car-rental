@@ -5,3 +5,4 @@ export * from './lib/date-utils';
 export * from './lib/pricing';
 export * from './lib/availability';
 export * from './lib/commission';
+export * from './lib/payments';

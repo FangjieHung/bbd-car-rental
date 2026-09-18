@@ -10,3 +10,4 @@ export * from './commission';
 export * from './partner';
 export * from './monthly-payout';
 export * from './insurance-plan';
+export * from './payment-record';
