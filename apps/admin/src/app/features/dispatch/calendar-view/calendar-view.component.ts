@@ -9,7 +9,7 @@ import { ResponsivePanelComponent } from '@car-rental/ui';
 import { VehicleStepComponent } from '@car-rental/booking-flow';
 import { RentalBooking, Vehicle, calculatePrice } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { addDays, fmtDateTime, isSameDay, startOfDay } from '../../../core/date-utils';
+import { addDays, isSameDay, startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { CustomerStore } from '../../../stores/customer/customer.store';
@@ -95,7 +95,6 @@ export class CalendarViewComponent {
   private vehicleStore = inject(VehicleStore);
   private pricingStore = inject(PricingStore);
   readonly customerStore = inject(CustomerStore);
-  readonly fmt = fmtDateTime;
   readonly isSameDay = isSameDay;
 
   readonly month = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -268,9 +267,18 @@ export class CalendarViewComponent {
     }
   };
 
-  vehicleLabel(row: WorkListRow): string {
-    const vehicle = this.vehicleStore.vehicles().find((v) => v.id === row.booking.vehicleId);
-    return vehicle ? `${vehicle.plateNumber} (${vehicle.model})` : '—';
+  vehicleOf(row: WorkListRow): Vehicle | undefined {
+    return this.vehicleStore.vehicles().find((v) => v.id === row.booking.vehicleId);
+  }
+
+  /**
+   * 本地時區的 HH:mm；刻意不共用全站 fmtDateTime（那個會多印日期），
+   * 也不能用字串切片取代 getHours/getMinutes，否則非 UTC 時區會讀到錯的時間。
+   */
+  fmtTime(iso: string): string {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   customerName(row: WorkListRow): string {

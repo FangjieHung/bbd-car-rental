@@ -90,13 +90,20 @@
               <ng-template matTabContent>
                 <mat-accordion class="work-list-accordion">
                   @for (row of pickupWorkRows(); track row.id) {
+                    @let vehicle = vehicleOf(row);
                     <mat-expansion-panel>
-                      <mat-expansion-panel-header>
-                        <mat-panel-title>{{ vehicleLabel(row) }}</mat-panel-title>
-                        <mat-panel-description
-                          >{{ customerName(row) }} ·
-                          {{ fmt(row.booking.startTime) }}</mat-panel-description
-                        >
+                      <mat-expansion-panel-header class="work-list-row-header">
+                        <mat-panel-title class="work-list-row__title">
+                          <span class="work-list-row__plate">{{
+                            vehicle?.plateNumber ?? '—'
+                          }}</span>
+                          <span class="work-list-row__meta"
+                            >{{ vehicle?.model ?? '—' }} · {{ customerName(row) }}</span
+                          >
+                        </mat-panel-title>
+                        <mat-panel-description class="work-list-row__time">{{
+                          fmtTime(row.booking.startTime)
+                        }}</mat-panel-description>
                       </mat-expansion-panel-header>
                       <dl class="work-list-detail">
                         <div>
@@ -139,13 +146,20 @@
                 @if (returnWorkRows().length > 0) {
                   <mat-accordion class="work-list-accordion">
                     @for (row of returnWorkRows(); track row.id) {
+                      @let vehicle = vehicleOf(row);
                       <mat-expansion-panel>
-                        <mat-expansion-panel-header>
-                          <mat-panel-title>{{ vehicleLabel(row) }}</mat-panel-title>
-                          <mat-panel-description
-                            >{{ customerName(row) }} ·
-                            {{ fmt(row.booking.endTime) }}</mat-panel-description
-                          >
+                        <mat-expansion-panel-header class="work-list-row-header">
+                          <mat-panel-title class="work-list-row__title">
+                            <span class="work-list-row__plate">{{
+                              vehicle?.plateNumber ?? '—'
+                            }}</span>
+                            <span class="work-list-row__meta"
+                              >{{ vehicle?.model ?? '—' }} · {{ customerName(row) }}</span
+                            >
+                          </mat-panel-title>
+                          <mat-panel-description class="work-list-row__time">{{
+                            fmtTime(row.booking.endTime)
+                          }}</mat-panel-description>
                         </mat-expansion-panel-header>
                         <dl class="work-list-detail">
                           <div>

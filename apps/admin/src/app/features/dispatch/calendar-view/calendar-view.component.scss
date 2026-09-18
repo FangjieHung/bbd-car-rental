@@ -168,6 +168,46 @@
   }
 }
 
+// 取車／還車摘要列：以車牌為主視覺，車型/客人次要，時間右側靠齊。
+// app.scss 裡既有的 .work-list-accordion 規則（Task 3 範圍，不動它）
+// 對 header padding／title・description flex 比例下了 0-2-0 左右的特異度，
+// 這裡刻意疊上 .work-list-accordion 這層祖先 class + 自訂 class，
+// 讓特異度略高一階，才蓋得過去，不受 styleUrls 陣列順序影響。
+.work-list-accordion .work-list-row-header.mat-expansion-panel-header {
+  padding: 12px 16px;
+}
+
+.work-list-accordion mat-panel-title.work-list-row__title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.work-list-accordion mat-panel-description.work-list-row__time {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.work-list-row__plate {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface);
+  overflow-wrap: anywhere;
+}
+
+.work-list-row__meta {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--mat-sys-on-surface-variant);
+  overflow-wrap: anywhere;
+}
+
 .calendar-view__relative-chip {
   display: inline-flex;
   align-items: center;

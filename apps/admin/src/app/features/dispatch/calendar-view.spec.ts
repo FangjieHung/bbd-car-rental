@@ -466,3 +466,108 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
     expect(component.phoneHref({ customerId: 'missing' } as RentalBooking)).toBeNull();
   });
 });
+
+describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () => {
+  function setup(vehicles: Vehicle[], bookings: RentalBooking[], customers: Customer[]) {
+    TestBed.configureTestingModule({
+      providers: [
+        ...providePricing(),
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: CUSTOMER_REPO, useValue: createInMemoryRepo<Customer>(customers) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+        provideBreakpoint(false),
+      ],
+    });
+    const fixture = TestBed.createComponent(CalendarViewComponent);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('vehicleOf 找不到車輛時回傳 undefined，樣板車牌與車型皆顯示 —', () => {
+    const date = new Date(2026, 7, 4);
+    const fixture = setup(
+      [],
+      [
+        {
+          id: 'b1',
+          vehicleId: 'missing-vehicle',
+          customerId: 'c1',
+          startTime: new Date(2026, 7, 4, 9, 5).toISOString(),
+          endTime: new Date(2026, 7, 5, 18, 0).toISOString(),
+          pickupLocation: '',
+          returnLocation: '',
+          status: 'confirmed',
+        },
+      ],
+      [{ id: 'c1', name: '陳先生', phone: '0900000000' }],
+    );
+    fixture.componentInstance.selectDate(date);
+    fixture.detectChanges();
+
+    const row = fixture.componentInstance.pickupWorkRows()[0];
+    expect(fixture.componentInstance.vehicleOf(row)).toBeUndefined();
+
+    const plateEl = fixture.nativeElement.querySelector('.work-list-row__plate');
+    const metaEl = fixture.nativeElement.querySelector('.work-list-row__meta');
+    expect(plateEl?.textContent?.trim()).toBe('—');
+    expect(metaEl?.textContent?.trim()).toBe('— · 陳先生');
+  });
+
+  it('fmtTime 使用本地時間 HH:mm，含前導零時分', () => {
+    const fixture = setup([], [], []);
+    expect(fixture.componentInstance.fmtTime(new Date(2026, 7, 4, 9, 5).toISOString())).toBe(
+      '09:05',
+    );
+    expect(fixture.componentInstance.fmtTime(new Date(2026, 7, 4, 0, 0).toISOString())).toBe(
+      '00:00',
+    );
+    expect(fixture.componentInstance.fmtTime(new Date(2026, 7, 4, 23, 59).toISOString())).toBe(
+      '23:59',
+    );
+  });
+
+  it('取車摘要讀 startTime、還車摘要讀 endTime，兩者皆顯示於樣板', () => {
+    const date = new Date(2026, 7, 4);
+    const fixture = setup(
+      [
+        {
+          id: 'v1',
+          plateNumber: 'ABC-123',
+          category: 'car',
+          model: 'Altis',
+          brand: 'Toyota',
+          year: 2022,
+          status: 'available',
+          mileage: 0,
+          createdAt: '',
+        },
+      ],
+      [
+        {
+          id: 'b1',
+          vehicleId: 'v1',
+          customerId: 'c1',
+          // 同一天取車又還車，確保兩個 tab 各自讀取自己的時間欄位而非共用同一個值。
+          startTime: new Date(2026, 7, 4, 9, 5).toISOString(),
+          endTime: new Date(2026, 7, 4, 18, 30).toISOString(),
+          pickupLocation: '',
+          returnLocation: '',
+          status: 'confirmed',
+        },
+      ],
+      [{ id: 'c1', name: '陳先生', phone: '0900000000' }],
+    );
+    fixture.componentInstance.selectDate(date);
+    fixture.detectChanges();
+
+    const pickupRow = fixture.componentInstance.pickupWorkRows()[0];
+    const returnRow = fixture.componentInstance.returnWorkRows()[0];
+    expect(fixture.componentInstance.fmtTime(pickupRow.booking.startTime)).toBe('09:05');
+    expect(fixture.componentInstance.fmtTime(returnRow.booking.endTime)).toBe('18:30');
+
+    // 取車 tab 預設就是選取中的（index 0），直接可從樣板讀到 startTime 的顯示結果。
+    const pickupTimeEl = fixture.nativeElement.querySelector('.work-list-row__time');
+    expect(pickupTimeEl?.textContent?.trim()).toBe('09:05');
+  });
+});
