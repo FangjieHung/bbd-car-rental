@@ -29,10 +29,12 @@ import {
   PricingPlan,
   SeasonCalendar,
   AddOn,
+  InsurancePlan,
   PaymentRecord,
   RefundRecord,
   ChargeAdjustment,
   ContractVersion,
+  ContractSnapshot,
 } from '../../../core/models';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
 
@@ -438,5 +440,144 @@ describe('BookingFormDialogComponent 原子送出：中途失敗要補償清除�
     expect(payments[0].status).toBe('voided'); // 而是作廢，保留稽核軌跡
     expect(bookingRepo.getAll()).toHaveLength(0);
     expect(memberRepo.getAll()).toHaveLength(0);
+  });
+});
+
+describe('BookingFormDialogComponent 編輯既有訂單：不會清空原本的保險與加購配件（review fix #1）', () => {
+  it('只改動不相關欄位（取車地點）時，儲存後 priceBreakdown 仍保留原本選的保險與配件', async () => {
+    const insurancePlan: InsurancePlan = {
+      id: 'ins1',
+      name: '甲式保險',
+      dailyPriceFrom: 300,
+      tags: [],
+      coverageItems: [],
+    };
+    const addOn: AddOn = { id: 'addon1', name: '兒童座椅', unitPrice: 100, unit: 'per_day' };
+    const vehicle = makeVehicle({ id: 'v1', category: 'car', insurancePlans: [insurancePlan] });
+
+    // 第一階段：用精靈建立一筆帶保險＋配件的訂單，取得真實算出來的 priceBreakdown 當基準
+    // （不手刻一份 PriceBreakdown，避免自己算錯又自己驗證自己算的這種偽陽性）。
+    const create = createFixture({ vehicles: [vehicle], addOns: [addOn] });
+    fillVehicleStep(create.component);
+    fillNewRenter(create.component);
+    create.component.setAddOnQty('addon1', 2);
+    create.component.form.controls.insurancePlanId.setValue('ins1');
+    await create.component.submit();
+
+    const bookingId = create.closeSpy.mock.calls[0][0].bookingId as string;
+    const originalBooking = create.component.bookingStore.bookings().find((b) => b.id === bookingId);
+    expect(originalBooking).toBeDefined();
+    expect(originalBooking?.priceBreakdown?.insuranceSubtotal).toBeGreaterThan(0);
+    expect(originalBooking?.priceBreakdown?.addOnSubtotal).toBeGreaterThan(0);
+    if (!originalBooking) throw new Error('originalBooking not found');
+    const original = originalBooking;
+
+    // 第二階段：重新打開這筆訂單的編輯 dialog（新的 component 實例，模擬真的關掉再開），
+    // 只改取車地點這個跟保險/配件完全無關的欄位。TestBed 同一個測試裡只能
+    // configureTestingModule 一次，先重置才能再組一次新的注入環境。
+    TestBed.resetTestingModule();
+    const edit = createFixture({
+      vehicles: [vehicle],
+      addOns: [addOn],
+      members: create.memberRepo.getAll(),
+      bookings: [original],
+      data: original,
+    });
+    expect(edit.component.addOnQtyFor('addon1')).toBe(2); // 建構時就該回填，不用等 submit
+    expect(edit.component.form.controls.insurancePlanId.value).toBe('ins1');
+
+    edit.component.form.controls.pickupLocation.setValue('高鐵站');
+    await edit.component.submit();
+
+    const updated = edit.component.bookingStore.bookings().find((b) => b.id === bookingId);
+    expect(updated?.pickupLocation).toBe('高鐵站');
+    expect(updated?.priceBreakdown?.insuranceSubtotal).toBe(original.priceBreakdown?.insuranceSubtotal);
+    expect(updated?.priceBreakdown?.addOnSubtotal).toBe(original.priceBreakdown?.addOnSubtotal);
+    expect(updated?.priceBreakdown?.total).toBe(original.priceBreakdown?.total);
+  });
+});
+
+function makeContractSnapshot(partial: Partial<ContractSnapshot> = {}): ContractSnapshot {
+  const party = { memberId: 'm1', name: '王小明', phone: '0912345678' };
+  return {
+    renter: party,
+    driver: party,
+    vehicle: { vehicleId: 'v1', plateNumber: 'ABC-123', brand: 'Toyota', model: 'Altis', category: 'car' },
+    rentalStartTime: '2026-01-05T01:00:00.000Z',
+    rentalEndTime: '2026-01-07T01:00:00.000Z',
+    pickupLocation: '機場',
+    returnLocation: '機場',
+    depositRequired: 600,
+    pricing: {
+      dailyLines: [],
+      rentalRaw: 2000,
+      tierDiscountPercent: 0,
+      tierDiscountAmount: 0,
+      rentalSubtotal: 2000,
+      partnerDiscountPercent: 0,
+      partnerDiscount: 0,
+      addOnLines: [],
+      addOnSubtotal: 0,
+      insuranceSubtotal: 0,
+      couponDiscount: 0,
+      total: 2000,
+    },
+    disclosedRules: { cancellationContractKind: 'passenger_car', cancellationRuleVersion: 'v1' },
+    ...partial,
+  };
+}
+
+describe('BookingFormDialogComponent 編輯已簽署訂單：待辦清單不誤報「合約尚未簽署」（review fix #2）', () => {
+  it('既有合約已簽署時，即使這次沒勾現場簽署，待辦清單也不會出現「合約尚未簽署」', () => {
+    const booking = makeBooking({ id: 'b1', vehicleId: 'v1', memberId: 'm1' });
+    const signedContract: ContractVersion = {
+      id: 'cv1',
+      bookingId: 'b1',
+      version: 1,
+      status: 'signed',
+      snapshot: makeContractSnapshot(),
+      signatureAssetIds: ['sig'],
+      createdAt: new Date().toISOString(),
+      signedAt: new Date().toISOString(),
+    };
+    const { component } = createFixture({
+      members: [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }],
+      bookings: [booking],
+      contracts: [signedContract],
+      data: booking,
+    });
+
+    expect(component.currentContractSigned()).toBe(true);
+    expect(component.incompleteItems()).not.toContain(component.t.bookingForm.incomplete.contractNotSigned);
+  });
+
+  it('新增訂單模式（沒有既有合約可查）時，維持看 signNow 判斷', () => {
+    const { component } = createFixture();
+    fillVehicleStep(component);
+    fillNewRenter(component);
+
+    expect(component.currentContractSigned()).toBe(false);
+    expect(component.incompleteItems()).toContain(component.t.bookingForm.incomplete.contractNotSigned);
+  });
+
+  it('編輯既有訂單但合約還是草稿（尚未簽署）時，待辦清單仍要提醒', () => {
+    const booking = makeBooking({ id: 'b1', vehicleId: 'v1', memberId: 'm1' });
+    const draftContract: ContractVersion = {
+      id: 'cv1',
+      bookingId: 'b1',
+      version: 1,
+      status: 'draft',
+      snapshot: makeContractSnapshot(),
+      createdAt: new Date().toISOString(),
+    };
+    const { component } = createFixture({
+      members: [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }],
+      bookings: [booking],
+      contracts: [draftContract],
+      data: booking,
+    });
+
+    expect(component.currentContractSigned()).toBe(false);
+    expect(component.incompleteItems()).toContain(component.t.bookingForm.incomplete.contractNotSigned);
   });
 });

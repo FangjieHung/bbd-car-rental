@@ -242,6 +242,18 @@ export class BookingFormDialogComponent {
   readonly depositCap = computed(() => defaultDepositForCategory(this.selectedVehicle()?.category, this.quote()?.total ?? 0));
   readonly depositExceedsCap = computed(() => this.depositRequiredValue() > this.depositCap());
 
+  /**
+   * 編輯既有訂單時，這筆訂單「目前實際」有沒有已簽署的合約版本——不是使用者這次有沒有勾
+   * 「現場完成簽署」。新增訂單模式下沒有既有合約可查，只能看 signNow 這個「打算簽」的意圖。
+   * 待辦清單同時檢查這兩者（見 incompleteItems），避免編輯一筆早就簽好的訂單時，
+   * 只因為這次沒重新勾 signNow checkbox 就誤報「合約尚未簽署」。
+   */
+  readonly currentContractSigned = computed(() => {
+    const bookingId = this.data?.id;
+    if (!this.isEdit || !bookingId) return false;
+    return this.contractStore.latestFor(bookingId)?.status === 'signed';
+  });
+
   readonly incompleteItems = computed<string[]>(() => {
     const items: string[] = [];
     if (!this.emailValue()) items.push(this.t.bookingForm.incomplete.missingEmail);
@@ -254,7 +266,9 @@ export class BookingFormDialogComponent {
       items.push(this.t.bookingForm.incomplete.depositNotCollected);
     }
 
-    if (!this.signNowValue()) items.push(this.t.bookingForm.incomplete.contractNotSigned);
+    if (!this.signNowValue() && !this.currentContractSigned()) {
+      items.push(this.t.bookingForm.incomplete.contractNotSigned);
+    }
 
     const total = this.quote()?.total ?? 0;
     const totalCollected = this.paymentDrafts().reduce((sum, p) => sum + p.amount, 0);
@@ -270,6 +284,14 @@ export class BookingFormDialogComponent {
     if (existingMemberId) {
       const member = this.memberStore.members().find((m) => m.id === existingMemberId);
       if (member) this.lockToMember(member);
+    }
+
+    // 編輯既有訂單時，把原本報價快照裡的加購配件／保險方案回填進精靈的狀態——
+    // quote() 這個 computed 每次都是從目前的 insurancePlanId/addOnQty 現算，若不回填，
+    // 只是想改個取車地點這種「無關的欄位」也會因為 addOnQty/insurancePlanId 是空的，
+    // 把 submit() 寫回訂單的 priceBreakdown 悄悄改成「沒有保險、沒有配件」。
+    if (this.isEdit && this.data?.priceBreakdown) {
+      this.hydratePricingSelectionsFromExisting(this.data.priceBreakdown, this.data.vehicleId);
     }
 
     // 只有「新增訂單」才用車型上限自動預設訂金；編輯既有訂單時保留原本載入的值，
@@ -289,6 +311,33 @@ export class BookingFormDialogComponent {
           }
         }
       });
+    }
+  }
+
+  /**
+   * 編輯既有訂單時，從原本存下的報價快照回填加購配件數量與保險方案，避免無關欄位的編輯
+   * 把報價悄悄改成「沒有保險、沒有配件」（見建構子的呼叫處註解）。
+   * - 加購配件：PriceBreakdown.addOnLines 本身就存了 addOnId/qty，直接精確回填。
+   * - 保險方案：PriceBreakdown 只存 insuranceSubtotal 這個金額，沒有存是選了哪個
+   *   InsurancePlan（這是既有 domain model 的限制，libs/domain 不在本任務檔案清單內，
+   *   不在這裡順手改動模型）。用「同樣天數 × 方案每日價 = 原本的 insuranceSubtotal」
+   *   反推最接近的方案——如果同一台車有兩個保險方案剛好同價就可能反推錯，是目前
+   *   已知且能接受的近似（與 Task 9 對「目前生效版本」的近似判斷同一類型的限制）。
+   */
+  private hydratePricingSelectionsFromExisting(original: PriceBreakdown, vehicleId?: string): void {
+    if (original.addOnLines.length > 0) {
+      const addOnQtyMap: Record<string, number> = {};
+      for (const line of original.addOnLines) addOnQtyMap[line.addOnId] = line.qty;
+      this.addOnQty.set(addOnQtyMap);
+    }
+
+    if (original.insuranceSubtotal > 0 && vehicleId) {
+      const vehicle = this.vehicleStore.vehicles().find((v) => v.id === vehicleId);
+      const days = original.dailyLines.length;
+      const matchedPlan = vehicle?.insurancePlans?.find(
+        (p) => p.dailyPriceFrom * days === original.insuranceSubtotal,
+      );
+      if (matchedPlan) this.form.controls.insurancePlanId.setValue(matchedPlan.id);
     }
   }
 
