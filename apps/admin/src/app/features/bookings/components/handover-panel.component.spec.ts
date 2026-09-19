@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import {
+  ContractDisclosedRules,
   ContractVersion,
   DriverCredential,
   IdentityDocument,
@@ -37,6 +38,13 @@ import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 
 const T_START = '2026-07-20T09:00:00.000Z';
 const T_END = '2026-07-22T18:00:00.000Z';
+
+/** 與元件內部 toDatetimeLocalValue() 相同的轉換邏輯，測試檔獨立一份以設定 datetime-local 表單值。 */
+function toDatetimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 class FakeDocumentAssetGateway implements DocumentAssetGateway {
   private counter = 0;
@@ -101,8 +109,15 @@ function makeMember(partial: Partial<Member> = {}): Member {
   return { id: 'm1', name: '王小明', phone: '0900000000', kind: 'local', ...partial };
 }
 
-/** 就緒判斷需要的「已簽署合約」快照——內容細節不影響測試，欄位齊全即可通過型別檢查。 */
-function makeSignedContractVersion(partial: Partial<ContractVersion> = {}): ContractVersion {
+/**
+ * 就緒判斷需要的「已簽署合約」快照——內容細節不影響測試，欄位齊全即可通過型別檢查。
+ * disclosedRulesOverride 只疊在 disclosedRules 上（深層合併），不會被 partial 的淺層
+ * spread 整包蓋掉，方便測項單獨鎖定「合約簽署當下的逾時／能源補繳規則」而不必重寫整份快照。
+ */
+function makeSignedContractVersion(
+  partial: Partial<ContractVersion> = {},
+  disclosedRulesOverride: Partial<ContractDisclosedRules> = {},
+): ContractVersion {
   return {
     id: 'cv1',
     bookingId: 'b1',
@@ -131,7 +146,11 @@ function makeSignedContractVersion(partial: Partial<ContractVersion> = {}): Cont
         couponDiscount: 0,
         total: 0,
       },
-      disclosedRules: { cancellationContractKind: 'scooter', cancellationRuleVersion: 'v1' },
+      disclosedRules: {
+        cancellationContractKind: 'scooter',
+        cancellationRuleVersion: 'v1',
+        ...disclosedRulesOverride,
+      },
     },
     createdAt: T_START,
     signedAt: T_START,
@@ -197,6 +216,9 @@ describe('HandoverPanelComponent', () => {
     omitContract?: boolean;
     omitIdentityDocument?: boolean;
     omitDriverCredential?: boolean;
+    /** 合約快照裡鎖定的逾時／能源補繳規則；預設不帶，還車試算會退回用 PricingStore 反查。 */
+    disclosedRules?: Partial<ContractDisclosedRules>;
+    pricingPlan?: Partial<PricingPlan>;
   } = {}) {
     assetGateway = new FakeDocumentAssetGateway();
     TestBed.resetTestingModule();
@@ -221,14 +243,19 @@ describe('HandoverPanelComponent', () => {
         },
         {
           provide: CONTRACT_VERSION_REPO,
-          useValue: createInMemoryRepo<ContractVersion>(options.omitContract ? [] : [makeSignedContractVersion()]),
+          useValue: createInMemoryRepo<ContractVersion>(
+            options.omitContract ? [] : [makeSignedContractVersion({}, options.disclosedRules ?? {})],
+          ),
         },
         { provide: PAYMENT_REPO, useValue: createInMemoryRepo() },
         { provide: REFUND_REPO, useValue: createInMemoryRepo() },
         { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo() },
         { provide: HANDOVER_RECORD_REPO, useValue: createInMemoryRepo() },
         { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo() },
-        { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([makePricingPlan()]) },
+        {
+          provide: PRICING_PLAN_REPO,
+          useValue: createInMemoryRepo<PricingPlan>([makePricingPlan(options.pricingPlan)]),
+        },
         { provide: SEASON_CALENDAR_REPO, useValue: createInMemoryRepo<SeasonCalendar>([{ id: 'cal1', holidays: [], peakSeasons: [] }]) },
         { provide: DocumentAssetGateway, useValue: assetGateway },
         { provide: OcrGateway, useValue: new FakeOcrGateway() },
@@ -380,6 +407,39 @@ describe('HandoverPanelComponent', () => {
 
       const el = fixture.nativeElement as HTMLElement;
       expect(el.textContent).toContain('交還車紀錄');
+    });
+
+    it('還車試算優先採用合約簽署當下鎖定的 disclosedRules 規則，即使定價方案事後被改成不同費率', async () => {
+      // 合約快照鎖定的逾時費率（簽約當下揭露給客人的規則）：免寬限、每 30 分鐘 999 元。
+      // 定價方案（模擬簽約後被後台調整過）：15 分鐘寬限、每 30 分鐘 100 元——刻意與快照不同，
+      // 若元件錯用「即時反查方案」，算出的逾時費會是用這組數字，而不是快照那組。
+      configure({
+        disclosedRules: {
+          lateReturnPolicy: { graceMinutes: 0, unitMinutes: 30, feePerUnit: 999, dailyCap: 99999 },
+          energyReturnPolicy: { measure: 'eighths', feePerUnit: 0, serviceFee: 0 },
+        },
+        pricingPlan: {
+          lateReturnPolicy: { graceMinutes: 15, unitMinutes: 30, feePerUnit: 100, dailyCap: 1000 },
+        },
+      });
+
+      const fixture = await createFixtureAfterPickup();
+
+      // 逾還 40 分鐘、能源讀數與取車相同（無能源虧缺，避免能源費干擾判讀）。
+      fixture.componentInstance['returnForm'].patchValue({
+        actualAt: toDatetimeLocalValue('2026-07-22T18:40:00.000Z'),
+        mileage: 1100,
+        energyLevel: 8,
+      });
+      fixture.componentInstance['previewReturnCharges']();
+      fixture.detectChanges();
+
+      const charges = fixture.componentInstance['returnChargesPreview']();
+      expect(charges).toBeDefined();
+      // 快照規則（無寬限、每單位 999）：40 分鐘 → ceil(40/30)=2 單位 → 1998。
+      // 若誤用方案規則（15 分鐘寬限、每單位 100）會得到 100，兩者差異明顯，足以驗證來源正確。
+      expect(charges!.finalLateFee).toBe(1998);
+      expect(charges!.finalEnergyFee).toBe(0);
     });
   });
 });

@@ -11,6 +11,7 @@ import {
   MemberKind,
   PickupReadinessInput,
   ReciprocityStatus,
+  RentalBooking,
   ReturnChargeResult,
   Vehicle,
   deriveEnergyTypeFallback,
@@ -382,7 +383,7 @@ export class HandoverPanelComponent {
     }
 
     const value = this.returnForm.getRawValue();
-    const policy = this.policyFor(vehicle);
+    const policy = this.policyFor(booking, vehicle);
     const manualAdjustment =
       value.manualLateFee != null || value.manualEnergyFee != null
         ? {
@@ -467,15 +468,32 @@ export class HandoverPanelComponent {
   }
 
   /**
-   * 逾時／能源補繳規則依車型從定價方案取得（設計文件第 4.5 節「規則放在定價方案」）。
-   * 訂單本身不保存方案參照，只能用車輛分類反查；找不到對應方案或方案未設定規則時，
-   * 一律視為無此類收費（寬限與費率都是 0），不阻擋還車、也不會平白多收錢。
+   * 逾時／能源補繳規則優先讀「合約簽署當下鎖定的已揭露規則」——ContractVersion.snapshot.
+   * disclosedRules（Task 6；設計文件第 4.4 節「已揭露規則」）本來就是為了這個用途而存在：
+   * 快照在簽約當下就把 lateReturnPolicy／energyReturnPolicy 一併鎖住，之後方案調整不會
+   * 回頭改到已經跟客人揭露、對過的規則。
+   *
+   * 只有在快照裡完全沒有這兩個欄位時（例如舊資料早於這個欄位存在，或訂單根本還沒有
+   * 已簽署合約），才退回用車輛分類即時反查 PricingStore 目前的方案。這條退路務必只當
+   * 最後手段，因為它有兩個實際會算錯錢的風險：
+   * 1) PricingStore 對 appliesToCategory 沒有唯一性限制——同分類若哪天出現兩個方案，
+   *    `.find()` 撈到哪個純看陣列順序，不保證是這張訂單當初實際適用的那個；
+   *    2) 定價後台（pricing-page）可以隨時改掉方案的 lateReturnPolicy／energyReturnPolicy，
+   *    合約簽署之後才調整費率的話，即時反查會用「現在」的費率跟客人收錢，
+   *    跟簽約當下揭露、客人同意的費率對不上（見本任務修正前的教訓）。
+   *
+   * 快照與方案都沒有規則可用時，一律視為無此類收費（寬限與費率都是 0），
+   * 不阻擋還車、也不會平白多收錢。
    */
-  private policyFor(vehicle: Vehicle) {
+  private policyFor(booking: RentalBooking, vehicle: Vehicle) {
+    const disclosedRules = this.contractStore.latestFor(booking.id)?.snapshot.disclosedRules;
     const plan = this.pricingStore.plans().find((p) => p.appliesToCategory === vehicle.category);
     return {
-      lateReturnPolicy: plan?.lateReturnPolicy ?? { graceMinutes: 0, unitMinutes: 60, feePerUnit: 0, dailyCap: 0 },
+      lateReturnPolicy:
+        disclosedRules?.lateReturnPolicy ??
+        plan?.lateReturnPolicy ?? { graceMinutes: 0, unitMinutes: 60, feePerUnit: 0, dailyCap: 0 },
       energyReturnPolicy:
+        disclosedRules?.energyReturnPolicy ??
         plan?.energyReturnPolicy ??
         ({
           measure: (vehicle.energyType ?? deriveEnergyTypeFallback(vehicle.category)) === 'electric' ? 'percent' : 'eighths',
