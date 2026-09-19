@@ -12,6 +12,7 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PaymentPanelComponent } from '../components/payment-panel.component';
 import { ContractPanelComponent } from '../components/contract-panel.component';
+import { HandoverPanelComponent } from '../components/handover-panel.component';
 
 /**
  * 訂單工作區的七個分頁。內容由 Task 9、11-14、17 陸續補上；本任務只搭殼，
@@ -57,6 +58,7 @@ export interface BookingWorkspaceDialogData {
     MatButtonModule,
     PaymentPanelComponent,
     ContractPanelComponent,
+    HandoverPanelComponent,
   ],
   templateUrl: './booking-workspace-dialog.component.html',
   styleUrls: ['./booking-workspace-dialog.component.scss'],

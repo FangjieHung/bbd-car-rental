@@ -3,6 +3,11 @@ import { Vehicle, VehicleStatus, VehicleCategory } from '../../core/models';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
+/**
+ * 允許的狀態轉換。取車／還車不直接呼叫這裡——BookingStore.pickUp()／complete() 是
+ * 唯一會觸發 rented／available 轉換的入口，而它們又是被 HandoverStore.performPickup()／
+ * performReturn()（Task 13）依序呼叫，車輛轉換永遠緊跟在對應訂單轉換之前。
+ */
 const ALLOWED: Record<VehicleStatus, VehicleStatus[]> = {
   available: ['reserved', 'rented', 'maintenance'],
   reserved: ['rented', 'available'],

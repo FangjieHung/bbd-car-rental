@@ -51,6 +51,11 @@ export class BookingStore {
     this.reload();
   }
 
+  /**
+   * reserved → in_progress，並連動車輛轉 rented（先車輛後訂單）。狀態機本身只管轉換合法性，
+   * 不管是否已達取車就緒條件（訂金、合約簽署、證件核對等）——那是 HandoverStore.performPickup()
+   * 的職責，它在呼叫這裡之前會先跑 evaluatePickupReadiness 並處理主管覆核。
+   */
   pickUp(id: string): void {
     const b = this.mustGet(id);
     if (b.status !== 'reserved') throw new Error(ZH_TW.booking.invalidTransition);
@@ -59,6 +64,11 @@ export class BookingStore {
     this.reload();
   }
 
+  /**
+   * in_progress → completed，並連動車輛轉 available（先車輛後訂單）。同樣只管狀態轉換本身，
+   * 費用試算／確認與還車紀錄留存是 HandoverStore.performReturn() 的職責，它會在呼叫這裡之前
+   * 先存還車紀錄、確認費用調整，呼叫這裡之後才附加稽核紀錄。
+   */
   complete(id: string): void {
     const b = this.mustGet(id);
     if (b.status !== 'in_progress') throw new Error(ZH_TW.booking.invalidTransition);
@@ -70,7 +80,8 @@ export class BookingStore {
   /**
    * 一般取消只開放 reserved（車還沒交出去，取消不影響車輛狀態）。
    * in_progress 的訂單已經交車，要結束租期必須走「還車」流程（含費用結算），
-   * 不能用這個通用取消繞過去 —— 還車流程在後續任務才會補上。
+   * 不能用這個通用取消繞過去 —— 還車流程見 HandoverStore.performReturn()（Task 13），
+   * 它是 in_progress 訂單唯一合法的結束路徑，內部仍是呼叫這裡的 complete() 做狀態轉換。
    */
   cancel(id: string): void {
     const b = this.mustGet(id);

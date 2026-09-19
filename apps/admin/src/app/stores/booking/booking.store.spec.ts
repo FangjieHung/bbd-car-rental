@@ -100,6 +100,17 @@ describe('BookingStore', () => {
     expect(() => store.cancel(b.id)).toThrowError(ZH_TW.booking.invalidTransition);
   });
 
+  it('pickUp 對非 reserved 訂單要擋（HandoverStore.performPickup() 依賴這道防線防止重複交車）', () => {
+    const b = store.create(baseInput());
+    store.pickUp(b.id);
+    expect(() => store.pickUp(b.id)).toThrowError(ZH_TW.booking.invalidTransition);
+  });
+
+  it('complete 對非 in_progress 訂單要擋（HandoverStore.performReturn() 依賴這道防線防止重複還車）', () => {
+    const b = store.create(baseInput());
+    expect(() => store.complete(b.id)).toThrowError(ZH_TW.booking.invalidTransition);
+  });
+
   it('出租中的訂單不可用一般取消，須走還車流程', () => {
     const b = store.create(baseInput());
     store.pickUp(b.id);
