@@ -4,6 +4,8 @@
       <h3 class="cancellation-panel__section-title">{{ t.cancellationPanel.newCaseTitle }}</h3>
 
       <form class="cancellation-panel__form" [formGroup]="form" (ngSubmit)="submitCase()">
+        <p class="cancellation-panel__hint" role="note">{{ t.cancellationPanel.operatorRecoveryHint }}</p>
+
         <mat-form-field>
           <mat-label>{{ t.cancellationPanel.responsibility }}</mat-label>
           <mat-select formControlName="responsibility">

@@ -15,6 +15,7 @@ import { ContractPanelComponent } from '../components/contract-panel.component';
 import { HandoverPanelComponent } from '../components/handover-panel.component';
 import { CancellationPanelComponent } from '../components/cancellation-panel.component';
 import { CustomerCreditPanelComponent } from '../components/customer-credit-panel.component';
+import { OperatorRecoveryPanelComponent } from '../components/operator-recovery-panel.component';
 
 /**
  * 訂單工作區的七個分頁。內容由 Task 9、11-14、17 陸續補上；本任務只搭殼，
@@ -63,6 +64,7 @@ export interface BookingWorkspaceDialogData {
     HandoverPanelComponent,
     CancellationPanelComponent,
     CustomerCreditPanelComponent,
+    OperatorRecoveryPanelComponent,
   ],
   templateUrl: './booking-workspace-dialog.component.html',
   styleUrls: ['./booking-workspace-dialog.component.scss'],

@@ -50,6 +50,7 @@
         <app-handover-panel [bookingId]="data.bookingId" />
       }
       @case ('cancellation') {
+        <app-operator-recovery-panel [bookingId]="data.bookingId" />
         <app-cancellation-panel [bookingId]="data.bookingId" />
         <app-customer-credit-panel [bookingId]="data.bookingId" />
       }
