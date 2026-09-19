@@ -10,6 +10,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
+import { PaymentPanelComponent } from '../components/payment-panel.component';
 
 /**
  * 訂單工作區的七個分頁。內容由 Task 9、11-14、17 陸續補上；本任務只搭殼，
@@ -48,7 +49,7 @@ export interface BookingWorkspaceDialogData {
   // dialog 的那個（bookings-page/dashboard-page 注入的）不是同一個單例，會讓巢狀的
   // confirm() dialog 走到不同的 MatDialog 追蹤堆疊。測試時也會因此蓋不掉 TestBed 的
   // MatDialog mock（單元測試已踩過這個坑）。
-  imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatButtonModule],
+  imports: [MatDialogTitle, MatDialogContent, MatDialogActions, MatButtonModule, PaymentPanelComponent],
   templateUrl: './booking-workspace-dialog.component.html',
   styleUrls: ['./booking-workspace-dialog.component.scss'],
 })

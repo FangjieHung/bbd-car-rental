@@ -41,7 +41,7 @@
         <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['documents'] }}</section>
       }
       @case ('payments') {
-        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['payments'] }}</section>
+        <app-payment-panel [bookingId]="data.bookingId" />
       }
       @case ('contract') {
         <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['contract'] }}</section>
