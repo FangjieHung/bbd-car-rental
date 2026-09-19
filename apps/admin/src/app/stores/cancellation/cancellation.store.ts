@@ -108,6 +108,26 @@ export class DispositionAmountMismatchError extends Error {
   }
 }
 
+/**
+ * 這個案件先前已經建立過退款／保留金紀錄（可能是上次呼叫在訂單轉換步驟失敗後留下的），
+ * 但這次呼叫要求的金額跟既有紀錄不一樣——不是單純的重試（同一組金額再送一次），
+ * 是一次金額不同的嘗試。冪等防護只保證「不重複建立紀錄」，不能連帶保證「用新金額覆寫
+ * 案件的 disposition／稽核摘要」，那會讓案件歷程與實際已發生的金流對不上，因此直接拒絕，
+ * 交由人工先確認實際狀態，而不是靜默沿用舊紀錄卻記錄新數字。
+ */
+export class DispositionRetryMismatchError extends Error {
+  constructor(
+    readonly recordType: 'refund' | 'credit',
+    readonly existingAmount: number,
+    readonly requestedAmount: number,
+  ) {
+    super(
+      `此案件已以不同金額處理過（${recordType === 'refund' ? '退款' : '保留金'}：已建立 ${existingAmount} 元，本次請求 ${requestedAmount} 元），請確認實際狀態後再處理，不可直接以新金額重試。`,
+    );
+    this.name = 'DispositionRetryMismatchError';
+  }
+}
+
 /** 取消撥付橫跨多個 repository 的本地寫入序列，各自可能獨立失敗（同 HandoverStore 的理由）。 */
 export type CancellationDispositionStep =
   | 'refund_record'
@@ -158,7 +178,9 @@ function refundLinesFromQuote(quote: CancellationQuote): CancellationRefundLine[
  * 訂單轉為 cancelled（只允許從 reserved，見 BookingStore.cancel 既有規則，這裡不重複驗證）→
  * 案件轉為 settled → 附加稽核紀錄。全程不呼叫任何 repository 的 remove()，付款與合約紀錄
  * 永遠保留（設計原則「保留歷史」）。disposeCase() 在建立退款／保留金紀錄前會先查詢是否已有
- * 綁定同一案件的既有紀錄（冪等防護），失敗後重試不會造成重複退款或重複核發保留金。
+ * 綁定同一案件的既有紀錄（冪等防護），失敗後重試不會造成重複退款或重複核發保留金；若重試
+ * 帶著跟既有紀錄不同的金額，會直接擋下（DispositionRetryMismatchError），避免案件歷程記錄
+ * 一筆跟實際金流對不上的假紀錄。
  */
 @Injectable({ providedIn: 'root' })
 export class CancellationStore {
@@ -274,7 +296,10 @@ export class CancellationStore {
    * - 轉保留金的金額（含 split 的保留金部分）必須先取得顧客明確同意（creditConsent）。
    * - 退款＋保留金金額合計必須精確等於案件的應退總額，不允許不明差額。
    * - 冪等：若這個案件先前的呼叫已經建立過退款／保留金紀錄（例如上次在訂單轉換步驟失敗），
-   *   重試時會重用既有紀錄而不是再建一筆，避免重複退款／重複核發保留金。
+   *   重試時會重用既有紀錄而不是再建一筆，避免重複退款／重複核發保留金——但只有在這次請求
+   *   的金額跟既有紀錄完全相同時才會重用；金額不同代表這是另一次不同金額的嘗試，會直接拒絕
+   *   （DispositionRetryMismatchError），不會沿用舊紀錄卻用新金額寫入 disposition／稽核摘要
+   *   （那樣會讓案件歷程記錄一筆從未真的發生過的金流）。
    */
   disposeCase(input: DisposeCancellationCaseInput): DisposeCancellationCaseResult {
     // 新台幣沒有小數位，理由同 quoteCancellation 的 assertIntegerMoney——這裡收的是表單輸入，
@@ -312,11 +337,27 @@ export class CancellationStore {
     // 冪等防護：案件在退款／保留金紀錄都已寫入、但訂單轉換（或後續步驟）失敗時，狀態仍停在
     // quoted／approved（見上面的狀態檢查），代表呼叫端很可能會重試同一筆 disposeCase()。
     // 若重試時再次無條件建立新紀錄，會造成真實的重複退款／重複核發保留金。這裡先查詢是否已有
-    // 綁定這個 cancellationCaseId／sourceCancellationCaseId 的既有紀錄，若有就直接重用、
-    // 不再新增，只把它算進「這一步已完成」繼續往下走。
-    let refund: RefundRecord | undefined = this.paymentStore
+    // 綁定這個 cancellationCaseId／sourceCancellationCaseId 的既有紀錄。
+    //
+    // 找到既有紀錄後，必須先比對金額再決定怎麼做：金額相同才是「同一組請求的重試」，可以放心
+    // 重用；金額不同代表這是「用不同金額再試一次」——如果照樣重用舊紀錄卻用這次的新金額寫
+    // disposition／稽核摘要，案件歷程會宣稱一個從未真的發生過的金流，是比重複寫入更隱晦的
+    // 錯誤（帳本不會多一筆，但會記錯內容）。金額不符時直接拒絕，交由人工先確認實際狀態。
+    const existingRefund = this.paymentStore
       .refundsFor(kase.bookingId)
       .find((r) => r.cancellationCaseId === kase.id);
+    if (existingRefund && existingRefund.amount !== input.refundAmount) {
+      throw new DispositionRetryMismatchError('refund', existingRefund.amount, input.refundAmount);
+    }
+
+    const existingCredit = this.creditStore
+      .entriesFor(booking.memberId)
+      .find((e) => e.type === 'issued' && e.sourceCancellationCaseId === kase.id);
+    if (existingCredit && existingCredit.amount !== input.creditAmount) {
+      throw new DispositionRetryMismatchError('credit', existingCredit.amount, input.creditAmount);
+    }
+
+    let refund: RefundRecord | undefined = existingRefund;
     if (refund) {
       completed.push('refund_record');
     } else if (input.refundAmount > 0) {
@@ -335,9 +376,7 @@ export class CancellationStore {
       }
     }
 
-    let credit: CustomerCreditLedgerEntry | undefined = this.creditStore
-      .entriesFor(booking.memberId)
-      .find((e) => e.type === 'issued' && e.sourceCancellationCaseId === kase.id);
+    let credit: CustomerCreditLedgerEntry | undefined = existingCredit;
     if (credit) {
       completed.push('credit_entry');
     } else if (input.creditAmount > 0) {

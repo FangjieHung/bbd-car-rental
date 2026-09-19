@@ -32,6 +32,7 @@ import {
   CaseNotReadyForDispositionError,
   CreditConsentRequiredError,
   DispositionAmountMismatchError,
+  DispositionRetryMismatchError,
   ForceMajeureApprovalRequiredError,
   ForceMajeureEvidenceRequiredError,
   TransferFeeApprovalRequiredError,
@@ -545,6 +546,70 @@ describe('CancellationStore', () => {
       expect(creditStore.entriesFor('m1')).toHaveLength(1);
       expect(result.refund?.amount).toBe(300);
       expect(result.credit?.amount).toBe(200);
+    });
+
+    it('Important 回歸：重試時金額與既有紀錄不同會被拒絕，不會沿用舊紀錄卻寫入新金額的假案件歷程', () => {
+      const { store: s, bookingStore, paymentStore, creditStore } = createFixture({
+        booking: { status: 'in_progress' },
+      });
+      const kase = buildQuotedCase(s); // 應退總額 500
+
+      // 第一次呼叫：300/200 拆分，寫入退款／保留金紀錄成功，但訂單轉換失敗。
+      expect(() =>
+        s.disposeCase({
+          caseId: kase.id,
+          disposition: 'split',
+          refundAmount: 300,
+          creditAmount: 200,
+          creditConsent: true,
+          actor: { actorId: 'staff1', actorName: 'staff1' },
+          occurredAt: '2026-07-10T10:30:00.000Z',
+        }),
+      ).toThrow(CancellationDispositionPartialFailureError);
+      expect(paymentStore.refundsFor('b1')).toHaveLength(1);
+      expect(paymentStore.refundsFor('b1')[0].amount).toBe(300);
+      expect(creditStore.entriesFor('m1')).toHaveLength(1);
+      expect(creditStore.entriesFor('m1')[0].amount).toBe(200);
+
+      // 重試時改用不同拆分（500/0）——金額合計仍等於案件應退總額 500，所以不會被
+      // DispositionAmountMismatchError 擋下；但既有紀錄是 300/200，不是 500/0，
+      // 必須被拒絕，不能沿用 300/200 的舊紀錄卻讓 disposition／稽核寫成「退款 500」。
+      expect(() =>
+        s.disposeCase({
+          caseId: kase.id,
+          disposition: 'refund',
+          refundAmount: 500,
+          creditAmount: 0,
+          actor: { actorId: 'staff1', actorName: 'staff1' },
+          occurredAt: '2026-07-10T11:00:00.000Z',
+        }),
+      ).toThrow(DispositionRetryMismatchError);
+
+      // 拒絕後不應該有任何新紀錄被建立，案件也還沒被誤標記成 settled。
+      expect(paymentStore.refundsFor('b1')).toHaveLength(1);
+      expect(creditStore.entriesFor('m1')).toHaveLength(1);
+      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('in_progress');
+
+      // 用原本一致的金額（300/200）重試仍然可以正常運作（冪等重用，不受這個防護擋下）。
+      const consistentRetryError = (() => {
+        try {
+          s.disposeCase({
+            caseId: kase.id,
+            disposition: 'split',
+            refundAmount: 300,
+            creditAmount: 200,
+            creditConsent: true,
+            actor: { actorId: 'staff1', actorName: 'staff1' },
+            occurredAt: '2026-07-10T11:30:00.000Z',
+          });
+          return undefined;
+        } catch (e) {
+          return e;
+        }
+      })();
+      expect(consistentRetryError).toBeInstanceOf(CancellationDispositionPartialFailureError);
+      expect(paymentStore.refundsFor('b1')).toHaveLength(1);
+      expect(creditStore.entriesFor('m1')).toHaveLength(1);
     });
   });
 
