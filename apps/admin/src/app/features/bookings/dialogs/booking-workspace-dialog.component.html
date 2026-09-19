@@ -1,0 +1,64 @@
+<div class="booking-workspace__titlebar">
+  <h2 mat-dialog-title id="booking-workspace-heading" class="booking-workspace__title">
+    {{ t.bookingWorkspace.title }}
+  </h2>
+  <button
+    type="button"
+    mat-icon-button
+    class="booking-workspace__close"
+    [attr.aria-label]="t.common.closePanel"
+    (click)="requestClose()"
+  >
+    <span class="material-symbols-rounded" aria-hidden="true">close</span>
+  </button>
+</div>
+
+<div mat-dialog-content class="booking-workspace" aria-labelledby="booking-workspace-heading">
+  <nav class="booking-workspace__nav" [attr.aria-label]="t.bookingWorkspace.navAriaLabel">
+    @for (section of sections; track section) {
+      <button
+        type="button"
+        class="booking-workspace__nav-item"
+        [class.is-active]="activeSection() === section"
+        [attr.aria-current]="activeSection() === section ? 'true' : null"
+        (click)="selectSection(section)"
+      >
+        {{ t.bookingWorkspace.sections[section] }}
+      </button>
+    }
+  </nav>
+
+  <p class="booking-workspace__status" role="status" aria-live="polite">
+    {{ t.bookingWorkspace.sections[activeSection()] }}
+  </p>
+
+  <div class="booking-workspace__panel">
+    @switch (activeSection()) {
+      @case ('overview') {
+        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['overview'] }}</section>
+      }
+      @case ('documents') {
+        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['documents'] }}</section>
+      }
+      @case ('payments') {
+        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['payments'] }}</section>
+      }
+      @case ('contract') {
+        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['contract'] }}</section>
+      }
+      @case ('handover') {
+        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['handover'] }}</section>
+      }
+      @case ('cancellation') {
+        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['cancellation'] }}</section>
+      }
+      @case ('activity') {
+        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['activity'] }}</section>
+      }
+    }
+  </div>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="requestClose()">{{ t.common.cancel }}</button>
+</div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { provideRouter } from '@angular/router';
 import { DashboardPageComponent } from './dashboard-page.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
 import {
@@ -40,6 +41,7 @@ describe('DashboardPageComponent child date contract', () => {
       providers: [
         ...providePricing(),
         provideNativeDateAdapter(),
+        provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
@@ -106,6 +108,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
       providers: [
         ...providePricing(),
         provideNativeDateAdapter(),
+        provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },

@@ -51,6 +51,14 @@
           </ng-template>
           <ng-template dtCell="actions" let-b>
             <span class="action-cell">
+              <button
+                mat-icon-button
+                [matTooltip]="t.booking.openWorkspace"
+                [attr.aria-label]="t.booking.openWorkspace"
+                (click)="openWorkspace(b)"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">open_in_full</span>
+              </button>
               @if (b.status === 'reserved') {
                 <button matButton="tonal" (click)="act(() => store.pickUp(b.id))">
                   <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>

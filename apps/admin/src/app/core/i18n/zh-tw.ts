@@ -105,6 +105,21 @@ export const ZH_TW = {
     noVehicleAvailable: '此租期沒有可租車輛',
     pickedResult: '已選車輛',
     clearPick: '清除選擇',
+    openWorkspace: '訂單工作區',
+  },
+  bookingWorkspace: {
+    title: '訂單工作區',
+    navAriaLabel: '工作區分頁',
+    discardChangesConfirm: '有未儲存的變更，確定要放棄並關閉嗎？',
+    sections: {
+      overview: '總覽',
+      documents: '文件',
+      payments: '款項',
+      contract: '合約',
+      handover: '交還車',
+      cancellation: '取消/退款',
+      activity: '活動紀錄',
+    } as Record<string, string>,
   },
   dispatch: {
     timeline: '時間軸',

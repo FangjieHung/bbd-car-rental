@@ -22,6 +22,7 @@ import {
   BookingFormDialogComponent,
   BookingFormResult,
 } from '../../bookings/dialogs/booking-form-dialog.component';
+import { BookingWorkspaceService } from '../../bookings/services/booking-workspace.service';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -45,6 +46,7 @@ export class DashboardPageComponent {
 
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly workspace = inject(BookingWorkspaceService);
 
   readonly targetDate = signal(startOfDay(new Date()));
 
@@ -61,7 +63,9 @@ export class DashboardPageComponent {
     if (!result) return;
 
     try {
-      this.bookingStore.create(result);
+      const created = this.bookingStore.create(result);
+      // 快速建單完成後直接開工作區，讓操作人員接續補款項/合約等資料，不必再從列表找回這筆訂單。
+      this.workspace.open(created.id);
     } catch (e) {
       this.snackBar.open((e as Error).message, undefined, { duration: 4000 });
     }

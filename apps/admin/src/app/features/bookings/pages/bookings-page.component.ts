@@ -27,6 +27,7 @@ import {
   BookingFormDialogComponent,
   BookingFormResult,
 } from '../dialogs/booking-form-dialog.component';
+import { BookingWorkspaceService } from '../services/booking-workspace.service';
 
 const STATUS_KEY: Record<BookingStatus, StatusKey> = {
   reserved: 'warning',
@@ -59,6 +60,7 @@ export class BookingsPageComponent {
   private vehicleStore = inject(VehicleStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private workspace = inject(BookingWorkspaceService);
   readonly fmt = fmtDateTime;
 
   readonly labels = { ...ADMIN_DATA_TABLE_LABELS, batchDelete: this.t.booking.cancelBooking };
@@ -149,6 +151,10 @@ export class BookingsPageComponent {
       this.act(() => this.store.cancel(booking.id));
     }
     this.selectedBookings.set([]);
+  }
+
+  openWorkspace(booking: RentalBooking): void {
+    this.workspace.open(booking.id);
   }
 
   async openForm(booking: RentalBooking | null): Promise<void> {
