@@ -285,4 +285,30 @@ describe('DocumentCaptureComponent', () => {
     expect(fixture.componentInstance['asset']()).toEqual({ assetId: 'asset-old-1', url: 'blob:old-1' });
     expect(fixture.componentInstance['previewUrl']()).toBe('blob:old-1');
   });
+
+  it(
+    '迴歸：從 existingAsset 套用既有照片後按下重拍，不會被 hydration effect 蓋回舊照片（曾經的 bug：' +
+      'effect 讀了 asset() 當依賴，retake() 把 asset 清空又重新觸發 effect，把畫面默默蓋回舊照片）',
+    () => {
+      const fixture = createFixture();
+      fixture.componentRef.setInput('existingAsset', { assetId: 'asset-old-1', url: 'blob:old-1' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance['status']()).toBe('success');
+      expect(fixture.componentInstance['asset']()).toEqual({ assetId: 'asset-old-1', url: 'blob:old-1' });
+
+      fixture.componentInstance['retake']();
+      fixture.detectChanges();
+      // 如果 effect 還殘留對 asset() 的追蹤依賴，會在這幾輪 detectChanges 期間被重新排程、
+      // 把狀態蓋回去；多跑幾輪確保沒有「延遲反悔」。
+      fixture.detectChanges();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance['status']()).toBe('idle');
+      expect(fixture.componentInstance['asset']()).toBeUndefined();
+      expect(fixture.componentInstance['previewUrl']()).toBeUndefined();
+
+      const input = fixture.nativeElement.querySelector('input[type="file"]') as HTMLInputElement | null;
+      expect(input).toBeTruthy();
+    },
+  );
 });

@@ -72,6 +72,24 @@ export class DocumentCaptureComponent implements OnDestroy {
   private pendingFile: File | undefined;
   private localPreviewUrl: string | undefined;
 
+  /**
+   * existingAsset 只應該套用「一次」，而且一旦使用者對這個欄位動過手（重拍、選了新檔），
+   * 之後就永遠不能再被 existingAsset 蓋過去。這個 flag 刻意是一般欄位、不是 signal：
+   *
+   * 原本的寫法是在 effect 裡讀 this.asset() 來判斷「是不是還沒套用過」，但這樣
+   * asset() 就變成這個 effect 被追蹤的依賴——retake() 把 asset 設回 undefined 時，
+   * 這次 signal 寫入會重新排程同一個 effect；effect 重跑時看到 existingAsset() 還是
+   * 舊值、this.asset() 變成 undefined（不等於 existing.assetId），條件又成立，
+   * 於是不由分說把 asset／previewUrl／status 蓋回舊照片，使用者按了「重拍」卻被
+   * 無聲無息地打回原狀，完全看不出發生了什麼事。
+   *
+   * 改用不被追蹤的一般旗標後，effect 只依賴 existingAsset()：套用過一次就鎖住，
+   * 之後不管 asset() signal 本身怎麼變（retake／usePhoto）都不會再觸發回填；
+   * 同時 onFileSelected()／retake() 也主動鎖住它，避免「使用者已經手動操作，
+   * 但父層非同步載入的 existingAsset 這時才姍姍來遲」反過來蓋掉使用者剛做的操作。
+   */
+  private existingAssetLocked = false;
+
   constructor() {
     // 用 effect 而非只在建構時讀一次：編輯既有會員時，父層的 capturedAssets 是非同步
     // 從 DocumentStore／DocumentAssetGateway 載入的（見 member-form-dialog 的
@@ -79,7 +97,8 @@ export class DocumentCaptureComponent implements OnDestroy {
     // 要等父層載入完成、input 訊號真的更新後才會有值——只在 constructor 讀一次會錯過。
     effect(() => {
       const existing = this.existingAsset();
-      if (!existing || this.asset()?.assetId === existing.assetId) return;
+      if (!existing || this.existingAssetLocked) return;
+      this.existingAssetLocked = true;
       this.asset.set(existing);
       this.previewUrl.set(existing.url);
       this.status.set('success');
@@ -95,6 +114,7 @@ export class DocumentCaptureComponent implements OnDestroy {
     const file = input.files?.[0];
     if (!file) return;
 
+    this.existingAssetLocked = true;
     this.revokeLocalPreview();
     this.pendingFile = file;
     this.localPreviewUrl = URL.createObjectURL(file);
@@ -188,6 +208,7 @@ export class DocumentCaptureComponent implements OnDestroy {
   }
 
   protected retake(): void {
+    this.existingAssetLocked = true;
     this.revokeLocalPreview();
     this.pendingFile = undefined;
     this.previewUrl.set(undefined);
