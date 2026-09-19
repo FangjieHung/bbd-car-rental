@@ -14,22 +14,37 @@ import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/service
 import { MemberFormDialogComponent } from './member-form-dialog.component';
 
 class FakeDocumentAssetGateway implements DocumentAssetGateway {
+  readonly urls = new Map<string, string>();
+
   store(): Promise<StoredDocumentAsset> {
     return Promise.resolve({ assetId: 'unused', url: 'unused' });
   }
-  resolveUrl(): Promise<string | undefined> {
-    return Promise.resolve(undefined);
+  resolveUrl(assetId: string): Promise<string | undefined> {
+    return Promise.resolve(this.urls.get(assetId));
   }
   remove(): Promise<void> {
     return Promise.resolve();
   }
 }
 
+/** 讓非同步的既有文件載入（loadExistingDocuments／resolveUrl）確實跑完。 */
+async function flush(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+const VERIFIED = { state: 'verified' as const, verifiedAt: '2026-01-01T00:00:00.000Z', verifiedBy: '管理員' };
+
 describe('MemberFormDialogComponent', () => {
   let closeSpy: (result?: unknown) => void;
   let closedWith: unknown[];
 
-  function createFixture(data: Member | null = null) {
+  function createFixture(
+    data: Member | null = null,
+    seed?: { identityDocuments?: IdentityDocument[]; driverCredentials?: DriverCredential[] },
+    assetGateway: FakeDocumentAssetGateway = new FakeDocumentAssetGateway(),
+  ) {
     closedWith = [];
     closeSpy = (result?: unknown) => closedWith.push(result);
     TestBed.resetTestingModule();
@@ -38,9 +53,15 @@ describe('MemberFormDialogComponent', () => {
         { provide: MatDialogRef, useValue: { close: closeSpy } },
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>(data ? [data] : []) },
-        { provide: IDENTITY_DOCUMENT_REPO, useValue: createInMemoryRepo<IdentityDocument>() },
-        { provide: DRIVER_CREDENTIAL_REPO, useValue: createInMemoryRepo<DriverCredential>() },
-        { provide: DocumentAssetGateway, useValue: new FakeDocumentAssetGateway() },
+        {
+          provide: IDENTITY_DOCUMENT_REPO,
+          useValue: createInMemoryRepo<IdentityDocument>(seed?.identityDocuments ?? []),
+        },
+        {
+          provide: DRIVER_CREDENTIAL_REPO,
+          useValue: createInMemoryRepo<DriverCredential>(seed?.driverCredentials ?? []),
+        },
+        { provide: DocumentAssetGateway, useValue: assetGateway },
         MockOcrGateway,
         { provide: OcrGateway, useExisting: MockOcrGateway },
         MockDriverEligibilityGateway,
@@ -198,5 +219,159 @@ describe('MemberFormDialogComponent', () => {
     expect(memberStore.members()).toHaveLength(1);
     expect(memberStore.members()[0].name).toBe('新姓名');
     expect(memberStore.members()[0].id).toBe('m1');
+  });
+
+  it('編輯既有會員時，會自動載入既有身分證明文件與駕駛資格的欄位與照片預覽', async () => {
+    const existingMember: Member = { id: 'm1', name: '舊姓名', phone: '0911111111', kind: 'local', idNumber: 'A100000000' };
+    const existingDoc: IdentityDocument = {
+      id: 'doc-1',
+      memberId: 'm1',
+      type: 'taiwan_id',
+      documentNumber: 'A100000000',
+      issuingCountry: 'TW',
+      expiryDate: '2030-05-01',
+      frontImageAssetId: 'asset-old-1',
+      verification: VERIFIED,
+      version: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const existingCredential: DriverCredential = {
+      id: 'cred-1',
+      memberId: 'm1',
+      type: 'taiwan_license',
+      documentNumber: 'TL-0000',
+      issuingCountry: 'TW',
+      originalVehicleClassText: '普通輕型機車',
+      standardizedVehicleClass: 'scooter',
+      frontImageAssetId: 'asset-old-2',
+      verification: VERIFIED,
+      reciprocityStatus: 'pending',
+      version: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const assetGateway = new FakeDocumentAssetGateway();
+    assetGateway.urls.set('asset-old-1', 'blob:old-1');
+    assetGateway.urls.set('asset-old-2', 'blob:old-2');
+
+    const fixture = createFixture(
+      existingMember,
+      { identityDocuments: [existingDoc], driverCredentials: [existingCredential] },
+      assetGateway,
+    );
+    const component = fixture.componentInstance;
+    await flush();
+    fixture.detectChanges();
+
+    expect(component.form.controls.identityExpiryDate.value).toBe('2030-05-01');
+    expect(component.form.controls.licenseNumber.value).toBe('TL-0000');
+    expect(component.form.controls.originalVehicleClassText.value).toBe('普通輕型機車');
+    expect(component.form.controls.standardizedVehicleClass.value).toBe('scooter');
+    expect(component.capturedAssets()['identityFront']).toEqual({ assetId: 'asset-old-1', url: 'blob:old-1' });
+    expect(component.capturedAssets()['licenseFront']).toEqual({ assetId: 'asset-old-2', url: 'blob:old-2' });
+  });
+
+  it(
+    '迴歸：編輯既有會員時未變更證件相關欄位，重複儲存不會建立第二筆 IdentityDocument（先前每次存檔都會誤建重複證件）',
+    async () => {
+      const existingMember: Member = { id: 'm1', name: '舊姓名', phone: '0911111111', kind: 'local', idNumber: 'A100000000' };
+      const existingDoc: IdentityDocument = {
+        id: 'doc-1',
+        memberId: 'm1',
+        type: 'taiwan_id',
+        documentNumber: 'A100000000',
+        issuingCountry: 'TW',
+        frontImageAssetId: 'asset-old-1',
+        verification: VERIFIED,
+        version: 1,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+      const assetGateway = new FakeDocumentAssetGateway();
+      assetGateway.urls.set('asset-old-1', 'blob:old-1');
+
+      const fixture = createFixture(existingMember, { identityDocuments: [existingDoc] }, assetGateway);
+      const component = fixture.componentInstance;
+      const documentStore = TestBed.inject(DocumentStore);
+
+      expect(documentStore.identityDocumentsFor('m1')).toHaveLength(1);
+
+      // 只改跟證件完全無關的電話號碼——這正是原本會誤建重複證件的情境。
+      component.form.patchValue({ phone: '0922222222' });
+      await component.save();
+      expect(documentStore.identityDocumentsFor('m1')).toHaveLength(1);
+
+      // 第二次無變動儲存也一樣不能複製。
+      await component.save();
+      expect(documentStore.identityDocumentsFor('m1')).toHaveLength(1);
+    },
+  );
+
+  it('迴歸：編輯既有會員時未變更駕駛資格相關欄位，重複儲存不會建立第二筆 DriverCredential', async () => {
+    const existingMember: Member = { id: 'm1', name: '舊姓名', phone: '0911111111', kind: 'local', idNumber: 'A100000000' };
+    const existingDoc: IdentityDocument = {
+      id: 'doc-1',
+      memberId: 'm1',
+      type: 'taiwan_id',
+      documentNumber: 'A100000000',
+      issuingCountry: 'TW',
+      verification: VERIFIED,
+      version: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const existingCredential: DriverCredential = {
+      id: 'cred-1',
+      memberId: 'm1',
+      type: 'taiwan_license',
+      documentNumber: 'TL-0000',
+      issuingCountry: 'TW',
+      originalVehicleClassText: '普通輕型機車',
+      standardizedVehicleClass: 'scooter',
+      verification: VERIFIED,
+      reciprocityStatus: 'pending',
+      version: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const fixture = createFixture(existingMember, {
+      identityDocuments: [existingDoc],
+      driverCredentials: [existingCredential],
+    });
+    const component = fixture.componentInstance;
+    const documentStore = TestBed.inject(DocumentStore);
+
+    component.form.patchValue({ phone: '0933333333' });
+    await component.save();
+    expect(documentStore.driverCredentialsFor('m1')).toHaveLength(1);
+
+    await component.save();
+    expect(documentStore.driverCredentialsFor('m1')).toHaveLength(1);
+  });
+
+  it('編輯時若證件號碼真的改變，仍會建立新的 IdentityDocument（確認防重複的守門不會過度攔阻正常更新）', async () => {
+    const existingMember: Member = { id: 'm1', name: '舊姓名', phone: '0911111111', kind: 'local', idNumber: 'A100000000' };
+    const existingDoc: IdentityDocument = {
+      id: 'doc-1',
+      memberId: 'm1',
+      type: 'taiwan_id',
+      documentNumber: 'A100000000',
+      issuingCountry: 'TW',
+      verification: VERIFIED,
+      version: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const fixture = createFixture(existingMember, { identityDocuments: [existingDoc] });
+    const component = fixture.componentInstance;
+    const documentStore = TestBed.inject(DocumentStore);
+
+    component.form.patchValue({ identityNumber: 'A999999999' });
+    await component.save();
+
+    const docs = documentStore.identityDocumentsFor('m1');
+    expect(docs).toHaveLength(2);
+    expect(docs.some((d) => d.documentNumber === 'A999999999')).toBe(true);
   });
 });

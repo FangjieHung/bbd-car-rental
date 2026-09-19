@@ -269,4 +269,20 @@ describe('DocumentCaptureComponent', () => {
 
     expect(captured).toEqual([{ assetId: 'asset-1', url: 'blob:preview-1' }]);
   });
+
+  it('existingAsset 在初始渲染之後才非同步給值時，仍會被套用（編輯既有會員的預先載入情境）', async () => {
+    // 呼叫端（member-form-dialog）編輯既有會員時，是先同步渲染這個元件，
+    // 再非同步從 DocumentStore／DocumentAssetGateway 載入既有照片後才回填 existingAsset。
+    // 第一次渲染時 existingAsset() 是 undefined，本測試確認之後補上仍會生效，
+    // 不能只在 constructor 讀一次就永遠忽略後續的值。
+    const fixture = createFixture();
+    expect(fixture.componentInstance['status']()).toBe('idle');
+
+    fixture.componentRef.setInput('existingAsset', { assetId: 'asset-old-1', url: 'blob:old-1' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['status']()).toBe('success');
+    expect(fixture.componentInstance['asset']()).toEqual({ assetId: 'asset-old-1', url: 'blob:old-1' });
+    expect(fixture.componentInstance['previewUrl']()).toBe('blob:old-1');
+  });
 });

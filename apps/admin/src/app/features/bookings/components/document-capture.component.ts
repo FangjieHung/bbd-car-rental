@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject, input, output, signal, viewChild, ElementRef } from '@angular/core';
+import { Component, OnDestroy, effect, inject, input, output, signal, viewChild, ElementRef } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
 import { OcrDocumentKind, OcrExtractionResult, OcrGateway } from '../../../core/services/ocr.gateway';
@@ -73,12 +73,17 @@ export class DocumentCaptureComponent implements OnDestroy {
   private localPreviewUrl: string | undefined;
 
   constructor() {
-    const existing = this.existingAsset();
-    if (existing) {
+    // 用 effect 而非只在建構時讀一次：編輯既有會員時，父層的 capturedAssets 是非同步
+    // 從 DocumentStore／DocumentAssetGateway 載入的（見 member-form-dialog 的
+    // loadExistingDocuments），第一次渲染當下 existingAsset() 通常還是 undefined，
+    // 要等父層載入完成、input 訊號真的更新後才會有值——只在 constructor 讀一次會錯過。
+    effect(() => {
+      const existing = this.existingAsset();
+      if (!existing || this.asset()?.assetId === existing.assetId) return;
       this.asset.set(existing);
       this.previewUrl.set(existing.url);
       this.status.set('success');
-    }
+    });
   }
 
   ngOnDestroy(): void {
