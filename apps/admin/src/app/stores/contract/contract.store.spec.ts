@@ -72,4 +72,25 @@ describe('ContractStore', () => {
     expect(unchanged.id).toBe(draft.id);
     expect(store.versionsFor('b2')).toHaveLength(1);
   });
+
+  it('已簽署版本不可再次簽署（不可覆寫）：對 signed 版本呼叫 sign 會拋錯，不更動 signedAt／signatureAssetIds', () => {
+    const draft = store.createDraft('b3', snapshot());
+    const signed = store.sign(draft.id, ['sig-asset-3']);
+
+    expect(() => store.sign(draft.id, ['sig-asset-overwrite'])).toThrow();
+
+    const stillSame = store.versionsFor('b3')[0];
+    expect(stillSame.signedAt).toBe(signed.signedAt);
+    expect(stillSame.signatureAssetIds).toEqual(['sig-asset-3']);
+  });
+
+  it('已被取代（superseded）的版本不可簽署：對舊版呼叫 sign 會拋錯', () => {
+    const draft = store.createDraft('b4', snapshot());
+    store.sign(draft.id, ['sig-asset-4']);
+    store.reviseIfChanged('b4', snapshot({ rentalEndTime: '2026-07-23T18:00:00.000Z' }));
+
+    const superseded = store.versionsFor('b4')[0];
+    expect(superseded.status).toBe('superseded');
+    expect(() => store.sign(superseded.id, ['sig-asset-late'])).toThrow();
+  });
 });

@@ -2,11 +2,14 @@ import { describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { of } from 'rxjs';
+import { ContractVersion } from '@car-rental/domain';
 import {
   BookingWorkspaceDialogComponent,
   BookingWorkspaceDialogData,
   WORKSPACE_SECTIONS,
 } from './booking-workspace-dialog.component';
+import { CONTRACT_VERSION_REPO } from '../../../core/repositories/tokens';
+import { createInMemoryRepo } from '../../../core/repositories/testing';
 
 describe('BookingWorkspaceDialogComponent', () => {
   let closeSpy: ReturnType<typeof vi.fn>;
@@ -23,6 +26,7 @@ describe('BookingWorkspaceDialogComponent', () => {
         },
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialog, useValue: { open: dialogOpen } },
+        { provide: CONTRACT_VERSION_REPO, useValue: createInMemoryRepo<ContractVersion>() },
       ],
     });
     return TestBed.createComponent(BookingWorkspaceDialogComponent);

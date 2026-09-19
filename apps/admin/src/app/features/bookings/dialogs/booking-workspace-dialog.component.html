@@ -44,7 +44,7 @@
         <app-payment-panel [bookingId]="data.bookingId" />
       }
       @case ('contract') {
-        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['contract'] }}</section>
+        <app-contract-panel [bookingId]="data.bookingId" />
       }
       @case ('handover') {
         <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['handover'] }}</section>

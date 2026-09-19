@@ -1,0 +1,67 @@
+<div class="signature-pad">
+  <div class="signature-pad__mode-switch" role="group" [attr.aria-label]="t.signaturePad.drawTab + '/' + t.signaturePad.typeTab">
+    <button
+      type="button"
+      mat-stroked-button
+      class="signature-pad__mode-btn"
+      [class.is-active]="mode() === 'draw'"
+      [attr.aria-pressed]="mode() === 'draw'"
+      (click)="switchMode('draw')"
+    >
+      {{ t.signaturePad.drawTab }}
+    </button>
+    <button
+      type="button"
+      mat-stroked-button
+      class="signature-pad__mode-btn"
+      [class.is-active]="mode() === 'type'"
+      [attr.aria-pressed]="mode() === 'type'"
+      (click)="switchMode('type')"
+    >
+      {{ t.signaturePad.typeTab }}
+    </button>
+  </div>
+
+  @if (mode() === 'draw') {
+    <canvas
+      #canvas
+      class="signature-pad__canvas"
+      width="480"
+      height="160"
+      tabindex="0"
+      [attr.aria-label]="t.signaturePad.canvasAriaLabel"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp()"
+      (pointerleave)="onPointerUp()"
+      (pointercancel)="onPointerUp()"
+    ></canvas>
+    @if (!hasDrawing()) {
+      <p class="signature-pad__hint">{{ t.signaturePad.emptyDrawHint }}</p>
+    }
+  } @else {
+    <mat-form-field class="signature-pad__typed-field">
+      <mat-label>{{ t.signaturePad.typedNameLabel }}</mat-label>
+      <input
+        matInput
+        [value]="typedName()"
+        (input)="onTypedNameInputEvent($event)"
+        [placeholder]="t.signaturePad.typedNamePlaceholder"
+      />
+    </mat-form-field>
+  }
+
+  <button type="button" mat-button (click)="clear()" [disabled]="!hasSignatureInput()">
+    {{ t.signaturePad.clear }}
+  </button>
+
+  <mat-checkbox [checked]="acknowledged()" (change)="onAcknowledgeChange($event)">
+    {{ t.signaturePad.acknowledge }}
+  </mat-checkbox>
+
+  <p class="signature-pad__mock-notice">{{ t.signaturePad.mockNotice }}</p>
+
+  <button type="button" mat-flat-button [disabled]="!canConfirm()" (click)="confirm()">
+    {{ submitting() ? t.signaturePad.signing : t.signaturePad.confirmSign }}
+  </button>
+</div>

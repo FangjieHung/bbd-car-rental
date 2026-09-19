@@ -39,7 +39,18 @@ export class ContractStore {
     return draft;
   }
 
+  /**
+   * 簽署一筆合約版本。只允許對 status === 'draft' 的版本簽署——已簽署版本不可覆寫
+   * （設計文件第 4.4 節「已簽署版本不可覆寫」），已被取代的版本更不可能是「最新待簽版本」。
+   * 這道限制刻意放在 store 層而非只靠呼叫端（contract-panel）UI 判斷是否顯示簽署按鈕，
+   * 是防禦性的最後一道防線：任何未來呼叫路徑都不能意外把已簽署或已取代版本的內容蓋掉。
+   */
   sign(id: string, signatureAssetIds: string[]): ContractVersion {
+    const current = this.repo.getById(id);
+    if (!current) throw new Error(`contract version not found: ${id}`);
+    if (current.status !== 'draft') {
+      throw new Error('只能簽署草稿版本；已簽署或已被取代的版本不可再次簽署（合約版本不可覆寫）');
+    }
     const updated = this.repo.update(id, {
       status: 'signed',
       signedAt: new Date().toISOString(),
