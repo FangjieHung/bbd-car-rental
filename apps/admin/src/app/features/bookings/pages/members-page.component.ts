@@ -3,7 +3,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { Member } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
@@ -38,6 +37,11 @@ export class MembersPageComponent {
   readonly columns: DataTableColumn<Member>[] = [
     { key: 'name', label: this.t.member.name, primary: true },
     { key: 'phone', label: this.t.member.phone, primary: true },
+    {
+      key: 'kind',
+      label: this.t.member.kind,
+      exportValue: (c) => this.t.member.kindLabels[c.kind] ?? c.kind,
+    },
     { key: 'idNumber', label: this.t.member.idNumber, exportValue: (c) => c.idNumber ?? '—' },
     { key: 'note', label: this.t.member.note, exportValue: (c) => c.note ?? '' },
     { key: 'actions', label: this.t.common.actions, exportSkip: true },
@@ -48,12 +52,12 @@ export class MembersPageComponent {
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
-  async openForm(member: Member | null): Promise<void> {
-    const ref = this.dialog.open(MemberFormDialogComponent, { data: member, width: '400px' });
-    const result = await firstValueFrom(ref.afterClosed());
-    if (!result) return;
-    if (member) this.store.update(member.id, result);
-    else this.store.create(result);
+  // 會員基本資料、證件與駕駛資格的建立/更新現在都在 dialog 內部完成
+  // （MemberStore + DocumentStore 各自的 create/update/confirm），這裡只負責開啟，
+  // 不再回頭套用表單值——MemberStore 的 members() signal 會在 dialog 內部呼叫
+  // create/update 後自動反映最新資料，不需要額外重新整理。
+  openForm(member: Member | null): void {
+    this.dialog.open(MemberFormDialogComponent, { data: member, width: '640px', maxWidth: '92vw' });
   }
 
   async remove(member: Member): Promise<void> {

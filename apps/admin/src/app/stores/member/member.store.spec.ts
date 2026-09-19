@@ -20,8 +20,11 @@ describe('MemberStore', () => {
     expect(store.members()).toHaveLength(1);
     expect(store.nameOf(c.id)).toBe('王小明');
     expect(store.nameOf('nope')).toBe('—');
-    store.update(c.id, { phone: '0999' });
+    const updated = store.update(c.id, { phone: '0999' });
     expect(store.members()[0].phone).toBe('0999');
+    // update() 回傳更新後的完整 Member，呼叫端（例如 member-form-dialog）不必再另外查一次
+    // 就能拿到最新資料，跟 create() 的回傳慣例一致。
+    expect(updated).toEqual(store.members()[0]);
     store.remove(c.id);
     expect(store.members()).toEqual([]);
   });

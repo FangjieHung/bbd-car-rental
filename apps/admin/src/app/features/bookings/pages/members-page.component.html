@@ -21,6 +21,9 @@
         (exportFailed)="onExportFailed($event)"
       >
         <ng-template dtCell="phone" let-c><span class="text-secondary">{{ c.phone }}</span></ng-template>
+        <ng-template dtCell="kind" let-c
+          ><span class="text-secondary">{{ t.member.kindLabels[c.kind] ?? c.kind }}</span></ng-template
+        >
         <ng-template dtCell="idNumber" let-c
           ><span class="text-secondary">{{ c.idNumber ?? '—' }}</span></ng-template
         >

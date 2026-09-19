@@ -15,9 +15,10 @@ export class MemberStore {
     return member;
   }
 
-  update(id: string, patch: Partial<Omit<Member, 'id'>>): void {
-    this.repo.update(id, patch);
+  update(id: string, patch: Partial<Omit<Member, 'id'>>): Member {
+    const updated = this.repo.update(id, patch);
     this.reload();
+    return updated;
   }
 
   remove(id: string): void {
