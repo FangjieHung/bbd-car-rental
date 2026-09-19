@@ -116,7 +116,7 @@
           <mat-form-field>
             <mat-label>{{ t.bookingForm.insurance }}</mat-label>
             <mat-select formControlName="insurancePlanId">
-              <mat-option value="">{{ t.bookingForm.insuranceNone }}</mat-option>
+              <mat-option [value]="NO_INSURANCE_VALUE">{{ t.bookingForm.insuranceNone }}</mat-option>
               @for (p of selectedVehicle()?.insurancePlans; track p.id) {
                 <mat-option [value]="p.id">{{ p.name }}</mat-option>
               }

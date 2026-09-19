@@ -73,6 +73,14 @@ function reminderScheduledFor(endIso: string, hoursBefore: number): string {
   return new Date(new Date(endIso).getTime() - hoursBefore * 60 * 60 * 1000).toISOString();
 }
 
+/**
+ * 「明確選了不加保」的專屬 sentinel 值，跟表單初始的空字串（'' = 還沒解決）分開，
+ * 避免同一個空字串同時代表兩種不同意思——見 insuranceUnreconciled 的完整說明。
+ * 宣告在 class 外面（而不是 class field）是因為 form 這個 class field 的初始化順序
+ * 在其他 class field 之前，直接用 class field 會有「用到還沒 assign 的 this.XXX」的排序陷阱。
+ */
+const NO_INSURANCE_VALUE = 'none';
+
 @Component({
   selector: 'app-booking-form-dialog',
   imports: [
@@ -139,7 +147,7 @@ export class BookingFormDialogComponent {
     kind: ['local' as MemberKind, Validators.required],
     nationality: [''],
 
-    insurancePlanId: [''],
+    insurancePlanId: [NO_INSURANCE_VALUE],
     depositRequired: [this.data?.depositRequired ?? 0, [Validators.required, Validators.min(0)]],
 
     paymentMethod: ['cash' as PaymentMethod],
@@ -219,7 +227,13 @@ export class BookingFormDialogComponent {
     const calendar = this.pricingStore.calendar();
     if (!plan || !calendar) return undefined;
     const addOns = this.addOnStore.addOns().map((a) => ({ addOn: a, qty: this.addOnQty()[a.id] ?? 0 }));
-    const insurancePlan = vehicle.insurancePlans?.find((p) => p.id === this.insurancePlanIdValue());
+    const insurancePlanId = this.insurancePlanIdValue();
+    // '' 代表「還沒選」、NO_INSURANCE_VALUE 代表「明確選了不加保」，兩者都不對應任何真實方案，
+    // 這裡明確排除掉，不要依賴 .find() 對 sentinel 字串剛好找不到東西這種巧合。
+    const insurancePlan =
+      insurancePlanId && insurancePlanId !== this.NO_INSURANCE_VALUE
+        ? vehicle.insurancePlans?.find((p) => p.id === insurancePlanId)
+        : undefined;
     try {
       return calculatePrice({
         plan,
@@ -243,20 +257,38 @@ export class BookingFormDialogComponent {
   readonly depositExceedsCap = computed(() => this.depositRequiredValue() > this.depositCap());
 
   /**
-   * 編輯既有訂單時，原本的報價快照裡有保險（insuranceSubtotal > 0），但
-   * hydratePricingSelectionsFromExisting 反推不出對應的保險方案——可能是車輛的保險方案
-   * 清單後來改過價格、或整個方案被移除了。這種情況下 insurancePlanId 會維持空白，
-   * 如果放任 submit() 直接送出，quote() 會用「沒選保險」重算出 insuranceSubtotal=0，
-   * 把原本的保險悄悄歸零，即使操作人員只是想改個取車地點——這正是這個 wizard 原本要修的
-   * bug（見 hydratePricingSelectionsFromExisting 的說明），所以反推失敗時要擋住送出、
-   * 要求操作人員自己確認/重選保險方案，而不是讓精靈自己用空白狀態悄悄覆寫金額。
-   * 使用者只要手動選了任一保險方案（不論是不是跟原本同一個），這個旗標就會清除——
-   * 那已經是操作人員的明確選擇，不再是「反推失敗」。
+   * 根本問題（review 第三輪指出）：insurancePlanId 的空字串曾經同時代表三種不同意思——
+   * 「表單剛建構、什麼都還沒發生」「hydration 反推不出方案」「使用者明確選了不加保」——
+   * 三者疊在同一個值上，導致「使用者能不能真的選不加保」跟「反推失敗要不要擋」永遠分不開。
+   * 修法是讓「明確選不加保」有自己專屬、不會跟空字串搞混的值：NO_INSURANCE_VALUE。
+   * 這樣空字串就只剩一個意思——「還沒解決」，其餘判斷都能單純看目前的值是什麼，
+   * 不必再猜測「這個空字串是不是使用者剛選的」（不用碰 FormControl.dirty 或攔截
+   * mat-select 的使用者互動事件，兩者都有「使用者重選跟目前值一樣的選項時到底會不會
+   * 觸發事件」這種依賴函式庫內部實作、難以放心保證的灰色地帶）。
+   */
+  readonly NO_INSURANCE_VALUE = NO_INSURANCE_VALUE;
+
+  /**
+   * 編輯既有訂單時，原本的報價快照裡有保險（insuranceSubtotal > 0），但目前還沒有任何
+   * 「這筆訂單現在該算哪個保險方案」的確定答案——包含 hydratePricingSelectionsFromExisting
+   * 反推不出方案、也還沒有人手動選過任何選項（不論是選某個方案、還是明確選「不加保」）。
+   * 這種「還沒解決」的狀態才需要擋住送出，避免 submit() 用一個尚未確認的空白狀態悄悄把
+   * insuranceSubtotal 重算成 0（這是這個 wizard 原本要修的 bug）。
+   *
+   * 例外：如果車輛「目前」根本沒有任何保險方案可選（vehicle.insurancePlans 是空的或不存在），
+   * 那麼不管原本的 insuranceSubtotal 是多少，都沒有任何方案是這筆訂單「可能適用、只是還沒被
+   * 選到」的——保險本身在這台車上已經不存在了，不是「反推失敗」，視為自動解決成「不加保」，
+   * 不擋送出、也不需要操作人員對著一個只有「不加保」一個選項的下拉選單做毫無意義的確認。
+   *
+   * 使用者只要選了任何一個值（某個方案的真實 id，或代表「不加保」的 NO_INSURANCE_VALUE），
+   * insurancePlanIdValue() 就會是非空字串，這個旗標自然解除——不需要另外追蹤「有沒有被碰過」。
    */
   readonly insuranceUnreconciled = computed(() => {
     if (!this.isEdit) return false;
     const original = this.data?.priceBreakdown;
     if (!original || original.insuranceSubtotal <= 0) return false;
+    const vehicle = this.selectedVehicle();
+    if (!vehicle?.insurancePlans || vehicle.insurancePlans.length === 0) return false;
     return !this.insurancePlanIdValue();
   });
 
@@ -341,6 +373,11 @@ export class BookingFormDialogComponent {
    *   不在這裡順手改動模型）。用「同樣天數 × 方案每日價 = 原本的 insuranceSubtotal」
    *   反推最接近的方案——如果同一台車有兩個保險方案剛好同價就可能反推錯，是目前
    *   已知且能接受的近似（與 Task 9 對「目前生效版本」的近似判斷同一類型的限制）。
+   *   反推不出方案、但車輛目前確實有其他保險方案可選時，明確把值設回空字串
+   *   （跟表單預設的 NO_INSURANCE_VALUE 分開），標記成「還沒解決」，讓
+   *   insuranceUnreconciled 擋住送出、要求操作人員自己確認或重選——不能放任
+   *   quote() 用預設的「不加保」悄悄覆寫掉原本的保險金額。車輛目前完全沒有任何保險方案
+   *   可選時則維持預設值，直接視為自動解決（見 insuranceUnreconciled 的說明）。
    */
   private hydratePricingSelectionsFromExisting(original: PriceBreakdown, vehicleId?: string): void {
     if (original.addOnLines.length > 0) {
@@ -355,7 +392,11 @@ export class BookingFormDialogComponent {
       const matchedPlan = vehicle?.insurancePlans?.find(
         (p) => p.dailyPriceFrom * days === original.insuranceSubtotal,
       );
-      if (matchedPlan) this.form.controls.insurancePlanId.setValue(matchedPlan.id);
+      if (matchedPlan) {
+        this.form.controls.insurancePlanId.setValue(matchedPlan.id);
+      } else if (vehicle?.insurancePlans && vehicle.insurancePlans.length > 0) {
+        this.form.controls.insurancePlanId.setValue('');
+      }
     }
   }
 

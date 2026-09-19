@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import {
@@ -35,6 +36,7 @@ import {
   ChargeAdjustment,
   ContractVersion,
   ContractSnapshot,
+  PriceBreakdown,
 } from '../../../core/models';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
 
@@ -134,8 +136,9 @@ function createFixture(options: FixtureOptions = {}) {
       { provide: ReminderGateway, useValue: reminderGateway },
     ],
   });
-  const component = TestBed.createComponent(BookingFormDialogComponent).componentInstance;
-  return { component, closeSpy, reminderGateway, vehicleRepo, memberRepo, bookingRepo, paymentRepo, contractRepo };
+  const fixture = TestBed.createComponent(BookingFormDialogComponent);
+  const component = fixture.componentInstance;
+  return { component, fixture, closeSpy, reminderGateway, vehicleRepo, memberRepo, bookingRepo, paymentRepo, contractRepo };
 }
 
 function fillVehicleStep(
@@ -497,32 +500,41 @@ describe('BookingFormDialogComponent 編輯既有訂單：不會清空原本的�
   });
 });
 
-describe('BookingFormDialogComponent 編輯既有訂單：保險方案反推不出來時擋住送出（review fix #1 的再修正）', () => {
-  it('原本的保險方案已經從車輛清單移除，編輯不相關欄位時擋住送出並給出明確錯誤，不會悄悄把保險歸零', async () => {
-    // 車輛目前的保險方案清單是空的——模擬「訂單建立後，車輛的保險方案被改價或整個移除」，
-    // hydratePricingSelectionsFromExisting 完全反推不出對應方案。
-    const vehicle = makeVehicle({ id: 'v1', category: 'car', insurancePlans: [] });
+function makePriceBreakdownWithInsurance(insuranceSubtotal: number): PriceBreakdown {
+  return {
+    dailyLines: [
+      { date: '2026-01-05', dayType: 'weekday', price: 1000 },
+      { date: '2026-01-06', dayType: 'weekday', price: 1000 },
+    ],
+    rentalRaw: 2000,
+    tierDiscountPercent: 0,
+    tierDiscountAmount: 0,
+    rentalSubtotal: 2000,
+    partnerDiscountPercent: 0,
+    partnerDiscount: 0,
+    addOnLines: [],
+    addOnSubtotal: 0,
+    insuranceSubtotal,
+    couponDiscount: 0,
+    total: 2000 + insuranceSubtotal,
+  };
+}
+
+describe('BookingFormDialogComponent 編輯既有訂單：保險欄位「還沒解決」跟「明確選不加保」不能共用同一個空字串（review 第三輪修正）', () => {
+  it('車輛目前有保險方案清單、但反推不出原本選的是哪一個：擋住送出、給出明確錯誤，不會悄悄把保險歸零', async () => {
+    const insurancePlan: InsurancePlan = {
+      id: 'ins-current',
+      name: '現行方案',
+      dailyPriceFrom: 999, // 999*2=1998，跟下面的 600 對不上，hydration 反推會失敗
+      tags: [],
+      coverageItems: [],
+    };
+    const vehicle = makeVehicle({ id: 'v1', category: 'car', insurancePlans: [insurancePlan] });
     const original = makeBooking({
       id: 'b1',
       vehicleId: 'v1',
       memberId: 'm1',
-      priceBreakdown: {
-        dailyLines: [
-          { date: '2026-01-05', dayType: 'weekday', price: 1000 },
-          { date: '2026-01-06', dayType: 'weekday', price: 1000 },
-        ],
-        rentalRaw: 2000,
-        tierDiscountPercent: 0,
-        tierDiscountAmount: 0,
-        rentalSubtotal: 2000,
-        partnerDiscountPercent: 0,
-        partnerDiscount: 0,
-        addOnLines: [],
-        addOnSubtotal: 0,
-        insuranceSubtotal: 600, // 原本有保險，但目前的保險清單裡已經找不到對應方案
-        couponDiscount: 0,
-        total: 2600,
-      },
+      priceBreakdown: makePriceBreakdownWithInsurance(600),
     });
     const { component, closeSpy, bookingRepo } = createFixture({
       vehicles: [vehicle],
@@ -544,7 +556,101 @@ describe('BookingFormDialogComponent 編輯既有訂單：保險方案反推不�
     expect(stillStored?.pickupLocation).toBe('機場'); // 送出整個被擋在寫入之前，地點也還是原值
   });
 
-  it('操作人員手動重新選一個保險方案後，旗標解除、可以正常送出', async () => {
+  it('（review 找到的 New Important #1 回歸測試）操作人員明確選「不加保」——這是真的要移除保險，不是還沒解決——透過實際畫出來的欄位操作，送出後保險正確歸零、不會被擋', async () => {
+    const insurancePlan: InsurancePlan = {
+      id: 'ins-current',
+      name: '現行方案',
+      dailyPriceFrom: 999,
+      tags: [],
+      coverageItems: [],
+    };
+    const vehicle = makeVehicle({ id: 'v1', category: 'car', insurancePlans: [insurancePlan] });
+    const original = makeBooking({
+      id: 'b1',
+      vehicleId: 'v1',
+      memberId: 'm1',
+      priceBreakdown: makePriceBreakdownWithInsurance(600),
+    });
+    const { component, fixture, closeSpy, bookingRepo } = createFixture({
+      vehicles: [vehicle],
+      members: [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }],
+      bookings: [original],
+      data: original,
+    });
+    expect(component.insuranceUnreconciled()).toBe(true); // hydration 反推失敗，一開始確實還沒解決
+
+    // 切到「費用與付款」步驟並實際渲染，確認保險欄位真的有被畫出來——
+    // 這正是上一輪「保險方案清單是空的、整個欄位都畫不出來」那種死路會被直接測出來的地方，
+    // 不是只靠直接呼叫 component 內部方法/signal 就能驗證。
+    component.step.set(2);
+    fixture.detectChanges();
+    const select = fixture.debugElement.query(By.css('[formControlName="insurancePlanId"]'));
+    expect(select).not.toBeNull();
+    if (!select) throw new Error('insurancePlanId select not rendered');
+
+    // 打開下拉選單——mat-option 只有在面板真的開啟時才會被畫進 CDK overlay（掛在
+    // document.body 底下，不在 fixture.debugElement 的子樹裡），所以要先開面板才找得到。
+    select.nativeElement.click();
+    fixture.detectChanges();
+    const noInsuranceOption = Array.from(document.querySelectorAll('mat-option')).find((el) =>
+      el.textContent?.includes('不加保'),
+    );
+    expect(noInsuranceOption).toBeDefined();
+
+    // 實際點擊畫面上的「不加保」選項，而不是直接呼叫 component 內部方法/signal——
+    // 這正是上一輪「保險方案清單是空的、整個欄位都畫不出來」那種死路會被直接測出來的地方。
+    (noInsuranceOption as HTMLElement).click();
+    fixture.detectChanges();
+
+    expect(component.form.controls.insurancePlanId.value).toBe(component.NO_INSURANCE_VALUE);
+    expect(component.insuranceUnreconciled()).toBe(false); // 明確選了不加保，旗標解除
+
+    await component.submit();
+
+    expect(closeSpy).toHaveBeenCalled();
+    expect(component.error()).toBe('');
+    const updated = bookingRepo.getAll().find((b) => b.id === 'b1');
+    expect(updated?.priceBreakdown?.insuranceSubtotal).toBe(0); // 操作人員真的要移除保險，正確歸零
+  });
+
+  it('（review 找到的 New Important #2 回歸測試）車輛目前完全沒有任何保險方案：自動視為已解決成「不加保」，編輯不相關欄位可以直接存檔，不會卡死', async () => {
+    const vehicle = makeVehicle({ id: 'v1', category: 'car', insurancePlans: [] });
+    const original = makeBooking({
+      id: 'b1',
+      vehicleId: 'v1',
+      memberId: 'm1',
+      priceBreakdown: makePriceBreakdownWithInsurance(600),
+    });
+    const { component, fixture, closeSpy, bookingRepo } = createFixture({
+      vehicles: [vehicle],
+      members: [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }],
+      bookings: [original],
+      data: original,
+    });
+
+    expect(component.insuranceUnreconciled()).toBe(false); // 沒有任何方案可選，不是「反推失敗」
+    expect(component.canProceed(2)).toBe(true);
+
+    // 實際渲染費用與付款步驟，確認畫面上沒有任何東西擋住操作人員繼續操作
+    // （不需要、也刻意不去找保險欄位——重點正是完全不需要操作人員碰它）。
+    component.step.set(2);
+    fixture.detectChanges();
+    const warning = fixture.debugElement.query(By.css('.error-message'));
+    expect(warning).toBeNull();
+
+    component.form.controls.pickupLocation.setValue('高鐵站');
+    await component.submit();
+
+    expect(closeSpy).toHaveBeenCalled();
+    expect(component.error()).toBe('');
+    const updated = bookingRepo.getAll().find((b) => b.id === 'b1');
+    expect(updated?.pickupLocation).toBe('高鐵站');
+    // 車輛已經沒有任何保險方案，這裡歸零是正確反映現況（不是回歸 bug）——
+    // 跟上面「明明有方案清單、只是反推失敗」被擋下來的案例是兩回事。
+    expect(updated?.priceBreakdown?.insuranceSubtotal).toBe(0);
+  });
+
+  it('操作人員手動重新選一個（不同的）保險方案後，旗標解除、可以正常送出', async () => {
     const insurancePlan: InsurancePlan = {
       id: 'ins-new',
       name: '乙式保險',
@@ -557,23 +663,7 @@ describe('BookingFormDialogComponent 編輯既有訂單：保險方案反推不�
       id: 'b1',
       vehicleId: 'v1',
       memberId: 'm1',
-      priceBreakdown: {
-        dailyLines: [
-          { date: '2026-01-05', dayType: 'weekday', price: 1000 },
-          { date: '2026-01-06', dayType: 'weekday', price: 1000 },
-        ],
-        rentalRaw: 2000,
-        tierDiscountPercent: 0,
-        tierDiscountAmount: 0,
-        rentalSubtotal: 2000,
-        partnerDiscountPercent: 0,
-        partnerDiscount: 0,
-        addOnLines: [],
-        addOnSubtotal: 0,
-        insuranceSubtotal: 600, // 跟乙式保險（400/天 * 2 天 = 800）對不上，反推會失敗
-        couponDiscount: 0,
-        total: 2600,
-      },
+      priceBreakdown: makePriceBreakdownWithInsurance(600), // 跟乙式保險（400*2=800）對不上，反推會失敗
     });
     const { component, closeSpy } = createFixture({
       vehicles: [vehicle],
@@ -583,7 +673,7 @@ describe('BookingFormDialogComponent 編輯既有訂單：保險方案反推不�
     });
     expect(component.insuranceUnreconciled()).toBe(true);
 
-    component.form.controls.insurancePlanId.setValue('ins-new'); // 操作人員自己明確重選
+    component.form.controls.insurancePlanId.setValue('ins-new');
     expect(component.insuranceUnreconciled()).toBe(false);
 
     await component.submit();
@@ -602,6 +692,12 @@ describe('BookingFormDialogComponent 編輯既有訂單：保險方案反推不�
       data: original,
     });
 
+    expect(component.insuranceUnreconciled()).toBe(false);
+  });
+
+  it('新增訂單模式下，保險欄位預設就是「不加保」，不需要操作人員手動選也不會被擋', () => {
+    const { component } = createFixture();
+    expect(component.form.controls.insurancePlanId.value).toBe(component.NO_INSURANCE_VALUE);
     expect(component.insuranceUnreconciled()).toBe(false);
   });
 });
