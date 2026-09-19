@@ -497,6 +497,115 @@ describe('BookingFormDialogComponent 編輯既有訂單：不會清空原本的�
   });
 });
 
+describe('BookingFormDialogComponent 編輯既有訂單：保險方案反推不出來時擋住送出（review fix #1 的再修正）', () => {
+  it('原本的保險方案已經從車輛清單移除，編輯不相關欄位時擋住送出並給出明確錯誤，不會悄悄把保險歸零', async () => {
+    // 車輛目前的保險方案清單是空的——模擬「訂單建立後，車輛的保險方案被改價或整個移除」，
+    // hydratePricingSelectionsFromExisting 完全反推不出對應方案。
+    const vehicle = makeVehicle({ id: 'v1', category: 'car', insurancePlans: [] });
+    const original = makeBooking({
+      id: 'b1',
+      vehicleId: 'v1',
+      memberId: 'm1',
+      priceBreakdown: {
+        dailyLines: [
+          { date: '2026-01-05', dayType: 'weekday', price: 1000 },
+          { date: '2026-01-06', dayType: 'weekday', price: 1000 },
+        ],
+        rentalRaw: 2000,
+        tierDiscountPercent: 0,
+        tierDiscountAmount: 0,
+        rentalSubtotal: 2000,
+        partnerDiscountPercent: 0,
+        partnerDiscount: 0,
+        addOnLines: [],
+        addOnSubtotal: 0,
+        insuranceSubtotal: 600, // 原本有保險，但目前的保險清單裡已經找不到對應方案
+        couponDiscount: 0,
+        total: 2600,
+      },
+    });
+    const { component, closeSpy, bookingRepo } = createFixture({
+      vehicles: [vehicle],
+      members: [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }],
+      bookings: [original],
+      data: original,
+    });
+
+    expect(component.insuranceUnreconciled()).toBe(true);
+    expect(component.canProceed(2)).toBe(false); // 費用與付款步驟的 Next 也要被擋住
+
+    component.form.controls.pickupLocation.setValue('高鐵站');
+    await component.submit();
+
+    expect(closeSpy).not.toHaveBeenCalled();
+    expect(component.error()).toBe(component.t.bookingForm.insuranceUnreconciled);
+    const stillStored = bookingRepo.getAll().find((b) => b.id === 'b1');
+    expect(stillStored?.priceBreakdown?.insuranceSubtotal).toBe(600); // 沒有被悄悄歸零
+    expect(stillStored?.pickupLocation).toBe('機場'); // 送出整個被擋在寫入之前，地點也還是原值
+  });
+
+  it('操作人員手動重新選一個保險方案後，旗標解除、可以正常送出', async () => {
+    const insurancePlan: InsurancePlan = {
+      id: 'ins-new',
+      name: '乙式保險',
+      dailyPriceFrom: 400,
+      tags: [],
+      coverageItems: [],
+    };
+    const vehicle = makeVehicle({ id: 'v1', category: 'car', insurancePlans: [insurancePlan] });
+    const original = makeBooking({
+      id: 'b1',
+      vehicleId: 'v1',
+      memberId: 'm1',
+      priceBreakdown: {
+        dailyLines: [
+          { date: '2026-01-05', dayType: 'weekday', price: 1000 },
+          { date: '2026-01-06', dayType: 'weekday', price: 1000 },
+        ],
+        rentalRaw: 2000,
+        tierDiscountPercent: 0,
+        tierDiscountAmount: 0,
+        rentalSubtotal: 2000,
+        partnerDiscountPercent: 0,
+        partnerDiscount: 0,
+        addOnLines: [],
+        addOnSubtotal: 0,
+        insuranceSubtotal: 600, // 跟乙式保險（400/天 * 2 天 = 800）對不上，反推會失敗
+        couponDiscount: 0,
+        total: 2600,
+      },
+    });
+    const { component, closeSpy } = createFixture({
+      vehicles: [vehicle],
+      members: [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }],
+      bookings: [original],
+      data: original,
+    });
+    expect(component.insuranceUnreconciled()).toBe(true);
+
+    component.form.controls.insurancePlanId.setValue('ins-new'); // 操作人員自己明確重選
+    expect(component.insuranceUnreconciled()).toBe(false);
+
+    await component.submit();
+
+    expect(closeSpy).toHaveBeenCalled();
+    expect(component.error()).toBe('');
+  });
+
+  it('原本沒有保險（insuranceSubtotal 為 0）時，即使車輛目前沒有任何保險方案，也不會被擋', () => {
+    const vehicle = makeVehicle({ id: 'v1', category: 'car', insurancePlans: [] });
+    const original = makeBooking({ id: 'b1', vehicleId: 'v1', memberId: 'm1' }); // 預設沒有 priceBreakdown
+    const { component } = createFixture({
+      vehicles: [vehicle],
+      members: [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' }],
+      bookings: [original],
+      data: original,
+    });
+
+    expect(component.insuranceUnreconciled()).toBe(false);
+  });
+});
+
 function makeContractSnapshot(partial: Partial<ContractSnapshot> = {}): ContractSnapshot {
   const party = { memberId: 'm1', name: '王小明', phone: '0912345678' };
   return {

@@ -243,6 +243,24 @@ export class BookingFormDialogComponent {
   readonly depositExceedsCap = computed(() => this.depositRequiredValue() > this.depositCap());
 
   /**
+   * 編輯既有訂單時，原本的報價快照裡有保險（insuranceSubtotal > 0），但
+   * hydratePricingSelectionsFromExisting 反推不出對應的保險方案——可能是車輛的保險方案
+   * 清單後來改過價格、或整個方案被移除了。這種情況下 insurancePlanId 會維持空白，
+   * 如果放任 submit() 直接送出，quote() 會用「沒選保險」重算出 insuranceSubtotal=0，
+   * 把原本的保險悄悄歸零，即使操作人員只是想改個取車地點——這正是這個 wizard 原本要修的
+   * bug（見 hydratePricingSelectionsFromExisting 的說明），所以反推失敗時要擋住送出、
+   * 要求操作人員自己確認/重選保險方案，而不是讓精靈自己用空白狀態悄悄覆寫金額。
+   * 使用者只要手動選了任一保險方案（不論是不是跟原本同一個），這個旗標就會清除——
+   * 那已經是操作人員的明確選擇，不再是「反推失敗」。
+   */
+  readonly insuranceUnreconciled = computed(() => {
+    if (!this.isEdit) return false;
+    const original = this.data?.priceBreakdown;
+    if (!original || original.insuranceSubtotal <= 0) return false;
+    return !this.insurancePlanIdValue();
+  });
+
+  /**
    * 編輯既有訂單時，這筆訂單「目前實際」有沒有已簽署的合約版本——不是使用者這次有沒有勾
    * 「現場完成簽署」。新增訂單模式下沒有既有合約可查，只能看 signNow 這個「打算簽」的意圖。
    * 待辦清單同時檢查這兩者（見 incompleteItems），避免編輯一筆早就簽好的訂單時，
@@ -428,7 +446,7 @@ export class BookingFormDialogComponent {
       case 'renter':
         return !!v.name && !!v.phone && !!v.kind && (!this.isForeignVisitor() || !!v.nationality);
       case 'payment':
-        return !this.depositExceedsCap();
+        return !this.depositExceedsCap() && !this.insuranceUnreconciled();
       default:
         return true;
     }
@@ -495,6 +513,13 @@ export class BookingFormDialogComponent {
     const quote = this.quote();
     if (!vehicle || !quote) {
       this.error.set(this.t.bookingForm.quoteUnavailable);
+      return;
+    }
+
+    // 保險反推失敗就直接擋在這裡，在任何寫入之前就中止——絕對不能讓下面的原子序列拿著
+    // 「沒選保險」的 quote 去覆寫這筆訂單既有的 priceBreakdown（見 insuranceUnreconciled 註解）。
+    if (this.insuranceUnreconciled()) {
+      this.error.set(this.t.bookingForm.insuranceUnreconciled);
       return;
     }
 

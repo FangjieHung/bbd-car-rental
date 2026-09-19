@@ -193,6 +193,7 @@ export const ZH_TW = {
     saving: '處理中…',
     vehicleConflict: '此車輛在所選時段已有其他訂單，請調整時段或改選其他車輛',
     quoteUnavailable: '此車型目前沒有可用的定價方案，無法試算報價',
+    insuranceUnreconciled: '原本的保險方案無法自動辨識（可能已異動或被移除），請重新選擇保險方案後再儲存，避免保險金額被悄悄清空',
     deposit: '訂金',
     depositCap: '訂金上限',
     depositExceedsCap: '訂金不可超過上限',

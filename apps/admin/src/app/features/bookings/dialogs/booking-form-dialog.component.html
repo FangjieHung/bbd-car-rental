@@ -109,6 +109,9 @@
             <dd>{{ q.total }}</dd>
           </dl>
         }
+        @if (insuranceUnreconciled()) {
+          <p class="error-message">{{ t.bookingForm.insuranceUnreconciled }}</p>
+        }
         @if (selectedVehicle()?.insurancePlans?.length) {
           <mat-form-field>
             <mat-label>{{ t.bookingForm.insurance }}</mat-label>
