@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { DateRange, DateStepComponent } from '@car-rental/booking-flow';
 import { startOfDay } from '../../../core/date-utils';
@@ -45,30 +44,29 @@ export class DashboardPageComponent {
   private readonly todayDate = startOfDay(new Date());
 
   private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
   private readonly workspace = inject(BookingWorkspaceService);
 
   readonly targetDate = signal(startOfDay(new Date()));
 
-  /** 快速查詢選到車輛後，直接開建單表單並預填車輛與時段，讓查詢直接接上建立訂單 */
+  /**
+   * 快速查詢選到車輛後，直接開新增訂單精靈並預填車輛與時段，讓查詢直接接上建立訂單。
+   * 精靈本身已經完成建立訂單（含會員/款項/合約/提醒）的完整原子寫入序列並自行處理失敗訊息，
+   * 這裡只在精靈成功關閉後直接開工作區，不必再呼叫 BookingStore.create() 或自行 catch 錯誤。
+   */
   async onQuickRange(range: DateRange): Promise<void> {
     const vehicle = await pickVehicle(this.dialog, range);
     if (!vehicle) return;
 
     const formRef = this.dialog.open(BookingFormDialogComponent, {
       data: { vehicleId: vehicle.id, startTime: range.startDateTime, endTime: range.endDateTime },
-      width: '440px',
+      width: '80vw',
+      maxWidth: '800px',
+      maxHeight: '90dvh',
+      panelClass: 'booking-form-wizard-dialog',
     });
     const result: BookingFormResult | undefined = await firstValueFrom(formRef.afterClosed());
     if (!result) return;
-
-    try {
-      const created = this.bookingStore.create(result);
-      // 快速建單完成後直接開工作區，讓操作人員接續補款項/合約等資料，不必再從列表找回這筆訂單。
-      this.workspace.open(created.id);
-    } catch (e) {
-      this.snackBar.open((e as Error).message, undefined, { duration: 4000 });
-    }
+    this.workspace.open(result.bookingId);
   }
 
   selectCalendarDate(date: Date): void {

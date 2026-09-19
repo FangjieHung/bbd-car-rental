@@ -89,6 +89,17 @@ export class BookingStore {
     }
   }
 
+  /**
+   * 直接刪除訂單記錄，不經過狀態機驗證——只給「新增訂單精靈」在多步驟寫入序列
+   * 中途失敗時，補償清除同一次嘗試裡剛建立的訂單使用（local repository 沒有真正的
+   * transaction，只能靠呼叫端在失敗時自行清除本次已寫入的記錄）。一般業務流程一律走
+   * cancel()，不要用這個方法取消已存在多時的訂單。
+   */
+  remove(id: string): void {
+    this.repo.remove(id);
+    this.reload();
+  }
+
   private mustGet(id: string): RentalBooking {
     const b = this.repo.getById(id);
     if (!b) throw new Error(`not found: ${id}`);

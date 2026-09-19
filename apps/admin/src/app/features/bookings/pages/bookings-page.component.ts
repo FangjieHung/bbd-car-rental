@@ -158,12 +158,17 @@ export class BookingsPageComponent {
   }
 
   async openForm(booking: RentalBooking | null): Promise<void> {
-    const ref = this.dialog.open(BookingFormDialogComponent, { data: booking, width: '440px' });
+    const ref = this.dialog.open(BookingFormDialogComponent, {
+      data: booking,
+      width: '80vw',
+      maxWidth: '800px',
+      maxHeight: '90dvh',
+      panelClass: 'booking-form-wizard-dialog',
+    });
     const result: BookingFormResult | undefined = await firstValueFrom(ref.afterClosed());
     if (!result) return;
-    this.act(() => {
-      if (booking) this.store.updateBooking(booking.id, result);
-      else this.store.create(result);
-    });
+    // 精靈本身已經完成建立/更新訂單（含會員、款項、合約、提醒）的完整寫入序列，
+    // 這裡只需要直接開工作區讓操作人員接續補其他資料，不必再呼叫 BookingStore 寫入。
+    this.workspace.open(result.bookingId);
   }
 }

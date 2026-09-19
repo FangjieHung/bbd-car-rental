@@ -1,15 +1,13 @@
 import { BookingStatus, PaymentPreference } from '../models/enums';
 import { RentalBooking } from '../models/rental-booking';
 import { VehicleCategory } from '../models/vehicle';
+import { defaultDepositForCategory } from '../pricing/deposit-cap';
 
 /** 舊版曾經出現過、現在已經併入 reserved 的履約狀態。 */
 const LEGACY_STATUS_MIGRATION: Partial<Record<string, BookingStatus>> = {
   pending_payment: 'reserved',
   confirmed: 'reserved',
 };
-
-/** 沒有 depositRequired 的舊資料，小客車用報價總額的固定比例當安全預設值。 */
-const LEGACY_DEPOSIT_DEFAULT_PERCENT = 0.3;
 
 interface LegacyRentalBookingShape extends Record<string, unknown> {
   vehicleId: string;
@@ -51,9 +49,10 @@ export function normalizeRentalBooking(
   const normalizedPaymentPreference = paymentPreference ?? paymentMethod;
 
   const computeLegacyDepositDefault = (): number => {
-    const isPassengerCar = getVehicleCategory?.(raw.vehicleId) === 'car';
+    const category = getVehicleCategory?.(raw.vehicleId);
     const total = typeof rest.priceBreakdown?.total === 'number' ? rest.priceBreakdown.total : 0;
-    return isPassengerCar ? Math.round(total * LEGACY_DEPOSIT_DEFAULT_PERCENT) : 0;
+    // 與 Task 10 新增訂單精靈共用同一套「車型分類→訂金上限」規則，見 deposit-cap.ts 的說明。
+    return defaultDepositForCategory(category, total);
   };
   const normalizedDeposit =
     typeof depositRequired === 'number' ? depositRequired : computeLegacyDepositDefault();

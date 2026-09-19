@@ -107,4 +107,12 @@ describe('BookingStore', () => {
     const vehicleStore = (store as any).vehicleStore;
     expect(vehicleStore.vehicles()[0].status).toBe('rented');
   });
+
+  it('remove() 直接刪除該筆訂單記錄，供新增訂單精靈失敗時的補償清除使用', () => {
+    const b = store.create(baseInput());
+    store.remove(b.id);
+    expect(store.bookings().find((x) => x.id === b.id)).toBeUndefined();
+    // 移除後同一車輛/時段不再視為衝突，可以重新建立。
+    expect(() => store.create(baseInput())).not.toThrow();
+  });
 });

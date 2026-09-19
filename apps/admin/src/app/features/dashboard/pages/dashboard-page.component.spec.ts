@@ -169,15 +169,9 @@ describe('DashboardPageComponent onQuickRange', () => {
     createdAt: new Date().toISOString(),
   };
 
-  const formResult: BookingFormResult = {
-    vehicleId: 'v1',
-    memberId: 'c1',
-    startTime: '2026-08-20T10:00:00.000Z',
-    endTime: '2026-08-21T10:00:00.000Z',
-    pickupLocation: '機場',
-    returnLocation: '機場',
-    depositRequired: 0,
-  };
+  // 新增訂單精靈已經自行完成建立訂單（含會員/款項/合約/提醒）的完整寫入序列，
+  // 只回傳新建訂單的 id；dashboard-page 不再自己呼叫 BookingStore.create()。
+  const formResult: BookingFormResult = { bookingId: 'b-new' };
 
   function createFixture() {
     const workspaceOpen = vi.fn();
@@ -206,7 +200,7 @@ describe('DashboardPageComponent onQuickRange', () => {
     return { component, workspaceOpen };
   }
 
-  it('快速建單成功後，用新訂單 id 呼叫 BookingWorkspaceService.open() 直接進工作區', async () => {
+  it('快速建單成功後，用精靈回傳的訂單 id 呼叫 BookingWorkspaceService.open() 直接進工作區', async () => {
     const { component, workspaceOpen } = createFixture();
 
     await component.onQuickRange({
@@ -214,9 +208,7 @@ describe('DashboardPageComponent onQuickRange', () => {
       endDateTime: '2026-08-21T10:00:00',
     });
 
-    const created = component.bookingStore.bookings()[0];
-    expect(created).toBeDefined();
-    expect(workspaceOpen).toHaveBeenCalledWith(created.id);
+    expect(workspaceOpen).toHaveBeenCalledWith('b-new');
   });
 
   it('選車或填單任一步驟被取消時，不建立訂單也不開工作區', async () => {

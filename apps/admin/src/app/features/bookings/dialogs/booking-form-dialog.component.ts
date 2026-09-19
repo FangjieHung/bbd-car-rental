@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, NonNullableFormBuilder, Validators } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
@@ -10,24 +11,55 @@ import {
   MatAutocompleteSelectedEvent,
 } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { RentalBooking } from '../../../core/models';
+import {
+  ContractPartySnapshot,
+  ContractSnapshot,
+  Member,
+  MemberKind,
+  PaymentMethod,
+  PaymentPurpose,
+  PriceBreakdown,
+  RentalBooking,
+  Vehicle,
+  calculatePrice,
+  defaultDepositForCategory,
+} from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
+import { BookingStore } from '../../../stores/booking/booking.store';
+import { PaymentStore } from '../../../stores/payment/payment.store';
+import { ContractStore } from '../../../stores/contract/contract.store';
+import { PricingStore } from '../../../stores/pricing/pricing.store';
+import { AddOnStore } from '../../../stores/addon/addon.store';
+import { ReminderGateway } from '../../../core/services/reminder.gateway';
 
+/** 精靈回傳值：只回傳新建/編輯完成的訂單 id，呼叫端據此直接開工作區——
+ * 精靈自己已經在 submit() 內完成建立會員/訂單/款項/合約/提醒的完整寫入序列，
+ * 呼叫端不需要（也不應該）再重複呼叫 BookingStore.create()。 */
 export interface BookingFormResult {
-  vehicleId: string;
-  memberId: string;
-  startTime: string; // ISO
-  endTime: string; // ISO
-  pickupLocation: string;
-  returnLocation: string;
-  // TODO(Task 9): 目前先固定 0，待訂金試算/上限規則的完整表單進來後改用真正算出的值。
-  depositRequired: number;
+  bookingId: string;
+}
+
+/** 5 個步驟對應設計文件第 5 節「新增訂單 UX」：租期與車輛→承租人與駕駛資格→費用與付款→合約→確認建立。 */
+export const BOOKING_WIZARD_STEPS = ['vehicle', 'renter', 'payment', 'contract', 'review'] as const;
+export type BookingWizardStep = (typeof BOOKING_WIZARD_STEPS)[number];
+
+interface PaymentDraft {
+  method: PaymentMethod;
+  amount: number;
+  purpose: PaymentPurpose;
+}
+
+/** 本次寫入序列中，這一次嘗試「新建」的記錄 id——失敗時只補償清除這些，不動既有資料。 */
+interface CreatedInThisAttempt {
+  memberId?: string;
+  bookingId?: string;
+  paymentIds: string[];
 }
 
 function toLocalInputValue(iso: string): string {
@@ -36,40 +68,59 @@ function toLocalInputValue(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** 還車前 hoursBefore 小時的排程時間（ISO）。 */
+function reminderScheduledFor(endIso: string, hoursBefore: number): string {
+  return new Date(new Date(endIso).getTime() - hoursBefore * 60 * 60 * 1000).toISOString();
+}
+
 @Component({
   selector: 'app-booking-form-dialog',
   imports: [
     ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatAutocompleteModule,
   ],
   templateUrl: './booking-form-dialog.component.html',
-  styleUrls: ['../../../app.scss'],
+  styleUrls: ['./booking-form-dialog.component.scss', '../../../app.scss'],
 })
 export class BookingFormDialogComponent {
-  protected readonly t = ZH_TW;
+  readonly t = ZH_TW;
   readonly ref = inject(MatDialogRef<BookingFormDialogComponent>);
   readonly data = inject<Partial<RentalBooking> | null>(MAT_DIALOG_DATA);
   readonly vehicleStore = inject(VehicleStore);
   readonly memberStore = inject(MemberStore);
-  private fb = inject(NonNullableFormBuilder);
-  readonly error = signal('');
+  readonly bookingStore = inject(BookingStore);
+  readonly paymentStore = inject(PaymentStore);
+  readonly contractStore = inject(ContractStore);
+  readonly pricingStore = inject(PricingStore);
+  readonly addOnStore = inject(AddOnStore);
+  private readonly reminderGateway = inject(ReminderGateway);
+  private readonly fb = inject(NonNullableFormBuilder);
 
-  /**
-   * 選到既有會員後鎖定其 id；姓名/電話/證件號三欄唯讀，送出直接沿用此 id 當 memberId。
-   * 未鎖定（純手動輸入）代表要新增會員，送出時才呼叫 MemberStore.create()。
-   */
+  protected readonly steps = BOOKING_WIZARD_STEPS;
+  /** 目前所在步驟索引（0-4）；測試與模板都直接讀寫這個 signal，不另外包一層方法。 */
+  readonly step = signal(0);
+  readonly error = signal('');
+  readonly submitting = signal(false);
+
+  /** 選到既有會員後鎖定其 id；未鎖定代表要新增會員，送出時才呼叫 MemberStore.create()。 */
   readonly lockedMemberId = signal<string | null>(null);
+
+  /** 是否為編輯既有訂單（有 id）；區分「建立」與「核心欄位異動要不要生新合約版本」的判斷依據之一。 */
+  protected readonly isEdit = !!this.data?.id;
+
+  /** 本次精靈要排入的款項草稿；送出時才逐筆呼叫 PaymentStore.recordPayment()。 */
+  readonly paymentDrafts = signal<PaymentDraft[]>([]);
+  /** 每個配件本次要加購的數量，key 為 AddOn id。 */
+  readonly addOnQty = signal<Record<string, number>>({});
 
   form = this.fb.group({
     vehicleId: [this.data?.vehicleId ?? '', Validators.required],
-    name: ['', Validators.required],
-    phone: ['', Validators.required],
-    idNumber: [''],
     startLocal: [
       this.data?.startTime ? toLocalInputValue(this.data.startTime) : '',
       Validators.required,
@@ -80,10 +131,51 @@ export class BookingFormDialogComponent {
     ],
     pickupLocation: [this.data?.pickupLocation ?? '', Validators.required],
     returnLocation: [this.data?.returnLocation ?? '', Validators.required],
+
+    name: ['', Validators.required],
+    phone: ['', Validators.required],
+    idNumber: [''],
+    email: [''],
+    kind: ['local' as MemberKind, Validators.required],
+    nationality: [''],
+
+    insurancePlanId: [''],
+    depositRequired: [this.data?.depositRequired ?? 0, [Validators.required, Validators.min(0)]],
+
+    paymentMethod: ['cash' as PaymentMethod],
+    paymentAmount: [0],
+    paymentPurpose: ['deposit' as PaymentPurpose],
+
+    signNow: [false],
+    internalNote: [''],
   });
 
   private readonly nameInput = toSignal(this.form.controls.name.valueChanges, {
     initialValue: this.form.controls.name.value,
+  });
+  protected readonly vehicleIdValue = toSignal(this.form.controls.vehicleId.valueChanges, {
+    initialValue: this.form.controls.vehicleId.value,
+  });
+  protected readonly startLocalValue = toSignal(this.form.controls.startLocal.valueChanges, {
+    initialValue: this.form.controls.startLocal.value,
+  });
+  protected readonly endLocalValue = toSignal(this.form.controls.endLocal.valueChanges, {
+    initialValue: this.form.controls.endLocal.value,
+  });
+  protected readonly kindValue = toSignal(this.form.controls.kind.valueChanges, {
+    initialValue: this.form.controls.kind.value,
+  });
+  protected readonly insurancePlanIdValue = toSignal(this.form.controls.insurancePlanId.valueChanges, {
+    initialValue: this.form.controls.insurancePlanId.value,
+  });
+  protected readonly depositRequiredValue = toSignal(this.form.controls.depositRequired.valueChanges, {
+    initialValue: this.form.controls.depositRequired.value,
+  });
+  protected readonly signNowValue = toSignal(this.form.controls.signNow.valueChanges, {
+    initialValue: this.form.controls.signNow.value,
+  });
+  protected readonly emailValue = toSignal(this.form.controls.email.valueChanges, {
+    initialValue: this.form.controls.email.value,
   });
 
   readonly memberSuggestions = computed(() => {
@@ -95,27 +187,133 @@ export class BookingFormDialogComponent {
       .filter((m) => m.name.toLowerCase().includes(query) || m.phone.toLowerCase().includes(query));
   });
 
+  protected readonly isForeignVisitor = computed(() => this.kindValue() === 'foreign_visitor');
+  protected readonly identityNumberLabel = computed(
+    () => this.t.member.identityNumberLabel[this.kindValue()],
+  );
+
+  readonly selectedVehicle = computed<Vehicle | undefined>(() =>
+    this.vehicleStore.vehicles().find((v) => v.id === this.vehicleIdValue()),
+  );
+
+  /** 再次檢查車輛可用性（送出前也會重跑一次同樣的檢查，見 submit()）。 */
+  readonly conflicts = computed<RentalBooking[]>(() => {
+    const vehicleId = this.vehicleIdValue();
+    const start = this.startLocalValue();
+    const end = this.endLocalValue();
+    if (!vehicleId || !start || !end) return [];
+    return this.bookingStore.findConflicts(
+      vehicleId,
+      new Date(start).toISOString(),
+      new Date(end).toISOString(),
+      this.data?.id,
+    );
+  });
+
+  readonly quote = computed<PriceBreakdown | undefined>(() => {
+    const vehicle = this.selectedVehicle();
+    const start = this.startLocalValue();
+    const end = this.endLocalValue();
+    if (!vehicle || !start || !end) return undefined;
+    const plan = this.pricingStore.plans().find((p) => p.appliesToCategory === vehicle.category);
+    const calendar = this.pricingStore.calendar();
+    if (!plan || !calendar) return undefined;
+    const addOns = this.addOnStore.addOns().map((a) => ({ addOn: a, qty: this.addOnQty()[a.id] ?? 0 }));
+    const insurancePlan = vehicle.insurancePlans?.find((p) => p.id === this.insurancePlanIdValue());
+    try {
+      return calculatePrice({
+        plan,
+        calendar,
+        startDate: start.slice(0, 10),
+        endDate: end.slice(0, 10),
+        addOns,
+        ...(insurancePlan ? { insurancePlan } : {}),
+      });
+    } catch {
+      return undefined;
+    }
+  });
+
+  /**
+   * 訂金上限：小客車為報價總額 30%、機車／電動機車為 0（設計文件第 4.2 節，與 Task 3
+   * normalizeRentalBooking 修正版共用同一套 defaultDepositForCategory 規則，不各自重算）。
+   * 新增訂單時同時當作預設值（見下方 effect）；編輯既有訂單時只當上限，不覆蓋已載入的值。
+   */
+  readonly depositCap = computed(() => defaultDepositForCategory(this.selectedVehicle()?.category, this.quote()?.total ?? 0));
+  readonly depositExceedsCap = computed(() => this.depositRequiredValue() > this.depositCap());
+
+  readonly incompleteItems = computed<string[]>(() => {
+    const items: string[] = [];
+    if (!this.emailValue()) items.push(this.t.bookingForm.incomplete.missingEmail);
+
+    const deposit = this.depositRequiredValue();
+    const depositCollected = this.paymentDrafts()
+      .filter((p) => p.purpose === 'deposit')
+      .reduce((sum, p) => sum + p.amount, 0);
+    if (deposit > 0 && depositCollected < deposit) {
+      items.push(this.t.bookingForm.incomplete.depositNotCollected);
+    }
+
+    if (!this.signNowValue()) items.push(this.t.bookingForm.incomplete.contractNotSigned);
+
+    const total = this.quote()?.total ?? 0;
+    const totalCollected = this.paymentDrafts().reduce((sum, p) => sum + p.amount, 0);
+    if (total > 0 && totalCollected < total) {
+      items.push(this.t.bookingForm.incomplete.balanceNotCollected);
+    }
+    return items;
+  });
+
   constructor() {
-    // 編輯既有訂單時，預設鎖定原本的會員；使用者仍可點「換一位」重新選擇。
+    // 編輯既有訂單／快速建單預填時，預設鎖定原本的會員；使用者仍可點「換一位」重新選擇。
     const existingMemberId = this.data?.memberId;
     if (existingMemberId) {
       const member = this.memberStore.members().find((m) => m.id === existingMemberId);
-      if (member) this.lockToMember(member.id, member.name, member.phone, member.idNumber ?? '');
+      if (member) this.lockToMember(member);
+    }
+
+    // 只有「新增訂單」才用車型上限自動預設訂金；編輯既有訂單時保留原本載入的值，
+    // 使用者手動改過（control 變 dirty）之後也不再被蓋回去。
+    // 用 FormGroup.valueChanges 訂閱而不是 Angular effect()：effect() 要等下一輪變更
+    // 偵測才會真的執行，在沒有呼叫 detectChanges() 的單元測試裡不會同步反映；
+    // valueChanges 在 patchValue() 當下就同步觸發，讀值時序更可預期。
+    if (!this.isEdit) {
+      this.form.valueChanges.subscribe(() => {
+        if (!this.form.controls.depositRequired.dirty) {
+          const cap = this.depositCap();
+          // 不加 { emitEvent: false }：depositRequiredValue 這個 toSignal 是訂閱
+          // depositRequired 自己的 valueChanges，抑制事件會讓它讀不到剛寫入的新值。
+          // 用上面的「值相同就不再設」擋掉遞迴（setValue 觸發的第二輪會發現已經相等而跳過）。
+          if (this.form.controls.depositRequired.value !== cap) {
+            this.form.controls.depositRequired.setValue(cap);
+          }
+        }
+      });
     }
   }
 
-  private lockToMember(id: string, name: string, phone: string, idNumber: string): void {
-    this.lockedMemberId.set(id);
-    this.form.patchValue({ name, phone, idNumber });
+  private lockToMember(member: Member): void {
+    this.lockedMemberId.set(member.id);
+    this.form.patchValue({
+      name: member.name,
+      phone: member.phone,
+      idNumber: member.idNumber ?? '',
+      kind: member.kind,
+      nationality: member.nationality ?? '',
+      email: member.email ?? '',
+    });
     this.form.controls.name.disable();
     this.form.controls.phone.disable();
     this.form.controls.idNumber.disable();
+    this.form.controls.kind.disable();
+    this.form.controls.nationality.disable();
+    this.form.controls.email.disable();
   }
 
   onMemberSelected(event: MatAutocompleteSelectedEvent): void {
     const member = this.memberStore.members().find((m) => m.id === event.option.value);
     if (!member) return;
-    this.lockToMember(member.id, member.name, member.phone, member.idNumber ?? '');
+    this.lockToMember(member);
   }
 
   changeMember(): void {
@@ -123,35 +321,249 @@ export class BookingFormDialogComponent {
     this.form.controls.name.enable();
     this.form.controls.phone.enable();
     this.form.controls.idNumber.enable();
-    this.form.patchValue({ name: '', phone: '', idNumber: '' });
+    this.form.controls.kind.enable();
+    this.form.controls.nationality.enable();
+    this.form.controls.email.enable();
+    this.form.patchValue({ name: '', phone: '', idNumber: '', nationality: '', email: '' });
   }
 
-  save(): void {
-    if (!this.form.valid) return;
+  addOnQtyFor(id: string): number {
+    return this.addOnQty()[id] ?? 0;
+  }
+
+  setAddOnQty(id: string, qty: number): void {
+    const safe = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 0;
+    this.addOnQty.update((cur) => ({ ...cur, [id]: safe }));
+  }
+
+  addPaymentDraft(): void {
+    const amount = this.form.controls.paymentAmount.value;
+    if (!amount || amount <= 0) return;
+    this.paymentDrafts.update((drafts) => [
+      ...drafts,
+      {
+        method: this.form.controls.paymentMethod.value,
+        amount,
+        purpose: this.form.controls.paymentPurpose.value,
+      },
+    ]);
+    this.form.controls.paymentAmount.setValue(0);
+  }
+
+  removePaymentDraft(index: number): void {
+    this.paymentDrafts.update((drafts) => drafts.filter((_, i) => i !== index));
+  }
+
+  nextStep(): void {
+    this.step.update((s) => Math.min(s + 1, this.steps.length - 1));
+  }
+
+  prevStep(): void {
+    this.step.update((s) => Math.max(s - 1, 0));
+  }
+
+  /** 各步驟是否可以往下一步——只用來控制 UI 上 Next 按鈕是否 disabled，不阻擋直接呼叫 nextStep()。 */
+  canProceed(stepIndex: number): boolean {
     const v = this.form.getRawValue();
-    const memberId =
-      this.lockedMemberId() ??
-      this.memberStore.create({
-        name: v.name,
-        phone: v.phone,
-        idNumber: v.idNumber || undefined,
-        // 佔位預設值：後台訂單表單目前尚未收集承租人類型（本國人／外國旅客／持居留證者），
-        // Task 9/10 會補上實際的會員類型表單後，這裡應改用操作人員實際選擇的值。
-        kind: 'local',
-      }).id;
-    const result: BookingFormResult = {
-      vehicleId: v.vehicleId,
+    switch (this.steps[stepIndex]) {
+      case 'vehicle':
+        return (
+          !!v.vehicleId &&
+          !!v.startLocal &&
+          !!v.endLocal &&
+          !!v.pickupLocation &&
+          !!v.returnLocation &&
+          this.conflicts().length === 0 &&
+          !!this.quote()
+        );
+      case 'renter':
+        return !!v.name && !!v.phone && !!v.kind && (!this.isForeignVisitor() || !!v.nationality);
+      case 'payment':
+        return !this.depositExceedsCap();
+      default:
+        return true;
+    }
+  }
+
+  private buildContractSnapshot(
+    booking: Pick<RentalBooking, 'id' | 'vehicleId'>,
+    vehicle: Vehicle,
+    quote: PriceBreakdown,
+    memberId: string,
+    v: ReturnType<typeof this.form.getRawValue>,
+  ): ContractSnapshot {
+    const party: ContractPartySnapshot = {
       memberId,
-      startTime: new Date(v.startLocal).toISOString(),
-      endTime: new Date(v.endLocal).toISOString(),
+      name: v.name,
+      phone: v.phone,
+      ...(v.email ? { email: v.email } : {}),
+      ...(v.idNumber ? { idNumber: v.idNumber } : {}),
+    };
+    return {
+      renter: party,
+      // 這個精靈目前不區分「承租人」與「實際駕駛人」，兩者共用同一份快照；
+      // 若要支援駕駛人非承租本人，需要在「承租人與駕駛資格」步驟另外收集一組駕駛人欄位（未來任務）。
+      driver: party,
+      vehicle: {
+        vehicleId: vehicle.id,
+        plateNumber: vehicle.plateNumber,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        category: vehicle.category,
+        ...(vehicle.fuelPolicy ? { fuelPolicy: vehicle.fuelPolicy } : {}),
+        ...(vehicle.mileagePolicy ? { mileagePolicy: vehicle.mileagePolicy } : {}),
+        ...(vehicle.energyType ? { energyType: vehicle.energyType } : {}),
+      },
+      rentalStartTime: new Date(v.startLocal).toISOString(),
+      rentalEndTime: new Date(v.endLocal).toISOString(),
       pickupLocation: v.pickupLocation,
       returnLocation: v.returnLocation,
-      depositRequired: this.data?.depositRequired ?? 0,
+      depositRequired: v.depositRequired,
+      pricing: quote,
+      disclosedRules: {
+        // CancellationContractKind 只有 passenger_car/scooter 兩種；ev 目前比照 scooter
+        // 歸類（機車/電動機車皆尚未訂出完整的取消退費級距表，見 quote-cancellation.ts 註解）。
+        cancellationContractKind: vehicle.category === 'car' ? 'passenger_car' : 'scooter',
+        cancellationRuleVersion: 'v1',
+      },
+      ...(v.internalNote ? { internalNote: v.internalNote } : {}),
     };
-    this.ref.close(result);
   }
 
-  showError(message: string): void {
-    this.error.set(message);
+  /**
+   * 送出前的完整原子寫入序列（Step 3）：
+   * 1. 再次驗證車輛可用性 → 2. 取得或新建會員 → 3. 建立/更新訂單（含報價快照與訂金）
+   * → 4. 附加本次排入的款項 → 5. 合約（核心欄位有異動才產生新版本，否則沿用最新版本）
+   * → 6. 有 Email 才排程還車提醒 → 7. 關閉並回傳訂單 id。
+   * local repository 沒有真正的 transaction，任何一步失敗都會補償清除「這次嘗試」新建的記錄
+   * （已存在的資料，例如編輯模式下被 updateBooking 就地更新的欄位，無法回復——見 compensate() 註解）。
+   */
+  async submit(): Promise<void> {
+    if (this.submitting()) return;
+    this.error.set('');
+
+    const vehicle = this.selectedVehicle();
+    const quote = this.quote();
+    if (!vehicle || !quote) {
+      this.error.set(this.t.bookingForm.quoteUnavailable);
+      return;
+    }
+
+    this.submitting.set(true);
+    const v = this.form.getRawValue();
+    const startIso = new Date(v.startLocal).toISOString();
+    const endIso = new Date(v.endLocal).toISOString();
+    const bookingId = this.data?.id;
+    const created: CreatedInThisAttempt = { paymentIds: [] };
+
+    try {
+      // 1. 再次驗證車輛可用性——避免精靈填寫期間，同一台車被別筆訂單搶先鎖定。
+      const conflicts = this.bookingStore.findConflicts(v.vehicleId, startIso, endIso, bookingId);
+      if (conflicts.length > 0) {
+        throw new Error(`${this.t.booking.conflict} ${conflicts.map((c) => c.id).join(', ')}`);
+      }
+
+      // 2. 取得或新建會員。
+      let memberId = this.lockedMemberId();
+      if (!memberId) {
+        const member = this.memberStore.create({
+          name: v.name,
+          phone: v.phone,
+          kind: v.kind,
+          ...(v.idNumber ? { idNumber: v.idNumber } : {}),
+          ...(v.email ? { email: v.email } : {}),
+          ...(v.kind !== 'local' && v.nationality ? { nationality: v.nationality } : {}),
+        });
+        memberId = member.id;
+        created.memberId = memberId;
+      }
+
+      // 3. 建立（或更新）reserved 訂單，帶上報價快照與訂金。
+      const bookingPatch = {
+        vehicleId: v.vehicleId,
+        memberId,
+        startTime: startIso,
+        endTime: endIso,
+        pickupLocation: v.pickupLocation,
+        returnLocation: v.returnLocation,
+        priceBreakdown: quote,
+        depositRequired: v.depositRequired,
+      };
+      let booking: RentalBooking;
+      if (bookingId) {
+        this.bookingStore.updateBooking(bookingId, bookingPatch);
+        const updated = this.bookingStore.bookings().find((b) => b.id === bookingId);
+        if (!updated) throw new Error(`not found: ${bookingId}`);
+        booking = updated;
+      } else {
+        booking = this.bookingStore.create(bookingPatch);
+        created.bookingId = booking.id;
+      }
+
+      // 4. 附加本次排入的款項紀錄。
+      for (const draft of this.paymentDrafts()) {
+        const payment = this.paymentStore.recordPayment({
+          bookingId: booking.id,
+          amount: draft.amount,
+          method: draft.method,
+          purpose: draft.purpose,
+          status: 'confirmed',
+          receivedAt: new Date().toISOString(),
+          handledBy: this.t.layout.adminUser,
+        });
+        created.paymentIds.push(payment.id);
+      }
+
+      // 5. 合約：核心欄位（承租人/駕駛人、車輛、租期、地點、訂金、報價、揭露規則）有異動
+      // 才會由 reviseIfChanged 產生新版本；沒有既有版本時等同建立第 1 版草稿。
+      const snapshot = this.buildContractSnapshot(booking, vehicle, quote, memberId, v);
+      const contractVersion = this.contractStore.reviseIfChanged(booking.id, snapshot);
+      if (v.signNow && contractVersion.status === 'draft') {
+        this.contractStore.sign(contractVersion.id, ['mock-signature-pad']);
+      }
+
+      // 6. 有 Email 才排程還車提醒（開發期 mock；missing_email 本身是正常結果，不是錯誤)。
+      if (v.email) {
+        await this.reminderGateway.schedule({
+          bookingId: booking.id,
+          offset: '24h_before_return',
+          scheduledFor: reminderScheduledFor(endIso, 24),
+          email: v.email,
+        });
+        await this.reminderGateway.schedule({
+          bookingId: booking.id,
+          offset: '2h_before_return',
+          scheduledFor: reminderScheduledFor(endIso, 2),
+          email: v.email,
+        });
+      }
+
+      // 7. 關閉並回傳訂單 id，呼叫端直接開工作區接續補資料。
+      const result: BookingFormResult = { bookingId: booking.id };
+      this.ref.close(result);
+    } catch (e) {
+      this.compensate(created);
+      this.error.set((e as Error).message);
+    } finally {
+      this.submitting.set(false);
+    }
+  }
+
+  /**
+   * 只補償清除「這次嘗試」新建的記錄：款項作廢（沒有硬刪除，作廢本身就是正確的補償動作，
+   * 保留稽核軌跡）、新建的訂單刪除、新建的會員刪除。編輯既有訂單時 booking 不在補償範圍——
+   * updateBooking() 已經就地覆寫欄位，BookingStore 沒有「復原成前一版」的方法，
+   * local repository 也沒有真正的 transaction，這是本任務brief已知並接受的限制。
+   */
+  private compensate(created: CreatedInThisAttempt): void {
+    for (const id of created.paymentIds) {
+      this.paymentStore.voidPayment(id);
+    }
+    if (created.bookingId) {
+      this.bookingStore.remove(created.bookingId);
+    }
+    if (created.memberId) {
+      this.memberStore.remove(created.memberId);
+    }
   }
 }
