@@ -45,6 +45,49 @@ function drawStroke(fixture: ReturnType<typeof createFixture>): void {
   fixture.detectChanges();
 }
 
+/**
+ * jsdom 的 canvas.getContext('2d') 一律回傳 null（見上方註解），沒辦法用真的 2D context
+ * 驗證「筆畫有沒有畫到目前的畫布上」。這裡改用一個可觀察呼叫紀錄的假 context 取代它：
+ * 每次呼叫 getContext('2d') 都回傳一顆「新」的假 context 物件並記錄下來，這樣就能驗證
+ * 「元件在 draw→type→draw 來回切換後，畫圖呼叫是否落在最新一次取得的 context 上」——
+ * 這正是本迴歸測試要抓的 bug：舊寫法把 ctx 快取成欄位，畫布重建後仍沿用舊 context，
+ * 即使畫布本身已經從 DOM 卸載，等於是把筆畫（stroke 呼叫）畫進一顆沒人看得到的物件。
+ */
+function stubCanvasContext() {
+  const original = HTMLCanvasElement.prototype.getContext;
+  const contexts: Array<{ calls: string[] }> = [];
+
+  HTMLCanvasElement.prototype.getContext = function (
+    this: HTMLCanvasElement,
+    contextId: string,
+    ...rest: unknown[]
+  ): unknown {
+    if (contextId !== '2d') {
+      return (original as (...a: unknown[]) => unknown).apply(this, [contextId, ...rest]);
+    }
+    const calls: string[] = [];
+    const fakeCtx = {
+      lineWidth: 0,
+      lineCap: 'butt',
+      strokeStyle: '#000',
+      beginPath: () => calls.push('beginPath'),
+      moveTo: () => calls.push('moveTo'),
+      lineTo: () => calls.push('lineTo'),
+      stroke: () => calls.push('stroke'),
+      clearRect: () => calls.push('clearRect'),
+    };
+    contexts.push({ calls });
+    return fakeCtx;
+  } as typeof HTMLCanvasElement.prototype.getContext;
+
+  return {
+    contexts,
+    restore: () => {
+      HTMLCanvasElement.prototype.getContext = original;
+    },
+  };
+}
+
 describe('SignaturePadComponent', () => {
   let assetGateway: FakeDocumentAssetGateway;
 
@@ -166,4 +209,44 @@ describe('SignaturePadComponent', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('非正式具法律效力');
   });
+
+  it(
+    '迴歸：手寫→切換打字→切回手寫後再畫一次，第二次筆畫必須畫在「目前」畫布的 context 上，' +
+      '不能沿用切換前已卸載的舊畫布 context（曾經的 bug：ctx 快取在 ngAfterViewInit，' +
+      '@if 重建畫布後 viewChild 指向新畫布，但快取的 ctx 仍是舊的，筆畫全部落空、' +
+      '使用者卻毫無所覺地簽出一張空白 PNG）',
+    () => {
+      const stub = stubCanvasContext();
+      try {
+        const fixture = createFixture();
+
+        // 第一次在初始畫布上畫一筆：應該取得並使用第 1 顆 context。
+        drawStroke(fixture);
+        expect(stub.contexts).toHaveLength(1);
+        expect(stub.contexts[0].calls).toContain('stroke');
+
+        // 切到打字模式（畫布連同其 context 一起從 DOM 卸載），再切回手寫模式——
+        // @if 會重新建立一個全新的 <canvas> 元素。
+        fixture.componentInstance['switchMode']('type');
+        fixture.detectChanges();
+        fixture.componentInstance['switchMode']('draw');
+        fixture.detectChanges();
+
+        // 在「新」畫布上再畫一次：修好的元件必須重新取得 context（第 2 顆），
+        // 且真正的 stroke 呼叫要打在這顆新 context 上，不是第 1 顆已卸載的舊 context。
+        drawStroke(fixture);
+
+        expect(stub.contexts).toHaveLength(2);
+        expect(stub.contexts[1].calls).toContain('stroke');
+        // 舊 context 在第二次繪圖之後不應該再收到任何新呼叫——證明筆畫沒有誤畫回舊畫布。
+        expect(stub.contexts[0].calls.filter((c) => c === 'stroke')).toHaveLength(1);
+
+        expect(fixture.componentInstance['hasDrawing']()).toBe(true);
+        fixture.componentInstance['toggleAcknowledged'](true);
+        expect(fixture.componentInstance['canConfirm']()).toBe(true);
+      } finally {
+        stub.restore();
+      }
+    },
+  );
 });

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, computed, inject, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, inject, output, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule, MatCheckboxChange } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,7 +26,7 @@ export type SignatureMode = 'draw' | 'type';
   templateUrl: './signature-pad.component.html',
   styleUrl: './signature-pad.component.scss',
 })
-export class SignaturePadComponent implements AfterViewInit {
+export class SignaturePadComponent {
   protected readonly t = ZH_TW;
 
   private readonly assetGateway = inject(DocumentAssetGateway);
@@ -34,7 +34,6 @@ export class SignaturePadComponent implements AfterViewInit {
   readonly signed = output<StoredDocumentAsset>();
 
   private readonly canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
-  private ctx: CanvasRenderingContext2D | null = null;
   private isDrawing = false;
   private lastPoint: { x: number; y: number } | undefined;
 
@@ -53,18 +52,31 @@ export class SignaturePadComponent implements AfterViewInit {
     () => this.hasSignatureInput() && this.acknowledged() && !this.submitting(),
   );
 
-  ngAfterViewInit(): void {
+  /**
+   * 每次要畫圖／清空之前才即時取得 2D context，絕不快取成欄位。
+   *
+   * 曾經的 bug：原本在 ngAfterViewInit（只會執行一次）把 ctx 存成 private 欄位。
+   * 但畫布是包在 `@if (mode() === 'draw')` 底下（見 template）——Angular 的 @if 每次
+   * 條件切換都會「銷毀並重建」整段 DOM，不是隱藏／顯示。使用者從手寫模式切到打字模式
+   * 再切回手寫模式後，viewChild('canvas') 正確指向新畫布，但快取的 this.ctx 仍指向
+   * 舊的、已從 DOM 卸載的畫布——之後的筆畫全部畫到一塊沒人看得到的舊畫布上，
+   * hasDrawing 卻仍照常從 pointer 事件變成 true，使用者會簽出一張空白 PNG 卻毫無警示。
+   * 改成每次用到就直接向「當下」的 canvasRef() 重新要 context，就不會有這個過期參照問題；
+   * 瀏覽器對同一個畫布重複呼叫 getContext('2d') 本來就是回傳同一顆既有物件，成本可忽略。
+   */
+  private getContext(): CanvasRenderingContext2D | null {
     const canvas = this.canvasRef()?.nativeElement;
-    if (!canvas) return;
+    if (!canvas) return null;
     // jsdom 在沒有裝 `canvas` npm 套件時，getContext('2d') 會回傳 null（並印出一則
     // "Not implemented" 的警告，這是 jsdom 本身的已知限制，不是本元件的錯誤）。
-    // 之後所有畫圖呼叫都要 guard `this.ctx` 存在，真實瀏覽器才會實際落筆。
-    this.ctx = canvas.getContext('2d');
-    if (this.ctx) {
-      this.ctx.lineWidth = 2;
-      this.ctx.lineCap = 'round';
-      this.ctx.strokeStyle = '#1a1a1a';
+    // 之後所有畫圖呼叫都要 guard 回傳值存在，真實瀏覽器才會實際落筆。
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#1a1a1a';
     }
+    return ctx;
   }
 
   protected switchMode(mode: SignatureMode): void {
@@ -82,11 +94,12 @@ export class SignaturePadComponent implements AfterViewInit {
   protected onPointerMove(event: PointerEvent): void {
     if (!this.isDrawing) return;
     const point = this.pointFromEvent(event);
-    if (this.ctx && this.lastPoint) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.lastPoint.x, this.lastPoint.y);
-      this.ctx.lineTo(point.x, point.y);
-      this.ctx.stroke();
+    const ctx = this.getContext();
+    if (ctx && this.lastPoint) {
+      ctx.beginPath();
+      ctx.moveTo(this.lastPoint.x, this.lastPoint.y);
+      ctx.lineTo(point.x, point.y);
+      ctx.stroke();
     }
     this.lastPoint = point;
     this.hasDrawing.set(true);
@@ -108,8 +121,9 @@ export class SignaturePadComponent implements AfterViewInit {
   protected clear(): void {
     if (this.mode() === 'draw') {
       const canvas = this.canvasRef()?.nativeElement;
-      if (canvas && this.ctx) {
-        this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const ctx = this.getContext();
+      if (canvas && ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
       this.hasDrawing.set(false);
     } else {
