@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { BookingsPageComponent } from './bookings-page.component';
@@ -10,6 +10,7 @@ import {
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { Vehicle, RentalBooking, Member, MaintenanceRecord } from '../../../core/models';
+import { BookingWorkspaceService } from '../services/booking-workspace.service';
 
 function makeVehicle(partial: Partial<Vehicle>): Vehicle {
   return {
@@ -43,11 +44,14 @@ function makeBooking(partial: Partial<RentalBooking>): RentalBooking {
 
 describe('BookingsPageComponent filtering', () => {
   let component: BookingsPageComponent;
+  let workspaceOpen: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    workspaceOpen = vi.fn();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
         {
           provide: VEHICLE_REPO,
           useValue: createInMemoryRepo<Vehicle>([
@@ -107,5 +111,11 @@ describe('BookingsPageComponent filtering', () => {
     component.clearFilters();
     expect(component.statusFilter()).toBeNull();
     expect(component.searchQuery()).toBe('王小明');
+  });
+
+  it('openWorkspace 呼叫 BookingWorkspaceService.open，帶上該筆訂單 id', () => {
+    component.openWorkspace(makeBooking({ id: 'b2', vehicleId: 'v2', memberId: 'c2' }));
+
+    expect(workspaceOpen).toHaveBeenCalledWith('b2');
   });
 });

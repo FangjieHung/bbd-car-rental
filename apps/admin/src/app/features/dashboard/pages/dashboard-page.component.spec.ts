@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { DashboardPageComponent } from './dashboard-page.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
 import {
@@ -23,6 +24,12 @@ import {
 } from '../../../core/models';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { VehiclePickerDialogComponent } from '../../bookings/dialogs/vehicle-picker-dialog.component';
+import {
+  BookingFormDialogComponent,
+  BookingFormResult,
+} from '../../bookings/dialogs/booking-form-dialog.component';
+import { BookingWorkspaceService } from '../../bookings/services/booking-workspace.service';
 
 // Dashboard 內嵌的 CalendarViewComponent 會用到 PricingStore。
 function providePricing() {
@@ -146,5 +153,89 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     expect(component.todayReturnDone()).toBe(1);
     expect(component.todayReturnPending()).toBe(1);
     expect(component.todayPendingPrepCount()).toBe(1);
+  });
+});
+
+describe('DashboardPageComponent onQuickRange', () => {
+  const vehicle: Vehicle = {
+    id: 'v1',
+    plateNumber: 'ABC-123',
+    category: 'scooter',
+    model: 'Gogoro',
+    brand: 'Gogoro',
+    year: 2022,
+    status: 'available',
+    mileage: 100,
+    createdAt: new Date().toISOString(),
+  };
+
+  const formResult: BookingFormResult = {
+    vehicleId: 'v1',
+    memberId: 'c1',
+    startTime: '2026-08-20T10:00:00.000Z',
+    endTime: '2026-08-21T10:00:00.000Z',
+    pickupLocation: '機場',
+    returnLocation: '機場',
+    depositRequired: 0,
+  };
+
+  function createFixture() {
+    const workspaceOpen = vi.fn();
+    // pickVehicle()/openForm() 各自對同一個 MatDialog.open() 呼叫兩次、開不同的元件；
+    // 依傳入的元件類別回傳對應的假 afterClosed() 結果，模擬使用者選車→填單兩步都完成。
+    const dialogOpen = vi.fn((dialogComponent: unknown) => {
+      if (dialogComponent === VehiclePickerDialogComponent) return { afterClosed: () => of(vehicle) };
+      if (dialogComponent === BookingFormDialogComponent) return { afterClosed: () => of(formResult) };
+      return { afterClosed: () => of(undefined) };
+    });
+
+    TestBed.configureTestingModule({
+      providers: [
+        ...providePricing(),
+        provideNativeDateAdapter(),
+        provideRouter([]),
+        { provide: MatDialog, useValue: { open: dialogOpen } },
+        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '0912000111', kind: 'local' }]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const component = TestBed.createComponent(DashboardPageComponent).componentInstance;
+    return { component, workspaceOpen };
+  }
+
+  it('快速建單成功後，用新訂單 id 呼叫 BookingWorkspaceService.open() 直接進工作區', async () => {
+    const { component, workspaceOpen } = createFixture();
+
+    await component.onQuickRange({
+      startDateTime: '2026-08-20T10:00:00',
+      endDateTime: '2026-08-21T10:00:00',
+    });
+
+    const created = component.bookingStore.bookings()[0];
+    expect(created).toBeDefined();
+    expect(workspaceOpen).toHaveBeenCalledWith(created.id);
+  });
+
+  it('選車或填單任一步驟被取消時，不建立訂單也不開工作區', async () => {
+    const { component, workspaceOpen } = createFixture();
+    // 這個 fixture 的 dialogOpen 對 VehiclePickerDialogComponent 一律回傳 vehicle；
+    // 改成回傳 undefined 來模擬「選車步驟被取消」。
+    (TestBed.inject(MatDialog).open as ReturnType<typeof vi.fn>).mockImplementation(
+      (dialogComponent: unknown) =>
+        dialogComponent === VehiclePickerDialogComponent
+          ? { afterClosed: () => of(undefined) }
+          : { afterClosed: () => of(formResult) },
+    );
+
+    await component.onQuickRange({
+      startDateTime: '2026-08-20T10:00:00',
+      endDateTime: '2026-08-21T10:00:00',
+    });
+
+    expect(component.bookingStore.bookings()).toHaveLength(0);
+    expect(workspaceOpen).not.toHaveBeenCalled();
   });
 });
