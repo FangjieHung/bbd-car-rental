@@ -157,7 +157,8 @@ function refundLinesFromQuote(quote: CancellationQuote): CancellationRefundLine[
  * 順序執行：appendCase（Step 3 已由 createCase 完成）→ 附加退款／保留金紀錄 →
  * 訂單轉為 cancelled（只允許從 reserved，見 BookingStore.cancel 既有規則，這裡不重複驗證）→
  * 案件轉為 settled → 附加稽核紀錄。全程不呼叫任何 repository 的 remove()，付款與合約紀錄
- * 永遠保留（設計原則「保留歷史」）。
+ * 永遠保留（設計原則「保留歷史」）。disposeCase() 在建立退款／保留金紀錄前會先查詢是否已有
+ * 綁定同一案件的既有紀錄（冪等防護），失敗後重試不會造成重複退款或重複核發保留金。
  */
 @Injectable({ providedIn: 'root' })
 export class CancellationStore {
@@ -205,6 +206,11 @@ export class CancellationStore {
       originalOtherPrepayment: input.originalOtherPrepayment,
       refundLines: refundLinesFromQuote(input.quote),
       transferFee: input.quote.transferFee,
+      // 逐字複製 quoteCancellation 已經算好的總額，不要從 refundLines 重新加總——
+      // operator_fault 已收定金分支的 depositRefund（雙倍退還）本身已經內含
+      // statutoryCompensation 那筆加碼，refundLines 為了對帳仍會把兩者分開列出，
+      // 加總會把那筆加碼多算一次。totalCashDue 才是唯一保證正確的來源。
+      totalCashDue: input.quote.totalCashDue,
       disposition: input.quote.disposition ?? 'refund',
       status: input.quote.status === 'manual_review' ? 'manual_review' : 'quoted',
       evidenceAssetIds: input.evidenceAssetIds ?? [],
@@ -249,9 +255,15 @@ export class CancellationStore {
     return updated;
   }
 
-  /** 案件退費總額：所有退款明細加總後扣除手續費——與 quoteCancellation 的 totalCashDue 算法一致。 */
+  /**
+   * 案件退費（或應付）總額——直接讀 CancellationCase.totalCashDue（建案時逐字複製自
+   * quoteCancellation 的算出值），不得從 refundLines 重新加總。refundLines 只是分項明細，
+   * operator_fault 已收定金分支的 deposit 明細本身已經內含 statutory_compensation 那筆
+   * 加碼，加總兩者會把加碼多算一次，讓撥付總額比實際應退金額多出整整一筆訂金
+   * （曾是真實存在於本檔案的 bug，見 task-14-report.md 的修復記錄）。
+   */
   totalDisposableAmount(kase: CancellationCase): number {
-    return kase.refundLines.reduce((sum, line) => sum + line.amount, 0) - kase.transferFee;
+    return kase.totalCashDue;
   }
 
   /**
@@ -261,6 +273,8 @@ export class CancellationStore {
    * - force_majeure 案件須先經 approve() 核准（approvedBy 已存在）才能撥付。
    * - 轉保留金的金額（含 split 的保留金部分）必須先取得顧客明確同意（creditConsent）。
    * - 退款＋保留金金額合計必須精確等於案件的應退總額，不允許不明差額。
+   * - 冪等：若這個案件先前的呼叫已經建立過退款／保留金紀錄（例如上次在訂單轉換步驟失敗），
+   *   重試時會重用既有紀錄而不是再建一筆，避免重複退款／重複核發保留金。
    */
   disposeCase(input: DisposeCancellationCaseInput): DisposeCancellationCaseResult {
     // 新台幣沒有小數位，理由同 quoteCancellation 的 assertIntegerMoney——這裡收的是表單輸入，
@@ -295,8 +309,17 @@ export class CancellationStore {
 
     const completed: CancellationDispositionStep[] = [];
 
-    let refund: RefundRecord | undefined;
-    if (input.refundAmount > 0) {
+    // 冪等防護：案件在退款／保留金紀錄都已寫入、但訂單轉換（或後續步驟）失敗時，狀態仍停在
+    // quoted／approved（見上面的狀態檢查），代表呼叫端很可能會重試同一筆 disposeCase()。
+    // 若重試時再次無條件建立新紀錄，會造成真實的重複退款／重複核發保留金。這裡先查詢是否已有
+    // 綁定這個 cancellationCaseId／sourceCancellationCaseId 的既有紀錄，若有就直接重用、
+    // 不再新增，只把它算進「這一步已完成」繼續往下走。
+    let refund: RefundRecord | undefined = this.paymentStore
+      .refundsFor(kase.bookingId)
+      .find((r) => r.cancellationCaseId === kase.id);
+    if (refund) {
+      completed.push('refund_record');
+    } else if (input.refundAmount > 0) {
       try {
         refund = this.paymentStore.recordRefund({
           bookingId: kase.bookingId,
@@ -312,8 +335,12 @@ export class CancellationStore {
       }
     }
 
-    let credit: CustomerCreditLedgerEntry | undefined;
-    if (input.creditAmount > 0) {
+    let credit: CustomerCreditLedgerEntry | undefined = this.creditStore
+      .entriesFor(booking.memberId)
+      .find((e) => e.type === 'issued' && e.sourceCancellationCaseId === kase.id);
+    if (credit) {
+      completed.push('credit_entry');
+    } else if (input.creditAmount > 0) {
       try {
         credit = this.creditStore.issue({
           memberId: booking.memberId,

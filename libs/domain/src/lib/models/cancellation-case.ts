@@ -52,8 +52,24 @@ export interface CancellationCase {
   ruleVersion: string;
   originalDepositPaid: number;
   originalOtherPrepayment: number;
+  /**
+   * 明細列表——僅供畫面顯示分項用途，不可加總當作應退總額。responsibility 為
+   * operator_fault 且已收定金時，quoteCancellation 的 depositRefund（訂金雙倍退還）
+   * 已經內含 statutoryCompensation 那筆加碼；這裡仍會各自列出 deposit 與
+   * statutory_compensation 兩條明細方便對帳（讓使用者看得出「加倍在哪」），
+   * 但兩者加總會重複計入那筆加碼一次。應退總額一律讀 totalCashDue，不要用
+   * `refundLines.reduce((s, l) => s + l.amount, 0)` 重新推導。
+   */
   refundLines: CancellationRefundLine[];
   transferFee: number;
+  /**
+   * 建案當下 quoteCancellation 算出的應退（或應付）現金總額，逐字複製自
+   * CancellationQuote.totalCashDue——每個責任歸屬分支的加總公式都不同（見
+   * quote-cancellation.ts 逐分支註解），此欄位是唯一保證與 quoteCancellation 本身
+   * 一致的來源，撥付金額比對（disposeCase）一律以此欄位為準，不得從 refundLines
+   * 重新加總（見上方 refundLines 的警語）。
+   */
+  totalCashDue: number;
   disposition: CancellationDisposition;
   status: CancellationCaseStatus;
   approvedBy?: string;

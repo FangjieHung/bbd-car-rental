@@ -100,6 +100,7 @@ function createFixture(options: { vehicle?: Partial<Vehicle>; booking?: Partial<
     paymentStore: TestBed.inject(PaymentStore),
     creditStore: TestBed.inject(CreditStore),
     auditRepo: TestBed.inject(AUDIT_ENTRY_REPO),
+    bookingRepo: TestBed.inject(BOOKING_REPO),
   };
 }
 
@@ -504,6 +505,162 @@ describe('CancellationStore', () => {
       // 判斷實際狀態，不能假設整個流程都沒有發生。
       expect(paymentStore.refundsFor('b1')).toHaveLength(1);
       expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('in_progress');
+    });
+
+    it('Critical #2 回歸：訂單轉換步驟重複失敗時，重試不會建立第二筆退款／保留金紀錄；訂單恢復 reserved 後重試可順利完成且仍只有一筆', () => {
+      const { store: s, bookingStore, paymentStore, creditStore, bookingRepo } = createFixture({
+        booking: { status: 'in_progress' },
+      });
+      const kase = buildQuotedCase(s); // 應退總額 500（8 天前取消，7-9 日級距 50% ×1000）
+
+      const disposeInput = {
+        caseId: kase.id,
+        disposition: 'split' as const,
+        refundAmount: 300,
+        creditAmount: 200,
+        creditConsent: true,
+        actor: { actorId: 'staff1', actorName: 'staff1' },
+        occurredAt: '2026-07-10T10:30:00.000Z',
+      };
+
+      // 第一次呼叫：退款／保留金紀錄成功寫入，但訂單轉換失敗（訂單不是 reserved）。
+      expect(() => s.disposeCase(disposeInput)).toThrow(CancellationDispositionPartialFailureError);
+      expect(paymentStore.refundsFor('b1')).toHaveLength(1);
+      expect(creditStore.entriesFor('m1')).toHaveLength(1);
+
+      // 第二次呼叫（同樣的輸入，訂單仍未修好）：案件狀態仍是 quoted，呼叫端很可能重試——
+      // 重試不應該再建立第二筆退款／保留金紀錄，只會在訂單轉換這步再次失敗。
+      expect(() => s.disposeCase(disposeInput)).toThrow(CancellationDispositionPartialFailureError);
+      expect(paymentStore.refundsFor('b1')).toHaveLength(1);
+      expect(creditStore.entriesFor('m1')).toHaveLength(1);
+
+      // 修正根本問題（訂單恢復 reserved，模擬「取車流程被撤銷／原本就是誤判」）後重試：
+      // 應該直接重用先前已建立的退款／保留金紀錄，成功完成訂單轉換與結案，且紀錄數量仍是各一筆。
+      bookingRepo.update('b1', { status: 'reserved' });
+      const result = s.disposeCase(disposeInput);
+
+      expect(result.case.status).toBe('settled');
+      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('cancelled');
+      expect(paymentStore.refundsFor('b1')).toHaveLength(1);
+      expect(creditStore.entriesFor('m1')).toHaveLength(1);
+      expect(result.refund?.amount).toBe(300);
+      expect(result.credit?.amount).toBe(200);
+    });
+  });
+
+  describe('operator_fault 的 totalDisposableAmount（Critical #1 回歸測試：不得從 refundLines 重新加總）', () => {
+    it('已收定金：應退總額是訂金兩倍加其他預付款，不是訂金三倍（deposit 明細與 statutory_compensation 明細有重疊）', () => {
+      const { store: s } = createFixture();
+      const quote = s.quote({
+        contractKind: 'passenger_car',
+        responsibility: 'operator_fault',
+        cancellationRequestedAt: '2026-07-10T10:00:00+08:00',
+        pickupAt: '2026-07-18T09:00:00+08:00',
+        depositPaid: 1000,
+        otherPrepayment: 200,
+      });
+      // quoteCancellation 自己的算法：depositRefund = 2 × depositPaid（已內含加碼），
+      // totalCashDue = depositRefund + otherPrepaymentRefund，不會再加一次 statutoryCompensation。
+      expect(quote.depositRefund).toBe(2000);
+      expect(quote.statutoryCompensation).toBe(1000);
+      expect(quote.totalCashDue).toBe(2200); // 2000 + 200，不是 3000 + 200
+
+      const kase = s.createCase({
+        bookingId: 'b1',
+        contractKind: 'passenger_car',
+        responsibility: 'operator_fault',
+        reason: 'vehicle_breakdown',
+        requestedAt: '2026-07-10T10:00:00+08:00',
+        ruleVersion: '2026.1',
+        originalDepositPaid: 1000,
+        originalOtherPrepayment: 200,
+        quote,
+      });
+
+      // refundLines 為了對帳仍會列出 deposit（2000）與 statutory_compensation（1000）兩條明細，
+      // 加總會是 3200——這正是曾經存在的 bug：totalDisposableAmount() 過去直接加總這份明細，
+      // 導致多算了一筆 1000 元的訂金。現在必須直接讀 totalCashDue，等於 2200，不是 3200。
+      expect(kase.refundLines).toEqual([
+        { label: 'deposit', amount: 2000 },
+        { label: 'other_prepayment', amount: 200 },
+        { label: 'statutory_compensation', amount: 1000 },
+      ]);
+      expect(s.totalDisposableAmount(kase)).toBe(2200);
+    });
+
+    it('未收定金：應退總額是其他預付款加約定總租金（此分支本來就沒有重疊問題，補上回歸測試）', () => {
+      const { store: s } = createFixture();
+      const quote = s.quote({
+        contractKind: 'passenger_car',
+        responsibility: 'operator_fault',
+        cancellationRequestedAt: '2026-07-10T10:00:00+08:00',
+        pickupAt: '2026-07-18T09:00:00+08:00',
+        depositPaid: 0,
+        otherPrepayment: 200,
+        agreedRentalTotal: 4000,
+      });
+      expect(quote.totalCashDue).toBe(4200); // 200 + 4000
+
+      const kase = s.createCase({
+        bookingId: 'b1',
+        contractKind: 'passenger_car',
+        responsibility: 'operator_fault',
+        reason: 'vehicle_breakdown',
+        requestedAt: '2026-07-10T10:00:00+08:00',
+        ruleVersion: '2026.1',
+        originalDepositPaid: 0,
+        originalOtherPrepayment: 200,
+        quote,
+      });
+
+      expect(s.totalDisposableAmount(kase)).toBe(4200);
+    });
+
+    it('已收定金案件的撥付金額必須用正確的 totalCashDue（2200），用舊的錯誤加總（3200）會被拒絕', () => {
+      const { store: s } = createFixture();
+      const quote = s.quote({
+        contractKind: 'passenger_car',
+        responsibility: 'operator_fault',
+        cancellationRequestedAt: '2026-07-10T10:00:00+08:00',
+        pickupAt: '2026-07-18T09:00:00+08:00',
+        depositPaid: 1000,
+        otherPrepayment: 200,
+      });
+      const kase = s.createCase({
+        bookingId: 'b1',
+        contractKind: 'passenger_car',
+        responsibility: 'operator_fault',
+        reason: 'vehicle_breakdown',
+        requestedAt: '2026-07-10T10:00:00+08:00',
+        ruleVersion: '2026.1',
+        originalDepositPaid: 1000,
+        originalOtherPrepayment: 200,
+        quote,
+      });
+
+      // 用舊 bug 會算出的錯誤總額（3200）撥付：現在必須被金額不符擋下，不能真的多退 1000 元。
+      expect(() =>
+        s.disposeCase({
+          caseId: kase.id,
+          disposition: 'refund',
+          refundAmount: 3200,
+          creditAmount: 0,
+          actor: { actorId: 'staff1', actorName: 'staff1' },
+          occurredAt: '2026-07-10T10:30:00.000Z',
+        }),
+      ).toThrow(DispositionAmountMismatchError);
+
+      // 用正確總額（2200）撥付才會成功。
+      const result = s.disposeCase({
+        caseId: kase.id,
+        disposition: 'refund',
+        refundAmount: 2200,
+        creditAmount: 0,
+        actor: { actorId: 'staff1', actorName: 'staff1' },
+        occurredAt: '2026-07-10T10:30:00.000Z',
+      });
+      expect(result.refund?.amount).toBe(2200);
+      expect(result.case.status).toBe('settled');
     });
   });
 });

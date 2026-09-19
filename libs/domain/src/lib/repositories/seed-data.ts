@@ -885,6 +885,7 @@ export function seedCancellationCases(): CancellationCase[] {
       originalOtherPrepayment: 0,
       refundLines: [{ label: 'deposit', amount: 300 }],
       transferFee: 0,
+      totalCashDue: 300,
       disposition: 'refund',
       status: 'settled',
       approvedBy: 'staff2',
