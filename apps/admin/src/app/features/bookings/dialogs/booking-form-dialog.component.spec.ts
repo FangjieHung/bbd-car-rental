@@ -358,7 +358,7 @@ describe('BookingFormDialogComponent 確認建立：待辦事項摘要', () => {
 });
 
 describe('BookingFormDialogComponent 編輯既有訂單：核心欄位異動才產生新合約版本', () => {
-  it('無異動重複送出不會多出版本；車輛異動（核心欄位）送出後會產生新草稿版本並讓舊版 superseded', async () => {
+  it('無異動重複送出不會多出版本；已簽署的訂單若核心欄位（車輛）異動，送出後會產生新草稿版本並讓已簽署的舊版 superseded', async () => {
     const booking = makeBooking({ id: 'b1', vehicleId: 'v1', memberId: 'm1' });
     const { component, contractRepo } = createFixture({
       vehicles: [makeVehicle({ id: 'v1', category: 'car' }), makeVehicle({ id: 'v2', category: 'car', plateNumber: 'XYZ-999' })],
@@ -372,11 +372,17 @@ describe('BookingFormDialogComponent 編輯既有訂單：核心欄位異動才�
     expect(component.contractStore.versionsFor('b1')).toHaveLength(1);
     expect(component.contractStore.versionsFor('b1')[0].status).toBe('draft');
 
-    // 第二次送出：表單完全沒改動，快照沒有差異，不應該多出一個版本。
+    // 第二次送出：勾選現場簽署、但表單其餘內容完全沒改動——快照沒有差異，
+    // reviseIfChanged 沿用同一版本（不多產生版本），送出邏輯再把這個沿用的版本簽署掉。
+    component.form.controls.signNow.setValue(true);
     await component.submit();
     expect(component.contractStore.versionsFor('b1')).toHaveLength(1);
+    expect(component.contractStore.versionsFor('b1')[0].status).toBe('signed');
 
-    // 換一台車（核心欄位異動）後第三次送出：應產生新版本，舊版 superseded。
+    // 換一台車（核心欄位異動）後第三次送出：即使既有版本已經簽署，仍要產生新草稿版本、
+    // 讓已簽署的舊版變成 superseded——已簽署版本不可覆寫，見 contract-version.ts 的模型註解。
+    // 這次不勾現場簽署，讓新版本維持在 draft，證明「新版本」與「簽署」是分開兩件事。
+    component.form.controls.signNow.setValue(false);
     component.form.controls.vehicleId.setValue('v2');
     await component.submit();
 
