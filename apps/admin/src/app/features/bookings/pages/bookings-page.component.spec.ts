@@ -11,12 +11,14 @@ import {
   OPERATOR_RECOVERY_CASE_REPO,
   PAYMENT_REPO,
   REFUND_REPO,
+  REMINDER_STATUS_REPO,
   VEHICLE_REPO,
   BOOKING_REPO,
   MEMBER_REPO,
   MAINTENANCE_REPO,
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
+import { ReminderGateway } from '../../../core/services/reminder.gateway';
 import {
   AuditEntry,
   CancellationCase,
@@ -30,6 +32,7 @@ import {
   OperatorRecoveryCase,
   PaymentRecord,
   RefundRecord,
+  ReminderStatus,
 } from '../../../core/models';
 import { BookingWorkspaceService } from '../services/booking-workspace.service';
 
@@ -83,6 +86,11 @@ function provideBookingWorkspaceRepos(options: {
     {
       provide: OPERATOR_RECOVERY_CASE_REPO,
       useValue: createInMemoryRepo<OperatorRecoveryCase>(options.operatorRecoveryCases ?? []),
+    },
+    { provide: REMINDER_STATUS_REPO, useValue: createInMemoryRepo<ReminderStatus>([]) },
+    {
+      provide: ReminderGateway,
+      useValue: { schedule: async () => ({ state: 'scheduled' as const }), cancel: async () => undefined },
     },
   ];
 }

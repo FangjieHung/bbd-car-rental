@@ -9,6 +9,7 @@ import {
   PaymentRecord,
   RefundRecord,
   RentalBooking,
+  ReminderStatus,
   Vehicle,
 } from '@car-rental/domain';
 import {
@@ -21,12 +22,15 @@ import {
   MEMBER_REPO,
   PAYMENT_REPO,
   REFUND_REPO,
+  REMINDER_STATUS_REPO,
   VEHICLE_REPO,
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
+import { ReminderDispatchResult, ReminderGateway, ScheduleReminderInput } from '../../core/services/reminder.gateway';
 import { BookingStore } from '../booking/booking.store';
 import { PaymentStore } from '../payment/payment.store';
 import { CreditStore } from '../credit/credit.store';
+import { ReminderStore } from '../reminder/reminder.store';
 import {
   CancellationDispositionPartialFailureError,
   CaseNotReadyForDispositionError,
@@ -38,6 +42,24 @@ import {
   TransferFeeApprovalRequiredError,
 } from './cancellation.store';
 import { CancellationStore } from './cancellation.store';
+
+/** 可觀測的 fake gateway：讓迴歸測試能斷言 suppressForBooking() 真的透過 cancel() 取消了排程。 */
+class FakeReminderGateway implements ReminderGateway {
+  readonly cancelCalls: Array<{ bookingId: string; offset: ScheduleReminderInput['offset'] }> = [];
+
+  async schedule(_input: ScheduleReminderInput): Promise<ReminderDispatchResult> {
+    return { state: 'scheduled' };
+  }
+
+  async cancel(bookingId: string, offset: ScheduleReminderInput['offset']): Promise<void> {
+    this.cancelCalls.push({ bookingId, offset });
+  }
+}
+
+/** 讓所有微任務（含 MockReminderGateway 內部的 queueMicrotask）都跑完，才能斷言 fire-and-forget 呼叫的結果。 */
+function flushMicrotasks(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 const T_START = '2026-07-20T09:00:00.000Z';
 const T_END = '2026-07-22T18:00:00.000Z';
@@ -76,10 +98,18 @@ function makeMember(partial: Partial<Member> = {}): Member {
   return { id: 'm1', name: '王小明', phone: '0900000000', kind: 'local', ...partial };
 }
 
-function createFixture(options: { vehicle?: Partial<Vehicle>; booking?: Partial<RentalBooking> } = {}) {
+function createFixture(
+  options: {
+    vehicle?: Partial<Vehicle>;
+    booking?: Partial<RentalBooking>;
+    reminderStatuses?: ReminderStatus[];
+  } = {},
+) {
   // 允許在同一個 it() 內（外層 beforeEach 已建立一次 TestBed 之後）重新配置一份帶自訂
   // booking／vehicle 的 fixture——resetTestingModule() 先清空，避免「TestBed 已實例化」錯誤。
   TestBed.resetTestingModule();
+  const reminderGateway = new FakeReminderGateway();
+  const reminderStatusRepo = createInMemoryRepo<ReminderStatus>(options.reminderStatuses ?? []);
   TestBed.configureTestingModule({
     providers: [
       { provide: CANCELLATION_CASE_REPO, useValue: createInMemoryRepo<CancellationCase>() },
@@ -92,6 +122,8 @@ function createFixture(options: { vehicle?: Partial<Vehicle>; booking?: Partial<
       { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
       { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
       { provide: CUSTOMER_CREDIT_LEDGER_REPO, useValue: createInMemoryRepo<CustomerCreditLedgerEntry>([]) },
+      { provide: REMINDER_STATUS_REPO, useValue: reminderStatusRepo },
+      { provide: ReminderGateway, useValue: reminderGateway },
     ],
   });
 
@@ -100,8 +132,11 @@ function createFixture(options: { vehicle?: Partial<Vehicle>; booking?: Partial<
     bookingStore: TestBed.inject(BookingStore),
     paymentStore: TestBed.inject(PaymentStore),
     creditStore: TestBed.inject(CreditStore),
+    reminderStore: TestBed.inject(ReminderStore),
     auditRepo: TestBed.inject(AUDIT_ENTRY_REPO),
     bookingRepo: TestBed.inject(BOOKING_REPO),
+    reminderGateway,
+    reminderStatusRepo,
   };
 }
 
@@ -329,6 +364,50 @@ describe('CancellationStore', () => {
       expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('cancelled');
       // 付款歷史從未被刪除，仍看得到原始訂金收款紀錄
       expect(paymentStore.paymentsFor('b1')).toHaveLength(1);
+    });
+
+    it('（Task 17 迴歸測試）撥付完成、訂單轉為 cancelled 後，會透過真正的協調流程抑制這筆訂單尚未寄出的提醒——不是只有 ReminderStore.suppressForBooking() 自己的單元測試才驗證這條規則', async () => {
+      const { store: s, bookingStore, reminderStore, reminderGateway } = createFixture({
+        reminderStatuses: [
+          {
+            id: 'rem-24h',
+            bookingId: 'b1',
+            offset: '24h_before_return',
+            state: 'scheduled',
+            scheduledFor: '2026-07-21T18:00:00.000Z',
+            updatedAt: '2026-07-15T09:00:00.000Z',
+          },
+          {
+            id: 'rem-2h',
+            bookingId: 'b1',
+            offset: '2h_before_return',
+            state: 'scheduled',
+            scheduledFor: '2026-07-22T16:00:00.000Z',
+            updatedAt: '2026-07-15T09:00:00.000Z',
+          },
+        ],
+      });
+      const kase = buildQuotedCase(s);
+
+      s.disposeCase({
+        caseId: kase.id,
+        disposition: 'refund',
+        refundAmount: 500,
+        creditAmount: 0,
+        actor: { actorId: 'staff1', actorName: 'staff1' },
+        occurredAt: '2026-07-10T10:30:00.000Z',
+      });
+
+      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('cancelled');
+      // disposeCase() 本身仍是同步方法；抑制提醒是 fire-and-forget，要等微任務跑完才看得到結果。
+      await flushMicrotasks();
+
+      const remaining = reminderStore.statusesFor('b1');
+      expect(remaining.every((r) => r.state !== 'scheduled')).toBe(true);
+      expect(remaining).toHaveLength(0);
+      expect(reminderGateway.cancelCalls.map((c) => c.offset).sort()).toEqual(
+        ['24h_before_return', '2h_before_return'].sort(),
+      );
     });
 
     it('全部轉保留金但未取得顧客同意時丟錯，不寫入任何撥付紀錄', () => {

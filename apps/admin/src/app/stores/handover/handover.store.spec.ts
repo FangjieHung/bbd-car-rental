@@ -5,6 +5,7 @@ import {
   HandoverRecord,
   PickupReadinessInput,
   RentalBooking,
+  ReminderStatus,
   Repository,
   ReturnChargeInput,
   Vehicle,
@@ -17,9 +18,11 @@ import {
   MAINTENANCE_REPO,
   PAYMENT_REPO,
   REFUND_REPO,
+  REMINDER_STATUS_REPO,
   VEHICLE_REPO,
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
+import { ReminderDispatchResult, ReminderGateway, ScheduleReminderInput } from '../../core/services/reminder.gateway';
 import {
   HandoverOrchestrationPartialFailureError,
   HandoverStore,
@@ -30,6 +33,25 @@ import {
 import { BookingStore } from '../booking/booking.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { PaymentStore } from '../payment/payment.store';
+import { ReminderStore } from '../reminder/reminder.store';
+
+/** 可觀測的 fake gateway：讓迴歸測試能斷言 suppressForBooking() 真的透過 cancel() 取消了排程。 */
+class FakeReminderGateway implements ReminderGateway {
+  readonly cancelCalls: Array<{ bookingId: string; offset: ScheduleReminderInput['offset'] }> = [];
+
+  async schedule(_input: ScheduleReminderInput): Promise<ReminderDispatchResult> {
+    return { state: 'scheduled' };
+  }
+
+  async cancel(bookingId: string, offset: ScheduleReminderInput['offset']): Promise<void> {
+    this.cancelCalls.push({ bookingId, offset });
+  }
+}
+
+/** 讓所有微任務（含 MockReminderGateway 內部的 queueMicrotask）都跑完，才能斷言 fire-and-forget 呼叫的結果。 */
+function flushMicrotasks(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 const T_PICKUP_DUE = '2026-07-20T09:00:00.000Z';
 const T_RETURN_DUE = '2026-07-22T18:00:00.000Z';
@@ -113,14 +135,20 @@ describe('HandoverStore', () => {
   let bookingStore: BookingStore;
   let vehicleStore: VehicleStore;
   let paymentStore: PaymentStore;
+  let reminderStore: ReminderStore;
+  let reminderGateway: FakeReminderGateway;
+  let reminderStatusRepo: Repository<ReminderStatus>;
   let auditRepo: Repository<AuditEntry>;
 
   function configure(options: {
     vehicle?: Partial<Vehicle>;
     booking?: Partial<RentalBooking>;
     handoverRepo?: Repository<HandoverRecord>;
+    reminderStatuses?: ReminderStatus[];
   } = {}) {
     auditRepo = createInMemoryRepo<AuditEntry>();
+    reminderGateway = new FakeReminderGateway();
+    reminderStatusRepo = createInMemoryRepo<ReminderStatus>(options.reminderStatuses ?? []);
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -130,6 +158,8 @@ describe('HandoverStore', () => {
         { provide: PAYMENT_REPO, useValue: createInMemoryRepo() },
         { provide: REFUND_REPO, useValue: createInMemoryRepo() },
         { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo() },
+        { provide: REMINDER_STATUS_REPO, useValue: reminderStatusRepo },
+        { provide: ReminderGateway, useValue: reminderGateway },
         {
           provide: HANDOVER_RECORD_REPO,
           useValue: options.handoverRepo ?? createInMemoryRepo<HandoverRecord>(),
@@ -141,6 +171,7 @@ describe('HandoverStore', () => {
     bookingStore = TestBed.inject(BookingStore);
     vehicleStore = TestBed.inject(VehicleStore);
     paymentStore = TestBed.inject(PaymentStore);
+    reminderStore = TestBed.inject(ReminderStore);
   }
 
   beforeEach(() => configure());
@@ -588,6 +619,54 @@ describe('HandoverStore', () => {
       expect(err.failedStep).toBe('save_record');
       expect(vehicleStore.vehicles()[0].status).toBe('rented');
       expect(bookingStore.bookings()[0].status).toBe('in_progress');
+    });
+
+    it('（Task 17 迴歸測試）完成還車會透過真正的協調流程抑制這筆訂單尚未寄出的提醒——不是只有 ReminderStore.suppressForBooking() 自己的單元測試才驗證這條規則', async () => {
+      configure({
+        booking: { status: 'in_progress' },
+        vehicle: { status: 'rented' },
+        reminderStatuses: [
+          {
+            id: 'rem-24h',
+            bookingId: 'b1',
+            offset: '24h_before_return',
+            state: 'scheduled',
+            scheduledFor: '2026-07-21T18:00:00.000Z',
+            updatedAt: '2026-07-20T09:00:00.000Z',
+          },
+          {
+            id: 'rem-2h',
+            bookingId: 'b1',
+            offset: '2h_before_return',
+            state: 'scheduled',
+            scheduledFor: '2026-07-22T16:00:00.000Z',
+            updatedAt: '2026-07-20T09:00:00.000Z',
+          },
+        ],
+      });
+      // configure() 重建了全新的 TestBed；這裡的訂單已經是 in_progress（等同已取車過），
+      // 不需要再呼叫 pickUpFirst()（那會嘗試把 reserved 轉 in_progress，狀態不符會擲錯）。
+
+      const charges = handoverStore.calculateCharges(chargeInput());
+      handoverStore.performReturn({
+        bookingId: 'b1',
+        record: baseRecordInput({ actualAt: T_RETURN_DUE }),
+        charges,
+        actor: { actorId: 'staff1', actorName: '櫃檯人員' },
+      });
+
+      expect(bookingStore.bookings()[0].status).toBe('completed');
+      // performReturn() 本身仍是同步方法；抑制提醒是 fire-and-forget，要等微任務跑完才看得到結果。
+      await flushMicrotasks();
+
+      const remaining = reminderStore.statusesFor('b1');
+      expect(remaining.every((s) => s.state !== 'scheduled')).toBe(true);
+      // suppressForBooking() 的實作是直接移除尚未 sent 的紀錄（見 ReminderStore 類別註解），
+      // 兩筆都還沒 sent，這裡應該完全被清空。
+      expect(remaining).toHaveLength(0);
+      expect(reminderGateway.cancelCalls.map((c) => c.offset).sort()).toEqual(
+        ['24h_before_return', '2h_before_return'].sort(),
+      );
     });
   });
 });

@@ -10,6 +10,7 @@ import {
   PaymentRecord,
   RefundRecord,
   RentalBooking,
+  ReminderStatus,
   Vehicle,
 } from '@car-rental/domain';
 import {
@@ -23,10 +24,12 @@ import {
   MEMBER_REPO,
   PAYMENT_REPO,
   REFUND_REPO,
+  REMINDER_STATUS_REPO,
   VEHICLE_REPO,
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
+import { ReminderGateway } from '../../../core/services/reminder.gateway';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { CancellationPanelComponent } from './cancellation-panel.component';
 import { CancellationStore } from '../../../stores/cancellation/cancellation.store';
@@ -110,6 +113,11 @@ describe('CancellationPanelComponent', () => {
         { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
         { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
         { provide: CUSTOMER_CREDIT_LEDGER_REPO, useValue: createInMemoryRepo<CustomerCreditLedgerEntry>([]) },
+        { provide: REMINDER_STATUS_REPO, useValue: createInMemoryRepo<ReminderStatus>([]) },
+        {
+          provide: ReminderGateway,
+          useValue: { schedule: async () => ({ state: 'scheduled' as const }), cancel: async () => undefined },
+        },
         { provide: DocumentAssetGateway, useValue: new FakeDocumentAssetGateway() },
       ],
     });

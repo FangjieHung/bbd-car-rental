@@ -17,6 +17,7 @@ import { AUDIT_ENTRY_REPO, HANDOVER_RECORD_REPO } from '../../core/repositories/
 import { BookingStore } from '../booking/booking.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { PaymentStore } from '../payment/payment.store';
+import { ReminderStore } from '../reminder/reminder.store';
 
 /**
  * 一般主管覆核不得放行的阻擋類別：設計文件第 7 節「法律資格不符及車輛安全不可交付
@@ -139,6 +140,7 @@ export class HandoverStore {
   private readonly bookingStore = inject(BookingStore);
   private readonly vehicleStore = inject(VehicleStore);
   private readonly paymentStore = inject(PaymentStore);
+  private readonly reminderStore = inject(ReminderStore);
 
   private readonly _records = signal<HandoverRecord[]>(this.repo.getAll());
   readonly records: Signal<HandoverRecord[]> = this._records.asReadonly();
@@ -300,6 +302,14 @@ export class HandoverStore {
         cause,
       );
     }
+
+    // 訂單完成後不寄還車提醒（設計文件第 8 節）。這是刻意的 fire-and-forget 呼叫，不是
+    // HandoverOrchestrationStep 序列的一員：performReturn() 本身維持同步、不改變回傳型別，
+    // 是 Task 13/14 既有呼叫端（handover-panel 等）與大量既有測試已經假設的公開介面；
+    // 提醒抑制是次要、盡力而為的清理動作，即使它失敗（例如 gateway.cancel 拋錯），也不該
+    // 讓「訂單已經完成」這個已經發生的事實回頭被回報成失敗——因此不併入上面 try/catch 的
+    // 部分失敗回報，只在真的出錯時吞掉例外（不讓 Promise rejection 冒出去干擾呼叫端）。
+    void this.reminderStore.suppressForBooking(input.bookingId).catch(() => undefined);
 
     try {
       this.appendAuditEntry({

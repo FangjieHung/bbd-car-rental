@@ -11,6 +11,7 @@ import {
   PaymentRecord,
   RefundRecord,
   RentalBooking,
+  ReminderStatus,
   Vehicle,
 } from '@car-rental/domain';
 import {
@@ -25,9 +26,11 @@ import {
   OPERATOR_RECOVERY_CASE_REPO,
   PAYMENT_REPO,
   REFUND_REPO,
+  REMINDER_STATUS_REPO,
   VEHICLE_REPO,
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
+import { ReminderGateway } from '../../../core/services/reminder.gateway';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { OperatorRecoveryPanelComponent } from './operator-recovery-panel.component';
 import { OperatorRecoveryStore } from '../../../stores/operator-recovery/operator-recovery.store';
@@ -136,6 +139,11 @@ describe('OperatorRecoveryPanelComponent', () => {
         { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
         { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
         { provide: CUSTOMER_CREDIT_LEDGER_REPO, useValue: createInMemoryRepo<CustomerCreditLedgerEntry>([]) },
+        { provide: REMINDER_STATUS_REPO, useValue: createInMemoryRepo<ReminderStatus>([]) },
+        {
+          provide: ReminderGateway,
+          useValue: { schedule: async () => ({ state: 'scheduled' as const }), cancel: async () => undefined },
+        },
       ],
     });
   }

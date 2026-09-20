@@ -46,6 +46,7 @@ import { OcrGateway } from '../../../core/services/ocr.gateway';
 import { MockOcrGateway } from '../../../core/services/mock-ocr.gateway';
 import { DriverEligibilityGateway } from '../../../core/services/driver-eligibility.gateway';
 import { MockDriverEligibilityGateway } from '../../../core/services/mock-driver-eligibility.gateway';
+import { ReminderGateway } from '../../../core/services/reminder.gateway';
 import { VehiclePickerDialogComponent } from '../../bookings/dialogs/vehicle-picker-dialog.component';
 import {
   BookingFormDialogComponent,
@@ -81,6 +82,10 @@ function provideBookingWorkspaceRepos() {
     { provide: HANDOVER_RECORD_REPO, useValue: createInMemoryRepo<HandoverRecord>([]) },
     { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>([]) },
     { provide: REMINDER_STATUS_REPO, useValue: createInMemoryRepo<ReminderStatus>([]) },
+    {
+      provide: ReminderGateway,
+      useValue: { schedule: async () => ({ state: 'scheduled' as const }), cancel: async () => undefined },
+    },
     MockOcrGateway,
     { provide: OcrGateway, useExisting: MockOcrGateway },
     MockDriverEligibilityGateway,

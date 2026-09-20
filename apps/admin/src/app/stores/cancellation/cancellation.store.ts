@@ -18,6 +18,7 @@ import { AUDIT_ENTRY_REPO, CANCELLATION_CASE_REPO } from '../../core/repositorie
 import { BookingStore } from '../booking/booking.store';
 import { PaymentStore } from '../payment/payment.store';
 import { CreditStore, addMonths } from '../credit/credit.store';
+import { ReminderStore } from '../reminder/reminder.store';
 
 export interface CreateCancellationCaseInput {
   bookingId: string;
@@ -189,6 +190,7 @@ export class CancellationStore {
   private readonly bookingStore = inject(BookingStore);
   private readonly paymentStore = inject(PaymentStore);
   private readonly creditStore = inject(CreditStore);
+  private readonly reminderStore = inject(ReminderStore);
 
   private readonly _cases = signal<CancellationCase[]>(this.repo.getAll());
   readonly cases: Signal<CancellationCase[]> = this._cases.asReadonly();
@@ -404,6 +406,12 @@ export class CancellationStore {
     } catch (cause) {
       throw new CancellationDispositionPartialFailureError(completed, 'booking_transition', cause);
     }
+
+    // 訂單取消後不寄還車提醒（設計文件第 8 節）。理由同 HandoverStore.performReturn()：刻意
+    // fire-and-forget，不併入上面的 CancellationDispositionStep 序列——disposeCase() 維持同步、
+    // 不改變回傳型別，提醒抑制是次要、盡力而為的清理動作，失敗也不該讓「訂單已經取消」這個
+    // 已經發生的事實回頭被回報成失敗。
+    void this.reminderStore.suppressForBooking(kase.bookingId).catch(() => undefined);
 
     let updated: CancellationCase;
     try {
