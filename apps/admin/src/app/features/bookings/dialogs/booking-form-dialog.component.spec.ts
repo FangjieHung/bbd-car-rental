@@ -37,7 +37,9 @@ import {
   ContractVersion,
   ContractSnapshot,
   PriceBreakdown,
+  ReminderStatus,
 } from '../../../core/models';
+import { REMINDER_STATUS_REPO } from '../../../core/repositories/tokens';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
 
 function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
@@ -107,6 +109,7 @@ interface FixtureOptions {
   paymentRepo?: ReturnType<typeof createInMemoryRepo<PaymentRecord>>;
   bookingRepo?: ReturnType<typeof createInMemoryRepo<RentalBooking>>;
   memberRepo?: ReturnType<typeof createInMemoryRepo<Member>>;
+  reminderStatusRepo?: ReturnType<typeof createInMemoryRepo<ReminderStatus>>;
 }
 
 function createFixture(options: FixtureOptions = {}) {
@@ -117,6 +120,7 @@ function createFixture(options: FixtureOptions = {}) {
   const bookingRepo = options.bookingRepo ?? createInMemoryRepo<RentalBooking>(options.bookings ?? []);
   const paymentRepo = options.paymentRepo ?? createInMemoryRepo<PaymentRecord>([]);
   const contractRepo = createInMemoryRepo<ContractVersion>(options.contracts ?? []);
+  const reminderStatusRepo = options.reminderStatusRepo ?? createInMemoryRepo<ReminderStatus>([]);
 
   TestBed.configureTestingModule({
     providers: [
@@ -133,12 +137,24 @@ function createFixture(options: FixtureOptions = {}) {
       { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
       { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
       { provide: CONTRACT_VERSION_REPO, useValue: contractRepo },
+      { provide: REMINDER_STATUS_REPO, useValue: reminderStatusRepo },
       { provide: ReminderGateway, useValue: reminderGateway },
     ],
   });
   const fixture = TestBed.createComponent(BookingFormDialogComponent);
   const component = fixture.componentInstance;
-  return { component, fixture, closeSpy, reminderGateway, vehicleRepo, memberRepo, bookingRepo, paymentRepo, contractRepo };
+  return {
+    component,
+    fixture,
+    closeSpy,
+    reminderGateway,
+    vehicleRepo,
+    memberRepo,
+    bookingRepo,
+    paymentRepo,
+    contractRepo,
+    reminderStatusRepo,
+  };
 }
 
 function fillVehicleStep(
@@ -784,5 +800,59 @@ describe('BookingFormDialogComponent 編輯已簽署訂單：待辦清單不誤�
 
     expect(component.currentContractSigned()).toBe(false);
     expect(component.incompleteItems()).toContain(component.t.bookingForm.incomplete.contractNotSigned);
+  });
+});
+
+describe('BookingFormDialogComponent 還車提醒：改用 ReminderStore 真的持久化到 REMINDER_STATUS_REPO（Task 17 修補 Task 7 遺留的缺口）', () => {
+  it('建立新訂單且提供 Email：送出後兩筆提醒狀態真的寫回 REMINDER_STATUS_REPO，不是只留在 gateway 自己的私有狀態', async () => {
+    const { component, closeSpy, reminderGateway, reminderStatusRepo } = createFixture();
+    fillVehicleStep(component);
+    fillNewRenter(component);
+    component.form.patchValue({ email: 'a@b.com' });
+
+    await component.submit();
+
+    expect(closeSpy).toHaveBeenCalled();
+    const bookingId = closeSpy.mock.calls[0][0].bookingId as string;
+
+    expect(reminderGateway.schedule).toHaveBeenCalledTimes(2);
+    const persisted = reminderStatusRepo.getAll();
+    expect(persisted).toHaveLength(2);
+    expect(persisted.every((r) => r.bookingId === bookingId)).toBe(true);
+    expect(persisted.map((r) => r.offset).sort()).toEqual(['24h_before_return', '2h_before_return'].sort());
+  });
+
+  it('沒有 Email 時仍會呼叫排程並持久化紀錄——不再像過去那樣完全不寫入任何提醒狀態', async () => {
+    const { component, closeSpy, reminderGateway, reminderStatusRepo } = createFixture();
+    fillVehicleStep(component);
+    fillNewRenter(component);
+
+    await component.submit();
+
+    expect(closeSpy).toHaveBeenCalled();
+    expect(reminderGateway.schedule).toHaveBeenCalledTimes(2);
+    expect(reminderStatusRepo.getAll()).toHaveLength(2);
+  });
+
+  it('編輯既有訂單並改動還車時間：重新排程會先取消舊排程，且不會在 REMINDER_STATUS_REPO 留下重複紀錄', async () => {
+    const booking = makeBooking({ id: 'b1', vehicleId: 'v1', memberId: 'm1' });
+    const { component, reminderGateway, reminderStatusRepo } = createFixture({
+      vehicles: [makeVehicle({ id: 'v1', category: 'car' })],
+      members: [{ id: 'm1', name: '王小明', phone: '0912345678', kind: 'local', email: 'a@b.com' }],
+      bookings: [booking],
+      data: booking,
+    });
+    component.form.patchValue({ email: 'a@b.com' });
+
+    await component.submit();
+    expect(reminderStatusRepo.getAll()).toHaveLength(2);
+
+    component.form.controls.endLocal.setValue('2026-01-09T09:00');
+    await component.submit();
+
+    // 兩個 offset 各自的舊排程都被取消過一次（第二次送出時）。
+    expect(reminderGateway.cancel).toHaveBeenCalledTimes(2);
+    // 沒有因為重排而多出重複紀錄——同一 offset 就地更新，不是新增一筆。
+    expect(reminderStatusRepo.getAll()).toHaveLength(2);
   });
 });

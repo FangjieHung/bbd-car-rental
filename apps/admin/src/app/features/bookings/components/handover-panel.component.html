@@ -154,6 +154,29 @@
             </div>
           }
 
+          @if (reminderStatuses().length > 0) {
+            <div class="handover-panel__reminders">
+              <h4>{{ t.reminderPanel.title }}</h4>
+              <ul>
+                @for (status of reminderStatuses(); track status.id) {
+                  <li>
+                    <span>{{ reminderOffsetLabel(status.offset) }}</span>
+                    <span>{{ reminderStateLabel(status.state) }}</span>
+                    @if (status.state === 'failed') {
+                      <span>{{ status.failureReason }}</span>
+                      <span>{{
+                        isRetryableFailure(status)
+                          ? t.reminderPanel.retryableNotice
+                          : t.reminderPanel.permanentFailureNotice
+                      }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+              <p class="handover-panel__hint">{{ t.reminderPanel.mockDisclaimer }}</p>
+            </div>
+          }
+
           <h3 class="handover-panel__section-title">{{ t.handoverPanel.returnSectionTitle }}</h3>
 
           <form class="handover-panel__form" [formGroup]="returnForm">
@@ -308,6 +331,29 @@
                 <dt>{{ t.handoverPanel.energyLevel }}</dt>
                 <dd>{{ ret.energyLevel }}</dd>
               </dl>
+            </div>
+          }
+
+          @if (reminderStatuses().length > 0) {
+            <div class="handover-panel__reminders">
+              <h4>{{ t.reminderPanel.title }}</h4>
+              <ul>
+                @for (status of reminderStatuses(); track status.id) {
+                  <li>
+                    <span>{{ reminderOffsetLabel(status.offset) }}</span>
+                    <span>{{ reminderStateLabel(status.state) }}</span>
+                    @if (status.state === 'failed') {
+                      <span>{{ status.failureReason }}</span>
+                      <span>{{
+                        isRetryableFailure(status)
+                          ? t.reminderPanel.retryableNotice
+                          : t.reminderPanel.permanentFailureNotice
+                      }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+              <p class="handover-panel__hint">{{ t.reminderPanel.mockDisclaimer }}</p>
             </div>
           }
         </section>

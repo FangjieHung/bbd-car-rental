@@ -8,6 +8,7 @@ import {
   Member,
   PricingPlan,
   RentalBooking,
+  ReminderStatus,
   SeasonCalendar,
   Vehicle,
 } from '@car-rental/domain';
@@ -24,6 +25,7 @@ import {
   PAYMENT_REPO,
   PRICING_PLAN_REPO,
   REFUND_REPO,
+  REMINDER_STATUS_REPO,
   SEASON_CALENDAR_REPO,
   VEHICLE_REPO,
 } from '../../../core/repositories/tokens';
@@ -31,6 +33,7 @@ import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
 import { OcrExtractionResult, OcrGateway } from '../../../core/services/ocr.gateway';
 import { DriverEligibilityCheckInput, DriverEligibilityGateway, DriverEligibilityResult } from '../../../core/services/driver-eligibility.gateway';
+import { ReminderDispatchResult, ReminderGateway, ScheduleReminderInput } from '../../../core/services/reminder.gateway';
 import { HandoverPanelComponent } from './handover-panel.component';
 import { HandoverStore } from '../../../stores/handover/handover.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
@@ -72,6 +75,16 @@ class FakeOcrGateway implements OcrGateway {
 class FakeDriverEligibilityGateway implements DriverEligibilityGateway {
   checkReciprocity(_input: DriverEligibilityCheckInput): Promise<DriverEligibilityResult> {
     return Promise.resolve({ reciprocityStatus: 'eligible' });
+  }
+}
+
+/** ReminderStore（本任務新增）的必要依賴——這裡只需要滿足 DI，不測試排程行為本身。 */
+class FakeReminderGateway implements ReminderGateway {
+  async schedule(_input: ScheduleReminderInput): Promise<ReminderDispatchResult> {
+    return { state: 'scheduled' };
+  }
+  async cancel(): Promise<void> {
+    return undefined;
   }
 }
 
@@ -219,6 +232,7 @@ describe('HandoverPanelComponent', () => {
     /** 合約快照裡鎖定的逾時／能源補繳規則；預設不帶，還車試算會退回用 PricingStore 反查。 */
     disclosedRules?: Partial<ContractDisclosedRules>;
     pricingPlan?: Partial<PricingPlan>;
+    reminderStatuses?: ReminderStatus[];
   } = {}) {
     assetGateway = new FakeDocumentAssetGateway();
     TestBed.resetTestingModule();
@@ -252,6 +266,8 @@ describe('HandoverPanelComponent', () => {
         { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo() },
         { provide: HANDOVER_RECORD_REPO, useValue: createInMemoryRepo() },
         { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo() },
+        { provide: REMINDER_STATUS_REPO, useValue: createInMemoryRepo<ReminderStatus>(options.reminderStatuses ?? []) },
+        { provide: ReminderGateway, useValue: new FakeReminderGateway() },
         {
           provide: PRICING_PLAN_REPO,
           useValue: createInMemoryRepo<PricingPlan>([makePricingPlan(options.pricingPlan)]),
@@ -440,6 +456,50 @@ describe('HandoverPanelComponent', () => {
       // 若誤用方案規則（15 分鐘寬限、每單位 100）會得到 100，兩者差異明顯，足以驗證來源正確。
       expect(charges!.finalLateFee).toBe(1998);
       expect(charges!.finalEnergyFee).toBe(0);
+    });
+  });
+
+  describe('還車提醒狀態（Task 17）', () => {
+    it('還車中訂單顯示提醒狀態，且已寄送的提醒附上明確的開發模擬標示', async () => {
+      configure({
+        booking: { status: 'in_progress' },
+        reminderStatuses: [
+          {
+            id: 'rem1',
+            bookingId: 'b1',
+            offset: '24h_before_return',
+            state: 'sent',
+            sentAt: '2026-07-21T18:00:00.000Z',
+            updatedAt: '2026-07-21T18:00:00.000Z',
+          },
+          {
+            id: 'rem2',
+            bookingId: 'b1',
+            offset: '2h_before_return',
+            state: 'failed',
+            failureReason: 'smtp_timeout',
+            scheduledFor: '2099-01-01T00:00:00.000Z',
+            updatedAt: '2026-07-22T16:00:00.000Z',
+          },
+        ],
+      });
+      const fixture = createFixture();
+      const el = fixture.nativeElement as HTMLElement;
+
+      expect(el.textContent).toContain('還車前 24 小時');
+      expect(el.textContent).toContain('已寄送');
+      expect(el.textContent).toContain('smtp_timeout');
+      expect(el.textContent).toContain('開發期模擬資料');
+      // scheduledFor 在未來，應顯示「可重試」而非「永久失敗」提示。
+      expect(el.textContent).toContain('之後仍可能由後端重試');
+    });
+
+    it('沒有任何提醒紀錄時不顯示提醒區塊', () => {
+      configure({ booking: { status: 'in_progress' } });
+      const fixture = createFixture();
+      const el = fixture.nativeElement as HTMLElement;
+
+      expect(el.querySelector('.handover-panel__reminders')).toBeNull();
     });
   });
 });

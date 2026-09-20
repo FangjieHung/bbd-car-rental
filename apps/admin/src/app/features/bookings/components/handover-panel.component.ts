@@ -33,6 +33,7 @@ import {
   PickupOverrideNotAllowedError,
   SupervisorOverrideInvalidError,
 } from '../../../stores/handover/handover.store';
+import { ReminderStore, isRetryableReminderFailure } from '../../../stores/reminder/reminder.store';
 
 /** 依會員類型推導本次取車必須查核的身分文件種類：本國人查身分證、居留證者查居留證、外國旅客查護照。 */
 function requiredIdentityDocumentKind(memberKind: MemberKind | undefined): IdentityDocumentType {
@@ -89,6 +90,7 @@ export class HandoverPanelComponent {
   protected readonly nonOverridableBlockerTypes = NON_OVERRIDABLE_PICKUP_BLOCKER_TYPES;
 
   private readonly handoverStore = inject(HandoverStore);
+  private readonly reminderStore = inject(ReminderStore);
   private readonly bookingStore = inject(BookingStore);
   private readonly vehicleStore = inject(VehicleStore);
   private readonly memberStore = inject(MemberStore);
@@ -113,6 +115,21 @@ export class HandoverPanelComponent {
 
   protected readonly pickupRecord = computed(() => this.handoverStore.pickupFor(this.bookingId()));
   protected readonly returnRecord = computed(() => this.handoverStore.returnFor(this.bookingId()));
+
+  /** 還車提醒目前狀態——設計文件第 8 節：前端只顯示待排程／已排程／已寄送／失敗／缺少 Email。 */
+  protected readonly reminderStatuses = computed(() => this.reminderStore.statusesFor(this.bookingId()));
+
+  protected reminderOffsetLabel(offset: string): string {
+    return this.t.reminderPanel.offsetLabels[offset] ?? offset;
+  }
+
+  protected reminderStateLabel(state: string): string {
+    return this.t.dispatch.workList.reminderStateLabels[state] ?? state;
+  }
+
+  protected isRetryableFailure(status: Parameters<typeof isRetryableReminderFailure>[0]): boolean {
+    return isRetryableReminderFailure(status);
+  }
 
   // ---------------------------------------------------------------------
   // 取車：就緒判斷輸入即時由現有資料組出，evaluateReadiness 是純函式，任何依賴

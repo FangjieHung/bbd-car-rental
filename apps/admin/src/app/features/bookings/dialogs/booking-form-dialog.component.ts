@@ -36,7 +36,7 @@ import { PaymentStore } from '../../../stores/payment/payment.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 import { AddOnStore } from '../../../stores/addon/addon.store';
-import { ReminderGateway } from '../../../core/services/reminder.gateway';
+import { ReminderStore } from '../../../stores/reminder/reminder.store';
 
 /** 精靈回傳值：只回傳新建/編輯完成的訂單 id，呼叫端據此直接開工作區——
  * 精靈自己已經在 submit() 內完成建立會員/訂單/款項/合約/提醒的完整寫入序列，
@@ -66,11 +66,6 @@ function toLocalInputValue(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** 還車前 hoursBefore 小時的排程時間（ISO）。 */
-function reminderScheduledFor(endIso: string, hoursBefore: number): string {
-  return new Date(new Date(endIso).getTime() - hoursBefore * 60 * 60 * 1000).toISOString();
 }
 
 /**
@@ -107,7 +102,7 @@ export class BookingFormDialogComponent {
   readonly contractStore = inject(ContractStore);
   readonly pricingStore = inject(PricingStore);
   readonly addOnStore = inject(AddOnStore);
-  private readonly reminderGateway = inject(ReminderGateway);
+  private readonly reminderStore = inject(ReminderStore);
   private readonly fb = inject(NonNullableFormBuilder);
 
   protected readonly steps = BOOKING_WIZARD_STEPS;
@@ -637,21 +632,14 @@ export class BookingFormDialogComponent {
         this.contractStore.sign(contractVersion.id, ['mock-signature-pad']);
       }
 
-      // 6. 有 Email 才排程還車提醒（開發期 mock；missing_email 本身是正常結果，不是錯誤)。
-      if (v.email) {
-        await this.reminderGateway.schedule({
-          bookingId: booking.id,
-          offset: '24h_before_return',
-          scheduledFor: reminderScheduledFor(endIso, 24),
-          email: v.email,
-        });
-        await this.reminderGateway.schedule({
-          bookingId: booking.id,
-          offset: '2h_before_return',
-          scheduledFor: reminderScheduledFor(endIso, 2),
-          email: v.email,
-        });
-      }
+      // 6. 排程（或重新排程）還車提醒——一律呼叫，讓沒有 Email 的訂單也留下 missing_email 狀態
+      // 紀錄（開發期 mock；missing_email 本身是正常結果，不是錯誤）。ReminderStore 內部會視需要
+      // 先取消舊排程再依（可能已編輯過的）還車時間重排，建立與編輯共用同一段程式碼。
+      await this.reminderStore.scheduleForBooking({
+        bookingId: booking.id,
+        endTime: endIso,
+        ...(v.email ? { email: v.email } : {}),
+      });
 
       // 7. 關閉並回傳訂單 id，呼叫端直接開工作區接續補資料。
       const result: BookingFormResult = { bookingId: booking.id };

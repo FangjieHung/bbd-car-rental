@@ -55,7 +55,7 @@
         <app-customer-credit-panel [bookingId]="data.bookingId" />
       }
       @case ('activity') {
-        <section class="booking-workspace__placeholder">{{ t.bookingWorkspace.sections['activity'] }}</section>
+        <app-activity-timeline [bookingId]="data.bookingId" />
       }
     }
   </div>
