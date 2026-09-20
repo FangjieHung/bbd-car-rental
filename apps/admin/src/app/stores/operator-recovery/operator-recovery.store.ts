@@ -231,6 +231,9 @@ export class OperatorRecoveryStore {
 
     const absorbedDifference = input.absorbedDifference ?? 0;
     assertIntegerMoney(absorbedDifference, 'absorbedDifference');
+    if (input.externalQuoteAmount != null) {
+      assertIntegerMoney(input.externalQuoteAmount, 'externalQuoteAmount');
+    }
 
     let contractVersionId: string | undefined;
 

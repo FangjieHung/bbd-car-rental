@@ -493,6 +493,59 @@ describe('OperatorRecoveryStore', () => {
       expect(bookingStore.bookings().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
       expect(contractStore.versionsFor('b1')).toHaveLength(1);
     });
+
+    it('外部報價金額須為非負整數（新台幣無小數位）：非整數會丟錯', () => {
+      const { store } = createFixture({ vehicles: [makeVehicle()] });
+      const kase = store.createCase({
+        bookingId: 'b1',
+        reason: 'oversell',
+        discoveredAt: T_START,
+        notifiedAt: T_START,
+        actor: ACTOR,
+      });
+      store.attemptRemedy({ caseId: kase.id, type: 'same_class_replacement', attemptedAt: T_START, outcome: 'unavailable', notedBy: '櫃檯甲' });
+      store.attemptRemedy({ caseId: kase.id, type: 'free_upgrade', attemptedAt: T_START, outcome: 'declined', notedBy: '櫃檯甲' });
+
+      expect(() =>
+        store.attemptRemedy({
+          caseId: kase.id,
+          type: 'partner_transfer',
+          attemptedAt: T_START,
+          outcome: 'declined',
+          partnerName: '離島租車行',
+          externalQuoteAmount: 2500.5,
+          notedBy: '櫃檯甲',
+        }),
+      ).toThrow(RangeError);
+      // 拒絕時不寫入任何嘗試紀錄，不能留下一筆金額有問題的稽核資料
+      expect(store.cases().find((c) => c.id === kase.id)?.remedyAttempts).toHaveLength(2);
+    });
+
+    it('外部報價金額須為非負整數：負數會丟錯', () => {
+      const { store } = createFixture({ vehicles: [makeVehicle()] });
+      const kase = store.createCase({
+        bookingId: 'b1',
+        reason: 'oversell',
+        discoveredAt: T_START,
+        notifiedAt: T_START,
+        actor: ACTOR,
+      });
+      store.attemptRemedy({ caseId: kase.id, type: 'same_class_replacement', attemptedAt: T_START, outcome: 'unavailable', notedBy: '櫃檯甲' });
+      store.attemptRemedy({ caseId: kase.id, type: 'free_upgrade', attemptedAt: T_START, outcome: 'declined', notedBy: '櫃檯甲' });
+
+      expect(() =>
+        store.attemptRemedy({
+          caseId: kase.id,
+          type: 'partner_transfer',
+          attemptedAt: T_START,
+          outcome: 'declined',
+          partnerName: '離島租車行',
+          externalQuoteAmount: -100,
+          notedBy: '櫃檯甲',
+        }),
+      ).toThrow(RangeError);
+      expect(store.cases().find((c) => c.id === kase.id)?.remedyAttempts).toHaveLength(2);
+    });
   });
 
   describe('業者責任取消（只在三個補救方案皆失敗後才可進入）', () => {
