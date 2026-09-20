@@ -6,24 +6,46 @@ import { of } from 'rxjs';
 import { DashboardPageComponent } from './dashboard-page.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
 import {
+  AUDIT_ENTRY_REPO,
   BOOKING_REPO,
+  CHARGE_ADJUSTMENT_REPO,
+  CONTRACT_VERSION_REPO,
+  DRIVER_CREDENTIAL_REPO,
+  HANDOVER_RECORD_REPO,
+  IDENTITY_DOCUMENT_REPO,
   MEMBER_REPO,
   MAINTENANCE_REPO,
+  PAYMENT_REPO,
+  REFUND_REPO,
+  REMINDER_STATUS_REPO,
   VEHICLE_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import {
+  AuditEntry,
+  ChargeAdjustment,
+  ContractVersion,
+  DriverCredential,
+  HandoverRecord,
+  IdentityDocument,
   Member,
   MaintenanceRecord,
+  PaymentRecord,
   PricingPlan,
+  RefundRecord,
   RentalBooking,
+  ReminderStatus,
   SeasonCalendar,
   Vehicle,
 } from '../../../core/models';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { OcrGateway } from '../../../core/services/ocr.gateway';
+import { MockOcrGateway } from '../../../core/services/mock-ocr.gateway';
+import { DriverEligibilityGateway } from '../../../core/services/driver-eligibility.gateway';
+import { MockDriverEligibilityGateway } from '../../../core/services/mock-driver-eligibility.gateway';
 import { VehiclePickerDialogComponent } from '../../bookings/dialogs/vehicle-picker-dialog.component';
 import {
   BookingFormDialogComponent,
@@ -42,11 +64,36 @@ function providePricing() {
   ];
 }
 
+/**
+ * CalendarViewComponent（Task 16）的付款／文件／合約／取車就緒／還車提醒欄位額外依賴了
+ * PaymentStore、DocumentStore、ContractStore、HandoverStore 與 REMINDER_STATUS_REPO，
+ * DashboardPageComponent 內嵌了它，因此這裡的每個 TestBed 也都得備齊，理由同
+ * calendar-view.spec.ts 的 provideBookingWorkspaceRepos()。
+ */
+function provideBookingWorkspaceRepos() {
+  return [
+    { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
+    { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
+    { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
+    { provide: IDENTITY_DOCUMENT_REPO, useValue: createInMemoryRepo<IdentityDocument>([]) },
+    { provide: DRIVER_CREDENTIAL_REPO, useValue: createInMemoryRepo<DriverCredential>([]) },
+    { provide: CONTRACT_VERSION_REPO, useValue: createInMemoryRepo<ContractVersion>([]) },
+    { provide: HANDOVER_RECORD_REPO, useValue: createInMemoryRepo<HandoverRecord>([]) },
+    { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>([]) },
+    { provide: REMINDER_STATUS_REPO, useValue: createInMemoryRepo<ReminderStatus>([]) },
+    MockOcrGateway,
+    { provide: OcrGateway, useExisting: MockOcrGateway },
+    MockDriverEligibilityGateway,
+    { provide: DriverEligibilityGateway, useExisting: MockDriverEligibilityGateway },
+  ];
+}
+
 describe('DashboardPageComponent child date contract', () => {
   function createFixture(bookings: RentalBooking[] = []) {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
+        ...provideBookingWorkspaceRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
@@ -114,6 +161,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
+        ...provideBookingWorkspaceRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
@@ -186,6 +234,7 @@ describe('DashboardPageComponent onQuickRange', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
+        ...provideBookingWorkspaceRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: dialogOpen } },

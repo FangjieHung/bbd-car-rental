@@ -91,6 +91,7 @@
                 <mat-accordion class="work-list-accordion">
                   @for (row of pickupWorkRows(); track row.id) {
                     @let vehicle = vehicleOf(row);
+                    @let ready = isPickupReady(row);
                     <mat-expansion-panel>
                       <mat-expansion-panel-header class="work-list-row-header">
                         <mat-panel-title class="work-list-row__title">
@@ -100,6 +101,16 @@
                           <span class="work-list-row__meta"
                             >{{ vehicle?.model ?? '—' }} · {{ memberName(row) }}</span
                           >
+                          <span
+                            class="ui-chip work-list-row__status-chip"
+                            [class.ui-chip--positive]="ready"
+                            [class.ui-chip--warning]="!ready"
+                          >
+                            <span class="material-symbols-rounded" aria-hidden="true">{{
+                              ready ? 'check_circle' : 'report'
+                            }}</span>
+                            {{ readinessLabel(row) }}
+                          </span>
                         </mat-panel-title>
                         <mat-panel-description class="work-list-row__time">{{
                           fmtTime(row.booking.startTime)
@@ -131,18 +142,66 @@
                           <dd>{{ location(row) }}</dd>
                         </div>
                         <div>
-                          <dt>班次</dt>
-                          <dd>—</dd>
+                          <dt>{{ t.dispatch.workList.payment }}</dt>
+                          <dd>{{ paymentStatusLabel(row) }}・{{ t.dispatch.workList.balanceDue }} {{ balanceDue(row) }}</dd>
                         </div>
                         <div>
-                          <dt>洗車</dt>
-                          <dd>—</dd>
+                          <dt>{{ t.dispatch.workList.documentCheck }}</dt>
+                          <dd>{{ documentCheckLabel(row) }}</dd>
                         </div>
                         <div>
-                          <dt>付款</dt>
-                          <dd>{{ paymentLabel() }}</dd>
+                          <dt>{{ t.dispatch.workList.contractStatus }}</dt>
+                          <dd>{{ contractStatusLabel(row) }}</dd>
                         </div>
                       </dl>
+                      @if (blockersOf(row).length > 0 || warningsOf(row).length > 0) {
+                        <ul class="work-list-severity">
+                          @for (blocker of blockersOf(row); track blocker.reason) {
+                            <li class="work-list-severity__item work-list-severity__item--blocker">
+                              <span class="material-symbols-rounded" aria-hidden="true">report</span>
+                              <span class="work-list-severity__text">{{ blocker.message }}</span>
+                              <button matButton="text" (click)="goHandleBlocker(row, blocker)">
+                                {{ t.dispatch.workList.goHandle }}
+                              </button>
+                            </li>
+                          }
+                          @for (warning of warningsOf(row); track warning.type) {
+                            <li class="work-list-severity__item work-list-severity__item--warning">
+                              <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+                              <span class="work-list-severity__text">{{ warning.message }}</span>
+                              <button matButton="text" (click)="goHandleWarning(row, warning)">
+                                {{ t.dispatch.workList.goHandle }}
+                              </button>
+                            </li>
+                          }
+                        </ul>
+                      }
+                      <div class="work-list-actions">
+                        <button matButton="tonal" (click)="payAction(row)">
+                          <span class="material-symbols-rounded" aria-hidden="true">payments</span>
+                          {{ t.dispatch.workList.pay }}
+                        </button>
+                        @if (row.booking.status === 'reserved') {
+                          <button matButton="tonal" (click)="editAction(row)">
+                            <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                            {{ t.common.edit }}
+                          </button>
+                        }
+                        <button matButton="tonal" (click)="viewContractAction(row)">
+                          <span class="material-symbols-rounded" aria-hidden="true">description</span>
+                          {{ t.dispatch.workList.viewContract }}
+                        </button>
+                        @if (row.booking.status === 'reserved') {
+                          <button matButton="tonal" (click)="cancelAction(row)">
+                            <span class="material-symbols-rounded" aria-hidden="true">cancel</span>
+                            {{ t.common.cancel }}
+                          </button>
+                          <button matButton="filled" (click)="pickupAction(row)">
+                            <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
+                            {{ t.booking.pickUp }}
+                          </button>
+                        }
+                      </div>
                     </mat-expansion-panel>
                   } @empty {
                     <p class="pb-4 pt-4 text-sm calendar-view__muted">{{ t.common.empty }}</p>
@@ -156,6 +215,7 @@
                   <mat-accordion class="work-list-accordion">
                     @for (row of returnWorkRows(); track row.id) {
                       @let vehicle = vehicleOf(row);
+                      @let overdue = isOverdue(row);
                       <mat-expansion-panel>
                         <mat-expansion-panel-header class="work-list-row-header">
                           <mat-panel-title class="work-list-row__title">
@@ -165,6 +225,23 @@
                             <span class="work-list-row__meta"
                               >{{ vehicle?.model ?? '—' }} · {{ memberName(row) }}</span
                             >
+                            @if (isReturnedUnsettled(row)) {
+                              <span class="ui-chip ui-chip--warning work-list-row__status-chip">
+                                <span class="material-symbols-rounded" aria-hidden="true">receipt_long</span>
+                                {{ t.dispatch.workList.returnedUnsettled }}
+                              </span>
+                            } @else if (row.booking.status === 'in_progress') {
+                              <span
+                                class="ui-chip work-list-row__status-chip"
+                                [class.ui-chip--warning]="overdue"
+                                [class.ui-chip--positive]="!overdue"
+                              >
+                                <span class="material-symbols-rounded" aria-hidden="true">{{
+                                  overdue ? 'schedule' : 'check_circle'
+                                }}</span>
+                                {{ overdue ? t.dispatch.workList.overdue + ' ' + overdueDurationLabel(row) : t.dispatch.workList.onTime }}
+                              </span>
+                            }
                           </mat-panel-title>
                           <mat-panel-description class="work-list-row__time">{{
                             fmtTime(row.booking.endTime)
@@ -186,7 +263,7 @@
                                   <span class="material-symbols-rounded" aria-hidden="true"
                                     >call</span
                                   >
-                                  打電話
+                                  {{ t.dispatch.workList.contact }}
                                 </a>
                               }
                             </dd>
@@ -196,18 +273,36 @@
                             <dd>{{ location(row) }}</dd>
                           </div>
                           <div>
-                            <dt>班次</dt>
-                            <dd>—</dd>
+                            <dt>{{ t.dispatch.workList.reminderStatus }}</dt>
+                            <dd>{{ reminderStateLabel(row) }}</dd>
                           </div>
                           <div>
-                            <dt>洗車</dt>
-                            <dd>—</dd>
+                            <dt>{{ t.dispatch.workList.estimatedLateFee }}</dt>
+                            <dd>{{ estimatedLateFee(row) }}</dd>
                           </div>
                           <div>
-                            <dt>付款</dt>
-                            <dd>{{ paymentLabel() }}</dd>
+                            <dt>{{ t.dispatch.workList.currentBalance }}</dt>
+                            <dd>{{ balanceDue(row) }}</dd>
                           </div>
                         </dl>
+                        <div class="work-list-actions">
+                          <button matButton="tonal" (click)="viewAction(row)">
+                            <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
+                            {{ t.dispatch.workList.view }}
+                          </button>
+                          @if (phoneHref(row.booking); as href) {
+                            <a matButton="tonal" [href]="href">
+                              <span class="material-symbols-rounded" aria-hidden="true">call</span>
+                              {{ t.dispatch.workList.contact }}
+                            </a>
+                          }
+                          @if (row.booking.status === 'in_progress') {
+                            <button matButton="filled" (click)="returnAction(row)">
+                              <span class="material-symbols-rounded" aria-hidden="true">assignment_turned_in</span>
+                              {{ t.booking.complete }}
+                            </button>
+                          }
+                        </div>
                       </mat-expansion-panel>
                     }
                   </mat-accordion>

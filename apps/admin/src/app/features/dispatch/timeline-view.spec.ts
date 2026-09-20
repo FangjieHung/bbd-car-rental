@@ -1,10 +1,10 @@
-import { beforeEach, describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { computeBlocks, TimelineViewComponent } from './timeline-view/timeline-view.component';
 import { RentalBooking, Vehicle } from '../../core/models';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { MatDialog } from '@angular/material/dialog';
+import { BookingWorkspaceService } from '../bookings/services/booking-workspace.service';
 
 const mkVehicle = (partial: Partial<Vehicle>): Vehicle => ({
   id: 'v1',
@@ -83,7 +83,7 @@ describe('TimelineViewComponent supplied date', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
-        { provide: MatDialog, useValue: { open: () => undefined } },
+        { provide: BookingWorkspaceService, useValue: { open: () => undefined } },
       ],
     });
     fixture = TestBed.createComponent(TimelineViewComponent);
@@ -119,7 +119,7 @@ describe('TimelineViewComponent vehicles input', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo(storeVehicles) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
-        { provide: MatDialog, useValue: { open: () => undefined } },
+        { provide: BookingWorkspaceService, useValue: { open: () => undefined } },
       ],
     });
     return TestBed.createComponent(TimelineViewComponent);
@@ -138,5 +138,24 @@ describe('TimelineViewComponent vehicles input', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.rows().map((v) => v.id)).toEqual(['v3']);
+  });
+});
+
+describe('TimelineViewComponent openDetail', () => {
+  it('點擊區塊開同一個訂單工作區，不再開簡化版的 booking-detail dialog', () => {
+    const workspaceOpen = vi.fn();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo([mkVehicle({ id: 'v1' })]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo([mk({ id: 'b1' })]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
+        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
+      ],
+    });
+    const component = TestBed.createComponent(TimelineViewComponent).componentInstance;
+
+    component.openDetail('b1');
+
+    expect(workspaceOpen).toHaveBeenCalledWith('b1');
   });
 });
