@@ -56,6 +56,9 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
     year: 2022,
     status: 'reserved',
     mileage: 1000,
+    seats: 5,
+    luggage: 2,
+    hasAirConditioner: true,
     createdAt: T_START,
     ...partial,
   };
@@ -178,6 +181,25 @@ describe('OperatorRecoveryPanelComponent', () => {
 
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain(ZH_TW.operatorRecoveryPanel.remedyTypeLabels['same_class_replacement']);
+  });
+
+  it('同級調車只列出同車種且載客能力相同的可用替代車，避免前端引導到不相容選項', () => {
+    configure({
+      vehicles: [
+        makeVehicle(),
+        makeVehicle({ id: 'v2', plateNumber: 'A-2', status: 'available' }),
+        makeVehicle({
+          id: 'v3', plateNumber: 'M-3', category: 'scooter', seats: 2, luggage: 1,
+          hasAirConditioner: false, status: 'available',
+        }),
+      ],
+    });
+    const fixture = createFixture();
+    const component = fixture.componentInstance;
+    component['createForm'].patchValue({ actorName: '櫃檯甲' });
+    component['submitCreateCase']();
+
+    expect(component['availableVehicles']().map((vehicle) => vehicle.id)).toEqual(['v2']);
   });
 
   it('依序嘗試補救方案：同級調車拒絕後，下一個待嘗試方案變成免費升等', () => {

@@ -93,6 +93,7 @@ class HostComponent {
       [labels]="labels"
       [selectable]="true"
       [selection]="selection()"
+      [showBatchDelete]="showBatchDelete()"
       (selectionChange)="onSelectionChange($event)"
       (batchDelete)="onBatchDelete($event)"
     >
@@ -113,6 +114,7 @@ class SelectionHostComponent {
     { id: 'v2', name: 'XYZ-789', status: 'rented', mileage: 34000 },
   ]);
   readonly selection = signal<readonly Row[]>([]);
+  readonly showBatchDelete = signal(true);
   readonly selectionChanges: readonly Row[][] = [];
   readonly deletedRows: readonly Row[][] = [];
 
@@ -286,6 +288,15 @@ describe('DataTableComponent 資料列選取', () => {
 
     expect(fixture.componentInstance.deletedRows).toEqual([[selectedRow]]);
     expect(fixture.componentInstance.rows()).toEqual([selectedRow, fixture.componentInstance.rows()[1]]);
+  });
+
+  it('停用批次刪除時仍可選取並匯出，但不顯示破壞性操作', async () => {
+    fixture.componentInstance.showBatchDelete.set(false);
+    (el.querySelector('tbody .dt-selection-checkbox') as HTMLInputElement).click();
+    await fixture.whenStable();
+
+    expect(el.querySelector('.dt-batch-delete-btn')).toBeNull();
+    expect(el.querySelector('.dt-export-selected-btn')).toBeTruthy();
   });
 
   it('dtBatchActions slot 會收到實際已選資料列', async () => {

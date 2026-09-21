@@ -12,6 +12,7 @@ import {
   OperatorRecoveryRemedyOutcome,
   OperatorRecoveryRemedyType,
   OperatorRecoveryTaxiReimbursement,
+  Vehicle,
   quoteCancellation,
 } from '@car-rental/domain';
 import { OPERATOR_RECOVERY_CASE_REPO } from '../../core/repositories/tokens';
@@ -137,6 +138,18 @@ export class RemedyVehicleUnavailableError extends Error {
   }
 }
 
+/**
+ * 以車種與可比較的載客／行李／空調能力驗證補救車，避免櫃檯把汽車訂單換成機車，或把
+ * 免費升等實際換成能力較低的車。現有 Vehicle 沒有價格等級欄位，因此不猜測 classLabel 的
+ * 文字排序；以可交付能力定義同級與升等，資料缺漏時保守拒絕。
+ */
+export class RemedyVehicleIneligibleError extends Error {
+  constructor(readonly vehicleId: string) {
+    super(`替代車輛（${vehicleId}）不符合此補救方案的車種／載客能力門檻。`);
+    this.name = 'RemedyVehicleIneligibleError';
+  }
+}
+
 export class EscalationRequiresAllRemedyAttemptsError extends Error {
   constructor() {
     super('三個補救方案（同級調車、免費升等、合作同業轉單）都必須先嘗試過，才能進入業者責任取消。');
@@ -148,6 +161,50 @@ function assertIntegerMoney(value: number, fieldName: string): void {
   if (!Number.isInteger(value) || value < 0) {
     throw new RangeError(`${fieldName} must be a non-negative integer amount of TWD, got ${value}`);
   }
+}
+
+function hasComparableCapabilities(vehicle: Vehicle): vehicle is Vehicle & {
+  seats: number;
+  luggage: number;
+  hasAirConditioner: boolean;
+} {
+  return (
+    typeof vehicle.seats === 'number' &&
+    typeof vehicle.luggage === 'number' &&
+    typeof vehicle.hasAirConditioner === 'boolean'
+  );
+}
+
+function isEligibleReplacement(
+  original: Vehicle,
+  replacement: Vehicle,
+  type: Extract<OperatorRecoveryRemedyType, 'same_class_replacement' | 'free_upgrade'>,
+): boolean {
+  if (
+    original.category !== replacement.category ||
+    !hasComparableCapabilities(original) ||
+    !hasComparableCapabilities(replacement)
+  ) {
+    return false;
+  }
+
+  if (type === 'same_class_replacement') {
+    return (
+      replacement.seats === original.seats &&
+      replacement.luggage === original.luggage &&
+      replacement.hasAirConditioner === original.hasAirConditioner
+    );
+  }
+
+  const preservesCapabilities =
+    replacement.seats >= original.seats &&
+    replacement.luggage >= original.luggage &&
+    (!original.hasAirConditioner || replacement.hasAirConditioner);
+  const improvesCapability =
+    replacement.seats > original.seats ||
+    replacement.luggage > original.luggage ||
+    (!original.hasAirConditioner && replacement.hasAirConditioner);
+  return preservesCapabilities && improvesCapability;
 }
 
 /**
@@ -179,6 +236,24 @@ export class OperatorRecoveryStore {
     return this._cases()
       .filter((c) => c.bookingId === bookingId)
       .sort((a, b) => new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime());
+  }
+
+  /**
+   * UI 與寫入路徑共用同一份替代車資格規則；前端只列出可採用選項，但 store 仍在送出時
+   * 重新驗證，避免過期畫面或直接呼叫 store 繞過保護。
+   */
+  eligibleReplacementVehicles(
+    bookingId: string,
+    type: OperatorRecoveryRemedyType | undefined,
+  ): Vehicle[] {
+    if (type !== 'same_class_replacement' && type !== 'free_upgrade') return [];
+    const booking = this.bookingStore.bookings().find((candidate) => candidate.id === bookingId);
+    const original = booking && this.vehicleStore.vehicles().find((vehicle) => vehicle.id === booking.vehicleId);
+    if (!original) return [];
+    return this.vehicleStore
+      .vehicles()
+      .filter((vehicle) => vehicle.id !== original.id && vehicle.status === 'available')
+      .filter((vehicle) => isEligibleReplacement(original, vehicle, type));
   }
 
   createCase(input: CreateOperatorRecoveryCaseInput): OperatorRecoveryCase {
@@ -250,9 +325,15 @@ export class OperatorRecoveryStore {
         if (!vehicleId) {
           throw new Error('replacementVehicleId is required when accepting same_class_replacement or free_upgrade');
         }
+        const booking = this.bookingStore.bookings().find((candidate) => candidate.id === kase.bookingId);
+        if (!booking) throw new Error(`not found: ${kase.bookingId}`);
         const vehicle = this.vehicleStore.vehicles().find((v) => v.id === vehicleId);
         if (!vehicle || vehicle.status !== 'available') {
           throw new RemedyVehicleUnavailableError(vehicleId);
+        }
+        const originalVehicle = this.vehicleStore.vehicles().find((v) => v.id === booking.vehicleId);
+        if (!originalVehicle || !isEligibleReplacement(originalVehicle, vehicle, input.type)) {
+          throw new RemedyVehicleIneligibleError(vehicleId);
         }
 
         this.bookingStore.updateBooking(kase.bookingId, { vehicleId });

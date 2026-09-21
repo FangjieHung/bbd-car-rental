@@ -587,6 +587,25 @@ describe('CancellationStore', () => {
       expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('in_progress');
     });
 
+    it('保留金轉換記錄顧客同意，但不能被寫成主管覆核的 approve 稽核動作', () => {
+      const { store: s, auditRepo } = createFixture();
+      const kase = buildQuotedCase(s);
+
+      s.disposeCase({
+        caseId: kase.id,
+        disposition: 'credit',
+        refundAmount: 0,
+        creditAmount: 500,
+        creditConsent: true,
+        actor: { actorId: 'staff1', actorName: '櫃檯甲' },
+        occurredAt: '2026-07-10T10:30:00.000Z',
+      });
+
+      const settlementAudit = auditRepo.getAll().find((entry) => entry.entityId === kase.id);
+      expect(settlementAudit?.action).toBe('update');
+      expect(settlementAudit?.reason).toBe('顧客同意轉為保留金');
+    });
+
     it('Critical #2 回歸：訂單轉換步驟重複失敗時，重試不會建立第二筆退款／保留金紀錄；訂單恢復 reserved 後重試可順利完成且仍只有一筆', () => {
       const { store: s, bookingStore, paymentStore, creditStore, bookingRepo } = createFixture({
         booking: { status: 'in_progress' },

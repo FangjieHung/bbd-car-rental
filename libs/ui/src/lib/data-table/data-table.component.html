@@ -17,15 +17,17 @@
   @if (canExport() || (selectable() && !isCustom() && selectedCount() > 0)) {
     <div class="dt-batch-toolbar" role="toolbar" [attr.aria-label]="labels().selectedCount.replace('{count}', selectedCount().toString())">
     @if (selectable() && !isCustom() && selectedCount() > 0) {
-        <button
-          type="button" matButton="tonal"
-          class="dt-batch-delete-btn"
-          [attr.aria-label]="labels().batchDelete"
-          (click)="deleteSelected()"
-        >
-          <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-          {{ labels().batchDelete }}
-        </button>
+        @if (showBatchDelete()) {
+          <button
+            type="button" matButton="tonal"
+            class="dt-batch-delete-btn"
+            [attr.aria-label]="labels().batchDelete"
+            (click)="deleteSelected()"
+          >
+            <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+            {{ labels().batchDelete }}
+          </button>
+        }
         <button
           type="button" matButton="tonal"
           class="dt-export-selected-btn"

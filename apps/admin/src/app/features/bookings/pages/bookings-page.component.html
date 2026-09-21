@@ -35,11 +35,11 @@
           [rows]="filteredBookings()"
           [labels]="labels"
           [selectable]="true"
+          [showBatchDelete]="false"
           [selection]="selectedBookings()"
           [emptyText]="t.common.empty"
           exportName="bookings"
           (selectionChange)="selectedBookings.set($event)"
-          (batchDelete)="cancelSelected($event)"
           (exportFailed)="onExportFailed($event)"
         >
           <ng-template dtCell="vehicleId" let-b>{{ plateOf(b.vehicleId) }}</ng-template>

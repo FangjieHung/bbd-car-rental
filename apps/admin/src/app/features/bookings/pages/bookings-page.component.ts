@@ -17,7 +17,6 @@ import { PaymentStore } from '../../../stores/payment/payment.store';
 import { OperatorRecoveryStore } from '../../../stores/operator-recovery/operator-recovery.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { StatusKey } from '@car-rental/theme-pack';
-import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
 import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
@@ -138,14 +137,6 @@ export class BookingsPageComponent {
     return STATUS_KEY[b.status];
   }
 
-  act(fn: () => void): void {
-    try {
-      fn();
-    } catch (e) {
-      this.snackBar.open((e as Error).message, undefined, { duration: 4000 });
-    }
-  }
-
   // ---------------------------------------------------------------------
   // 急迫指標：逾時未還、退款待處理、業者復原處理中——每一項在畫面上都要有 icon + 文字 +
   // 動作（不能只靠顏色），點擊一律導向同一個訂單工作區的對應分頁，不在清單裡另做判斷邏輯。
@@ -182,16 +173,6 @@ export class BookingsPageComponent {
    *  流程），不再是清單裡一個 confirm() 就直接呼叫 BookingStore.cancel() 的簡化版本。 */
   cancelAction(b: RentalBooking): void {
     this.workspace.open(b.id, 'cancellation');
-  }
-
-  async cancelSelected(bookings: readonly RentalBooking[]): Promise<void> {
-    const cancellable = bookings.filter((b) => b.status === 'reserved');
-    if (cancellable.length === 0) return;
-    if (!(await confirm(this.dialog, this.t.common.deleteConfirm))) return;
-    for (const booking of cancellable) {
-      this.act(() => this.store.cancel(booking.id));
-    }
-    this.selectedBookings.set([]);
   }
 
   openWorkspace(booking: RentalBooking): void {

@@ -27,6 +27,7 @@ import {
   EscalationRequiresAllRemedyAttemptsError,
   OperatorRecoveryStore,
   RemedyOutOfOrderError,
+  RemedyVehicleIneligibleError,
   RemedyVehicleUnavailableError,
 } from '../../../stores/operator-recovery/operator-recovery.store';
 
@@ -95,9 +96,9 @@ export class OperatorRecoveryPanelComponent {
 
   protected readonly cases = computed(() => this.store.casesFor(this.bookingId()));
 
-  /** 可選的替代車輛：目前 available、且不是本次訂單目前這台車。 */
+  /** 由 store 的同一份資格規則篩選，避免畫面列出送出時必然被拒絕的車。 */
   protected readonly availableVehicles = computed(() =>
-    this.vehicleStore.vehicles().filter((v) => v.status === 'available' && v.id !== this.booking()?.vehicleId),
+    this.store.eligibleReplacementVehicles(this.bookingId(), this.nextRemedyType()),
   );
 
   // ---------------------------------------------------------------------
@@ -234,7 +235,7 @@ export class OperatorRecoveryPanelComponent {
         this.remedySubmitError.set(this.t.operatorRecoveryPanel.consentRequired);
       } else if (e instanceof ApprovalRequiredError) {
         this.remedySubmitError.set(this.t.operatorRecoveryPanel.approvalRequired);
-      } else if (e instanceof RemedyVehicleUnavailableError) {
+      } else if (e instanceof RemedyVehicleUnavailableError || e instanceof RemedyVehicleIneligibleError) {
         this.remedySubmitError.set(this.t.operatorRecoveryPanel.vehicleUnavailable);
       } else if (e instanceof RemedyOutOfOrderError || e instanceof CaseNotInProgressError) {
         this.remedySubmitError.set(e.message);

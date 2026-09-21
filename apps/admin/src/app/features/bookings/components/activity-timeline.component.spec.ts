@@ -439,4 +439,24 @@ describe('ActivityTimelineComponent', () => {
     expect(refundItem).toBeDefined();
     expect(refundItem?.getAttribute('data-at')).toBe('2026-02-01T09:00:00.000Z');
   });
+
+  it('保留金轉換的更新稽核不是主管覆核事件', () => {
+    const cancellationCase: CancellationCase = {
+      id: 'cc-credit', bookingId: 'b1', contractKind: 'passenger_car', responsibility: 'customer',
+      reason: 'customer_change_of_mind', requestedAt: '2026-02-01T09:00:00.000Z', ruleVersion: 'v1',
+      originalDepositPaid: 500, originalOtherPrepayment: 0, refundLines: [{ label: 'deposit', amount: 500 }],
+      transferFee: 0, totalCashDue: 500, disposition: 'credit', status: 'settled', evidenceAssetIds: [],
+    };
+    configure({
+      cancellationCases: [cancellationCase],
+      auditEntries: [{
+        id: 'audit-credit', action: 'update', entityType: 'cancellation_case', entityId: 'cc-credit',
+        actorId: 'staff1', actorName: '櫃檯甲', reason: '顧客同意轉為保留金',
+        createdAt: '2026-02-01T10:00:00.000Z',
+      }],
+    });
+
+    const fixture = createFixture();
+    expect(fixture.nativeElement.querySelector('[data-kind="supervisor_override"]')).toBeNull();
+  });
 });

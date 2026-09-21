@@ -53,6 +53,8 @@ export class DataTableComponent<T> {
   readonly emptyText = input('');
   readonly labels = input.required<DataTableLabels>();
   readonly selectable = input(false);
+  /** 有些清單可批次選取／匯出，但不應提供通用的破壞性刪除操作。 */
+  readonly showBatchDelete = input(true);
   readonly selection = input<readonly T[]>([]);
   readonly rowClickable = input(false);
   readonly rowClass = input<(row: T) => string>(() => '');

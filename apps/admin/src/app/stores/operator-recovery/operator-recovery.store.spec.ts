@@ -58,6 +58,9 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
     year: 2022,
     status: 'reserved',
     mileage: 1000,
+    seats: 5,
+    luggage: 2,
+    hasAirConditioner: true,
     createdAt: T_START,
     ...partial,
   };
@@ -320,7 +323,9 @@ describe('OperatorRecoveryStore', () => {
       const { store, bookingStore } = createFixture({
         vehicles: [
           makeVehicle(),
-          makeVehicle({ id: 'v2', plateNumber: 'A-2', classLabel: '休旅車', status: 'available' }),
+          makeVehicle({
+            id: 'v2', plateNumber: 'A-2', classLabel: '休旅車', seats: 7, luggage: 4, status: 'available',
+          }),
         ],
         contracts: [makeContractVersion()],
       });
@@ -424,6 +429,29 @@ describe('OperatorRecoveryStore', () => {
           notedBy: '櫃檯甲',
         }),
       ).toThrow(RemedyVehicleUnavailableError);
+      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
+    });
+
+    it('跨車種替代即使可用也會被拒絕，不能把訂單換成不相容車種', () => {
+      const { store, bookingStore } = createFixture({
+        vehicles: [
+          makeVehicle(),
+          makeVehicle({
+            id: 'v2', category: 'scooter', plateNumber: 'M-2', seats: 2, luggage: 1,
+            hasAirConditioner: false, status: 'available',
+          }),
+        ],
+      });
+      const kase = store.createCase({
+        bookingId: 'b1', reason: 'vehicle_breakdown', discoveredAt: T_START, notifiedAt: T_START, actor: ACTOR,
+      });
+
+      expect(() =>
+        store.attemptRemedy({
+          caseId: kase.id, type: 'same_class_replacement', attemptedAt: T_START, outcome: 'accepted',
+          replacementVehicleId: 'v2', customerConsent: true, approvedBy: '店長乙', notedBy: '櫃檯甲',
+        }),
+      ).toThrow('不符合此補救方案的車種／載客能力門檻');
       expect(bookingStore.bookings().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
     });
 

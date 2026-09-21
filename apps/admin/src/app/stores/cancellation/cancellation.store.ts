@@ -424,7 +424,8 @@ export class CancellationStore {
 
     try {
       this.appendAuditEntry({
-        action: input.creditAmount > 0 ? 'approve' : 'update',
+        // 顧客同意轉保留金是撥付紀錄，不是主管覆核；若寫成 approve，時間軸會誤顯示為主管放行。
+        action: 'update',
         entityType: 'cancellation_case',
         entityId: kase.id,
         actorId: input.actor.actorId,
