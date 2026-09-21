@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
 import { SignaturePadComponent } from './signature-pad.component';
@@ -55,7 +55,7 @@ function drawStroke(fixture: ReturnType<typeof createFixture>): void {
  */
 function stubCanvasContext() {
   const original = HTMLCanvasElement.prototype.getContext;
-  const contexts: Array<{ calls: string[] }> = [];
+  const contexts: Array<{ calls: string[]; strokeStyles: string[] }> = [];
 
   HTMLCanvasElement.prototype.getContext = function (
     this: HTMLCanvasElement,
@@ -66,17 +66,25 @@ function stubCanvasContext() {
       return (original as (...a: unknown[]) => unknown).apply(this, [contextId, ...rest]);
     }
     const calls: string[] = [];
+    const strokeStyles: string[] = [];
+    let strokeStyle = 'rgb(0, 0, 0)';
     const fakeCtx = {
       lineWidth: 0,
       lineCap: 'butt',
-      strokeStyle: 'rgb(0, 0, 0)',
       beginPath: () => calls.push('beginPath'),
       moveTo: () => calls.push('moveTo'),
       lineTo: () => calls.push('lineTo'),
       stroke: () => calls.push('stroke'),
       clearRect: () => calls.push('clearRect'),
     };
-    contexts.push({ calls });
+    Object.defineProperty(fakeCtx, 'strokeStyle', {
+      get: () => strokeStyle,
+      set: (value: string) => {
+        strokeStyle = value;
+        strokeStyles.push(value);
+      },
+    });
+    contexts.push({ calls, strokeStyles });
     return fakeCtx;
   } as typeof HTMLCanvasElement.prototype.getContext;
 
@@ -208,6 +216,20 @@ describe('SignaturePadComponent', () => {
     const fixture = createFixture();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('非正式具法律效力');
+  });
+
+  it('手寫筆色讀取目前主題的文字色，而非硬編碼深色', () => {
+    const stub = stubCanvasContext();
+    vi.stubGlobal('getComputedStyle', () => ({ color: 'rgb(17, 34, 51)' }));
+    try {
+      const fixture = createFixture();
+      drawStroke(fixture);
+
+      expect(stub.contexts[0].strokeStyles).toContain('rgb(17, 34, 51)');
+    } finally {
+      vi.unstubAllGlobals();
+      stub.restore();
+    }
   });
 
   it(
