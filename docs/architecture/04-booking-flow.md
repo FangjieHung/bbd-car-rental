@@ -110,12 +110,23 @@ interface BookingContext {
 重構前送出鍵直接建單並跳完成頁，沒有付款這回事。現在：
 
 ```
-送出 → submitBooking() 建立 status: 'pending_payment' 的訂單 → 導向 /pay/:bookingId
-     → markBookingPaid() 轉為 'confirmed' → 導向 /done/:id
+送出 → submitBooking() 建立 status: 'reserved' 的訂單 → 導向 /pay/:bookingId
+     → markBookingPaid() 在付款分類帳追加一筆 confirmed 的 balance PaymentRecord → 導向 /done/:id
 ```
 
-`CatalogStore.submitBooking` 本來就寫 `pending_payment`，所以資料模型早就對了，
-這次補上的是 UI 流程與 `markBookingPaid` 這個轉移。
+**`BookingStatus` 不再有 `pending_payment`／`confirmed` 這兩個值**（見
+`libs/domain/src/lib/models/enums.ts`）。履約狀態只剩 `reserved`／`in_progress`／
+`completed`／`cancelled`，只描述車輛交接進度；付款是否完成改由 Task 7 建立的付款分類帳
+（`PaymentRecord` 系列，`libs/domain/src/lib/models/payment-record.ts`）獨立追蹤，`PaymentRecordStatus`
+才有 `pending`／`confirmed`／`failed`／`voided`。`CatalogStore.submitBooking` 建單時
+直接寫 `status: 'reserved'`，`markBookingPaid` 完全不碰 `booking.status`，只在
+`paymentRepo` 追加一筆 `purpose: 'balance'`、`status: 'confirmed'` 的付款紀錄；
+`PaymentStore.summaryFor` 之後靠掃這本分類帳算出已付金額，而不是看訂單狀態欄位。
+
+舊資料裡真正還在用 `pending_payment`／`confirmed` 這兩個 legacy booking status 值的，
+由 `libs/domain/src/lib/repositories/normalize-rental-booking.ts` 在讀取時統一遷移為
+`reserved`（`normalize-rental-booking.spec.ts` 有遷移測試），不會在應用程式邏輯裡出現。
+`markBookingPaid` 的冪等性怎麼做，見下方「接金流時實際要改什麼」。
 
 ## 動它之前要知道的事
 
@@ -151,8 +162,10 @@ interface BookingContext {
 4. **`CatalogStore.markBookingPaid()`** — 目前只收 `bookingId`。真實金流需要記錄
    交易編號、實付金額等，簽章很可能要擴充，`RentalBooking` 可能要加欄位。
 
-`markBookingPaid` 已經會在訂單非 `pending_payment` 時丟錯，這是刻意的：
-真實金流回調會遲到、重送、亂序，store 層必須拒絕不合理的狀態轉移，不能只靠 UI 擋。
+`markBookingPaid` 目前的冪等性只靠「該訂單是否已有 confirmed 的 balance 付款紀錄」判斷，
+不再檢查 `booking.status`（因為履約狀態已經不代表付款進度）。真實金流回調會遲到、重送、
+亂序，接手時仍要在 store 層擋重複記帳，只是判斷依據要改成查付款分類帳，不能只靠 UI 擋，
+也不能倒退回「靠 booking 狀態擋」的舊模式。
 
 ## 已知缺口
 
@@ -168,6 +181,11 @@ interface BookingContext {
 
 **`confirm-step.component.scss` 有一批孤兒規則**（`.summary-block`、`.summary`、`.line`
 等），對應的 HTML 已在拆除時刪掉。
+
+**業者責任取消尚可從一般取消表單直接建立。** 工作區會明確引導人員先嘗試同級調車、免費
+升等與同業轉單，但目前尚未在一般取消表單強制驗證已完成這些救單步驟；因此遺失的是流程稽核
+與順序保護，而非退款金額計算。正式導入前應讓 `operator_fault` 取消只接受已升級為取消的
+`OperatorRecoveryCase`。
 
 ## 相關文件
 

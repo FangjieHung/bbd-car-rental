@@ -68,6 +68,23 @@ admin 看到的是內建的範例訂單；接上真正後端後才會即時互�
 想更了解系統架構（各 app 對應誰在用、`libs/` 共用了哪些元件、計費與退佣的業務邏輯公式），
 看 [`docs/architecture/`](./docs/architecture/00-overview.md)。
 
+### 開發階段的模擬功能（Development Mocks）
+
+`admin` 的訂單工作區有幾項功能目前只是**前端模擬**，還沒有真正的後端能力：
+
+- **證件 OCR**：`document-capture` 元件的辨識結果是假資料，不是真的呼叫 OCR 服務。
+- **證件圖檔儲存**：圖檔暫存在目前瀏覽器的開發用 IndexedDB，不是私有 object storage；它不會
+  跨裝置同步，也沒有後端存取權限控管。
+- **Email 通知**：訂金/尾款收據、合約副本、取消/退款通知等一律只是畫面上顯示「已寄送」，
+  不會真的發信。
+- **退款**：取消與客訴補償流程算出的退款金額只會寫進前端的付款分類帳，不會觸發任何金流
+  出款動作。
+
+這些都是刻意的 MVP 簡化，**不能被當成正式上線的行為**；串接真正的 OCR／檔案儲存／Email／
+金流退款服務前，畫面上任何「成功」都只代表前端狀態機走完，不代表真的發生了。完整的後端
+承接範圍、需要的 API 與資料模型，見
+[`docs/plans/2026-09-18-rental-operations-backend-handoff.md`](./docs/plans/2026-09-18-rental-operations-backend-handoff.md)。
+
 ## Common commands
 
 ```bash
