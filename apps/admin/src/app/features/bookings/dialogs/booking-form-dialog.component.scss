@@ -7,7 +7,7 @@
   flex-wrap: wrap;
   gap: 0.25rem;
   padding: 0 1.5rem 0.5rem;
-  border-bottom: 1px solid var(--mat-sys-outline-variant, #ccc);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .wizard-nav__step {
@@ -17,13 +17,13 @@
   font-size: 0.85rem;
   cursor: pointer;
   border-radius: 4px;
-  color: var(--mat-sys-on-surface-variant, #555);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .wizard-nav__step--active {
   font-weight: 600;
   background: var(--mat-sys-secondary-container, rgba(0, 0, 0, 0.06));
-  color: var(--mat-sys-on-secondary-container, #111);
+  color: var(--mat-sys-on-secondary-container);
 }
 
 .wizard-content {
@@ -81,5 +81,5 @@
 }
 
 .error-message {
-  color: var(--mat-sys-error, #b3261e);
+  color: var(--mat-sys-error);
 }

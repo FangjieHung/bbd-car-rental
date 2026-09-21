@@ -74,7 +74,7 @@ export class SignaturePadComponent {
     if (ctx) {
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
-      ctx.strokeStyle = '#1a1a1a';
+      ctx.strokeStyle = getComputedStyle(canvas).color;
     }
     return ctx;
   }

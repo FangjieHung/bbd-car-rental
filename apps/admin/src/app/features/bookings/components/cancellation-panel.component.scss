@@ -18,7 +18,7 @@
 .cancellation-panel__empty {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .cancellation-panel__form {
@@ -31,7 +31,7 @@
 .cancellation-panel__hint {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .cancellation-panel__transfer-fee,
@@ -40,7 +40,7 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 
   legend {
@@ -59,7 +59,7 @@
 .cancellation-panel__evidence-title {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .cancellation-panel__evidence-list {
@@ -81,7 +81,7 @@
 
 .cancellation-panel__quote-preview {
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 
   h4 {
@@ -99,7 +99,7 @@
   }
 
   dt {
-    color: var(--app-secondary-fg, #666);
+    color: var(--mat-sys-on-surface-variant);
   }
 
   dd {
@@ -113,7 +113,7 @@
   margin: 0.5rem 0 0;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--app-danger-fg, #c62828);
+  color: var(--app-danger-fg);
 }
 
 .cancellation-panel__actions {
@@ -124,7 +124,7 @@
 .cancellation-panel__error {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--app-danger-fg, #c62828);
+  color: var(--app-danger-fg);
 }
 
 .cancellation-panel__cases {
@@ -138,7 +138,7 @@
 
 .cancellation-panel__case {
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -154,7 +154,7 @@
   }
 
   dt {
-    color: var(--app-secondary-fg, #666);
+    color: var(--mat-sys-on-surface-variant);
   }
 
   dd {

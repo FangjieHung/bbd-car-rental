@@ -1,7 +1,7 @@
 .activity-timeline__empty {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .activity-timeline__list {
@@ -19,13 +19,13 @@
   align-items: baseline;
   gap: 0.5rem 0.75rem;
   padding: 0.625rem 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 }
 
 .activity-timeline__time {
   font-size: 0.75rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
 }
 
@@ -34,7 +34,7 @@
   font-weight: 600;
   padding: 0.125rem 0.5rem;
   border-radius: 999px;
-  background: var(--app-chip-bg, #eee);
+  background: var(--mat-sys-secondary-container);
   white-space: nowrap;
 }
 
@@ -55,5 +55,5 @@
 .activity-timeline__actor {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }

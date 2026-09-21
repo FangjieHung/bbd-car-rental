@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 0.375rem;
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 }
 
@@ -23,8 +23,8 @@
   font-size: 0.6875rem;
   padding: 0.125rem 0.5rem;
   border-radius: 999px;
-  background: var(--app-warning-bg, #fff3cd);
-  color: var(--app-warning-fg, #935700);
+  background: var(--app-warning-bg);
+  color: var(--app-warning-fg);
 }
 
 .driver-eligibility__status {
@@ -34,19 +34,19 @@
 }
 
 .driver-eligibility__status--pending {
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .driver-eligibility__status--eligible {
-  color: var(--app-success-fg, #2e7d32);
+  color: var(--app-positive-fg);
 }
 
 .driver-eligibility__status--ineligible {
-  color: var(--app-danger-fg, #c62828);
+  color: var(--app-danger-fg);
 }
 
 .driver-eligibility__status--manual_review {
-  color: var(--app-warning-fg, #b26a00);
+  color: var(--app-warning-fg);
 }
 
 .driver-eligibility__note,
@@ -54,5 +54,5 @@
 .driver-eligibility__hint {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--app-secondary-fg, #555);
+  color: var(--mat-sys-on-surface-variant);
 }

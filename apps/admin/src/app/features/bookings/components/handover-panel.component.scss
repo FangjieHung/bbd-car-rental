@@ -18,7 +18,7 @@
 .handover-panel__empty {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .handover-panel__readiness {
@@ -27,17 +27,17 @@
 }
 
 .handover-panel__readiness.is-ready {
-  color: var(--app-success-fg, #2e7d32);
+  color: var(--app-positive-fg);
 }
 
 .handover-panel__readiness.is-blocked {
-  color: var(--app-danger-fg, #c62828);
+  color: var(--app-danger-fg);
 }
 
 .handover-panel__blockers,
 .handover-panel__warnings {
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 
   h4 {
@@ -53,7 +53,7 @@
 }
 
 .handover-panel__blockers li.is-non-overridable {
-  color: var(--app-danger-fg, #c62828);
+  color: var(--app-danger-fg);
   font-weight: 600;
 }
 
@@ -61,7 +61,7 @@
   margin: 0;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--app-danger-fg, #c62828);
+  color: var(--app-danger-fg);
 }
 
 .handover-panel__form {
@@ -80,7 +80,7 @@
 .handover-panel__photos-title {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .handover-panel__photo-list {
@@ -106,7 +106,7 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 
   legend {
@@ -119,7 +119,7 @@
 .handover-panel__hint {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--app-secondary-fg, #666);
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .handover-panel__actions {
@@ -130,12 +130,12 @@
 .handover-panel__error {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--app-danger-fg, #c62828);
+  color: var(--app-danger-fg);
 }
 
 .handover-panel__partial-failure {
   padding: 0.75rem;
-  border: 1px solid var(--app-danger-fg, #c62828);
+  border: 1px solid var(--app-danger-fg);
   border-radius: 0.5rem;
   font-size: 0.8125rem;
 
@@ -146,12 +146,12 @@
 
 .handover-panel__partial-failure-title {
   font-weight: 700;
-  color: var(--app-danger-fg, #c62828);
+  color: var(--app-danger-fg);
 }
 
 .handover-panel__record-summary {
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 
   h4 {
@@ -169,7 +169,7 @@
   }
 
   dt {
-    color: var(--app-secondary-fg, #666);
+    color: var(--mat-sys-on-surface-variant);
   }
 
   dd {
@@ -181,7 +181,7 @@
 
 .handover-panel__reminders {
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 
   h4 {
@@ -204,7 +204,7 @@
 
 .handover-panel__charges-preview {
   padding: 0.75rem;
-  border: 1px solid var(--app-border, #ddd);
+  border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0.5rem;
 
   h4 {
@@ -222,7 +222,7 @@
   }
 
   dt {
-    color: var(--app-secondary-fg, #666);
+    color: var(--mat-sys-on-surface-variant);
   }
 
   dd {

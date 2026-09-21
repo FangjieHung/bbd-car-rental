@@ -69,7 +69,7 @@ function stubCanvasContext() {
     const fakeCtx = {
       lineWidth: 0,
       lineCap: 'butt',
-      strokeStyle: '#000',
+      strokeStyle: 'rgb(0, 0, 0)',
       beginPath: () => calls.push('beginPath'),
       moveTo: () => calls.push('moveTo'),
       lineTo: () => calls.push('lineTo'),
