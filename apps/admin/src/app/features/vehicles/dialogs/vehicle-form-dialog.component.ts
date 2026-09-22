@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Vehicle } from '../../../core/models';
+import { RENTAL_BRANCHES, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 export interface VehicleFormResult {
@@ -18,6 +18,7 @@ export interface VehicleFormResult {
   mileage: number;
   nextServiceMileage?: number;
   insuranceExpiry?: string;
+  location?: string;
 }
 
 @Component({
@@ -38,6 +39,7 @@ export class VehicleFormDialogComponent {
   readonly ref = inject(MatDialogRef<VehicleFormDialogComponent>);
   readonly data = inject<Vehicle | null>(MAT_DIALOG_DATA);
   private fb = inject(NonNullableFormBuilder);
+  readonly branches = RENTAL_BRANCHES;
 
   form = this.fb.group({
     plateNumber: [this.data?.plateNumber ?? '', Validators.required],
@@ -49,6 +51,7 @@ export class VehicleFormDialogComponent {
     mileage: [this.data?.mileage ?? 0, [Validators.required, Validators.min(0)]],
     nextServiceMileage: [this.data?.nextServiceMileage ?? null],
     insuranceExpiry: [this.data?.insuranceExpiry ?? ''],
+    location: [this.data?.location ?? ''],
   });
 
   save(): void {
@@ -64,6 +67,7 @@ export class VehicleFormDialogComponent {
         ...(raw.displacement != null ? { displacement: raw.displacement } : {}),
         ...(raw.nextServiceMileage != null ? { nextServiceMileage: raw.nextServiceMileage } : {}),
         ...(raw.insuranceExpiry ? { insuranceExpiry: raw.insuranceExpiry } : {}),
+        ...(raw.location ? { location: raw.location } : {}),
       };
       this.ref.close(result);
     }

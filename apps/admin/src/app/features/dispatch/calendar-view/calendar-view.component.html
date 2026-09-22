@@ -88,6 +88,20 @@
           >
             <mat-tab [label]="'取車 ' + pickup.done + '/' + pickup.total">
               <ng-template matTabContent>
+                <div class="flex items-center gap-2 px-3 pt-2 pb-1">
+                  <mat-slide-toggle
+                    [checked]="showNeedsDispatchOnly()"
+                    [disabled]="pickupNeedsDispatchCount() === 0 && !showNeedsDispatchOnly()"
+                    (change)="onNeedsDispatchFilterChange($event)"
+                  >
+                    {{ t.dispatch.workList.needsDispatchFilter }}（{{ pickupNeedsDispatchCount() }}）
+                  </mat-slide-toggle>
+                </div>
+                @if (showNeedsDispatchOnly() && pickupWorkRows().length === 0) {
+                  <p class="pb-4 pt-4 text-sm calendar-view__muted">
+                    {{ t.dispatch.workList.noDispatchNeeded }}
+                  </p>
+                } @else {
                 <mat-accordion class="work-list-accordion">
                   @for (row of pickupWorkRows(); track row.id) {
                     @let vehicle = vehicleOf(row);
@@ -111,6 +125,14 @@
                             }}</span>
                             {{ readinessLabel(row) }}
                           </span>
+                          @if (needsDispatch(row)) {
+                            <span class="ui-chip ui-chip--info work-list-row__status-chip">
+                              <span class="material-symbols-rounded" aria-hidden="true"
+                                >swap_horiz</span
+                              >
+                              {{ t.dispatch.workList.needsDispatch }}
+                            </span>
+                          }
                         </mat-panel-title>
                         <mat-panel-description class="work-list-row__time">{{
                           fmtTime(row.booking.startTime)
@@ -141,6 +163,12 @@
                           <dt>取車地點</dt>
                           <dd>{{ location(row) }}</dd>
                         </div>
+                        @if (needsDispatch(row)) {
+                          <div>
+                            <dt>{{ t.dispatch.workList.needsDispatch }}</dt>
+                            <dd>{{ dispatchNote(row) }}</dd>
+                          </div>
+                        }
                         <div>
                           <dt>{{ t.dispatch.workList.payment }}</dt>
                           <dd>{{ paymentStatusLabel(row) }}・{{ t.dispatch.workList.balanceDue }} {{ balanceDue(row) }}</dd>
@@ -207,6 +235,7 @@
                     <p class="pb-4 pt-4 text-sm calendar-view__muted">{{ t.common.empty }}</p>
                   }
                 </mat-accordion>
+                }
               </ng-template>
             </mat-tab>
             <mat-tab [label]="'還車 ' + ret.done + '/' + ret.total">

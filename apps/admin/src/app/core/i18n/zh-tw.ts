@@ -74,6 +74,8 @@ export const ZH_TW = {
     tableView: '表格',
     timelineView: '時間軸',
     backToList: '返回車輛清單',
+    location: '所在據點',
+    locationUnspecified: '未指定',
   },
   member: {
     name: '姓名',
@@ -633,6 +635,11 @@ export const ZH_TW = {
       urgentOperatorRecovery: '業者復原處理中',
       urgentOverdueReturn: '逾時未還',
       urgentRefundPending: '退款待處理',
+      needsDispatch: '需調度',
+      needsDispatchFilter: '只看需調度',
+      dispatchNeededPrefix: '需從',
+      dispatchNeededMiddle: '調度至',
+      noDispatchNeeded: '當天沒有需調度的取車',
     },
   },
   maintenance: {

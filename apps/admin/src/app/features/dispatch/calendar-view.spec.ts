@@ -1082,3 +1082,128 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
     expect(component.phoneHref(overdueRow.booking)).toBe('tel:0900000000');
   });
 });
+
+/**
+ * 需調度標記（CONTEXT.md「需調度」）：取車據點與車輛所在據點不同、且訂單仍是 reserved
+ * （車輛還沒被取走）才算需調度。只處理取車端，還車端不在本次範圍內。
+ */
+describe('CalendarViewComponent 需調度標記與篩選', () => {
+  const DATE = new Date(2026, 7, 4);
+  const START = new Date(2026, 7, 4, 10).toISOString();
+  const END = new Date(2026, 7, 5, 10).toISOString();
+
+  function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
+    return {
+      id: 'v1', plateNumber: 'ABC-123', category: 'scooter', model: 'Gogoro',
+      brand: 'Gogoro', year: 2022, status: 'available', mileage: 100, createdAt: '',
+      ...partial,
+    };
+  }
+
+  function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+    return {
+      id: 'b1', vehicleId: 'v1', memberId: 'c1',
+      startTime: START, endTime: END,
+      pickupLocation: 'mzg-airport', returnLocation: 'mzg-airport',
+      status: 'reserved', depositRequired: 0,
+      ...partial,
+    };
+  }
+
+  function setup(vehicles: Vehicle[], bookings: RentalBooking[]) {
+    TestBed.configureTestingModule({
+      providers: [
+        ...providePricing(),
+        ...provideBookingWorkspaceRepos(),
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        {
+          provide: MEMBER_REPO,
+          useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '', kind: 'local' }]),
+        },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+        { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
+      ],
+    });
+    const fixture = TestBed.createComponent(CalendarViewComponent);
+    fixture.componentRef.setInput('targetDate', DATE);
+    fixture.detectChanges();
+    return { fixture, component: fixture.componentInstance };
+  }
+
+  it('取車據點與車輛所在據點不同、訂單為 reserved → true', () => {
+    const { component } = setup(
+      [makeVehicle({ location: 'mzg-store' })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+    );
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.needsDispatch(row)).toBe(true);
+  });
+
+  it('取車據點與車輛所在據點相同 → false', () => {
+    const { component } = setup(
+      [makeVehicle({ location: 'mzg-airport' })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+    );
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.needsDispatch(row)).toBe(false);
+  });
+
+  it('車輛沒有所在據點（不確定）→ false', () => {
+    const { component } = setup(
+      [makeVehicle({ location: undefined })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+    );
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.needsDispatch(row)).toBe(false);
+  });
+
+  it('in_progress（已取車）訂單即使據點不同也不算需調度', () => {
+    const { component } = setup(
+      [makeVehicle({ location: 'mzg-store' })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'in_progress' })],
+    );
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.needsDispatch(row)).toBe(false);
+  });
+
+  it('篩選開啟時，取車清單只剩需調度的列，數量正確，關閉後恢復', () => {
+    const { component } = setup(
+      [
+        makeVehicle({ id: 'v1', location: 'mzg-store' }),
+        makeVehicle({ id: 'v2', location: 'mzg-airport' }),
+      ],
+      [
+        makeBooking({ id: 'b1', vehicleId: 'v1', pickupLocation: 'mzg-airport', status: 'reserved' }),
+        makeBooking({ id: 'b2', vehicleId: 'v2', pickupLocation: 'mzg-airport', status: 'reserved' }),
+      ],
+    );
+
+    expect(component.pickupWorkRows()).toHaveLength(2);
+    expect(component.pickupNeedsDispatchCount()).toBe(1);
+
+    component.showNeedsDispatchOnly.set(true);
+    expect(component.pickupWorkRows()).toHaveLength(1);
+    expect(component.pickupWorkRows()[0].booking.id).toBe('b1');
+
+    component.showNeedsDispatchOnly.set(false);
+    expect(component.pickupWorkRows()).toHaveLength(2);
+  });
+
+  it('篩選開啟且當天沒有需調度的取車時，清單清空（畫面顯示空狀態文字）', () => {
+    const { fixture, component } = setup(
+      [makeVehicle({ location: 'mzg-airport' })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+    );
+
+    component.showNeedsDispatchOnly.set(true);
+    fixture.detectChanges();
+
+    expect(component.pickupWorkRows()).toHaveLength(0);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('當天沒有需調度的取車');
+  });
+});

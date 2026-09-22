@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDialog } from '@angular/material/dialog';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -14,6 +15,7 @@ import {
   IdentityDocumentType,
   Member,
   MemberKind,
+  needsDispatch as computeNeedsDispatch,
   PickupBlocker,
   PickupBlockerType,
   PickupReadiness,
@@ -167,6 +169,7 @@ export function returnProgress(bookings: RentalBooking[], day: Date): DayProgres
   imports: [
     MatButtonModule,
     MatExpansionModule,
+    MatSlideToggleModule,
     MatTabsModule,
     ResponsivePanelComponent,
     VehicleStepComponent,
@@ -317,7 +320,10 @@ export class CalendarViewComponent {
     this.bookingStore.bookings().filter((b) => b.status === 'in_progress' || b.status === 'completed'),
   );
 
-  readonly pickupWorkRows = computed<WorkListRow[]>(() => {
+  /** 「只看需調度」篩選開關；獨立於 selected() 的日期，換日期時維持使用者的選擇。 */
+  readonly showNeedsDispatchOnly = signal(false);
+
+  private readonly pickupWorkRowsForDay = computed<WorkListRow[]>(() => {
     const day = this.selected();
     if (!day) return [];
     return this.activeBookings()
@@ -325,6 +331,20 @@ export class CalendarViewComponent {
       .map((booking) => ({ id: `pickup-${booking.id}`, booking, kind: 'pickup' as const }))
       .sort((a, b) => new Date(a.booking.startTime).getTime() - new Date(b.booking.startTime).getTime());
   });
+
+  /** 當天取車清單中需調度的筆數，供篩選 toggle 的數量標籤使用（與是否已開啟篩選無關）。 */
+  readonly pickupNeedsDispatchCount = computed(
+    () => this.pickupWorkRowsForDay().filter((row) => this.needsDispatch(row)).length,
+  );
+
+  readonly pickupWorkRows = computed<WorkListRow[]>(() => {
+    const rows = this.pickupWorkRowsForDay();
+    return this.showNeedsDispatchOnly() ? rows.filter((row) => this.needsDispatch(row)) : rows;
+  });
+
+  onNeedsDispatchFilterChange(event: MatSlideToggleChange): void {
+    this.showNeedsDispatchOnly.set(event.checked);
+  }
 
   readonly returnWorkRows = computed<WorkListRow[]>(() => {
     const day = this.selected();
@@ -399,6 +419,24 @@ export class CalendarViewComponent {
     return branchName(
       row.kind === 'pickup' ? row.booking.pickupLocation : row.booking.returnLocation,
     );
+  }
+
+  /**
+   * 需調度：取車據點與車輛所在據點不同（CONTEXT.md「需調度」）。只有 reserved 訂單車輛還沒
+   * 被取走，才可能需要事先調度；已取車／已完成／已取消的訂單這件事已成定局或不再相關。
+   */
+  needsDispatch(row: WorkListRow): boolean {
+    if (row.booking.status !== 'reserved') return false;
+    const vehicle = this.vehicleOf(row);
+    return computeNeedsDispatch(vehicle?.location, row.booking.pickupLocation);
+  }
+
+  /** 需調度時的說明文字：「需從〔車輛所在據點〕調度至〔取車據點〕」。 */
+  dispatchNote(row: WorkListRow): string {
+    const vehicle = this.vehicleOf(row);
+    const from = branchName(vehicle?.location);
+    const to = this.location(row);
+    return `${this.t.dispatch.workList.dispatchNeededPrefix}${from}${this.t.dispatch.workList.dispatchNeededMiddle}${to}`;
   }
 
   phoneHref(booking: RentalBooking): string | null {

@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
-import { MaintenanceRecord } from '../../../core/models';
+import { branchName, MaintenanceRecord } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -33,6 +33,7 @@ export class VehicleDetailPageComponent {
   private readonly snackBar = inject(MatSnackBar);
   readonly fmt = fmtDateTime;
   readonly labels = ADMIN_DATA_TABLE_LABELS;
+  readonly branchName = branchName;
 
   readonly vehicleId = toSignal(
     this.route.paramMap.pipe(map((p) => p.get('id') ?? '')),
