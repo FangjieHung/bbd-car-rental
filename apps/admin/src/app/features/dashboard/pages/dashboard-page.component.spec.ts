@@ -64,9 +64,9 @@ function providePricing() {
  * CalendarViewComponent（Task 16）的付款／文件／合約／取車就緒／還車提醒欄位額外依賴了
  * PaymentStore、DocumentStore、ContractStore、HandoverStore 與 REMINDER_STATUS_REPO，
  * DashboardPageComponent 內嵌了它，因此這裡的每個 TestBed 也都得備齊，理由同
- * calendar-view.spec.ts 的 provideBookingWorkspaceRepos()。
+ * calendar-view.spec.ts 的 provideOrderDetailRepos()。
  */
-function provideBookingWorkspaceRepos() {
+function provideOrderDetailRepos() {
   return [
     { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
     { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
@@ -93,7 +93,7 @@ describe('DashboardPageComponent child date contract', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
@@ -161,7 +161,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
@@ -228,7 +228,7 @@ describe('DashboardPageComponent onQuickRange', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: dialogOpen } },

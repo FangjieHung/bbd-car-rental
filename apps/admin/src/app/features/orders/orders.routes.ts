@@ -1,9 +1,11 @@
 import { Routes } from '@angular/router';
 import { provideAdminOrderForm } from './data/provide-admin-order-form';
+import { confirmLeaveGuard } from './navigation/confirm-leave.guard';
 
 /**
  * `/orders/*`。訂單表單的參考資料與送出實作（ORDER_FORM_DATA／ORDER_SUBMIT_GATEWAY）在這一層提供，
- * 範圍限定在 features/orders；之後的訂單詳情頁（`:id`）掛在同一層即可共用。
+ * 範圍限定在 features/orders；建立訂單（`new`）與訂單詳情（`:id`）共用。
+ * 兩頁都有可能帶著未儲存的表單離開，因此都掛上離開前確認。
  */
 export const ORDER_ROUTES: Routes = [
   {
@@ -12,8 +14,15 @@ export const ORDER_ROUTES: Routes = [
     children: [
       {
         path: 'new',
+        canDeactivate: [confirmLeaveGuard],
         loadComponent: () =>
           import('./pages/order-create-page.component').then((m) => m.OrderCreatePageComponent),
+      },
+      {
+        path: ':id',
+        canDeactivate: [confirmLeaveGuard],
+        loadComponent: () =>
+          import('./pages/order-detail-page.component').then((m) => m.OrderDetailPageComponent),
       },
     ],
   },

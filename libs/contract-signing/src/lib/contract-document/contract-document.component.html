@@ -5,10 +5,10 @@
   @if (version(); as version) {
     <dl class="contract-document__meta">
       <dt>{{ l.createdAt }}</dt>
-      <dd>{{ version.createdAt | slice: 0 : 16 }}</dd>
+      <dd>{{ version.createdAt | taipeiDateTime }}</dd>
       @if (version.signedAt) {
         <dt>{{ l.signedAt }}</dt>
-        <dd>{{ version.signedAt | slice: 0 : 16 }}</dd>
+        <dd>{{ version.signedAt | taipeiDateTime }}</dd>
       }
     </dl>
   }
@@ -67,9 +67,9 @@
     <h3>{{ l.periodSection }}</h3>
     <dl class="contract-document__grid">
       <dt>{{ l.startTime }}</dt>
-      <dd>{{ s.rentalStartTime | slice: 0 : 16 }}</dd>
+      <dd>{{ s.rentalStartTime | taipeiDateTime }}</dd>
       <dt>{{ l.endTime }}</dt>
-      <dd>{{ s.rentalEndTime | slice: 0 : 16 }}</dd>
+      <dd>{{ s.rentalEndTime | taipeiDateTime }}</dd>
       <dt>{{ l.pickupLocation }}</dt>
       <dd>{{ s.pickupLocation }}</dd>
       <dt>{{ l.returnLocation }}</dt>

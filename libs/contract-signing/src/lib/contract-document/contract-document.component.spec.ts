@@ -72,7 +72,7 @@ describe('ContractDocumentComponent', () => {
     expect(content).toContain(L.fuelPolicyLabels.full_to_full);
     expect(content).toContain('馬公門市');
     expect(content).toContain('機場櫃檯');
-    expect(content).toContain('2026-07-20T09:00');
+    expect(content).toContain('2026/07/20 17:00');
     expect(content).toContain('4500');
     expect(content).toContain('1000');
     expect(content).toContain('兒童安全座椅');
@@ -95,7 +95,7 @@ describe('ContractDocumentComponent', () => {
 
     const draft = render(sampleSnapshot(), { version: 1, createdAt: '2026-07-01T08:00:00.000Z' }).text();
     expect(draft).toContain(L.createdAt);
-    expect(draft).toContain('2026-07-01T08:00');
+    expect(draft).toContain('2026/07/01 16:00');
     expect(draft).not.toContain(L.signedAt);
 
     const signed = render(sampleSnapshot(), {
@@ -104,7 +104,16 @@ describe('ContractDocumentComponent', () => {
       signedAt: '2026-07-02T10:30:00.000Z',
     }).text();
     expect(signed).toContain(L.signedAt);
-    expect(signed).toContain('2026-07-02T10:30');
+    expect(signed).toContain('2026/07/02 18:30');
+  });
+
+  it('時間一律以台灣時間顯示，不顯示 UTC 原始字串（合約是給客人簽的文件）', () => {
+    const content = render(
+      sampleSnapshot({ rentalStartTime: '2026-09-24T01:00:00.000Z', rentalEndTime: '2026-09-24T16:30:00.000Z' }),
+    ).text();
+    expect(content).toContain('2026/09/24 09:00');
+    expect(content).toContain('2026/09/25 00:30');
+    expect(content).not.toContain('T01:00');
   });
 
   it('文案來自 CONTRACT_SIGNING_LABELS，可由消費端替換', () => {

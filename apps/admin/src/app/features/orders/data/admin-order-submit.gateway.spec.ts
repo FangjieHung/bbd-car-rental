@@ -6,7 +6,13 @@ import { ContractStore } from '../../../stores/contract/contract.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
 import { ORDER_SUBMIT_GATEWAY } from '../order-form/order-submit-gateway';
-import { OrderForm, OrderFormInitial, createOrderForm, orderFormInitialFromBooking } from '../order-form/order-form';
+import {
+  NO_INSURANCE_VALUE,
+  OrderForm,
+  OrderFormInitial,
+  createOrderForm,
+  orderFormInitialFromBooking,
+} from '../order-form/order-form';
 import { buildContractSnapshot } from '../order-form/contract-snapshot';
 import { computeOrderQuote, selectedVehicleOf } from '../order-form/order-form';
 import { provideAdminOrderForm } from './provide-admin-order-form';
@@ -189,5 +195,64 @@ describe('AdminOrderSubmitGateway.update（沿用舊 dialog 編輯模式）', ()
     TestBed.inject(BookingStore).updateBooking(id, { priceBreakdown: tampered.priceBreakdown });
 
     await expect(gateway.update(id, { value: form.getRawValue() })).rejects.toThrow(ZH_TW.bookingForm.insuranceUnreconciled);
+  });
+
+  // 以下三則搬自已刪除的舊建單 dialog spec（編輯模式的寫入行為），改以 gateway 驗證。
+  it('只改與保險／加購無關的欄位（還車據點）：priceBreakdown 保留原本的保險與加購', async () => {
+    const plan: InsurancePlan = { id: 'ins1', name: '甲式', dailyPriceFrom: 300, tags: [], coverageItems: [] };
+    const addOn = { id: 'addon1', name: '兒童座椅', unitPrice: 100, unit: 'per_day' as const };
+    const vehicle = makeVehicle({ insurancePlans: [plan] });
+    const { gateway, bookingRepo } = setup({ vehicles: [vehicle], members: [member], addOns: [addOn] });
+    const id = await gateway.create({
+      value: baselineForm({ member, insurancePlanId: 'ins1', addOnQty: { addon1: 2 } }).getRawValue(),
+    });
+    const original = bookingRepo.getById(id);
+    if (!original?.priceBreakdown) throw new Error('booking not created');
+    expect(original.priceBreakdown.insuranceSubtotal).toBeGreaterThan(0);
+    expect(original.priceBreakdown.addOnSubtotal).toBeGreaterThan(0);
+
+    const form = createOrderForm(orderFormInitialFromBooking(original, { vehicle, member }));
+    form.controls.rental.controls.returnLocation.setValue('mzg-port');
+    await gateway.update(id, { value: form.getRawValue() });
+
+    const updated = bookingRepo.getById(id);
+    expect(updated?.returnLocation).toBe('mzg-port');
+    expect(updated?.priceBreakdown?.insuranceSubtotal).toBe(original.priceBreakdown.insuranceSubtotal);
+    expect(updated?.priceBreakdown?.addOnSubtotal).toBe(original.priceBreakdown.addOnSubtotal);
+    expect(updated?.priceBreakdown?.total).toBe(original.priceBreakdown.total);
+  });
+
+  it('明確改選「不加保」：送出後保險小計歸零，不會被當成「還沒解決」擋下', async () => {
+    const plan: InsurancePlan = { id: 'ins1', name: '甲式', dailyPriceFrom: 300, tags: [], coverageItems: [] };
+    const vehicle = makeVehicle({ insurancePlans: [plan] });
+    const { gateway, bookingRepo } = setup({ vehicles: [vehicle], members: [member] });
+    const id = await gateway.create({ value: baselineForm({ member, insurancePlanId: 'ins1' }).getRawValue() });
+    const original = bookingRepo.getById(id);
+    if (!original) throw new Error('booking not created');
+
+    const form = createOrderForm(orderFormInitialFromBooking(original, { vehicle, member }));
+    form.controls.pricing.controls.insurancePlanId.setValue(NO_INSURANCE_VALUE);
+    await gateway.update(id, { value: form.getRawValue() });
+
+    expect(bookingRepo.getById(id)?.priceBreakdown?.insuranceSubtotal).toBe(0);
+  });
+
+  it('改還車時間：重新排程還車提醒，先取消舊排程，且不留下重複紀錄', async () => {
+    const { gateway, bookingRepo, reminderGateway, reminderStatusRepo } = setup({
+      members: [{ ...member, email: 'a@b.com' }],
+    });
+    const memberWithEmail = { ...member, email: 'a@b.com' };
+    const id = await gateway.create({ value: baselineForm({ member: memberWithEmail }).getRawValue() });
+    expect(reminderStatusRepo.getAll()).toHaveLength(2);
+    const cancel = vi.spyOn(reminderGateway, 'cancel');
+
+    const booking = bookingRepo.getById(id);
+    if (!booking) throw new Error('booking not created');
+    const form = createOrderForm(orderFormInitialFromBooking(booking, { member: memberWithEmail }));
+    form.controls.rental.controls.endLocal.setValue('2026-01-09T09:00');
+    await gateway.update(id, { value: form.getRawValue() });
+
+    expect(cancel).toHaveBeenCalledTimes(2);
+    expect(reminderStatusRepo.getAll()).toHaveLength(2);
   });
 });

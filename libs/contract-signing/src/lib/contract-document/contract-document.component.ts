@@ -1,7 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { SlicePipe } from '@angular/common';
 import { ContractSnapshot, ContractVersion } from '@car-rental/domain';
 import { CONTRACT_SIGNING_LABELS } from '../contract-signing-labels';
+import { TaipeiDateTimePipe } from './taipei-date-time.pipe';
 
 /**
  * 合約版本的顯示用資訊。`ContractVersion` 本身即符合這個型別，可直接傳入；
@@ -20,7 +20,7 @@ export type ContractVersionInfo = Pick<ContractVersion, 'version' | 'createdAt'>
  */
 @Component({
   selector: 'lib-contract-document',
-  imports: [SlicePipe],
+  imports: [TaipeiDateTimePipe],
   templateUrl: './contract-document.component.html',
   styleUrl: './contract-document.component.scss',
 })

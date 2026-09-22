@@ -2,7 +2,6 @@
   "name": "@car-rental/contract-signing",
   "version": "0.0.1",
   "peerDependencies": {
-    "@angular/common": "^22.0.0",
     "@angular/core": "^22.0.0",
     "@angular/material": "^22.0.0",
     "@car-rental/domain": "^0.0.1",

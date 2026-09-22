@@ -30,6 +30,7 @@ import { OrderRenterSectionComponent } from '../sections/order-renter-section.co
 import { OrderPricingSectionComponent } from '../sections/order-pricing-section.component';
 import { OrderPaymentDraftsSectionComponent } from '../sections/order-payment-drafts-section.component';
 import { OrderContractSectionComponent } from '../sections/order-contract-section.component';
+import { LeaveConfirmable } from '../navigation/confirm-leave.guard';
 
 /** 5 個步驟：租期與車輛 → 承租人 → 費用與付款 → 合約 → 確認建立。 */
 export const ORDER_CREATE_STEPS = ['vehicle', 'renter', 'payment', 'contract', 'review'] as const;
@@ -88,8 +89,9 @@ export function orderInitialFromQuery(params: ParamMap, vehicles: Vehicle[]): Or
   ],
   templateUrl: './order-create-page.component.html',
   styleUrls: ['../../../app.scss', './order-create-page.component.scss'],
+  host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
-export class OrderCreatePageComponent {
+export class OrderCreatePageComponent implements LeaveConfirmable {
   protected readonly t = ZH_TW;
   protected readonly steps = ORDER_CREATE_STEPS;
 
@@ -114,6 +116,8 @@ export class OrderCreatePageComponent {
   readonly submitAttempted = signal(false);
   readonly submitting = signal(false);
   readonly error = signal('');
+  /** 已確認放棄或已建立成功：之後的導頁不必再經過離開確認。 */
+  private leaveApproved = false;
 
   protected readonly orientation = toSignal(
     inject(BreakpointObserver)
@@ -222,17 +226,29 @@ export class OrderCreatePageComponent {
     }
   }
 
+  private hasUnsavedChanges(): boolean {
+    return this.form.dirty || !!this.pendingSignature();
+  }
+
+  /** 離開確認（confirmLeaveGuard）：填過內容或已預簽、且尚未確認放棄時才擋。 */
+  unsavedChangesMessage(): string | null {
+    return !this.leaveApproved && this.hasUnsavedChanges() ? this.t.orderForm.discardConfirm : null;
+  }
+
+  protected onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.unsavedChangesMessage()) event.preventDefault();
+  }
+
   async cancel(): Promise<void> {
-    const dirty = this.form.dirty || !!this.pendingSignature();
-    if (dirty && !(await confirm(this.dialog, this.t.orderForm.discardConfirm))) return;
+    if (this.hasUnsavedChanges() && !(await confirm(this.dialog, this.t.orderForm.discardConfirm))) return;
+    // 這裡已經問過了，之後的導頁不要再被離開確認擋一次。
+    this.leaveApproved = true;
     await this.router.navigateByUrl(this.returnUrl);
   }
 
-  /**
-   * 建立成功後的去處。暫時導向訂單列表並開啟該訂單的工作區；
-   * 訂單詳情頁 `/orders/:id` 完成後只需改這一行。
-   */
+  /** 建立成功後前往該訂單的訂單詳情。 */
   private navigateToCreatedOrder(bookingId: string): void {
-    void this.router.navigate(['/bookings'], { queryParams: { booking: bookingId } });
+    this.leaveApproved = true;
+    void this.router.navigate(['/orders', bookingId]);
   }
 }

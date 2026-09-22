@@ -178,11 +178,10 @@ export const ZH_TW = {
     noVehicleAvailable: '此租期沒有可租車輛',
     pickedResult: '已選車輛',
     clearPick: '清除選擇',
-    openWorkspace: '訂單工作區',
+    openDetail: '訂單詳情',
   },
   bookingForm: {
     title: '新增訂單',
-    editTitle: '編輯訂單',
     steps: {
       vehicle: '租期與車輛',
       renter: '承租人與駕駛資格',
@@ -193,7 +192,6 @@ export const ZH_TW = {
     next: '下一步',
     prev: '上一步',
     submit: '建立訂單',
-    submitEdit: '儲存變更',
     saving: '處理中…',
     vehicleConflict: '此車輛在所選時段已有其他訂單，請調整時段或改選其他車輛',
     quoteUnavailable: '此車型目前沒有可用的定價方案，無法試算報價',
@@ -217,13 +215,9 @@ export const ZH_TW = {
       balance: '尾款',
       adjustment: '其他調整',
     } as Record<string, string>,
-    contractPreview: '合約預覽',
-    signNow: '現場完成簽署',
-    signLater: '取車前再簽署',
     internalNote: '內部備註',
     reviewTitle: '確認建立前檢查',
     allComplete: '目前沒有待辦事項',
-    newContractVersion: '租期、車輛或承租人等核心資料有異動，儲存後會產生新版合約',
     incomplete: {
       missingEmail: '會員未提供 Email，還車提醒無法排程',
       depositNotCollected: '訂金尚未收款',
@@ -231,7 +225,7 @@ export const ZH_TW = {
       balanceNotCollected: '租金尚未收足',
     },
   },
-  // /orders/new 建立訂單頁與可重用的訂單表單區塊；與舊建單 dialog 共用的字串直接引用 bookingForm。
+  // /orders/new 建立訂單頁與可重用的訂單表單區塊；步驟名稱、報價與待補項目等字串沿用 bookingForm。
   orderForm: {
     stepErrorsNotice: '尚有項目需要修正，已標示在步驟上',
     required: '必填',
@@ -300,10 +294,28 @@ export const ZH_TW = {
     recordFailed: '收款記錄失敗，請確認後重試（表單內容已保留）',
     voidAction: '作廢',
   },
-  bookingWorkspace: {
-    title: '訂單工作區',
-    navAriaLabel: '工作區分頁',
-    discardChangesConfirm: '有未儲存的變更，確定要放棄並關閉嗎？',
+  // /orders/:id 訂單詳情頁：七個分頁與總覽的「編輯訂單」。
+  orderDetail: {
+    title: '訂單詳情',
+    navAriaLabel: '訂單詳情分頁',
+    back: '返回',
+    notFound: '找不到這筆訂單',
+    discardChangesConfirm: '有未儲存的變更，確定要放棄並離開嗎？',
+    edit: '編輯',
+    save: '儲存',
+    saving: '儲存中…',
+    saved: '訂單已更新',
+    needsResign: '合約條款已變更，需重新簽署',
+    goToContract: '前往合約',
+    editingHint: '編輯中：其他分頁暫時停用，請先儲存或取消',
+    groups: {
+      rental: '租期與車輛',
+      renter: '承租人',
+      pricing: '費用',
+    },
+    rentalPeriod: '租期',
+    depositRequired: '應收訂金',
+    noQuote: '尚無報價快照',
     sections: {
       overview: '總覽',
       documents: '文件',

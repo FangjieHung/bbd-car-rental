@@ -22,7 +22,7 @@ function positiveAmountValidator(control: { value: unknown }) {
 const BANK_LAST_FIVE_VALIDATORS = [Validators.required, Validators.pattern(/^\d{5}$/)];
 
 /**
- * 訂單工作區「款項」分頁的收付款分類帳 UI。設計文件第 4.2 節：
+ * 訂單詳情「款項」分頁的收付款分類帳 UI。設計文件第 4.2 節：
  * - 摘要區塊：原訂單報價、已確認費用調整、最新應付總額、淨實收、待收餘額、訂金應收、推導狀態。
  * - 交易列：每筆付款各自成列且不可刪除，作廢只改狀態（PaymentStore.voidPayment），
  *   維持分類帳「保留歷史」的原則（見設計原則 2）。

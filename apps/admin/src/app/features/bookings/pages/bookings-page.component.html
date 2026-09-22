@@ -88,9 +88,9 @@
             <span class="action-cell">
               <button
                 mat-icon-button
-                [matTooltip]="t.booking.openWorkspace"
-                [attr.aria-label]="t.booking.openWorkspace"
-                (click)="openWorkspace(b)"
+                [matTooltip]="t.booking.openDetail"
+                [attr.aria-label]="t.booking.openDetail"
+                (click)="openDetail(b)"
               >
                 <span class="material-symbols-rounded" aria-hidden="true">open_in_full</span>
               </button>
@@ -117,7 +117,7 @@
                 </button>
                 <mat-menu #moreMenu="matMenu">
                   @if (b.status === 'reserved') {
-                    <button mat-menu-item (click)="openForm(b)">
+                    <button mat-menu-item (click)="editOrder(b)">
                       <span class="material-symbols-rounded" aria-hidden="true">edit</span>
                       <span>{{ t.common.edit }}</span>
                     </button>

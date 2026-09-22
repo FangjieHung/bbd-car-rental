@@ -225,7 +225,7 @@ describe('ContractPanelComponent 版本選擇與重大異動後的新版本', ()
     const { fixture, contractStore, component } = createFixture();
     const v1 = contractStore.createDraft('b1', snapshot());
     contractStore.sign(v1.id, ['sig-1']);
-    // 核心欄位（車輛）異動：模擬 booking-form-dialog 對既有訂單的一次核心編輯，
+    // 核心欄位（車輛）異動：模擬編輯訂單對既有訂單的一次核心編輯，
     // 不經過本面板——面板必須被動反映 ContractStore 的最新狀態。
     contractStore.reviseIfChanged('b1', snapshot({ vehicle: { ...snapshot().vehicle, plateNumber: 'XYZ-999' } }));
     fixture.detectChanges();

@@ -4,7 +4,7 @@ import { computeBlocks, TimelineViewComponent } from './timeline-view/timeline-v
 import { RentalBooking, Vehicle } from '../../core/models';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { BookingWorkspaceService } from '../bookings/services/booking-workspace.service';
+import { OrderDetailNavigation } from '../orders/navigation/order-detail-navigation';
 
 const mkVehicle = (partial: Partial<Vehicle>): Vehicle => ({
   id: 'v1',
@@ -83,7 +83,7 @@ describe('TimelineViewComponent supplied date', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
-        { provide: BookingWorkspaceService, useValue: { open: () => undefined } },
+        { provide: OrderDetailNavigation, useValue: { open: () => undefined } },
       ],
     });
     fixture = TestBed.createComponent(TimelineViewComponent);
@@ -119,7 +119,7 @@ describe('TimelineViewComponent vehicles input', () => {
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo(storeVehicles) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
-        { provide: BookingWorkspaceService, useValue: { open: () => undefined } },
+        { provide: OrderDetailNavigation, useValue: { open: () => undefined } },
       ],
     });
     return TestBed.createComponent(TimelineViewComponent);
@@ -142,14 +142,14 @@ describe('TimelineViewComponent vehicles input', () => {
 });
 
 describe('TimelineViewComponent openDetail', () => {
-  it('點擊區塊開同一個訂單工作區，不再開簡化版的 booking-detail dialog', () => {
+  it('點擊區塊前往訂單詳情，不再開簡化版的 booking-detail dialog', () => {
     const workspaceOpen = vi.fn();
     TestBed.configureTestingModule({
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo([mkVehicle({ id: 'v1' })]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo([mk({ id: 'b1' })]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
-        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
+        { provide: OrderDetailNavigation, useValue: { open: workspaceOpen } },
       ],
     });
     const component = TestBed.createComponent(TimelineViewComponent).componentInstance;

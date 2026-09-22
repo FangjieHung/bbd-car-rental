@@ -50,7 +50,7 @@ export function maskSensitiveValue(value: string): string {
 }
 
 /**
- * 訂單工作區「活動紀錄」分頁。彙整橫跨八個以上 store／repository 的事件，統一依發生時間
+ * 訂單詳情「活動紀錄」分頁。彙整橫跨八個以上 store／repository 的事件，統一依發生時間
  * 由舊到新排序成單一時間軸——這裡刻意只做「彙整與呈現」，不重新計算或改寫任何來源資料，
  * 每個事件的內容都直接取自各自 store 已經算好、已經持久化的紀錄。
  *

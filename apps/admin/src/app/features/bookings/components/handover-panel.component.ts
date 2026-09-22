@@ -68,7 +68,7 @@ function fromDatetimeLocalValue(value: string): string {
 }
 
 /**
- * 訂單工作區「交還車」分頁。設計文件第 7 節與本任務 brief：
+ * 訂單詳情「交還車」分頁。設計文件第 7 節與本任務 brief：
  * - reserved 訂單顯示取車表單：即時依會員／文件／合約／付款／車輛狀態組出就緒判斷輸入，
  *   透過 HandoverStore.evaluateReadiness() 即時反映阻擋與警示；一般取車被阻擋時可視情況
  *   填寫主管覆核（操作人＋理由）；法律資格或車輛安全類別的阻擋永遠不能覆核放行。

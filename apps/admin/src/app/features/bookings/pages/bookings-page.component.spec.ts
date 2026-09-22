@@ -34,7 +34,7 @@ import {
   RefundRecord,
   ReminderStatus,
 } from '../../../core/models';
-import { BookingWorkspaceService } from '../services/booking-workspace.service';
+import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
 
 function makeVehicle(partial: Partial<Vehicle>): Vehicle {
   return {
@@ -71,7 +71,7 @@ function makeBooking(partial: Partial<RentalBooking>): RentalBooking {
  * 後者又轉引出 ContractStore／CancellationStore／CreditStore，DI 圖因此拉得很深——
  * 即使測試不呼叫相關方法，元件建構時仍會整串解析，缺一個 provider 測試就整個炸掉。
  */
-function provideBookingWorkspaceRepos(options: {
+function provideOrderDetailRepos(options: {
   refunds?: RefundRecord[];
   operatorRecoveryCases?: OperatorRecoveryCase[];
 } = {}) {
@@ -98,14 +98,16 @@ function provideBookingWorkspaceRepos(options: {
 describe('BookingsPageComponent filtering', () => {
   let component: BookingsPageComponent;
   let workspaceOpen: ReturnType<typeof vi.fn>;
+  let workspaceEdit: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     workspaceOpen = vi.fn();
+    workspaceEdit = vi.fn();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        ...provideBookingWorkspaceRepos(),
-        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
+        ...provideOrderDetailRepos(),
+        { provide: OrderDetailNavigation, useValue: { open: workspaceOpen, edit: workspaceEdit } },
         {
           provide: VEHICLE_REPO,
           useValue: createInMemoryRepo<Vehicle>([
@@ -167,13 +169,19 @@ describe('BookingsPageComponent filtering', () => {
     expect(component.searchQuery()).toBe('王小明');
   });
 
-  it('openWorkspace 呼叫 BookingWorkspaceService.open，帶上該筆訂單 id', () => {
-    component.openWorkspace(makeBooking({ id: 'b2', vehicleId: 'v2', memberId: 'c2' }));
+  it('openDetail 呼叫 OrderDetailNavigation.open，帶上該筆訂單 id', () => {
+    component.openDetail(makeBooking({ id: 'b2', vehicleId: 'v2', memberId: 'c2' }));
 
     expect(workspaceOpen).toHaveBeenCalledWith('b2');
   });
 
-  it('handoverAction／cancelAction 都開同一個訂單工作區的對應分頁，不直接呼叫 BookingStore', () => {
+  it('editOrder 開啟訂單詳情並直接進入編輯（OrderDetailNavigation.edit）', () => {
+    component.editOrder(makeBooking({ id: 'b1' }));
+
+    expect(workspaceEdit).toHaveBeenCalledWith('b1');
+  });
+
+  it('handoverAction／cancelAction 都開同一個訂單詳情的對應分頁，不直接呼叫 BookingStore', () => {
     const booking = makeBooking({ id: 'b1' });
 
     component.handoverAction(booking);
@@ -192,6 +200,7 @@ describe('BookingsPageComponent 急迫指標與排序', () => {
     vi.setSystemTime(NOW);
 
     const workspaceOpen = vi.fn();
+    const workspaceEdit = vi.fn();
     // ordinary：一般 reserved 訂單，無任何急迫條件。
     const ordinary = makeBooking({ id: 'ordinary', status: 'reserved' });
     // overdueReturn：in_progress 且還車時間已過，屬於逾時未還。
@@ -208,7 +217,7 @@ describe('BookingsPageComponent 急迫指標與排序', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        ...provideBookingWorkspaceRepos({
+        ...provideOrderDetailRepos({
           refunds: [
             {
               id: 'r1', bookingId: 'refund-pending', amount: 500, method: 'cash',
@@ -223,7 +232,7 @@ describe('BookingsPageComponent 急迫指標與排序', () => {
             },
           ],
         }),
-        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
+        { provide: OrderDetailNavigation, useValue: { open: workspaceOpen, edit: workspaceEdit } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle({})]) },
         {
           provide: MEMBER_REPO,
@@ -275,7 +284,7 @@ describe('BookingsPageComponent 急迫指標與排序', () => {
     vi.useRealTimers();
   });
 
-  it('goUrgent 開同一個訂單工作區的指定分頁', () => {
+  it('goUrgent 開同一個訂單詳情的指定分頁', () => {
     const { component, workspaceOpen } = setup();
     const overdue = component.store.bookings().find((b) => b.id === 'overdue-return')!;
 

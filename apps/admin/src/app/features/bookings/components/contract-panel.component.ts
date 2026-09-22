@@ -11,7 +11,7 @@ import { ContractStore } from '../../../stores/contract/contract.store';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 /**
- * 訂單工作區「合約」分頁。設計文件第 4.4 節：
+ * 訂單詳情「合約」分頁。設計文件第 4.4 節：
  * - 從 ContractStore 讀出這筆訂單的所有版本，預設顯示最新版本；可切換檢視舊版本。
  * - 一律只從選定版本的不可變 snapshot 渲染內容（交給共用 lib 的 ContractDocumentComponent）——
  *   不注入 MemberStore／VehicleStore／BookingStore 讀「現在」的會員或車輛資料，即使查看的是舊版本、
@@ -20,7 +20,7 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
  *   （把螢幕轉給客人看條文、簽名、確認）；已簽署或已被取代的版本一律唯讀，
  *   對應 ContractStore.sign() 本身也會拒絕對非 draft 版本簽署（雙重防線）。
  * - 簽署狀態（含「需重新簽署」）一律由領域規則 contractSigningState 判定，與取車判斷共用同一套邏輯。
- * - 建立合約草稿／因核心欄位異動而產生新版本，是 booking-form-dialog（Task 10）既有職責，
+ * - 建立合約草稿／因核心欄位異動而產生新版本，是訂單送出（AdminOrderSubmitGateway 的建立／編輯訂單）的職責，
  *   本元件刻意不做「一鍵建立合約」——沒有任何版本時只顯示空狀態提示。
  */
 @Component({

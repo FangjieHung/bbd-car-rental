@@ -3,10 +3,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTabsModule } from '@angular/material/tabs';
-import { MatDialog } from '@angular/material/dialog';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { firstValueFrom, map } from 'rxjs';
+import { map } from 'rxjs';
 import { ResponsivePanelComponent } from '@car-rental/ui';
 import { VehicleStepComponent } from '@car-rental/booking-flow';
 import { contractSigningState } from '@car-rental/domain';
@@ -40,12 +39,8 @@ import { PaymentStore } from '../../../stores/payment/payment.store';
 import { DocumentStore } from '../../../stores/document/document.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { HandoverStore } from '../../../stores/handover/handover.store';
-import { BookingWorkspaceService } from '../../bookings/services/booking-workspace.service';
-import { WorkspaceSection } from '../../bookings/dialogs/booking-workspace-dialog.component';
-import {
-  BookingFormDialogComponent,
-  BookingFormResult,
-} from '../../bookings/dialogs/booking-form-dialog.component';
+import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
+import { OrderDetailSection } from '../../orders/navigation/order-detail-sections';
 
 const NARROW_QUERY = '(max-width: 1280px)';
 
@@ -81,8 +76,8 @@ function toPickupReciprocityStatus(status: ReciprocityStatus): 'pending' | 'elig
 
 const ACTIVE: RentalBooking['status'][] = ['reserved', 'in_progress'];
 
-/** 每種取車阻擋／提醒對應該去工作區哪個分頁處理，供「前往處理」動作使用。 */
-const BLOCKER_SECTION: Record<PickupBlockerType, WorkspaceSection> = {
+/** 每種取車阻擋／提醒對應該去訂單詳情哪個分頁處理，供「前往處理」動作使用。 */
+const BLOCKER_SECTION: Record<PickupBlockerType, OrderDetailSection> = {
   deposit_below_threshold: 'payments',
   latest_contract_unsigned: 'contract',
   required_document_missing_or_expired: 'documents',
@@ -91,7 +86,7 @@ const BLOCKER_SECTION: Record<PickupBlockerType, WorkspaceSection> = {
   vehicle_not_deliverable: 'overview',
 };
 
-const WARNING_SECTION: Record<PickupWarningType, WorkspaceSection> = {
+const WARNING_SECTION: Record<PickupWarningType, OrderDetailSection> = {
   missing_email: 'overview',
   low_confidence_ocr: 'documents',
   document_near_expiry: 'documents',
@@ -185,8 +180,7 @@ export class CalendarViewComponent {
   readonly memberStore = inject(MemberStore);
   readonly isSameDay = isSameDay;
 
-  private readonly dialog = inject(MatDialog);
-  private readonly workspace = inject(BookingWorkspaceService);
+  private readonly orderDetail = inject(OrderDetailNavigation);
   private readonly paymentStore = inject(PaymentStore);
   private readonly documentStore = inject(DocumentStore);
   private readonly contractStore = inject(ContractStore);
@@ -581,13 +575,13 @@ export class CalendarViewComponent {
     return this.readiness(row)?.warnings ?? [];
   }
 
-  /** 阻擋／提醒項目的「前往處理」動作——不在清單裡重做一套表單，直接開同一個訂單工作區。 */
+  /** 阻擋／提醒項目的「前往處理」動作——不在清單裡重做一套表單，直接開同一個訂單詳情。 */
   goHandleBlocker(row: WorkListRow, blocker: PickupBlocker): void {
-    this.workspace.open(row.booking.id, BLOCKER_SECTION[blocker.type]);
+    void this.orderDetail.open(row.booking.id, BLOCKER_SECTION[blocker.type]);
   }
 
   goHandleWarning(row: WorkListRow, warning: PickupWarning): void {
-    this.workspace.open(row.booking.id, WARNING_SECTION[warning.type]);
+    void this.orderDetail.open(row.booking.id, WARNING_SECTION[warning.type]);
   }
 
   // ---------------------------------------------------------------------
@@ -661,47 +655,38 @@ export class CalendarViewComponent {
   }
 
   // ---------------------------------------------------------------------
-  // 快捷操作：全部導向同一個訂單工作區（不同分頁），不在清單裡另做第二套表單。
+  // 快捷操作：全部導向同一個訂單詳情（不同分頁），不在清單裡另做第二套表單。
   // ---------------------------------------------------------------------
 
   payAction(row: WorkListRow): void {
-    this.workspace.open(row.booking.id, 'payments');
+    void this.orderDetail.open(row.booking.id, 'payments');
   }
 
   viewContractAction(row: WorkListRow): void {
-    this.workspace.open(row.booking.id, 'contract');
+    void this.orderDetail.open(row.booking.id, 'contract');
   }
 
   cancelAction(row: WorkListRow): void {
-    this.workspace.open(row.booking.id, 'cancellation');
+    void this.orderDetail.open(row.booking.id, 'cancellation');
   }
 
   pickupAction(row: WorkListRow): void {
-    this.workspace.open(row.booking.id, 'handover');
+    void this.orderDetail.open(row.booking.id, 'handover');
   }
 
   returnAction(row: WorkListRow): void {
-    this.workspace.open(row.booking.id, 'handover');
+    void this.orderDetail.open(row.booking.id, 'handover');
   }
 
   viewAction(row: WorkListRow): void {
-    this.workspace.open(row.booking.id);
+    void this.orderDetail.open(row.booking.id);
   }
 
   /**
-   * 「修改」沿用既有的訂單編輯精靈（bookings-page 的 openForm 也是同一顆元件），不是另外
-   * 做一套簡化編輯表單；精靈完成後直接開工作區，與 bookings-page.openForm 行為一致。
+   * 「修改」開啟訂單詳情並直接進入總覽的編輯訂單（與訂單列表的「編輯」同一個入口），
+   * 不在清單裡另做一套簡化編輯表單。
    */
-  async editAction(row: WorkListRow): Promise<void> {
-    const ref = this.dialog.open(BookingFormDialogComponent, {
-      data: row.booking,
-      width: '80vw',
-      maxWidth: '800px',
-      maxHeight: '90dvh',
-      panelClass: 'booking-form-wizard-dialog',
-    });
-    const result: BookingFormResult | undefined = await firstValueFrom(ref.afterClosed());
-    if (!result) return;
-    this.workspace.open(result.bookingId);
+  editAction(row: WorkListRow): void {
+    void this.orderDetail.edit(row.booking.id);
   }
 }

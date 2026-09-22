@@ -12,6 +12,9 @@ import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../o
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { createOrderRepos, makeVehicle } from '../testing';
 import { ORDER_CREATE_STEPS, OrderCreatePageComponent } from './order-create-page.component';
+import { ORDER_ROUTES } from '../orders.routes';
+import { confirmLeaveGuard } from '../navigation/confirm-leave.guard';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 interface SetupOptions {
   query?: Record<string, string>;
@@ -123,7 +126,7 @@ describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
     expect(steps(fixture)[1].hasError).toBe(false);
   });
 
-  it('底線齊了、其餘未填也可以建立：呼叫 gateway.create，成功後導向訂單列表並開啟該訂單', async () => {
+  it('底線齊了、其餘未填也可以建立：呼叫 gateway.create，成功後導向新訂單的訂單詳情', async () => {
     const { component, create, navigate } = setup();
     fillBaseline(component);
 
@@ -134,7 +137,8 @@ describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
     expect(input.value.rental.vehicleId).toBe('v1');
     expect(input.value.renter.email).toBe('');
     expect(input.presignature).toBeUndefined();
-    expect(navigate).toHaveBeenCalledWith(['/bookings'], { queryParams: { booking: 'new-booking-id' } });
+    expect(navigate).toHaveBeenCalledWith(['/orders', 'new-booking-id']);
+    expect(component.unsavedChangesMessage()).toBeNull(); // 已建立，導頁不再被離開確認擋下
     expect(component.incompleteItems().length).toBeGreaterThan(0); // 未填的部分成為待補項目
   });
 
@@ -239,5 +243,31 @@ describe('OrderCreatePageComponent query params 預填與取消', () => {
     await component.cancel();
     expect(dialogOpen).toHaveBeenCalledWith(ConfirmDialogComponent, expect.anything());
     expect(navigateByUrl).not.toHaveBeenCalled();
+  });
+});
+
+describe('OrderCreatePageComponent 離開確認（confirmLeaveGuard）', () => {
+  it('路由有掛上離開確認', () => {
+    const route = ORDER_ROUTES[0].children?.find((r) => r.path === 'new');
+    expect(route?.canDeactivate).toContain(confirmLeaveGuard);
+  });
+
+  it('沒有改動時直接放行', () => {
+    const { component } = setup();
+    expect(component.unsavedChangesMessage()).toBeNull();
+  });
+
+  it('有未建立的內容時要求確認', () => {
+    const { component } = setup();
+    component.form.controls.renter.controls.name.markAsDirty();
+    expect(component.unsavedChangesMessage()).toBe(ZH_TW.orderForm.discardConfirm);
+  });
+
+  it('按取消並確認放棄後，接下來的導頁不再重複詢問', async () => {
+    const { component, navigateByUrl } = setup({ confirmResult: true });
+    component.form.controls.renter.controls.name.markAsDirty();
+    await component.cancel();
+    expect(navigateByUrl).toHaveBeenCalledWith('/bookings');
+    expect(component.unsavedChangesMessage()).toBeNull();
   });
 });
