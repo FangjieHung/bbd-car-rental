@@ -19,6 +19,43 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
   };
 }
 
+describe('VehicleFormDialogComponent 保險到期日', () => {
+  function create(data: Vehicle) {
+    const closed: VehicleFormResult[] = [];
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: MatDialogRef, useValue: { close: (r?: VehicleFormResult) => r && closed.push(r) } },
+        { provide: MAT_DIALOG_DATA, useValue: data },
+      ],
+    });
+    const fixture = TestBed.createComponent(VehicleFormDialogComponent);
+    fixture.detectChanges();
+    return { fixture, closed };
+  }
+
+  it('既有完整 ISO 時間會轉成日期輸入框可顯示的 yyyy-MM-dd，而不是空白', () => {
+    const iso = new Date(2027, 0, 15, 0, 0).toISOString();
+    const { fixture } = create(makeVehicle({ insuranceExpiry: iso }));
+    expect(fixture.componentInstance.form.controls.insuranceExpiry.value).toBe('2027-01-15');
+  });
+
+  it('沒改動保險到期日就儲存（例如只改據點），原值原樣保留', () => {
+    const iso = new Date(2027, 0, 15, 0, 0).toISOString();
+    const { fixture, closed } = create(makeVehicle({ insuranceExpiry: iso }));
+    fixture.componentInstance.form.controls.location.setValue('mzg-port');
+    fixture.componentInstance.save();
+    expect(closed[0].insuranceExpiry).toBe(iso);
+  });
+
+  it('改了保險到期日就寫入新日期', () => {
+    const { fixture, closed } = create(makeVehicle({ insuranceExpiry: new Date(2027, 0, 15).toISOString() }));
+    fixture.componentInstance.form.controls.insuranceExpiry.setValue('2027-03-01');
+    fixture.componentInstance.save();
+    expect(closed[0].insuranceExpiry).toBe('2027-03-01');
+  });
+});
+
 describe('VehicleFormDialogComponent 所在據點', () => {
   let closedWith: VehicleFormResult[];
   let closeSpy: (result?: VehicleFormResult) => void;
