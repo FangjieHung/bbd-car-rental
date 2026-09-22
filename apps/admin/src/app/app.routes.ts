@@ -50,6 +50,10 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'orders',
+    loadChildren: () => import('./features/orders/orders.routes').then((m) => m.ORDER_ROUTES),
+  },
+  {
     path: 'pricing',
     loadComponent: () =>
       import('./features/pricing/pages/pricing-page.component').then(

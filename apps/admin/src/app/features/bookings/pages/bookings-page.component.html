@@ -16,10 +16,10 @@
         <span class="material-symbols-rounded" aria-hidden="true">group</span>
         {{ t.booking.goMembers }}
       </a>
-      <button actions mat-flat-button (click)="openForm(null)">
+      <a actions mat-flat-button routerLink="/orders/new">
         <span class="material-symbols-rounded" aria-hidden="true">add</span>
         {{ t.common.create }}
-      </button>
+      </a>
     </app-page-toolbar>
   </ng-template>
 

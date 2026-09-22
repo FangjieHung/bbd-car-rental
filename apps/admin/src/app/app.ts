@@ -35,7 +35,12 @@ export class App implements OnInit {
         { route: '/add-ons', label: this.t.nav.addOns, icon: 'extension' },
       ],
     },
-    { route: '/bookings', label: this.t.nav.bookings, icon: 'calendar_month' },
+    {
+      route: '/bookings',
+      label: this.t.nav.bookings,
+      icon: 'calendar_month',
+      matchPrefixes: ['/orders/'],
+    },
     {
       label: this.t.nav.pricingGroup,
       icon: 'payments',
@@ -88,14 +93,16 @@ export class App implements OnInit {
     this.router.events
       .pipe(
         filter((event) => event.type === 1),
-        map(() => this.router.url),
+        // 比對時去掉 query／fragment，`/orders/new?vehicleId=…` 這類帶參數的網址才對得到選單項目。
+        map(() => this.router.url.split(/[?#]/)[0]),
       )
       .subscribe((url) => {
         const active =
           this.navLeaves.find((item) => item.route === url) ??
           this.navLeaves
             .filter((item) => url.startsWith(`${item.route}/`))
-            .sort((a, b) => b.route.length - a.route.length)[0];
+            .sort((a, b) => b.route.length - a.route.length)[0] ??
+          this.navLeaves.find((item) => item.matchPrefixes?.some((p) => url.startsWith(p)));
         this.currentTitle = active?.label ?? this.t.nav.dashboard;
 
         const activeGroup = active

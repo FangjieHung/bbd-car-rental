@@ -231,6 +231,37 @@ export const ZH_TW = {
       balanceNotCollected: '租金尚未收足',
     },
   },
+  // /orders/new 建立訂單頁與可重用的訂單表單區塊；與舊建單 dialog 共用的字串直接引用 bookingForm。
+  orderForm: {
+    stepErrorsNotice: '尚有項目需要修正，已標示在步驟上',
+    required: '必填',
+    problems: {
+      rentalBaseline: '請選擇車輛並填寫租期',
+      branchesRequired: '請選擇取車與還車據點',
+      endBeforeStart: '還車時間必須晚於取車時間',
+      renterBaseline: '請填寫承租人姓名與電話',
+      depositInvalid: '訂金金額無效',
+    },
+    contract: {
+      summaryTitle: '合約摘要',
+      previewUnavailable: '選好車輛與租期、可以試算報價後，才能檢視合約',
+      unsigned: '尚未簽署。可以先建立訂單，之後再補簽。',
+      signed: '客人已簽署',
+      resign: '重新簽署',
+      signatureAlt: '客人簽名',
+    },
+    incomplete: {
+      contractNeedsResign: '合約條款已變更，需重新簽署',
+    },
+    quotePending: '選好車輛與租期後會顯示報價',
+    paymentAmount: '金額',
+    paymentPurpose: '款項用途',
+    paymentMethod: '付款方式',
+    noPaymentDrafts: '尚未排入款項，可在建立訂單後再收款',
+    addOnQty: '數量',
+    discardConfirm: '尚未建立的訂單內容將會遺失，確定要離開嗎？',
+    stepperLabel: '建立訂單步驟',
+  },
   paymentPanel: {
     baseQuote: '原訂單報價',
     confirmedAdjustments: '已確認費用調整',

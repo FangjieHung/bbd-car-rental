@@ -1,0 +1,63 @@
+<div class="order-section" [formGroup]="form().controls.pricing">
+  @if (derived.quote(); as q) {
+    <dl class="order-section__dl">
+      <dt>{{ t.bookingForm.rentalSubtotal }}</dt>
+      <dd>{{ q.rentalSubtotal }}</dd>
+      <dt>{{ t.bookingForm.insuranceSubtotal }}</dt>
+      <dd>{{ q.insuranceSubtotal }}</dd>
+      <dt>{{ t.bookingForm.addOnSubtotal }}</dt>
+      <dd>{{ q.addOnSubtotal }}</dd>
+      <dt class="is-total">{{ t.bookingForm.quoteTotal }}</dt>
+      <dd class="is-total">{{ q.total }}</dd>
+    </dl>
+  } @else {
+    <p class="order-section__hint">{{ t.orderForm.quotePending }}</p>
+  }
+
+  @if (derived.insuranceUnreconciled()) {
+    <p class="order-section__notice" role="alert">{{ t.bookingForm.insuranceUnreconciled }}</p>
+  }
+
+  <div class="order-section__grid">
+    @if (derived.vehicle()?.insurancePlans?.length) {
+      <mat-form-field class="order-section__full">
+        <mat-label>{{ t.bookingForm.insurance }}</mat-label>
+        <mat-select formControlName="insurancePlanId">
+          <mat-option [value]="NO_INSURANCE_VALUE">{{ t.bookingForm.insuranceNone }}</mat-option>
+          @for (p of derived.vehicle()?.insurancePlans; track p.id) {
+            <mat-option [value]="p.id">{{ p.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <mat-form-field class="order-section__full">
+      <mat-label>{{ t.bookingForm.deposit }}</mat-label>
+      <input matInput type="number" min="0" formControlName="depositRequired" />
+      <mat-hint>{{ t.bookingForm.depositCap }} {{ derived.depositCap() }}</mat-hint>
+    </mat-form-field>
+  </div>
+  @if (derived.depositExceedsCap()) {
+    <p class="order-section__notice" role="alert">
+      {{ t.bookingForm.depositExceedsCap }}（{{ derived.depositCap() }}）
+    </p>
+  }
+
+  @if (data.addOns().length > 0) {
+    <h3 class="order-section__subtitle">{{ t.bookingForm.addOns }}</h3>
+    <div class="order-section__grid">
+      @for (a of data.addOns(); track a.id) {
+        <mat-form-field>
+          <mat-label>{{ a.name }}（{{ t.orderForm.addOnQty }}）</mat-label>
+          <input
+            matInput
+            type="number"
+            min="0"
+            [value]="addOnQtyFor(a.id)"
+            (change)="setAddOnQty(a.id, $any($event.target).value)"
+          />
+        </mat-form-field>
+      }
+    </div>
+  }
+</div>

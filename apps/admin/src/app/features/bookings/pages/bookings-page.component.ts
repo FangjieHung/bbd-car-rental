@@ -179,7 +179,8 @@ export class BookingsPageComponent {
     this.workspace.open(booking.id);
   }
 
-  async openForm(booking: RentalBooking | null): Promise<void> {
+  /** 編輯既有訂單（新增訂單已改為 /orders/new 頁面；編輯下一階段改為訂單詳情頁）。 */
+  async openForm(booking: RentalBooking): Promise<void> {
     const ref = this.dialog.open(BookingFormDialogComponent, {
       data: booking,
       width: '80vw',

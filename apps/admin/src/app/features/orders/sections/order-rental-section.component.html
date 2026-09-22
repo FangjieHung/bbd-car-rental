@@ -1,0 +1,51 @@
+<div class="order-section" [formGroup]="form().controls.rental">
+  <mat-form-field>
+    <mat-label>{{ t.booking.vehicle }}</mat-label>
+    <mat-select formControlName="vehicleId">
+      @for (v of data.vehicles(); track v.id) {
+        <mat-option [value]="v.id">{{ v.plateNumber }}（{{ v.model }}）</mat-option>
+      }
+    </mat-select>
+    <mat-error>{{ t.orderForm.required }}</mat-error>
+  </mat-form-field>
+
+  <div class="order-section__grid">
+    <mat-form-field>
+      <mat-label>{{ t.booking.startTime }}</mat-label>
+      <input matInput type="datetime-local" formControlName="startLocal" />
+      <mat-error>{{ t.orderForm.required }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ t.booking.endTime }}</mat-label>
+      <input matInput type="datetime-local" formControlName="endLocal" />
+      <mat-error>{{ t.orderForm.required }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ t.booking.pickupLocation }}</mat-label>
+      <mat-select formControlName="pickupLocation">
+        @for (b of branches; track b.id) {
+          <mat-option [value]="b.id">{{ b.name }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>{{ t.orderForm.required }}</mat-error>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>{{ t.booking.returnLocation }}</mat-label>
+      <mat-select formControlName="returnLocation">
+        @for (b of branches; track b.id) {
+          <mat-option [value]="b.id">{{ b.name }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>{{ t.orderForm.required }}</mat-error>
+    </mat-form-field>
+  </div>
+
+  @if (derived.conflicts().length > 0) {
+    <p class="order-section__notice" role="alert">
+      {{ t.bookingForm.vehicleConflict }}（{{ derived.conflicts().length }}）
+    </p>
+  }
+  @if (derived.quoteUnavailable()) {
+    <p class="order-section__notice" role="alert">{{ t.bookingForm.quoteUnavailable }}</p>
+  }
+</div>
