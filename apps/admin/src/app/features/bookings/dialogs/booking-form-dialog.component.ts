@@ -16,6 +16,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import {
+  branchName,
   ContractPartySnapshot,
   ContractSnapshot,
   Member,
@@ -23,6 +24,7 @@ import {
   PaymentMethod,
   PaymentPurpose,
   PriceBreakdown,
+  RENTAL_BRANCHES,
   RentalBooking,
   Vehicle,
   calculatePrice,
@@ -106,6 +108,7 @@ export class BookingFormDialogComponent {
   private readonly fb = inject(NonNullableFormBuilder);
 
   protected readonly steps = BOOKING_WIZARD_STEPS;
+  protected readonly branches = RENTAL_BRANCHES;
   /** 目前所在步驟索引（0-4）；測試與模板都直接讀寫這個 signal，不另外包一層方法。 */
   readonly step = signal(0);
   readonly error = signal('');
@@ -349,7 +352,7 @@ export class BookingFormDialogComponent {
         if (!this.form.controls.depositRequired.dirty) {
           const cap = this.depositCap();
           // 不加 { emitEvent: false }：depositRequiredValue 這個 toSignal 是訂閱
-          // depositRequired 自己的 valueChanges，抑制事件會讓它讀不到剛寫入的新值。
+          // depositRequired 自己的 valueChanges，抑制事件會讀不到剛寫入的新值。
           // 用上面的「值相同就不再設」擋掉遞迴（setValue 觸發的第二輪會發現已經相等而跳過）。
           if (this.form.controls.depositRequired.value !== cap) {
             this.form.controls.depositRequired.setValue(cap);
@@ -357,6 +360,27 @@ export class BookingFormDialogComponent {
         }
       });
     }
+
+    // 選車後若取車據點尚未被使用者手動改過（control 未 dirty，跟上面 depositRequired
+    // 用同一套判斷機制），預設帶入該車所在據點——沒有據點資料時維持原樣，不覆蓋成空值
+    // （同官網 confirm-step 對 vehicle.location 的 truthy 檢查語意）。
+    this.form.controls.vehicleId.valueChanges.subscribe(() => {
+      if (this.form.controls.pickupLocation.dirty) return;
+      const branchId = this.selectedVehicle()?.location;
+      if (!branchId) return;
+      if (this.form.controls.pickupLocation.value !== branchId) {
+        this.form.controls.pickupLocation.setValue(branchId);
+      }
+    });
+
+    // 還車據點預設跟取車據點相同，同樣只在使用者尚未手動改過還車據點時才連動
+    // （沿用官網 confirm-step「使用者自己選過就不再覆蓋」的 touched 語意）。
+    this.form.controls.pickupLocation.valueChanges.subscribe((pickup) => {
+      if (this.form.controls.returnLocation.dirty) return;
+      if (this.form.controls.returnLocation.value !== pickup) {
+        this.form.controls.returnLocation.setValue(pickup);
+      }
+    });
   }
 
   /**
@@ -519,8 +543,9 @@ export class BookingFormDialogComponent {
       },
       rentalStartTime: new Date(v.startLocal).toISOString(),
       rentalEndTime: new Date(v.endLocal).toISOString(),
-      pickupLocation: v.pickupLocation,
-      returnLocation: v.returnLocation,
+      // 合約快照存的是據點「名稱」文字（不可變快照），表單/訂單存的是據點 id，這裡轉換一次。
+      pickupLocation: branchName(v.pickupLocation),
+      returnLocation: branchName(v.returnLocation),
       depositRequired: v.depositRequired,
       pricing: quote,
       disclosedRules: {

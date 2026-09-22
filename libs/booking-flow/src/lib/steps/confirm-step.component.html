@@ -8,8 +8,8 @@
     <mat-form-field appearance="outline">
       <mat-label>還車地點</mat-label>
       <mat-select [ngModel]="form.returnLocation" (ngModelChange)="onReturnLocationChange($event)" name="returnLocation">
-        @for (loc of locations; track loc) {
-          <mat-option [value]="loc">{{ loc }}</mat-option>
+        @for (loc of locations; track loc.id) {
+          <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
         }
       </mat-select>
     </mat-form-field>

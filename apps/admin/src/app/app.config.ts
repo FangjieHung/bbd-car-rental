@@ -60,7 +60,7 @@ import {
 } from './core/repositories/seed-data';
 import { ZH_TW } from './core/i18n/zh-tw';
 import { ThemeService } from '@car-rental/theme-pack';
-import { normalizeRentalBooking } from '@car-rental/domain';
+import { normalizeRentalBooking, normalizeVehicle } from '@car-rental/domain';
 import { DocumentAssetGateway } from './core/services/document-asset.gateway';
 import { IndexedDbDocumentAssetGateway } from './core/services/indexed-db-document-asset.gateway';
 import { OcrGateway } from './core/services/ocr.gateway';
@@ -82,11 +82,13 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(ThemeService).init()),
     {
       provide: VEHICLE_REPO,
+      // 舊資料的 location 可能還是遷移前的據點類型文字/門市全名，用 normalizeVehicle 統一轉成據點 id。
       useFactory: () =>
         new LocalStorageRepository(
           'cr.vehicles',
           seedVehicles,
           notifyStorageReset(inject(MatSnackBar)),
+          normalizeVehicle,
         ),
     },
     {

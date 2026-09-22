@@ -1,3 +1,5 @@
+import { optionLabelMap, PAYMENT_METHOD_OPTIONS } from '@car-rental/domain';
+
 export const ZH_TW = {
   app: { title: '澎湖租車後台' },
   nav: {
@@ -207,13 +209,7 @@ export const ZH_TW = {
     payments: '本次排入的款項',
     addPayment: '＋ 新增款項',
     removePayment: '移除',
-    paymentMethodLabels: {
-      cash: '現金',
-      credit_card: '信用卡',
-      line_pay: 'LINE Pay',
-      bank_transfer: '匯款',
-      customer_credit: '會員購物金',
-    } as Record<string, string>,
+    paymentMethodLabels: optionLabelMap(PAYMENT_METHOD_OPTIONS) as Record<string, string>,
     paymentPurposeLabels: {
       deposit: '訂金',
       balance: '尾款',

@@ -5,22 +5,26 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
-import { AddOn, PaymentPreference, PriceBreakdown, RENTAL_LOCATIONS, RentalLocation, Vehicle } from '@car-rental/domain';
+import {
+  AddOn,
+  optionLabelMap,
+  PAYMENT_PREFERENCE_OPTIONS,
+  PaymentPreference,
+  PriceBreakdown,
+  RENTAL_BRANCHES,
+  Vehicle,
+} from '@car-rental/domain';
 
 export interface ConfirmFormValue {
   name: string;
   phone: string;
   email: string;
   paymentMethod: PaymentPreference;
-  returnLocation: RentalLocation;
+  /** 還車據點 id（見 RENTAL_BRANCHES）。 */
+  returnLocation: string;
 }
 
-const PAYMENT_METHOD_LABEL: Record<PaymentPreference, string> = {
-  credit_card: '信用卡',
-  line_pay: 'LINE Pay',
-  on_site: '現場付款',
-  bank_transfer: '轉帳',
-};
+const PAYMENT_PREFERENCE_LABEL = optionLabelMap(PAYMENT_PREFERENCE_OPTIONS);
 
 @Component({
   selector: 'app-confirm-step',
@@ -29,7 +33,7 @@ const PAYMENT_METHOD_LABEL: Record<PaymentPreference, string> = {
   styleUrl: './confirm-step.component.scss',
 })
 export class ConfirmStepComponent {
-  protected readonly locations = RENTAL_LOCATIONS;
+  protected readonly locations = RENTAL_BRANCHES;
 
   private _vehicle: Vehicle | null = null;
   @Input() set vehicle(value: Vehicle | null) {
@@ -51,7 +55,7 @@ export class ConfirmStepComponent {
   @Input() submitError = '';
   @Output() confirm = new EventEmitter<ConfirmFormValue>();
 
-  protected readonly paymentMethodLabel = PAYMENT_METHOD_LABEL;
+  protected readonly paymentMethodLabel = PAYMENT_PREFERENCE_LABEL;
   protected readonly paymentMethods: PaymentPreference[] = [
     'credit_card',
     'line_pay',
@@ -64,13 +68,13 @@ export class ConfirmStepComponent {
     phone: '',
     email: '',
     paymentMethod: 'on_site',
-    returnLocation: RENTAL_LOCATIONS[0],
+    returnLocation: RENTAL_BRANCHES[0].id,
   };
 
   /** 使用者是否自己指定過還車地點——是的話就停止跟著取車地點（車輛所屬據點）連動 */
   private returnLocationTouched = false;
 
-  protected onReturnLocationChange(location: RentalLocation): void {
+  protected onReturnLocationChange(location: string): void {
     this.form.returnLocation = location;
     this.returnLocationTouched = true;
   }

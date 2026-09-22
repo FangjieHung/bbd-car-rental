@@ -1,4 +1,6 @@
 export * from './enums';
+export * from './select-option';
+export * from './branch';
 export * from './vehicle';
 export * from './member';
 export * from './rental-booking';

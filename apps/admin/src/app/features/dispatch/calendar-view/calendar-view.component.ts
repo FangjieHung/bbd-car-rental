@@ -9,6 +9,7 @@ import { firstValueFrom, map } from 'rxjs';
 import { ResponsivePanelComponent } from '@car-rental/ui';
 import { VehicleStepComponent } from '@car-rental/booking-flow';
 import {
+  branchName,
   IdentityDocumentType,
   Member,
   MemberKind,
@@ -394,9 +395,9 @@ export class CalendarViewComponent {
   }
 
   location(row: WorkListRow): string {
-    return row.kind === 'pickup'
-      ? row.booking.pickupLocation || '—'
-      : row.booking.returnLocation || '—';
+    return branchName(
+      row.kind === 'pickup' ? row.booking.pickupLocation : row.booking.returnLocation,
+    );
   }
 
   phoneHref(booking: RentalBooking): string | null {

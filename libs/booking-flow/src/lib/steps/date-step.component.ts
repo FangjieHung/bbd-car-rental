@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { injectBookingFlowLabels } from '../booking-flow-labels';
 import { DateRange, VehicleGroup } from '../date-range';
 import { DualMonthRangePickerComponent, SelectedDateRange } from './dual-month-range-picker.component';
 
@@ -12,11 +13,6 @@ const defaultTime = (hour: number): Date => {
   return date;
 };
 
-const VEHICLE_GROUPS: { value: VehicleGroup; label: string }[] = [
-  { value: 'scooter', label: '機車' },
-  { value: 'car', label: '汽車' },
-];
-
 @Component({
   selector: 'app-date-step',
   imports: [FormsModule, MatFormFieldModule, MatSelectModule, MatButtonModule, DualMonthRangePickerComponent],
@@ -24,10 +20,12 @@ const VEHICLE_GROUPS: { value: VehicleGroup; label: string }[] = [
   styleUrl: './date-step.component.scss',
 })
 export class DateStepComponent {
+  private readonly labels = injectBookingFlowLabels();
+
   @Input() dateRange: DateRange | null = null;
   @Output() dateRangeChange = new EventEmitter<DateRange>();
 
-  protected readonly vehicleGroups = VEHICLE_GROUPS;
+  protected readonly vehicleGroups = this.labels.vehicleGroups;
 
   protected vehicleGroup: VehicleGroup = 'car';
   protected startDate: Date | null = null;

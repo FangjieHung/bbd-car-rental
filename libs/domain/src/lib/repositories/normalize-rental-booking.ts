@@ -1,6 +1,7 @@
 import { BookingStatus, PaymentPreference } from '../models/enums';
 import { RentalBooking } from '../models/rental-booking';
 import { VehicleCategory } from '../models/vehicle';
+import { normalizeBranchId } from '../models/branch';
 import { defaultDepositForCategory } from '../pricing/deposit-cap';
 
 /** 舊版曾經出現過、現在已經併入 reserved 的履約狀態。 */
@@ -16,6 +17,8 @@ interface LegacyRentalBookingShape extends Record<string, unknown> {
   paymentPreference?: PaymentPreference;
   depositRequired?: number;
   priceBreakdown?: { total?: number };
+  pickupLocation?: string;
+  returnLocation?: string;
 }
 
 /**
@@ -36,6 +39,9 @@ export type VehicleCategoryLookup = (vehicleId: string) => VehicleCategory | und
  *     不在清單裡）時，一律預設 0——目前沒有任何機車/電動機車的訂金規則，猜測套用小客車的
  *     30% 上限反而是錯的，0 才是不會多收的安全預設值。
  *   已有 depositRequired 的資料視為已由建立當下的規則算過，不重新覆蓋、也不查車型。
+ * - pickupLocation／returnLocation：可能還是舊版的據點類型文字（機場/港口/店舖）或門市全名
+ *   （馬公門市），用 normalizeBranchId 統一遷移成目前的據點 id；已經是合法 id 或查無對應
+ *   遷移規則的值原樣保留。
  * - 其餘欄位（couponCode、sourcePartnerId、addOns…）原樣保留，不因未知而遺失。
  */
 export function normalizeRentalBooking(
@@ -43,7 +49,8 @@ export function normalizeRentalBooking(
   getVehicleCategory?: VehicleCategoryLookup,
 ): RentalBooking {
   const raw = item as LegacyRentalBookingShape;
-  const { status, paymentMethod, paymentPreference, depositRequired, ...rest } = raw;
+  const { status, paymentMethod, paymentPreference, depositRequired, pickupLocation, returnLocation, ...rest } =
+    raw;
 
   const normalizedStatus = LEGACY_STATUS_MIGRATION[status] ?? (status as BookingStatus);
   const normalizedPaymentPreference = paymentPreference ?? paymentMethod;
@@ -62,5 +69,11 @@ export function normalizeRentalBooking(
     status: normalizedStatus,
     ...(normalizedPaymentPreference ? { paymentPreference: normalizedPaymentPreference } : {}),
     depositRequired: normalizedDeposit,
+    ...(pickupLocation !== undefined
+      ? { pickupLocation: normalizeBranchId(pickupLocation) as string }
+      : {}),
+    ...(returnLocation !== undefined
+      ? { returnLocation: normalizeBranchId(returnLocation) as string }
+      : {}),
   };
 }

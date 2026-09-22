@@ -5,12 +5,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { PaymentMethod, PaymentPurpose } from '../../../core/models';
+import { PAYMENT_METHOD_OPTIONS, PaymentMethod, PaymentPurpose } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { PaymentStore } from '../../../stores/payment/payment.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
 
-const PAYMENT_METHODS: PaymentMethod[] = ['cash', 'credit_card', 'line_pay', 'bank_transfer', 'customer_credit'];
+const PAYMENT_METHODS: PaymentMethod[] = PAYMENT_METHOD_OPTIONS.map((option) => option.value);
 const PAYMENT_PURPOSES: PaymentPurpose[] = ['deposit', 'balance', 'adjustment'];
 
 /** 金額必須是大於 0 的正數；0 或負數（含手滑打錯的負號）一律視為無效輸入。 */

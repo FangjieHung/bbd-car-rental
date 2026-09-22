@@ -8,35 +8,14 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatTimepickerModule } from '@angular/material/timepicker';
-import { RENTAL_LOCATIONS, RentalLocation, Vehicle, VehicleCategory } from '@car-rental/domain';
-
-const CATEGORY_LABEL: Record<VehicleCategory, string> = {
-  car: '汽車',
-  scooter: '機車',
-  ev: '電動車',
-};
+import { branchName, RENTAL_BRANCHES, Vehicle, VehicleCategory } from '@car-rental/domain';
+import { injectBookingFlowLabels, SeatBucket, SortOrder } from '../booking-flow-labels';
 
 const CATEGORY_ICON: Record<VehicleCategory, string> = {
   car: 'directions_car',
   scooter: 'two_wheeler',
   ev: 'electric_moped',
 };
-
-type SeatBucket = 'le2' | 'mid' | 'ge6';
-
-const SEAT_BUCKETS: { value: SeatBucket; label: string }[] = [
-  { value: 'le2', label: '2人以下' },
-  { value: 'mid', label: '3-5人' },
-  { value: 'ge6', label: '6人以上' },
-];
-
-type SortOrder = 'default' | 'price-asc' | 'price-desc';
-
-const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
-  { value: 'default', label: '預設排序' },
-  { value: 'price-asc', label: '價格低到高' },
-  { value: 'price-desc', label: '價格高到低' },
-];
 
 interface TypeOption {
   label: string;
@@ -85,15 +64,18 @@ export class VehicleStepComponent {
   @Input() endTime: Date | null = null;
   @Output() timeChange = new EventEmitter<{ startTime: Date; endTime: Date }>();
 
-  protected readonly locations = RENTAL_LOCATIONS;
-  protected readonly seatBuckets = SEAT_BUCKETS;
-  protected readonly sortOptions = SORT_OPTIONS;
+  private readonly labels = injectBookingFlowLabels();
+
+  protected readonly locations = RENTAL_BRANCHES;
+  protected readonly seatBuckets = this.labels.seatBuckets;
+  protected readonly sortOptions = this.labels.sortOptions;
 
   protected readonly selectedType = signal<string | null>(null);
   protected readonly priceLow = signal<number | null>(null);
   protected readonly priceHigh = signal<number | null>(null);
   protected readonly selectedSeatBucket = signal<SeatBucket | null>(null);
-  protected readonly selectedLocation = signal<RentalLocation | null>(null);
+  /** 篩選用的據點 id（見 RENTAL_BRANCHES） */
+  protected readonly selectedLocation = signal<string | null>(null);
   protected readonly sortOrder = signal<SortOrder>('default');
 
   /** 車型 tabs 跟價格滑桿的範圍，都取「這批可租車輛」整體算，不受其他篩選條件影響，數字才不會一直跳動 */
@@ -194,7 +176,7 @@ export class VehicleStepComponent {
   }
 
   protected classLabel(vehicle: Vehicle): string {
-    return vehicle.classLabel ?? CATEGORY_LABEL[vehicle.category];
+    return vehicle.classLabel ?? this.labels.vehicleCategory[vehicle.category];
   }
 
   protected categoryIcon(vehicle: Vehicle): string {
@@ -202,11 +184,16 @@ export class VehicleStepComponent {
   }
 
   protected transmissionLabel(vehicle: Vehicle): string {
-    return vehicle.transmission === 'manual' ? '手排' : '自排';
+    return this.labels.transmission[vehicle.transmission === 'manual' ? 'manual' : 'auto'];
   }
 
   protected transmissionMark(vehicle: Vehicle): string {
     return vehicle.transmission === 'manual' ? 'M' : 'A';
+  }
+
+  /** 車輛所在據點顯示名稱（vehicle.location 存的是據點 id）。 */
+  protected branchName(locationId: string | null | undefined): string {
+    return branchName(locationId);
   }
 
   private seatBucketOf(vehicle: Vehicle): SeatBucket | null {

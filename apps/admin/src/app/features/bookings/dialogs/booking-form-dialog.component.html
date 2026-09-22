@@ -35,11 +35,19 @@
         </mat-form-field>
         <mat-form-field>
           <mat-label>{{ t.booking.pickupLocation }}</mat-label>
-          <input matInput formControlName="pickupLocation" />
+          <mat-select formControlName="pickupLocation">
+            @for (b of branches; track b.id) {
+              <mat-option [value]="b.id">{{ b.name }}</mat-option>
+            }
+          </mat-select>
         </mat-form-field>
         <mat-form-field>
           <mat-label>{{ t.booking.returnLocation }}</mat-label>
-          <input matInput formControlName="returnLocation" />
+          <mat-select formControlName="returnLocation">
+            @for (b of branches; track b.id) {
+              <mat-option [value]="b.id">{{ b.name }}</mat-option>
+            }
+          </mat-select>
         </mat-form-field>
         @if (conflicts().length > 0) {
           <p class="error-message">

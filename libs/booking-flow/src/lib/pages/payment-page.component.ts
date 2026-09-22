@@ -3,16 +3,16 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { BOOKING_REPO, PaymentPreference, RentalBooking } from '@car-rental/domain';
+import {
+  BOOKING_REPO,
+  optionLabelMap,
+  PAYMENT_PREFERENCE_OPTIONS,
+  RentalBooking,
+} from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
 
-const PAYMENT_METHOD_LABEL: Record<PaymentPreference, string> = {
-  credit_card: '信用卡',
-  line_pay: 'LINE Pay',
-  on_site: '現場付款',
-  bank_transfer: '轉帳',
-};
+const PAYMENT_PREFERENCE_LABEL = optionLabelMap(PAYMENT_PREFERENCE_OPTIONS);
 
 /**
  * 佔位付款頁。目前用兩顆按鈕模擬金流結果。
@@ -44,7 +44,7 @@ export class PaymentPageComponent {
   readonly amount = computed(() => this.booking()?.priceBreakdown?.total ?? 0);
   readonly paymentMethodLabel = computed(() => {
     const method = this.booking()?.paymentPreference;
-    return method ? PAYMENT_METHOD_LABEL[method] : '未指定';
+    return method ? PAYMENT_PREFERENCE_LABEL[method] : '未指定';
   });
 
   readonly payError = signal('');

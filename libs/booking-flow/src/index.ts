@@ -1,3 +1,4 @@
+export * from './lib/booking-flow-labels';
 export * from './lib/steps/done.component';
 export * from './lib/catalog.store';
 export * from './lib/steps/date-step.component';
