@@ -62,6 +62,7 @@ import { ZH_TW } from './core/i18n/zh-tw';
 import { ThemeService } from '@car-rental/theme-pack';
 import { normalizeRentalBooking, normalizeVehicle } from '@car-rental/domain';
 import { DocumentAssetGateway } from './core/services/document-asset.gateway';
+import { SIGNATURE_ASSET_STORE } from '@car-rental/contract-signing';
 import { IndexedDbDocumentAssetGateway } from './core/services/indexed-db-document-asset.gateway';
 import { OcrGateway } from './core/services/ocr.gateway';
 import { MockOcrGateway } from './core/services/mock-ocr.gateway';
@@ -266,6 +267,8 @@ export const appConfig: ApplicationConfig = {
     // --- Task 7：外部服務 adapter（開發期一律使用安全的本機模擬實作） ---
     IndexedDbDocumentAssetGateway,
     { provide: DocumentAssetGateway, useExisting: IndexedDbDocumentAssetGateway },
+    // 共用簽署 lib（@car-rental/contract-signing）的簽名儲存沿用同一個文件資產 gateway。
+    { provide: SIGNATURE_ASSET_STORE, useExisting: DocumentAssetGateway },
     MockOcrGateway,
     { provide: OcrGateway, useExisting: MockOcrGateway },
     MockDriverEligibilityGateway,

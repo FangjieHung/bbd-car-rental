@@ -1,37 +1,43 @@
-import { Component, ElementRef, computed, inject, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule, MatCheckboxChange } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { CONTRACT_SIGNING_LABELS } from '../contract-signing-labels';
+import { SIGNATURE_ASSET_STORE, SignatureAsset } from '../signature-asset-store';
 
 export type SignatureMode = 'draw' | 'type';
 
 /**
- * 簽名擷取元件。設計文件第 4.4 節「前端 MVP 提供預覽與簽名操作」，本元件只負責「擷取」這一步：
+ * 簽名擷取元件，只負責「擷取一筆簽名證據」這一步：
  * - 手寫模式：以 Pointer Events（同時涵蓋滑鼠／觸控／觸控筆）在 canvas 上畫筆畫。
  * - 打字簽名模式：純鍵盤可操作的姓名輸入框，供無法（或不便）用指標裝置簽名的使用者作為替代方案——
  *   這不是「偵測裝置能力後自動切換」，而是一律提供的明確替代入口，行為可預期也方便測試。
- * - 兩種模式都必須先勾選「確認已閱讀並同意」才能按下確認簽署，避免使用者誤觸直接送出。
- * - 簽名內容（無論是畫布還是打字姓名）一律先透過 DocumentAssetGateway 存成 Blob，
+ * - 兩種模式都必須先勾選「確認已閱讀並同意」才能確認簽署，避免使用者誤觸直接送出。
+ * - 簽名內容（無論是畫布還是打字姓名）一律先透過 `SIGNATURE_ASSET_STORE` 存成 Blob，
  *   對外只 emit 不透明的 assetId／url，絕不把簽名圖檔或姓名文字內容本身夾帶送出
- *   （呼應 DocumentAssetGateway 的既有原則：正式證件／簽名資料不進 localStorage）。
- * - 本元件不知道自己在簽哪張合約、也不呼叫 ContractStore——那是呼叫端（contract-panel）的職責，
- *   這裡只是一個可重用的「擷取一筆簽名證據」元件。
+ *   （正式證件／簽名資料不進 localStorage）。
+ * - 本元件不知道自己在簽哪張合約、也不呼叫任何合約 store——那是呼叫端的職責。
+ *
+ * 嵌入其他容器（例如 ContractSigningDialogComponent）時，可用 `showConfirmButton=false`
+ * 隱藏自帶的確認鈕，改由容器讀取 `canConfirm()` 控制自己的按鈕、再呼叫 `confirm()`。
  */
 @Component({
-  selector: 'app-signature-pad',
+  selector: 'lib-signature-pad',
   imports: [MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatInputModule],
   templateUrl: './signature-pad.component.html',
   styleUrl: './signature-pad.component.scss',
 })
 export class SignaturePadComponent {
-  protected readonly t = ZH_TW;
+  protected readonly labels = inject(CONTRACT_SIGNING_LABELS).signaturePad;
 
-  private readonly assetGateway = inject(DocumentAssetGateway);
+  private readonly assetStore = inject(SIGNATURE_ASSET_STORE);
 
-  readonly signed = output<StoredDocumentAsset>();
+  /** 是否顯示元件自帶的「確認簽署」按鈕；由外層容器提供確認鈕時設為 false。 */
+  readonly showConfirmButton = input(true);
+
+  /** 簽名存檔成功後送出不透明的資產紀錄（不含簽名內容本身）。 */
+  readonly signed = output<SignatureAsset>();
 
   private readonly canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   private isDrawing = false;
@@ -41,16 +47,17 @@ export class SignaturePadComponent {
   protected readonly hasDrawing = signal(false);
   protected readonly typedName = signal('');
   protected readonly acknowledged = signal(false);
-  protected readonly submitting = signal(false);
+  private readonly _submitting = signal(false);
+  /** 正在存檔簽名中。 */
+  readonly submitting = this._submitting.asReadonly();
 
   /** 目前模式是否已經有「可視為一筆簽名」的內容：手寫模式看有沒有筆畫，打字模式看姓名去空白後是否非空。 */
   protected readonly hasSignatureInput = computed(() =>
     this.mode() === 'draw' ? this.hasDrawing() : this.typedName().trim().length > 0,
   );
 
-  protected readonly canConfirm = computed(
-    () => this.hasSignatureInput() && this.acknowledged() && !this.submitting(),
-  );
+  /** 簽名已完成、可以確認：有簽名內容、已勾選確認同意、且不在存檔中。 */
+  readonly canConfirm = computed(() => this.hasSignatureInput() && this.acknowledged() && !this._submitting());
 
   /**
    * 每次要畫圖／清空之前才即時取得 2D context，絕不快取成欄位。
@@ -72,11 +79,35 @@ export class SignaturePadComponent {
     // 之後所有畫圖呼叫都要 guard 回傳值存在，真實瀏覽器才會實際落筆。
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * this.backingScale(canvas);
       ctx.lineCap = 'round';
       ctx.strokeStyle = getComputedStyle(canvas).color;
     }
     return ctx;
+  }
+
+  /**
+   * 畫布的 CSS 顯示尺寸會隨容器（例如大尺寸 dialog、手機全螢幕）伸縮，但繪圖座標系是
+   * canvas 的 width／height 屬性。兩者不一致時筆畫會偏移、縮放。因此在「還沒有筆畫」時
+   * （開始第一筆或清除後）把繪圖緩衝區對齊實際顯示尺寸 × devicePixelRatio，
+   * 已有筆畫時不動（改 width 會清空畫布）。jsdom 的 getBoundingClientRect 一律是 0，直接略過。
+   */
+  private syncCanvasSize(): void {
+    const canvas = this.canvasRef()?.nativeElement;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const dpr = typeof window !== 'undefined' && window.devicePixelRatio ? window.devicePixelRatio : 1;
+    const width = Math.round(rect.width * dpr);
+    const height = Math.round(rect.height * dpr);
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+  }
+
+  /** 繪圖緩衝區相對 CSS 顯示尺寸的倍率；無法量測時視為 1。 */
+  private backingScale(canvas: HTMLCanvasElement): number {
+    const rect = canvas.getBoundingClientRect();
+    return rect.width > 0 ? canvas.width / rect.width : 1;
   }
 
   protected switchMode(mode: SignatureMode): void {
@@ -84,6 +115,7 @@ export class SignaturePadComponent {
   }
 
   protected onPointerDown(event: PointerEvent): void {
+    if (!this.hasDrawing()) this.syncCanvasSize();
     this.isDrawing = true;
     this.lastPoint = this.pointFromEvent(event);
     // jsdom 的 canvas 元素沒有實作 setPointerCapture，真實瀏覽器才有這個方法；
@@ -110,11 +142,14 @@ export class SignaturePadComponent {
     this.lastPoint = undefined;
   }
 
+  /** 事件座標換算成畫布繪圖座標（含 CSS 尺寸與繪圖緩衝區的倍率）。 */
   private pointFromEvent(event: PointerEvent): { x: number; y: number } {
     const canvas = this.canvasRef()?.nativeElement;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+    const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+    return { x: (event.clientX - rect.left) * scaleX, y: (event.clientY - rect.top) * scaleY };
   }
 
   /** 清除重寫：依目前模式清空畫布筆畫或已輸入的姓名，不影響已勾選的確認同意狀態。 */
@@ -149,18 +184,23 @@ export class SignaturePadComponent {
     this.toggleAcknowledged(event.checked);
   }
 
-  protected async confirm(): Promise<void> {
-    if (!this.canConfirm()) return;
+  /**
+   * 確認簽署：把簽名內容存進 `SIGNATURE_ASSET_STORE`，成功後 emit `signed` 並回傳同一筆資產紀錄。
+   * 尚未完成簽名（`canConfirm()` 為 false）或無法取得簽名內容時回傳 undefined、不做任何事。
+   */
+  async confirm(): Promise<SignatureAsset | undefined> {
+    if (!this.canConfirm()) return undefined;
 
-    this.submitting.set(true);
+    this._submitting.set(true);
     try {
       const blob = this.mode() === 'draw' ? await this.captureDrawingBlob() : this.typedNameBlob();
-      if (!blob) return;
+      if (!blob) return undefined;
       const filename = this.mode() === 'draw' ? 'signature.png' : 'signature-typed.txt';
-      const stored = await this.assetGateway.store(blob, filename);
+      const stored = await this.assetStore.store(blob, filename);
       this.signed.emit(stored);
+      return stored;
     } finally {
-      this.submitting.set(false);
+      this._submitting.set(false);
     }
   }
 

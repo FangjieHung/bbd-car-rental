@@ -1,25 +1,26 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 import { ContractSnapshot, ContractVersion } from '@car-rental/domain';
+import {
+  ContractSigningDialogComponent,
+  DEFAULT_CONTRACT_SIGNING_LABELS,
+  SignatureAsset,
+} from '@car-rental/contract-signing';
 import { CONTRACT_VERSION_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
-import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { ContractPanelComponent } from './contract-panel.component';
-import { SignaturePadComponent } from './signature-pad.component';
 
-class FakeDocumentAssetGateway implements DocumentAssetGateway {
-  store(): Promise<StoredDocumentAsset> {
-    return Promise.resolve({ assetId: 'unused', url: 'blob:unused' });
-  }
-  resolveUrl(): Promise<string | undefined> {
-    return Promise.resolve(undefined);
-  }
-  remove(): Promise<void> {
-    return Promise.resolve();
-  }
+/** 假的 MatDialog：記錄 open 的呼叫，afterClosed() 回傳預先指定的結果（模擬客人確認或取消）。 */
+const SIGNED_ASSET: SignatureAsset = { assetId: 'sig-asset-9', url: 'blob:sig-9' };
+
+// 刻意不給預設值：傳入 undefined（模擬取消）時不能被預設參數吃掉。
+function fakeDialog(result: SignatureAsset | undefined) {
+  const open = vi.fn().mockReturnValue({ afterClosed: () => of(result) });
+  return { open };
 }
 
 function snapshot(overrides: Partial<ContractSnapshot> = {}): ContractSnapshot {
@@ -66,11 +67,11 @@ function snapshot(overrides: Partial<ContractSnapshot> = {}): ContractSnapshot {
   };
 }
 
-function createFixture(bookingId = 'b1') {
+function createFixture(bookingId = 'b1', dialog = fakeDialog(SIGNED_ASSET)) {
   TestBed.configureTestingModule({
     providers: [
       { provide: CONTRACT_VERSION_REPO, useValue: createInMemoryRepo<ContractVersion>() },
-      { provide: DocumentAssetGateway, useValue: new FakeDocumentAssetGateway() },
+      { provide: MatDialog, useValue: dialog },
     ],
   });
 
@@ -79,31 +80,35 @@ function createFixture(bookingId = 'b1') {
   fixture.detectChanges();
   const contractStore = TestBed.inject(ContractStore);
 
-  return { fixture, component: fixture.componentInstance, contractStore };
+  return { fixture, component: fixture.componentInstance, contractStore, dialog };
 }
 
 function text(fixture: ReturnType<typeof createFixture>['fixture']): string {
   return (fixture.nativeElement as HTMLElement).textContent ?? '';
 }
 
-function signaturePad(fixture: ReturnType<typeof createFixture>['fixture']) {
-  return fixture.debugElement.query(By.directive(SignaturePadComponent));
+/** 「檢視合約並簽署」按鈕（沒有時回傳 undefined）。 */
+function signButton(fixture: ReturnType<typeof createFixture>['fixture']): HTMLButtonElement | undefined {
+  return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find(
+    (b) => b.textContent?.trim() === ZH_TW.contractPanel.openSigningDialog,
+  );
 }
 
 describe('ContractPanelComponent 空狀態', () => {
-  it('沒有任何合約版本時顯示「尚未建立合約版本」，不渲染簽名元件', () => {
+  it('沒有任何合約版本時顯示「尚未建立合約版本」，不顯示簽署按鈕', () => {
     const { fixture } = createFixture();
     expect(text(fixture)).toContain(ZH_TW.contractPanel.noVersions);
-    expect(signaturePad(fixture)).toBeNull();
+    expect(signButton(fixture)).toBeUndefined();
   });
 });
 
 describe('ContractPanelComponent 草稿預覽內容', () => {
-  it('完整渲染快照：承租人、駕駛人、車輛、租期地點、計價、加購、逾時/能源規則、其他揭露事項與免責提示', () => {
+  it('以共用 ContractDocumentComponent 完整渲染快照：承租人、駕駛人、車輛、租期地點、計價、加購、逾時/能源規則、其他揭露事項與免責提示', () => {
     const { fixture, contractStore } = createFixture();
     contractStore.createDraft('b1', snapshot());
     fixture.detectChanges();
 
+    expect((fixture.nativeElement as HTMLElement).querySelector('lib-contract-document')).toBeTruthy();
     const content = text(fixture);
     expect(content).toContain('王小明'); // 承租人
     expect(content).toContain('林小華'); // 駕駛人（與承租人不同會員）
@@ -115,7 +120,7 @@ describe('ContractPanelComponent 草稿預覽內容', () => {
     expect(content).toContain('兒童安全座椅'); // 加購配件
     expect(content).toContain('30'); // 逾時寬限分鐘
     expect(content).toContain('禁止攜帶寵物'); // 其他揭露事項
-    expect(content).toContain(ZH_TW.contractPanel.disclaimer); // 開發期模擬合約免責提示
+    expect(content).toContain(DEFAULT_CONTRACT_SIGNING_LABELS.document.disclaimer); // 開發期模擬合約免責提示
   });
 
   it('駕駛人與承租人是同一會員時顯示「同承租人」，不重複列出相同資料', () => {
@@ -124,48 +129,94 @@ describe('ContractPanelComponent 草稿預覽內容', () => {
     contractStore.createDraft('b1', snapshot({ driver: base.renter }));
     fixture.detectChanges();
 
-    expect(text(fixture)).toContain(ZH_TW.contractPanel.sameAsRenter);
+    expect(text(fixture)).toContain(DEFAULT_CONTRACT_SIGNING_LABELS.document.sameAsRenter);
   });
 
-  it('草稿版本且為最新版本時會渲染簽名元件，供直接簽署', () => {
+  it('草稿版本且為最新版本時顯示「檢視合約並簽署」按鈕，不再 inline 顯示簽名板', () => {
     const { fixture, contractStore } = createFixture();
     contractStore.createDraft('b1', snapshot());
     fixture.detectChanges();
 
-    expect(signaturePad(fixture)).toBeTruthy();
+    expect(signButton(fixture)).toBeTruthy();
+    expect((fixture.nativeElement as HTMLElement).querySelector('lib-signature-pad')).toBeNull();
   });
 });
 
 describe('ContractPanelComponent 簽署與不可覆寫', () => {
-  it('透過 signature-pad 的 signed 事件完成簽署：版本變成 signed，畫面轉為唯讀且不再顯示簽名元件', () => {
-    const { fixture, contractStore } = createFixture();
+  it('點「檢視合約並簽署」開啟共用簽署 dialog；dialog 回傳資產紀錄後完成簽署，畫面轉為唯讀且不再顯示簽署按鈕', () => {
+    const { fixture, contractStore, dialog } = createFixture();
     const draft = contractStore.createDraft('b1', snapshot());
     fixture.detectChanges();
 
-    const pad = signaturePad(fixture);
-    expect(pad).toBeTruthy();
-    const padInstance = pad?.componentInstance as SignaturePadComponent;
-    padInstance.signed.emit({
-      assetId: 'sig-asset-9',
-      url: 'blob:sig-9',
-    });
+    signButton(fixture)?.click();
     fixture.detectChanges();
+
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    expect(dialog.open).toHaveBeenCalledWith(
+      ContractSigningDialogComponent,
+      expect.objectContaining({
+        data: expect.objectContaining({ snapshot: draft.snapshot, needsResign: false }),
+      }),
+    );
 
     const updated = contractStore.versionsFor('b1').find((v) => v.id === draft.id);
     expect(updated?.status).toBe('signed');
     expect(updated?.signatureAssetIds).toEqual(['sig-asset-9']);
-    expect(signaturePad(fixture)).toBeNull();
+    expect(signButton(fixture)).toBeUndefined();
     expect(text(fixture)).toContain(ZH_TW.contractPanel.readOnlySigned);
   });
 
-  it('已簽署且為最新版本：唯讀，不顯示簽名元件（已簽署版本不可覆寫）', () => {
+  it('客人在 dialog 按取消（回傳 undefined）：不簽署，版本維持草稿、按鈕仍在', () => {
+    const { fixture, contractStore } = createFixture('b1', fakeDialog(undefined));
+    const draft = contractStore.createDraft('b1', snapshot());
+    fixture.detectChanges();
+
+    signButton(fixture)?.click();
+    fixture.detectChanges();
+
+    expect(contractStore.versionsFor('b1').find((v) => v.id === draft.id)?.status).toBe('draft');
+    expect(signButton(fixture)).toBeTruthy();
+  });
+
+  it('已簽署且為最新版本：唯讀，不顯示簽署按鈕（已簽署版本不可覆寫）', () => {
     const { fixture, contractStore } = createFixture();
     const v1 = contractStore.createDraft('b1', snapshot());
     contractStore.sign(v1.id, ['sig-1']);
     fixture.detectChanges();
 
-    expect(signaturePad(fixture)).toBeNull();
+    expect(signButton(fixture)).toBeUndefined();
     expect(text(fixture)).toContain(ZH_TW.contractPanel.readOnlySigned);
+  });
+});
+
+describe('ContractPanelComponent 需重新簽署', () => {
+  it('舊版已簽、條款變更產生新草稿 → 顯示「條款已變更，需重新簽署」，並把狀態帶進 dialog；重新簽署後提示消失', () => {
+    const { fixture, contractStore, dialog } = createFixture();
+    const v1 = contractStore.createDraft('b1', snapshot());
+    contractStore.sign(v1.id, ['sig-1']);
+    fixture.detectChanges();
+    expect(text(fixture)).not.toContain(DEFAULT_CONTRACT_SIGNING_LABELS.needsResignNotice);
+
+    contractStore.reviseIfChanged('b1', snapshot({ pickupLocation: '機場' }));
+    fixture.detectChanges();
+    expect(text(fixture)).toContain(DEFAULT_CONTRACT_SIGNING_LABELS.needsResignNotice);
+
+    signButton(fixture)?.click();
+    fixture.detectChanges();
+
+    expect(dialog.open).toHaveBeenCalledWith(
+      ContractSigningDialogComponent,
+      expect.objectContaining({ data: expect.objectContaining({ needsResign: true }) }),
+    );
+    expect(text(fixture)).not.toContain(DEFAULT_CONTRACT_SIGNING_LABELS.needsResignNotice);
+  });
+
+  it('從未簽過任何版本（只有草稿）時不顯示需重新簽署提示', () => {
+    const { fixture, contractStore } = createFixture();
+    contractStore.createDraft('b1', snapshot());
+    fixture.detectChanges();
+
+    expect(text(fixture)).not.toContain(DEFAULT_CONTRACT_SIGNING_LABELS.needsResignNotice);
   });
 });
 
@@ -182,7 +233,7 @@ describe('ContractPanelComponent 版本選擇與重大異動後的新版本', ()
     // 預設（未手動選擇）顯示最新版本：新車牌、草稿、可簽署
     expect(text(fixture)).toContain('XYZ-999');
     expect(text(fixture)).toContain(ZH_TW.contractPanel.statusLabels['draft']);
-    expect(signaturePad(fixture)).toBeTruthy();
+    expect(signButton(fixture)).toBeTruthy();
 
     // 切換回查看 v1：內容必須是當時的快照（舊車牌），不能被目前最新版本的資料蓋過去
     component['selectVersion'](v1.id);
@@ -193,7 +244,7 @@ describe('ContractPanelComponent 版本選擇與重大異動後的新版本', ()
     expect(oldViewText).not.toContain('XYZ-999');
     expect(oldViewText).toContain(ZH_TW.contractPanel.readOnlySuperseded);
     expect(oldViewText).toContain(ZH_TW.contractPanel.supersededReason);
-    expect(signaturePad(fixture)).toBeNull();
+    expect(signButton(fixture)).toBeUndefined();
   });
 
   it('選擇舊版本後，之後又有新版本產生時仍維持使用者手動選擇的版本，不會被自動跳走', () => {

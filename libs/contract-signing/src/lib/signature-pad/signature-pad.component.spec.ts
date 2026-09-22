@@ -1,24 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
+import { SIGNATURE_ASSET_STORE, SignatureAsset, SignatureAssetStore } from '../signature-asset-store';
+import { DEFAULT_CONTRACT_SIGNING_LABELS } from '../contract-signing-labels';
 import { SignaturePadComponent } from './signature-pad.component';
 
-class FakeDocumentAssetGateway implements DocumentAssetGateway {
+class FakeSignatureAssetStore implements SignatureAssetStore {
   readonly stored: Array<{ file: Blob; filename: string }> = [];
   private counter = 0;
 
-  store(file: Blob, filename: string): Promise<StoredDocumentAsset> {
+  store(file: Blob, filename: string): Promise<SignatureAsset> {
     this.stored.push({ file, filename });
     this.counter += 1;
     return Promise.resolve({ assetId: `sig-asset-${this.counter}`, url: `blob:sig-${this.counter}` });
-  }
-
-  resolveUrl(): Promise<string | undefined> {
-    return Promise.resolve(undefined);
-  }
-
-  remove(): Promise<void> {
-    return Promise.resolve();
   }
 }
 
@@ -26,7 +19,7 @@ function createFixture() {
   const fixture = TestBed.createComponent(SignaturePadComponent);
   fixture.detectChanges();
   // jsdom 沒有裝 `canvas` 套件時，canvas.toBlob() 的 callback 永遠不會被呼叫（見元件內註解），
-  // 測試改為直接覆寫 captureDrawingBlob，只驗證元件邏輯（何時呼叫、傳什麼給 gateway），
+  // 測試改為直接覆寫 captureDrawingBlob，只驗證元件邏輯（何時呼叫、傳什麼給 asset store），
   // 不驗證真正的畫布轉檔（那是瀏覽器原生 API 的職責，不是本元件的邏輯）。
   fixture.componentInstance['captureDrawingBlob'] = () =>
     Promise.resolve(new Blob(['fake-png-bytes'], { type: 'image/png' }));
@@ -97,12 +90,12 @@ function stubCanvasContext() {
 }
 
 describe('SignaturePadComponent', () => {
-  let assetGateway: FakeDocumentAssetGateway;
+  let assetGateway: FakeSignatureAssetStore;
 
   beforeEach(() => {
-    assetGateway = new FakeDocumentAssetGateway();
+    assetGateway = new FakeSignatureAssetStore();
     TestBed.configureTestingModule({
-      providers: [{ provide: DocumentAssetGateway, useValue: assetGateway }],
+      providers: [{ provide: SIGNATURE_ASSET_STORE, useValue: assetGateway }],
     });
   });
 
@@ -169,9 +162,9 @@ describe('SignaturePadComponent', () => {
     expect(fixture.componentInstance['canConfirm']()).toBe(false);
   });
 
-  it('確認簽署：手寫模式下透過 DocumentAssetGateway 存檔，只 emit 不透明的 assetId/url，不外洩簽名內容本身', async () => {
+  it('確認簽署：手寫模式下透過 SIGNATURE_ASSET_STORE 存檔，只 emit 不透明的 assetId/url，不外洩簽名內容本身', async () => {
     const fixture = createFixture();
-    const emitted: StoredDocumentAsset[] = [];
+    const emitted: SignatureAsset[] = [];
     fixture.componentInstance.signed.subscribe((a) => emitted.push(a));
 
     drawStroke(fixture);
@@ -183,9 +176,9 @@ describe('SignaturePadComponent', () => {
     expect(emitted).toEqual([{ assetId: 'sig-asset-1', url: 'blob:sig-1' }]);
   });
 
-  it('確認簽署：打字簽名模式下也是透過 DocumentAssetGateway 存檔（存成文字檔），不是傳姓名字串出去', async () => {
+  it('確認簽署：打字簽名模式下也是透過 SIGNATURE_ASSET_STORE 存檔（存成文字檔），不是傳姓名字串出去', async () => {
     const fixture = createFixture();
-    const emitted: StoredDocumentAsset[] = [];
+    const emitted: SignatureAsset[] = [];
     fixture.componentInstance.signed.subscribe((a) => emitted.push(a));
 
     fixture.componentInstance['switchMode']('type');
@@ -198,9 +191,9 @@ describe('SignaturePadComponent', () => {
     expect(emitted).toEqual([{ assetId: 'sig-asset-1', url: 'blob:sig-1' }]);
   });
 
-  it('未勾選確認同意或沒有簽名內容時呼叫 confirm 是 no-op，不會呼叫 gateway', async () => {
+  it('未勾選確認同意或沒有簽名內容時呼叫 confirm 是 no-op，不會呼叫 asset store', async () => {
     const fixture = createFixture();
-    const emitted: StoredDocumentAsset[] = [];
+    const emitted: SignatureAsset[] = [];
     fixture.componentInstance.signed.subscribe((a) => emitted.push(a));
 
     await fixture.componentInstance['confirm'](); // 什麼都沒填、也沒勾選
@@ -271,4 +264,28 @@ describe('SignaturePadComponent', () => {
       }
     },
   );
+
+  it('confirm() 會回傳與 signed 事件相同的資產紀錄，供外層容器（dialog）直接取用', async () => {
+    const fixture = createFixture();
+    fixture.componentInstance['switchMode']('type');
+    fixture.componentInstance['onTypedNameInput']('陳大同');
+    fixture.componentInstance['toggleAcknowledged'](true);
+
+    await expect(fixture.componentInstance.confirm()).resolves.toEqual({
+      assetId: 'sig-asset-1',
+      url: 'blob:sig-1',
+    });
+  });
+
+  it('showConfirmButton=false 時不渲染自帶的確認簽署鈕（由外層容器提供）', () => {
+    const fixture = createFixture();
+    const confirmText = DEFAULT_CONTRACT_SIGNING_LABELS.signaturePad.confirmSign;
+    const buttonTexts = () =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).map((b) => b.textContent?.trim());
+    expect(buttonTexts()).toContain(confirmText);
+
+    fixture.componentRef.setInput('showConfirmButton', false);
+    fixture.detectChanges();
+    expect(buttonTexts()).not.toContain(confirmText);
+  });
 });

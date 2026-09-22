@@ -8,6 +8,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom, map } from 'rxjs';
 import { ResponsivePanelComponent } from '@car-rental/ui';
 import { VehicleStepComponent } from '@car-rental/booking-flow';
+import { contractSigningState } from '@car-rental/domain';
 import {
   branchName,
   IdentityDocumentType,
@@ -471,7 +472,6 @@ export class CalendarViewComponent {
       this.documentStore.identityDocumentsFor(booking.memberId).filter((d) => d.type === requiredKind),
     );
     const credential = latestByVersion(this.documentStore.driverCredentialsFor(booking.memberId));
-    const contract = this.contractStore.latestFor(booking.id);
     const depositPaid = this.paymentStore
       .paymentsFor(booking.id)
       .filter((p) => p.purpose === 'deposit' && p.status === 'confirmed')
@@ -484,7 +484,8 @@ export class CalendarViewComponent {
       evaluatedAt: new Date().toISOString(),
       depositRequired: booking.depositRequired,
       depositPaid,
-      latestContractSigned: contract?.status === 'signed',
+      // 需重新簽署（舊版已簽、目前有效版本未簽）對交車等同未簽署，一律由領域規則判定。
+      latestContractSigned: contractSigningState(this.contractStore.versionsFor(booking.id)) === 'signed',
       requiredDocuments: [
         {
           kind: requiredKind,
