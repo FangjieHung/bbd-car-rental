@@ -17,9 +17,10 @@
 
       <div class="search-row" [class.search-row--expanded]="expanded()">
         <div class="search-row__inner">
-          <div class="search" [class.search--expanded]="expanded()" (keydown.escape)="onEscape()">
+          <div class="search" [class.search--expanded]="expanded()">
             <input
               #searchInput
+              (keydown.escape)="onEscape()"
               [id]="searchInputId"
               type="text"
               class="search__input"
@@ -48,7 +49,7 @@
               <button
                 type="button"
                 matButton="tonal"
-                class="w-20"
+                class="search__submit w-20"
                 [attr.aria-label]="t.common.submitSearch"
                 (mousedown)="$event.preventDefault()"
                 (click)="submitQuery()"

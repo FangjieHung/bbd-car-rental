@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -19,7 +19,7 @@ const defaultTime = (hour: number): Date => {
   templateUrl: './date-step.component.html',
   styleUrl: './date-step.component.scss',
 })
-export class DateStepComponent {
+export class DateStepComponent implements OnChanges {
   private readonly labels = injectBookingFlowLabels();
 
   @Input() dateRange: DateRange | null = null;

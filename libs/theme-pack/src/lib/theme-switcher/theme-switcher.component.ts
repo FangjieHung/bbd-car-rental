@@ -20,6 +20,8 @@ import { texture, COLOR_THEMES } from '../theme/theme.token';
     </button>
 
     <mat-menu #themeMenu="matMenu" class="theme-menu-panel" xPosition="before" yPosition="above">
+      <!-- 這個 click 只是阻止點擊冒泡關閉選單的護欄，不是使用者會觸發的互動，因此不需要鍵盤對應行為。 -->
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
       <section class="theme-panel" aria-label="外觀設定" (click)="$event.stopPropagation()">
         <p class="theme-panel__title">外觀</p>
 

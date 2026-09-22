@@ -11,7 +11,12 @@ export default [
       '@nx/dependency-checks': [
         'error',
         {
-          ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}'],
+          // spec 檔只在測試期間執行、不進入 build 產物，vitest 不該因此變成消費端的
+          // peerDependencies；排除掉才不會被這條規則誤判成「缺少依賴」。
+          ignoredFiles: [
+            '{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}',
+            '{projectRoot}/src/**/*.spec.ts',
+          ],
         },
       ],
     },

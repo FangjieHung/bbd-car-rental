@@ -88,14 +88,13 @@
 
 ## 7. 這次發現、沒處理的小問題
 
-- **首屏 bundle**：已超出預算 170 kB；這次 `mat-stepper` 又帶進約 17 kB（壓縮後約 5 kB）——原因是 `@angular/material/stepper` 發佈檔裡有一行無條件的 `import '@angular/common/http'`，打包工具無法剔除。不是我們的程式問題，但預算需要整體檢討。
+- **首屏 bundle**：`mat-stepper` 帶進約 17 kB（壓縮後約 4 kB）——`@angular/material/stepper` 發佈檔有一行無條件的 `import '@angular/common/http'`，打包工具無法剔除。不是我們的程式問題，且接上後端後這段本來就需要。**預算門檻已重訂**（原本是 Angular 新專案預設的 500 kB，長年在響）：admin 720/850 kB、booking 420/500 kB、affiliate 430/500 kB，現在全部零警告——之後再看到警告就是真的有東西變胖了。
 - **孤兒簽名**：客人在建單第四步簽了名、但最後沒建立訂單就離開，簽名檔會留在 IndexedDB，沒有合約引用它，也沒有清理機制。
 - **外國旅客國籍**：建單時不擋也沒列入待補項目（舊精靈會擋「下一步」）。要不要列為待補項目？
 - **內部備註建立後無法修改**：它只存在合約快照裡、不是訂單欄位，所以訂單詳情的「編輯」沒有放它（放了會變成改了卻存不進去）。若需要可事後修改，得先決定它屬於訂單還是合約。
 - **未簽署的合約草稿會被就地更新**：改訂單時，若目前版本還是草稿就直接覆寫、不產生新版本（`apps/admin/src/app/stores/contract/contract.store.ts` 的 `reviseIfChanged`）。這符合「只有已簽署版本不可覆寫」的規則，但活動紀錄看不出草稿被改過幾次。
 - **交車阻擋訊息**：`libs/domain/src/lib/handover/evaluate-pickup-readiness.ts` 擋下取車時一律顯示「最新版本合約尚未簽署」，未區分「需重新簽署」。
-- **既有測試失敗（開工前就壞）**：`page-toolbar.component.spec.ts` 兩個搜尋送出案例、`data-table.component.spec.ts` 一個 selectable 案例。
-- **既有 lint 錯誤**：admin 32、domain 4、booking-flow 33 個 problem（`component-selector` 前綴規則、`package.json` peerDependencies 等）。
+- **lint 只剩元件前綴這一類**（booking-flow 13、theme-pack 1 個 error）：規則要求 lib 的元件 selector 以 `lib-` 開頭，實際是 `app-`。要改就是十幾個元件連同所有使用處一起改名，**建議併入第 1 節的更名任務**；或先確認這些 lib 的元件到底該不該用 `lib-`，若不該，要改的是規則設定而非程式碼。其餘 error（依賴宣告、無障礙、空介面）已於 2026-09-22 修掉，測試也已全綠。
 
 ## 8. 過時的文件
 
