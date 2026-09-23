@@ -86,7 +86,9 @@
                   </span>
                 }
                 @if (stats.returns > 0) {
-                  <span class="ui-chip ui-chip--warning calendar-view__stat-chip">
+                  <!-- 打磨（4）：「還 N」跟「取 N」同一層級的日常資訊，改用中性色調，
+                       讓警示色只留給真正要處理的「需調度 N」。 -->
+                  <span class="ui-chip ui-chip--neutral calendar-view__stat-chip">
                     {{ t.dispatch.returns }} {{ stats.returns }}
                   </span>
                 }

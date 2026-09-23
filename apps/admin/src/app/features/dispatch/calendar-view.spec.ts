@@ -11,6 +11,7 @@ import {
   pickupProgress,
   returnProgress,
 } from './calendar-view/calendar-view.component';
+import { ZH_TW } from '../../core/i18n/zh-tw';
 import {
   AuditEntry,
   ChargeAdjustment,
@@ -989,7 +990,9 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     expect(types).toContain('deposit_below_threshold');
     expect(types).toContain('latest_contract_unsigned');
     expect(types).toContain('required_document_missing_or_expired');
-    expect(component.readinessLabel(row)).toBe(blockers[0].message);
+    // 打磨（4）：chip 顯示拿掉句尾句號，blockersOf() 本身（展開清單用）維持原文案含句號。
+    expect(component.readinessLabel(row)).toBe(blockers[0].message.replace(/。$/, ''));
+    expect(blockers[0].message.endsWith('。')).toBe(true);
     expect(component.contractStatusLabel(row)).toBe('尚未建立');
 
     const depositBlocker = blockers.find((b) => b.type === 'deposit_below_threshold')!;
@@ -1661,8 +1664,11 @@ describe('CalendarViewComponent 前一位客人尚未還車（批次 1 驗收 b�
     expect(blockers[0].message).toBe('前一位客人尚未還車（逾時 18 小時 0 分）。');
     expect(blockers.map((b) => b.type)).toContain('latest_contract_unsigned');
     expect(blockers.some((b) => b.message.includes('車輛目前在租'))).toBe(false);
-    expect(component.readinessLabel(row)).toBe('前一位客人尚未還車（逾時 18 小時 0 分）。');
+    // 打磨（4）：chip（readinessLabel／畫面上的 .work-list-row__readiness）拿掉句尾句號；
+    // blockersOf() 的原始 message（展開清單用）不受影響，仍保留句號（上面已驗證過）。
+    expect(component.readinessLabel(row)).toBe('前一位客人尚未還車（逾時 18 小時 0 分）');
     expect(el.querySelector('.work-list-row__readiness')?.textContent).toContain('前一位客人尚未還車（逾時 18 小時 0 分）');
+    expect(el.querySelector('.work-list-row__readiness')?.textContent?.trim().endsWith('。')).toBe(false);
   });
 
   it('還沒到前一位客人的還車時間：一樣排第一，但不寫逾時', () => {
@@ -1792,6 +1798,50 @@ describe('CalendarViewComponent 需調度（3.3 月曆格、3.4 路線）', () =
     expect(chip?.textContent?.trim()).toBe('需調度 1');
     expect(chip?.classList).toContain('ui-chip--warning');
     expect(dayCell(fixture, new Date(2026, 7, 5))?.querySelector('.calendar-view__stat-chip--dispatch')).toBeNull();
+  });
+});
+
+/**
+ * 打磨（4）：月曆格「還 N」與「需調度 N」先前都是黃色系警示色，並排時分不出哪個要處理。
+ * 「需調度」要是月曆格裡唯一的警示色；「還 N」改成中性色調，跟「取 N」同一層級的日常資訊。
+ */
+describe('CalendarViewComponent 月曆格顏色層級（打磨 4：還 N 改中性、需調度 N 維持警示）', () => {
+  const DAY = new Date(2026, 7, 4);
+
+  function setup() {
+    return setupBatch3({
+      date: DAY,
+      vehicles: [vehicleAt('v1', { location: 'mzg-store' }), vehicleAt('v2')],
+      bookings: [
+        // 需調度：取車據點跟車輛所在據點不同。
+        booking('dispatch', {
+          vehicleId: 'v1', pickupLocation: 'mzg-airport',
+          startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 6, 10).toISOString(),
+        }),
+        // 同一天還車：讓「還 N」也顯示在同一格，跟「需調度 N」並排比較色調。
+        booking('return', {
+          vehicleId: 'v2', status: 'in_progress',
+          startTime: new Date(2026, 7, 2, 9).toISOString(), endTime: new Date(2026, 7, 4, 12).toISOString(),
+        }),
+      ],
+    });
+  }
+
+  it('「還 N」用中性色調（不是 warning），「需調度 N」維持警示色，兩者並排時分得出哪個要處理', () => {
+    const { fixture } = setup();
+    const cell = dayCell(fixture, DAY);
+    const chips = Array.from(cell?.querySelectorAll('.calendar-view__stat-chip') ?? []);
+
+    // 同一天「取 1」（pickups）與「還 1」都會出現；用文字前綴明確找出「還 N」那顆，
+    // 不能單靠「不是 --dispatch」排除（取的 chip 一樣不是 --dispatch）。
+    const returnChip = chips.find((c) => c.textContent?.trim().startsWith(ZH_TW.dispatch.returns));
+    expect(returnChip?.textContent?.trim()).toBe('還 1');
+    expect(returnChip?.classList).toContain('ui-chip--neutral');
+    expect(returnChip?.classList).not.toContain('ui-chip--warning');
+
+    const dispatchChip = cell?.querySelector('.calendar-view__stat-chip--dispatch');
+    expect(dispatchChip?.textContent?.trim()).toBe('需調度 1');
+    expect(dispatchChip?.classList).toContain('ui-chip--warning');
   });
 });
 

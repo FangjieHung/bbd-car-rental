@@ -26,6 +26,12 @@ export interface TimelineBlock {
   needsDispatch: boolean;
   /** 逾時延伸後與這筆重疊的另一筆訂單（通常是同車下一筆預訂）。 */
   conflict: boolean;
+  /**
+   * 打磨（3.5）：同一台車、同一段可視範圍裡的第幾條（0 起算）。互相重疊的色塊（例如逾時延伸段
+   * 蓋到同車下一筆預訂）會被分配到不同 lane，畫面上上下兩條顯示，兩筆都完整可讀，不再互相蓋住。
+   * 沒有重疊的色塊一律是 lane 0。
+   */
+  lane: number;
 }
 
 /**
@@ -72,6 +78,7 @@ export function computeBlocks(
       overdue,
       needsDispatch: b.status === 'reserved' && computeNeedsDispatch(vehicleLocation, b.pickupLocation),
       conflict: false,
+      lane: 0,
     });
   }
 
@@ -86,7 +93,41 @@ export function computeBlocks(
     }
   }
 
+  assignLanes(blocks);
+
   return blocks;
+}
+
+/**
+ * 打磨（3.5）：貪婪區間排程——依起始欄排序，每筆色塊放進「第一個結束欄小於自己起始欄」的
+ * lane；沒有既有 lane 可用就開一條新的。同一台車同時間最多只會有一筆逾時延伸＋一筆下一筆預訂
+ * 重疊（reserved 與 in_progress 互斥、每筆訂單各自連續），但演算法本身不假設只會有兩筆重疊，
+ * 需要三筆以上重疊時一樣會分配到三個以上的 lane。直接 mutate 傳入的 block 物件。
+ */
+function assignLanes(blocks: TimelineBlock[]): void {
+  const ordered = [...blocks].sort((a, b) => a.startCol - b.startCol || a.span - b.span);
+  const laneEndCol: number[] = [];
+  for (const block of ordered) {
+    const endCol = block.startCol + block.span - 1;
+    let lane = laneEndCol.findIndex((end) => end < block.startCol);
+    if (lane === -1) lane = laneEndCol.length;
+    laneEndCol[lane] = endCol;
+    block.lane = lane;
+  }
+}
+
+/** 打磨（3.5）：這一列（車輛）需要幾條 lane 才能放下所有色塊；沒有色塊時仍是 1（不縮成 0）。 */
+export function laneCountOf(blocks: TimelineBlock[]): number {
+  return blocks.reduce((max, b) => Math.max(max, b.lane + 1), 1);
+}
+
+/**
+ * 打磨（3.5）：時間軸日期欄的精簡標題——「9/20」，月份、日期都不補零；跨月（例如 9/30 → 10/1）
+ * 讀起來自然看得出換月，不需要額外標示。完整日期（含年份）改放 aria-label／title
+ * （fmtDate 的「YYYY/MM/DD」），標題本身不重複印年份，14 欄在 56px 欄寬也放得下。
+ */
+export function shortDateLabel(d: Date): string {
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 const DAYS = 14;
@@ -104,6 +145,8 @@ export class TimelineViewComponent {
   private memberStore = inject(MemberStore);
   private orderDetail = inject(OrderDetailNavigation);
   readonly fmtDate = fmtDate;
+  readonly shortDateLabel = shortDateLabel;
+  readonly laneCountOf = laneCountOf;
   readonly gridCols = `140px repeat(${DAYS}, minmax(56px, 1fr))`;
   readonly targetDate = input<Date>(startOfDay(new Date()));
   readonly vehicles = input<Vehicle[] | null>(null);
@@ -153,6 +196,11 @@ export class TimelineViewComponent {
   /** 列首所在據點：淡色小字，未設定時顯示完整說法（不是車輛清單用的「—」，見 zh-tw.ts 註解）。 */
   locationLabel(v: Vehicle): string {
     return v.location ? branchName(v.location) : this.t.timeline.locationUnset;
+  }
+
+  /** 日期欄標題下行的星期字（單一個字，例如「三」）。 */
+  weekdayLabel(d: Date): string {
+    return this.t.dispatch.weekdays[d.getDay()];
   }
 
   renterName(block: TimelineBlock): string {
