@@ -1,7 +1,7 @@
 # 訂單頁面化：前端與設計接續待辦
 
 **日期：** 2026-09-22 起草，2026-09-23 更新
-**狀態：** 已合併 `main`（merge commit `cecda36`）並推送到 origin；`feat/orders-page` 分支與 `.worktrees/orders-page` 工作樹尚未清除
+**狀態：** 已合併 `main`（merge commit `cecda36`）並推送到 origin；工作分支與工作樹已清除，直接在 `main` 上接續即可
 **給誰：** 設計＋前端接手的人（也就是下一次的自己）
 **相關文件：** 術語 `CONTEXT.md`、決策 `docs/adr/0001-order-creation-not-shared-with-booking-site.md`、後端 `docs/plans/2026-09-22-orders-page-backend-handoff.md`、業主 `docs/owner-questions.md`
 
