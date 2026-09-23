@@ -1,7 +1,15 @@
+import { SelectOption } from './select-option';
 import { VehicleStatus } from './enums';
 import { InsurancePlan } from './insurance-plan';
 
 export type VehicleCategory = 'car' | 'scooter' | 'ev';
+
+/** 車型分類的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const VEHICLE_CATEGORY_OPTIONS: SelectOption<VehicleCategory>[] = [
+  { value: 'scooter', label: '機車' },
+  { value: 'car', label: '汽車' },
+  { value: 'ev', label: '電動車' },
+];
 
 /** 排檔方式：自排 / 手排 */
 export type Transmission = 'auto' | 'manual';

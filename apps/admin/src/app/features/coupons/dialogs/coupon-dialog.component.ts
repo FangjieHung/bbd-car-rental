@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Coupon, VehicleCategory } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { COUPON_TYPE_OPTIONS, VEHICLE_CATEGORY_OPTIONS } from '@car-rental/domain';
 
 export type CouponFormResult = Omit<Coupon, 'id'>;
 
@@ -25,11 +26,12 @@ export type CouponFormResult = Omit<Coupon, 'id'>;
 })
 export class CouponDialogComponent {
   protected readonly t = ZH_TW;
+  protected readonly couponTypeOptions = COUPON_TYPE_OPTIONS;
   readonly ref = inject(MatDialogRef<CouponDialogComponent>);
   readonly data = inject<Coupon | null>(MAT_DIALOG_DATA);
   private fb = inject(NonNullableFormBuilder);
 
-  readonly categories: VehicleCategory[] = ['car', 'scooter', 'ev'];
+  readonly categories: VehicleCategory[] = VEHICLE_CATEGORY_OPTIONS.map((o) => o.value);
 
   form = this.fb.group({
     code: [this.data?.code ?? '', Validators.required],

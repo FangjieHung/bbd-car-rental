@@ -1,4 +1,5 @@
 import {
+  ADD_ON_UNIT_OPTIONS,
   AddOn,
   FuelPolicy,
   MileagePolicy,
@@ -6,6 +7,7 @@ import {
   PAYMENT_PREFERENCE_OPTIONS,
   PaymentPreference,
   Transmission,
+  VEHICLE_CATEGORY_OPTIONS,
   VehicleCategory,
 } from '@car-rental/domain';
 import { VehicleGroup } from '../date-range';
@@ -183,9 +185,12 @@ export interface BookingFlowMessages {
   errors: Record<BookingFlowErrorCode, string>;
 }
 
+/** 繁中的選項分類標籤直接沿用 libs/domain 的預設標籤，不另外維護一份。 */
+const VEHICLE_CATEGORY_LABEL = optionLabelMap(VEHICLE_CATEGORY_OPTIONS);
+
 export const ZH_TW_MESSAGES: BookingFlowMessages = {
   labels: {
-    vehicleCategory: { car: '汽車', scooter: '機車', ev: '電動車' },
+    vehicleCategory: VEHICLE_CATEGORY_LABEL,
     seatBuckets: [
       { value: 'le2', label: '2人以下' },
       { value: 'mid', label: '3-5人' },
@@ -197,12 +202,11 @@ export const ZH_TW_MESSAGES: BookingFlowMessages = {
       { value: 'price-desc', label: '價格高到低' },
     ],
     transmission: { auto: '自排', manual: '手排' },
-    addOnUnit: { per_rental: '每筆訂單', per_day: '每日' },
+    addOnUnit: optionLabelMap(ADD_ON_UNIT_OPTIONS),
     vehicleGroups: [
-      { value: 'scooter', label: '機車' },
-      { value: 'car', label: '汽車' },
+      { value: 'scooter', label: VEHICLE_CATEGORY_LABEL.scooter },
+      { value: 'car', label: VEHICLE_CATEGORY_LABEL.car },
     ],
-    // 繁中直接沿用 libs/domain 的預設標籤，不另外維護一份。
     paymentPreference: optionLabelMap(PAYMENT_PREFERENCE_OPTIONS),
   },
   common: {

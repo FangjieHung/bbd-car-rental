@@ -1,3 +1,4 @@
+import { SelectOption } from './select-option';
 import { VehicleCategory } from './vehicle';
 
 /**
@@ -5,6 +6,14 @@ import { VehicleCategory } from './vehicle';
  * 「OCR 狀態、信心分數、人工確認時間與確認人」。
  */
 export type DocumentVerificationState = 'unverified' | 'ocr_extracted' | 'verified' | 'rejected';
+
+/** 證件查核狀態的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const DOCUMENT_VERIFICATION_STATE_OPTIONS: SelectOption<DocumentVerificationState>[] = [
+  { value: 'unverified', label: '未驗證' },
+  { value: 'ocr_extracted', label: 'OCR 已辨識' },
+  { value: 'verified', label: '已驗證' },
+  { value: 'rejected', label: '已退件' },
+];
 
 export interface DocumentVerification {
   state: DocumentVerificationState;
@@ -54,6 +63,14 @@ export type DriverCredentialType = 'taiwan_license' | 'foreign_license' | 'idp' 
  * 裡 PickupDriverCredential.reciprocityStatus 的 'not_applicable' 用法）。
  */
 export type ReciprocityStatus = 'pending' | 'eligible' | 'ineligible' | 'manual_review';
+
+/** 駕照互惠查核結果的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const RECIPROCITY_STATUS_OPTIONS: SelectOption<ReciprocityStatus>[] = [
+  { value: 'pending', label: '尚未查核' },
+  { value: 'eligible', label: '符合互惠資格' },
+  { value: 'ineligible', label: '不符合互惠資格' },
+  { value: 'manual_review', label: '需人工審查' },
+];
 
 /**
  * 駕駛資格（駕照 / 國際駕照 / 簽證）。與 IdentityDocument 一樣存於會員層、可跨訂單重用，
