@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatDialog } from '@angular/material/dialog';
@@ -50,6 +52,9 @@ import { DriverEligibilityGateway } from '../../core/services/driver-eligibility
 import { MockDriverEligibilityGateway } from '../../core/services/mock-driver-eligibility.gateway';
 import { ReminderGateway } from '../../core/services/reminder.gateway';
 import { OrderDetailNavigation } from '../orders/navigation/order-detail-navigation';
+import { orderInitialFromQuery } from '../orders/pages/order-create-page.component';
+import { toLocalInputValue } from '../orders/order-form/order-form';
+import { TimelineViewComponent } from './timeline-view/timeline-view.component';
 
 function provideBreakpoint(matches: boolean) {
   return {
@@ -58,7 +63,7 @@ function provideBreakpoint(matches: boolean) {
   };
 }
 
-// CalendarViewComponent 透過 priceForVehicle 用到 PricingStore，兩個 repo 都得備齊。
+// CalendarViewComponent 透過預估逾時費與可用分頁的租金試算用到 PricingStore，兩個 repo 都得備齊。
 function providePricing() {
   return [
     { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([]) },
@@ -143,18 +148,21 @@ describe('dayStats', () => {
       pickups: 1,
       returns: 0,
       available: 2,
+      needsDispatch: 0,
     });
     // 7/23：b1 還車、b2 取車，v1 v2 都佔用
     expect(dayStats(bookings, vehicles, new Date(2026, 6, 23))).toEqual({
       pickups: 1,
       returns: 1,
       available: 1,
+      needsDispatch: 0,
     });
     // 7/26：無事，全可用
     expect(dayStats(bookings, vehicles, new Date(2026, 6, 26))).toEqual({
       pickups: 0,
       returns: 0,
       available: 3,
+      needsDispatch: 0,
     });
   });
 
@@ -164,6 +172,7 @@ describe('dayStats', () => {
       pickups: 0,
       returns: 0,
       available: 3,
+      needsDispatch: 0,
     });
   });
 
@@ -182,6 +191,7 @@ describe('dayStats', () => {
       pickups: 1,
       returns: 1,
       available: 1,
+      needsDispatch: 0,
     });
   });
 
@@ -209,6 +219,35 @@ describe('dayStats', () => {
     const stats = dayStats(bookings, vehicles, day);
     expect(stats.pickups).toBe(pickupProgress(bookings, day).total);
     expect(stats.returns).toBe(returnProgress(bookings, day).total);
+  });
+
+  // 3.3：月曆格「需調度 N」＝當天取車清單中需調度的筆數——只算尚未取車（reserved）、
+  // 車輛所在據點與取車據點不同的訂單；已取車、已取消、別天取車、車輛沒設據點的都不算。
+  it('needsDispatch：當天尚未取車、且車不在取車據點的筆數', () => {
+    const day = new Date(2026, 6, 21);
+    const at9 = new Date(2026, 6, 21, 9).toISOString();
+    const vehicles: Vehicle[] = [
+      { ...mkVehicle('at-store'), location: 'mzg-store' },
+      { ...mkVehicle('at-airport'), location: 'mzg-airport' },
+      { ...mkVehicle('unknown') },
+    ];
+    const bookings = [
+      mk({ id: 'needs', vehicleId: 'at-store', pickupLocation: 'mzg-airport', startTime: at9 }),
+      mk({ id: 'needs-2', vehicleId: 'at-store', pickupLocation: 'mzg-port', startTime: at9 }),
+      mk({ id: 'same-branch', vehicleId: 'at-airport', pickupLocation: 'mzg-airport', startTime: at9 }),
+      mk({ id: 'no-location', vehicleId: 'unknown', pickupLocation: 'mzg-airport', startTime: at9 }),
+      mk({ id: 'picked-up', vehicleId: 'at-store', pickupLocation: 'mzg-airport', startTime: at9, status: 'in_progress' }),
+      mk({ id: 'cancelled', vehicleId: 'at-store', pickupLocation: 'mzg-airport', startTime: at9, status: 'cancelled' }),
+      mk({
+        id: 'other-day',
+        vehicleId: 'at-store',
+        pickupLocation: 'mzg-airport',
+        startTime: new Date(2026, 6, 22, 9).toISOString(),
+      }),
+    ];
+
+    expect(dayStats(bookings, vehicles, day).needsDispatch).toBe(2);
+    expect(dayStats(bookings, vehicles, new Date(2026, 6, 22)).needsDispatch).toBe(1);
   });
 });
 
@@ -318,11 +357,24 @@ describe('CalendarViewComponent 面板開關（窄螢幕）', () => {
     expect(fixture.componentInstance.panelOpen()).toBe(true);
   });
 
-  it('換月會收起面板（selected 清空）', () => {
+  // 3.4：換月不關面板——原本選的日子不在新月份，改選新月份的 1 日。
+  it('換月不收起面板：改選新月份的 1 日', () => {
+    fixture.componentInstance.month.set(new Date(2026, 6, 1));
     fixture.componentInstance.selectDate(new Date(2026, 6, 10));
     fixture.componentInstance.shiftMonth(1);
 
-    expect(fixture.componentInstance.selected()).toBeNull();
+    expect(fixture.componentInstance.month()).toEqual(new Date(2026, 7, 1));
+    expect(fixture.componentInstance.selected()).toEqual(new Date(2026, 7, 1));
+    expect(fixture.componentInstance.panelOpen()).toBe(true);
+  });
+
+  it('換月前面板是收起的（窄螢幕），換月後仍保持收起', () => {
+    fixture.componentInstance.month.set(new Date(2026, 6, 1));
+    fixture.componentInstance.selectDate(new Date(2026, 6, 10));
+    fixture.componentInstance.dismissPanel();
+    fixture.componentInstance.shiftMonth(1);
+
+    expect(fixture.componentInstance.selected()).toEqual(new Date(2026, 7, 1));
     expect(fixture.componentInstance.panelOpen()).toBe(false);
   });
 
@@ -411,11 +463,48 @@ describe('CalendarViewComponent 面板開關（寬螢幕 split view）', () => {
     expect(fixture.componentInstance.panelOpen()).toBe(true);
   });
 
-  it('換月清空選取日期後面板收起', () => {
-    fixture.componentInstance.shiftMonth(1);
+  // 3.4：換月不關面板。新月份包含今天時選今天，否則選 1 日；原選取日就在新月份時保留。
+  it('換月後面板保持開啟；新月份包含今天就選今天，否則選該月 1 日', () => {
+    const component = fixture.componentInstance;
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const emitted: Date[] = [];
+    component.dateSelected.subscribe((d) => emitted.push(d));
 
-    expect(fixture.componentInstance.selected()).toBeNull();
-    expect(fixture.componentInstance.panelOpen()).toBe(false);
+    component.shiftMonth(1);
+    expect(component.selected()).toEqual(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+    expect(component.panelOpen()).toBe(true);
+
+    component.shiftMonth(-1);
+    expect(component.selected()).toEqual(todayStart);
+    expect(component.panelOpen()).toBe(true);
+
+    // 換月改了選取日，也要通知總覽（與點日期格同一條路）。
+    expect(emitted).toEqual([new Date(today.getFullYear(), today.getMonth() + 1, 1), todayStart]);
+  });
+
+  it('原選取日就在新月份（點了灰色的鄰月日期）時保留原選取日', () => {
+    const component = fixture.componentInstance;
+    component.month.set(new Date(2026, 6, 1));
+    component.selectDate(new Date(2026, 7, 1)); // 7 月格線最後一列的 8/1
+
+    component.shiftMonth(1);
+
+    expect(component.month()).toEqual(new Date(2026, 7, 1));
+    expect(component.selected()).toEqual(new Date(2026, 7, 1));
+  });
+
+  it('換月、換選取日都停在目前的分頁（例如「可用」），不會跳回取車', () => {
+    const component = fixture.componentInstance;
+    component.onPanelTabIndexChange(2);
+
+    component.shiftMonth(1);
+    fixture.detectChanges();
+    expect(component.panelTab()).toBe('available');
+
+    component.selectDate(new Date(2026, 6, 10));
+    fixture.detectChanges();
+    expect(component.panelTab()).toBe('available');
   });
 });
 
@@ -1366,8 +1455,9 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
     expect(component.statsOf(today).returns).toBe(0);
   });
 
-  it('月曆可用數＝可用清單筆數（1.3：保養中的車在兩邊都不計入）', () => {
-    const day = new Date(2026, 8, 25);
+  it('月曆可用數與可用分頁都不計保養中的車（1.3）', () => {
+    const today = new Date();
+    const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2);
     const vehicles: Vehicle[] = [
       makeVehicle({ id: 'v1', status: 'available' }),
       makeVehicle({ id: 'v2', status: 'maintenance' }),
@@ -1390,7 +1480,587 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
     component.selectDate(day);
     fixture.detectChanges();
 
-    expect(component.availableVehicles().map((v) => v.id)).toEqual(['v1', 'v3']);
-    expect(component.statsOf(day).available).toBe(component.availableVehicles().length);
+    expect(component.statsOf(day).available).toBe(2);
+    expect(component.availableCount()).toBe(2);
+  });
+});
+
+/** 批次 3 用的共用 fixture：寬螢幕（面板內容直接渲染在元件裡）、可指定「現在」、可攔導頁。 */
+function setupBatch3(options: {
+  vehicles: Vehicle[];
+  bookings?: RentalBooking[];
+  members?: Member[];
+  now?: Date;
+  date?: Date;
+}) {
+  if (options.now) {
+    vi.useFakeTimers();
+    vi.setSystemTime(options.now);
+  }
+  TestBed.configureTestingModule({
+    providers: [
+      ...providePricing(),
+      ...provideOrderDetailRepos(),
+      provideRouter([]),
+      { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(options.vehicles) },
+      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(options.bookings ?? []) },
+      {
+        provide: MEMBER_REPO,
+        useValue: createInMemoryRepo<Member>(
+          options.members ?? [{ id: 'c1', name: '林美惠', phone: '0900000000', kind: 'local', email: 'a@b.com' }],
+        ),
+      },
+      { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      provideBreakpoint(false),
+    ],
+  });
+  const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+  const fixture = TestBed.createComponent(CalendarViewComponent);
+  if (options.date) fixture.componentRef.setInput('targetDate', options.date);
+  fixture.detectChanges();
+  const el = fixture.nativeElement as HTMLElement;
+  return { fixture, component: fixture.componentInstance, el, navigate };
+}
+
+function vehicleAt(id: string, partial: Partial<Vehicle> = {}): Vehicle {
+  return {
+    id, plateNumber: id.toUpperCase(), category: 'car', model: `Model-${id}`, brand: 'Toyota',
+    year: 2022, status: 'available', mileage: 0, createdAt: '', ...partial,
+  };
+}
+
+function booking(id: string, partial: Partial<RentalBooking>): RentalBooking {
+  return {
+    id, vehicleId: 'v1', memberId: 'c1',
+    startTime: new Date(2026, 8, 23, 9).toISOString(), endTime: new Date(2026, 8, 24, 9).toISOString(),
+    pickupLocation: 'mzg-airport', returnLocation: 'mzg-airport', status: 'reserved', depositRequired: 0,
+    ...partial,
+  };
+}
+
+/** 切到面板第 index 個分頁；matTabContent 延遲渲染，要推進計時器才會掛進 DOM（需先開 fake timers）。 */
+function openPanelTab(fixture: ReturnType<typeof TestBed.createComponent<CalendarViewComponent>>, index: number): void {
+  fixture.componentInstance.onPanelTabIndexChange(index);
+  fixture.detectChanges();
+  vi.advanceTimersByTime(1000);
+  fixture.detectChanges();
+}
+
+/** 月曆格線上某一天的格子。 */
+function dayCell(
+  fixture: ReturnType<typeof TestBed.createComponent<CalendarViewComponent>>,
+  day: Date,
+): HTMLElement | undefined {
+  const index = fixture.componentInstance.monthDays().findIndex((d) => d.getTime() === day.getTime());
+  return (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.calendar-view__day')[index];
+}
+
+/**
+ * 批次 1 驗收 (a)：已取車、已完成的取車列仍顯示「車輛目前在租，與本次取車衝突」——拿「現在」的車況
+ * （車正在這位客人自己手上）去套已經發生的取車。就緒／衝突／阻擋提示只給尚未取車的列。
+ */
+describe('CalendarViewComponent 取車清單：已取車、已完成的列（批次 1 驗收 a）', () => {
+  const DAY = new Date(2026, 7, 4);
+
+  function setup() {
+    return setupBatch3({
+      date: DAY,
+      vehicles: [
+        vehicleAt('v1', { status: 'rented' }), // 正由 picked-up 這筆出租中
+        vehicleAt('v2'),
+        vehicleAt('v3'),
+      ],
+      bookings: [
+        booking('picked-up', {
+          vehicleId: 'v1', status: 'in_progress',
+          startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 6, 10).toISOString(),
+        }),
+        booking('done', {
+          vehicleId: 'v2', status: 'completed',
+          startTime: new Date(2026, 7, 4, 9).toISOString(), endTime: new Date(2026, 7, 4, 18).toISOString(),
+        }),
+        booking('waiting', {
+          vehicleId: 'v3', status: 'reserved',
+          startTime: new Date(2026, 7, 4, 14).toISOString(), endTime: new Date(2026, 7, 5, 14).toISOString(),
+        }),
+      ],
+    });
+  }
+
+  it('已完成的取車也列在清單上，列數＝分頁標籤的「取車 N」', () => {
+    const { component } = setup();
+
+    expect(component.pickupWorkRows().map((r) => r.booking.id)).toEqual(['done', 'picked-up', 'waiting']);
+    expect(component.selectedPickupProgress()).toEqual({ total: 3, done: 2, pending: 1 });
+  });
+
+  it('已取車、已完成的列不做就緒判斷：沒有阻擋、沒有提醒', () => {
+    const { component } = setup();
+    const rows = component.pickupWorkRows();
+    const [done, pickedUp, waiting] = rows;
+
+    for (const row of [done, pickedUp]) {
+      expect(component.readiness(row)).toBeUndefined();
+      expect(component.blockersOf(row)).toEqual([]);
+      expect(component.warningsOf(row)).toEqual([]);
+    }
+    expect(component.readiness(waiting)).toBeDefined();
+  });
+
+  it('畫面上：已取車的列顯示「已取車」，不出現「車輛目前在租」這類衝突警示', () => {
+    const { el } = setup();
+    const panels = Array.from(el.querySelectorAll<HTMLElement>('mat-expansion-panel'));
+
+    expect(panels).toHaveLength(3);
+    for (const panel of panels.slice(0, 2)) {
+      expect(panel.querySelector('.work-list-row__picked-up')?.textContent).toContain('已取車');
+      expect(panel.querySelector('.work-list-row__readiness')).toBeNull();
+      expect(panel.querySelectorAll('.work-list-severity__item')).toHaveLength(0);
+    }
+    expect(panels[2].querySelector('.work-list-row__readiness')).not.toBeNull();
+    expect(el.textContent).not.toContain('車輛目前在租');
+  });
+});
+
+/**
+ * 批次 1 驗收 (b)：前一位客人逾時未還（MNO-345）時，同一台車下一筆預訂的取車提醒只寫
+ * 「合約尚未簽署」，沒把「車還沒回來」擺在最前面。
+ */
+describe('CalendarViewComponent 前一位客人尚未還車（批次 1 驗收 b）', () => {
+  const NOW = new Date(2026, 8, 23, 12, 0, 0);
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function setup(previousEnd: Date) {
+    return setupBatch3({
+      now: NOW,
+      date: new Date(2026, 8, 23),
+      vehicles: [vehicleAt('v5', { plateNumber: 'MNO-345', status: 'rented' })],
+      bookings: [
+        booking('previous', {
+          vehicleId: 'v5', status: 'in_progress',
+          startTime: new Date(2026, 8, 20, 9).toISOString(), endTime: previousEnd.toISOString(),
+        }),
+        // 今天下午取車、合約還沒簽。
+        booking('next', {
+          vehicleId: 'v5', status: 'reserved',
+          startTime: new Date(2026, 8, 23, 15).toISOString(), endTime: new Date(2026, 8, 25, 17).toISOString(),
+        }),
+      ],
+    });
+  }
+
+  it('逾時未還：阻擋原因第一位是「前一位客人尚未還車」並寫出逾時多久，標籤也顯示它', () => {
+    const { component, el } = setup(new Date(2026, 8, 22, 18, 0)); // 昨天 18:00 該還，逾時 18 小時
+    const row = component.pickupWorkRows()[0];
+    const blockers = component.blockersOf(row);
+
+    expect(row.booking.id).toBe('next');
+    expect(blockers[0].message).toBe('前一位客人尚未還車（逾時 18 小時 0 分）。');
+    expect(blockers.map((b) => b.type)).toContain('latest_contract_unsigned');
+    expect(blockers.some((b) => b.message.includes('車輛目前在租'))).toBe(false);
+    expect(component.readinessLabel(row)).toBe('前一位客人尚未還車（逾時 18 小時 0 分）。');
+    expect(el.querySelector('.work-list-row__readiness')?.textContent).toContain('前一位客人尚未還車（逾時 18 小時 0 分）');
+  });
+
+  it('還沒到前一位客人的還車時間：一樣排第一，但不寫逾時', () => {
+    const { component } = setup(new Date(2026, 8, 23, 14, 0));
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.blockersOf(row)[0].message).toBe('前一位客人尚未還車。');
+  });
+
+  it('「前往處理」開前一位客人那筆訂單的交還車分頁（要處理的是那一筆）', () => {
+    const { component } = setup(new Date(2026, 8, 22, 18, 0));
+    const open = vi.spyOn(TestBed.inject(OrderDetailNavigation), 'open');
+    const row = component.pickupWorkRows()[0];
+
+    component.goHandleBlocker(row, component.blockersOf(row)[0]);
+
+    expect(open).toHaveBeenCalledWith('previous', 'handover');
+  });
+});
+
+describe('CalendarViewComponent 面板分頁標籤（3.4）', () => {
+  const NOW = new Date(2026, 7, 10, 12, 0, 0);
+  const TODAY = new Date(2026, 7, 10);
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function setup() {
+    return setupBatch3({
+      now: NOW,
+      date: TODAY,
+      vehicles: ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].map((id) => vehicleAt(id)),
+      bookings: [
+        // 今天取車 2 筆，1 筆已取車。
+        booking('p-reserved', {
+          vehicleId: 'v1', startTime: new Date(2026, 7, 10, 10).toISOString(), endTime: new Date(2026, 7, 11, 10).toISOString(),
+        }),
+        booking('p-picked', {
+          vehicleId: 'v2', status: 'in_progress',
+          startTime: new Date(2026, 7, 10, 9).toISOString(), endTime: new Date(2026, 7, 12, 9).toISOString(),
+        }),
+        // 今天還車 2 筆（1 筆已還），另有前幾天逾時未還的 1 筆（列在今天的清單，不計入還車數）。
+        booking('r-done', {
+          vehicleId: 'v3', status: 'completed',
+          startTime: new Date(2026, 7, 8, 9).toISOString(), endTime: new Date(2026, 7, 10, 8).toISOString(),
+        }),
+        booking('r-due', {
+          vehicleId: 'v4', status: 'in_progress',
+          startTime: new Date(2026, 7, 8, 9).toISOString(), endTime: new Date(2026, 7, 10, 15).toISOString(),
+        }),
+        booking('r-overdue', {
+          vehicleId: 'v5', status: 'in_progress',
+          startTime: new Date(2026, 7, 6, 9).toISOString(), endTime: new Date(2026, 7, 8, 18).toISOString(),
+        }),
+      ],
+    });
+  }
+
+  function labels(el: HTMLElement): HTMLElement[] {
+    return Array.from(el.querySelectorAll<HTMLElement>('.panel-tab-label'));
+  }
+
+  it('大字「取車 2」＋細字「已完成 1」；還車另外寫出警示色的「逾時 1」；可用只有數字', () => {
+    const { component, el } = setup();
+    const [pickup, ret, available] = labels(el);
+
+    expect(pickup.querySelector('.panel-tab-label__title')?.textContent?.trim()).toBe('取車 2');
+    expect(pickup.querySelector('.panel-tab-label__meta')?.textContent?.trim()).toBe('已完成 1');
+
+    expect(ret.querySelector('.panel-tab-label__title')?.textContent?.trim()).toBe('還車 2');
+    expect(ret.querySelector('.panel-tab-label__meta')?.textContent).toContain('已完成 1');
+    expect(ret.querySelector('.panel-tab-label__overdue')?.textContent?.trim()).toBe('逾時 1');
+    expect(component.returnWorkRows()).toHaveLength(3);
+
+    expect(available.querySelector('.panel-tab-label__meta')).toBeNull();
+    expect(available.textContent?.trim()).toBe(`可用 ${component.availableCount()}`);
+  });
+
+  it('沒有逾時未還時不顯示逾時', () => {
+    const { fixture, component, el } = setup();
+
+    component.selectDate(new Date(2026, 7, 12));
+    fixture.detectChanges();
+
+    expect(labels(el)[1].querySelector('.panel-tab-label__overdue')).toBeNull();
+    expect(component.returnTabLabel().overdue).toBeNull();
+  });
+});
+
+describe('CalendarViewComponent 需調度（3.3 月曆格、3.4 路線）', () => {
+  const DAY = new Date(2026, 7, 4);
+
+  function setup() {
+    return setupBatch3({
+      date: DAY,
+      vehicles: [vehicleAt('v1', { location: 'mzg-store' }), vehicleAt('v2', { location: 'mzg-airport' })],
+      bookings: [
+        booking('dispatch', {
+          vehicleId: 'v1', pickupLocation: 'mzg-airport',
+          startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
+        }),
+        booking('in-place', {
+          vehicleId: 'v2', pickupLocation: 'mzg-airport',
+          startTime: new Date(2026, 7, 4, 11).toISOString(), endTime: new Date(2026, 7, 5, 11).toISOString(),
+        }),
+      ],
+    });
+  }
+
+  it('取車列的需調度 chip 寫出路線「需調度 {所在據點}→{取車據點}」', () => {
+    const { component, el } = setup();
+    const row = component.pickupWorkRows().find((r) => r.booking.id === 'dispatch');
+
+    expect(row && component.dispatchRouteLabel(row)).toBe('需調度 馬公中正門市→馬公機場櫃檯');
+    const chips = Array.from(el.querySelectorAll('.work-list-row__dispatch'));
+    expect(chips).toHaveLength(1);
+    expect(chips[0].textContent).toContain('需調度 馬公中正門市→馬公機場櫃檯');
+    expect(chips[0].classList).toContain('ui-chip--warning');
+  });
+
+  it('月曆格顯示警示色「需調度 N」，N＝取車分頁的需調度數；沒有需調度的日子不顯示', () => {
+    const { fixture, component } = setup();
+
+    expect(component.statsOf(DAY).needsDispatch).toBe(component.pickupNeedsDispatchCount());
+    const chip = dayCell(fixture, DAY)?.querySelector('.calendar-view__stat-chip--dispatch');
+    expect(chip?.textContent?.trim()).toBe('需調度 1');
+    expect(chip?.classList).toContain('ui-chip--warning');
+    expect(dayCell(fixture, new Date(2026, 7, 5))?.querySelector('.calendar-view__stat-chip--dispatch')).toBeNull();
+  });
+});
+
+describe('CalendarViewComponent 月曆格「可用 N」（3.3）', () => {
+  const NOW = new Date(2026, 8, 23, 12, 0, 0);
+  const on = (day: number, vehicleId: string, id: string) =>
+    booking(id, {
+      vehicleId,
+      startTime: new Date(2026, 8, day, 9).toISOString(),
+      endTime: new Date(2026, 8, day, 18).toISOString(),
+    });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function setup() {
+    return setupBatch3({
+      now: NOW,
+      date: new Date(2026, 8, 23),
+      vehicles: [vehicleAt('v1'), vehicleAt('v2'), vehicleAt('v3')],
+      bookings: [
+        on(24, 'v1', 'b24'),
+        on(25, 'v1', 'b25a'),
+        on(25, 'v2', 'b25b'),
+        on(26, 'v1', 'b26a'),
+        on(26, 'v2', 'b26b'),
+        on(26, 'v3', 'b26c'),
+      ],
+    });
+  }
+
+  function availableOf(
+    fixture: ReturnType<typeof TestBed.createComponent<CalendarViewComponent>>,
+    day: number,
+  ): HTMLElement | null | undefined {
+    return dayCell(fixture, new Date(2026, 8, day))?.querySelector<HTMLElement>('.calendar-view__available');
+  }
+
+  it('平常是淡色純文字（不是膠囊），可用數 ≤ 1 才轉警示色', () => {
+    const { fixture, el } = setup();
+
+    expect(availableOf(fixture, 23)?.textContent?.trim()).toBe('可用 3');
+    expect(availableOf(fixture, 24)?.textContent?.trim()).toBe('可用 2');
+    for (const day of [23, 24]) {
+      const available = availableOf(fixture, day);
+      expect(available?.classList).not.toContain('calendar-view__available--low');
+      expect(available?.classList).not.toContain('ui-chip');
+    }
+    expect(availableOf(fixture, 25)?.textContent?.trim()).toBe('可用 1');
+    expect(availableOf(fixture, 25)?.classList).toContain('calendar-view__available--low');
+    expect(availableOf(fixture, 26)?.textContent?.trim()).toBe('可用 0');
+    expect(availableOf(fixture, 26)?.classList).toContain('calendar-view__available--low');
+    // 原本每格都有的綠色「可用」膠囊拿掉了。
+    expect(el.querySelector('.calendar-view__grid .ui-chip--positive')).toBeNull();
+  });
+
+  it('過去的日子不顯示可用數（今天照常顯示）', () => {
+    const { fixture } = setup();
+
+    expect(availableOf(fixture, 22)).toBeNull();
+    expect(availableOf(fixture, 1)).toBeNull();
+    expect(availableOf(fixture, 23)).not.toBeNull();
+  });
+});
+
+describe('CalendarViewComponent 可用分頁（3.2）', () => {
+  const NOW = new Date(2026, 8, 23, 12, 0, 0);
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function setup() {
+    const ctx = setupBatch3({
+      now: NOW,
+      date: new Date(2026, 8, 23),
+      vehicles: [
+        vehicleAt('car-1', { location: 'mzg-airport' }),
+        vehicleAt('car-2', { location: 'mzg-port' }),
+        vehicleAt('scooter-1', { category: 'scooter', location: 'mzg-store' }),
+        vehicleAt('car-maint', { status: 'maintenance' }),
+      ],
+      bookings: [
+        // 9/24 10:00 起被訂走：只租到 9/24 09:00 時可以租，租到 9/25 就不行。
+        booking('car-2-booked', {
+          vehicleId: 'car-2',
+          startTime: new Date(2026, 8, 24, 10).toISOString(), endTime: new Date(2026, 8, 24, 18).toISOString(),
+        }),
+      ],
+    });
+    openPanelTab(ctx.fixture, 2);
+    return ctx;
+  }
+
+  function rows(el: HTMLElement): HTMLButtonElement[] {
+    return Array.from(el.querySelectorAll<HTMLButtonElement>('app-available-vehicle-list .avl__row'));
+  }
+
+  function tabTitle(el: HTMLElement): string {
+    return el.querySelectorAll('.panel-tab-label')[2]?.textContent?.trim() ?? '';
+  }
+
+  it('從選取日 09:00 起租，還車日預設隔天 09:00；上方寫出「{選取日} 起租」', () => {
+    const { component, el } = setup();
+
+    expect(component.returnDateKey()).toBe('2026-09-24');
+    expect(component.availableStart()).toBe('2026-09-23T09:00');
+    expect(component.availableEnd()).toBe('2026-09-24T09:00');
+    expect(el.querySelector('.available-panel__start')?.textContent?.trim()).toBe('2026/09/23 起租');
+    const input = el.querySelector<HTMLInputElement>('.available-panel__return-date');
+    expect(input?.value).toBe('2026-09-24');
+    expect(input?.min).toBe('2026-09-24');
+  });
+
+  it('分頁標籤數字＝清單列數；換還車日、換車型都跟著變', () => {
+    const { fixture, component, el } = setup();
+
+    expect(rows(el)).toHaveLength(3); // car-1、car-2、scooter-1（保養中的不算）
+    expect(tabTitle(el)).toBe('可用 3');
+
+    const input = el.querySelector<HTMLInputElement>('.available-panel__return-date');
+    if (!input) throw new Error('找不到還車日欄位');
+    input.value = '2026-09-25';
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(component.returnDateKey()).toBe('2026-09-25');
+    expect(rows(el)).toHaveLength(2); // car-2 9/24 被訂走
+    expect(tabTitle(el)).toBe('可用 2');
+
+    component.availableCategory.set('car');
+    fixture.detectChanges();
+    expect(rows(el)).toHaveLength(1);
+    expect(tabTitle(el)).toBe('可用 1');
+    expect(component.availableCount()).toBe(rows(el).length);
+  });
+
+  it('還車日不可早於起租隔天：填更早的日子或清空，都回到最早可選的那天', () => {
+    const { fixture, component, el } = setup();
+    const input = el.querySelector<HTMLInputElement>('.available-panel__return-date');
+    if (!input) throw new Error('找不到還車日欄位');
+
+    input.value = '2026-09-22';
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(component.returnDateKey()).toBe('2026-09-24');
+    expect(input.value).toBe('2026-09-24');
+
+    input.value = '';
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(component.returnDateKey()).toBe('2026-09-24');
+  });
+
+  it('換選取日時還車日回到新選取日的隔天，車型篩選保留', () => {
+    const { fixture, component } = setup();
+    component.availableCategory.set('scooter');
+    component.returnDateKey.set('2026-09-30');
+
+    component.selectDate(new Date(2026, 8, 26));
+    fixture.detectChanges();
+
+    expect(component.returnDateKey()).toBe('2026-09-27');
+    expect(component.minReturnDateKey()).toBe('2026-09-27');
+    expect(component.availableCategory()).toBe('scooter');
+    expect(component.panelTab()).toBe('available');
+  });
+
+  it('點一台車 → 前往 /orders/new，帶入車與起訖（建單頁讀得到 09:00 起訖）', () => {
+    const { fixture, el, navigate } = setup();
+    const input = el.querySelector<HTMLInputElement>('.available-panel__return-date');
+    if (!input) throw new Error('找不到還車日欄位');
+    input.value = '2026-09-26';
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    rows(el)[0].click();
+
+    const queryParams = {
+      vehicleId: 'car-1',
+      start: new Date(2026, 8, 23, 9).toISOString(),
+      end: new Date(2026, 8, 26, 9).toISOString(),
+    };
+    expect(navigate).toHaveBeenCalledWith(['/orders/new'], { queryParams });
+    const initial = orderInitialFromQuery(convertToParamMap(queryParams), [vehicleAt('car-1')]);
+    expect(initial.vehicleId).toBe('car-1');
+    expect(toLocalInputValue(initial.startTime ?? '')).toBe('2026-09-23T09:00');
+    expect(toLocalInputValue(initial.endTime ?? '')).toBe('2026-09-26T09:00');
+  });
+
+  it('選取日在過去：只顯示一行說明，不列清單，標籤只寫「可用」', () => {
+    const { fixture, component, el } = setup();
+
+    component.selectDate(new Date(2026, 8, 22));
+    fixture.detectChanges();
+    vi.advanceTimersByTime(1000);
+    fixture.detectChanges();
+
+    expect(component.isSelectedPast()).toBe(true);
+    expect(component.availableCount()).toBeNull();
+    expect(el.querySelector('.available-panel__past')?.textContent?.trim()).toBe('無法查詢過去日期的可租車輛');
+    expect(el.querySelector('app-available-vehicle-list')).toBeNull();
+    expect(tabTitle(el)).toBe('可用');
+  });
+});
+
+describe('CalendarViewComponent 月曆｜時間軸切換（3.5）', () => {
+  function setup() {
+    return setupBatch3({ date: new Date(2026, 7, 4), vehicles: [vehicleAt('v1')] });
+  }
+
+  function switchButton(el: HTMLElement, label: string): HTMLButtonElement | undefined {
+    return Array.from(el.querySelectorAll<HTMLButtonElement>('.calendar-view__view-switch button')).find((b) =>
+      b.textContent?.includes(label),
+    );
+  }
+
+  it('切到時間軸：同一張卡片內換成時間軸（以選取日為準），右側面板照舊；換月鈕收起、「今天」保留', () => {
+    const { fixture, component, el } = setup();
+    const emitted: string[] = [];
+    // model() 的變更就是 (viewChange) 輸出；總覽靠它把檢視寫進網址。
+    component.view.subscribe((v) => emitted.push(v));
+
+    switchButton(el, '時間軸')?.click();
+    fixture.detectChanges();
+
+    expect(component.view()).toBe('timeline');
+    expect(emitted).toEqual(['timeline']);
+    expect(switchButton(el, '時間軸')?.getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelector('.calendar-view__grid')).toBeNull();
+    expect(el.querySelector('.calendar-view__weekday-row')).toBeNull();
+    expect(el.querySelector('.responsive-panel__body')).not.toBeNull();
+    expect(el.querySelector('[aria-label="上月"]')).toBeNull();
+    expect(el.querySelector('[aria-label="下月"]')).toBeNull();
+    const toolbarText = el.querySelector('.calendar-view__toolbar')?.textContent ?? '';
+    expect(toolbarText).toContain('今天');
+
+    const timeline = fixture.debugElement.query(By.directive(TimelineViewComponent))
+      ?.componentInstance as TimelineViewComponent | undefined;
+    expect(timeline?.targetDate()).toEqual(new Date(2026, 7, 4));
+  });
+
+  it('時間軸模式按「今天」：選取日與時間軸都回到今天', () => {
+    const { fixture, component, el } = setup();
+    component.setView('timeline');
+    fixture.detectChanges();
+
+    component.goToToday();
+    fixture.detectChanges();
+
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const timeline = fixture.debugElement.query(By.directive(TimelineViewComponent))
+      ?.componentInstance as TimelineViewComponent | undefined;
+    expect(component.selected()).toEqual(todayStart);
+    expect(timeline?.targetDate()).toEqual(todayStart);
+    expect(el.querySelector('.responsive-panel__body')).not.toBeNull();
+  });
+
+  it('切回月曆：格線與換月鈕回來', () => {
+    const { fixture, el } = setup();
+    switchButton(el, '時間軸')?.click();
+    fixture.detectChanges();
+
+    switchButton(el, '月曆')?.click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('.calendar-view__grid')).not.toBeNull();
+    expect(el.querySelector('[aria-label="上月"]')).not.toBeNull();
+    expect(el.querySelector('app-timeline-view')).toBeNull();
   });
 });

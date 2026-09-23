@@ -203,6 +203,84 @@ describe('evaluatePickupReadiness', () => {
     ]);
   });
 
+  it('keeps the generic "vehicle currently rented" blocker when no previous rental is given', () => {
+    const result = evaluatePickupReadiness(
+      baseInput({ vehicle: { status: 'rented', hasSchedulingConflict: false } }),
+    );
+
+    expect(result.blockers).toEqual([
+      {
+        type: 'vehicle_not_deliverable',
+        reason: 'vehicle_time_conflict',
+        message: '車輛目前在租，與本次取車衝突。',
+      },
+    ]);
+  });
+
+  // 批次 1 驗收：前一位客人逾時未還（MNO-345）時，下一筆預訂的取車提醒只寫「合約尚未簽署」，
+  // 「車還沒回來」排在最後、而且只有籠統的「車輛目前在租」。
+  describe('前一位客人尚未還車', () => {
+    it('排在阻擋原因第一位，逾時時寫出逾時多久，且不再重複「車輛目前在租」', () => {
+      const result = evaluatePickupReadiness(
+        baseInput({
+          depositPaid: 0,
+          latestContractSigned: false,
+          vehicle: {
+            status: 'rented',
+            hasSchedulingConflict: false,
+            previousRental: { scheduledReturnAt: '2026-09-30T15:30:00+08:00' }, // NOW 前 17 小時 30 分
+          },
+        }),
+      );
+
+      expect(result.ready).toBe(false);
+      expect(result.blockers[0]).toEqual({
+        type: 'vehicle_not_deliverable',
+        reason: 'previous_rental_not_returned',
+        message: '前一位客人尚未還車（逾時 17 小時 30 分）。',
+      });
+      expect(result.blockers.map((b) => b.reason)).toEqual([
+        'previous_rental_not_returned',
+        'deposit_paid_below_required',
+        'latest_contract_unsigned',
+      ]);
+    });
+
+    it('逾時不到 1 小時只寫分鐘', () => {
+      const result = evaluatePickupReadiness(
+        baseInput({
+          vehicle: {
+            status: 'rented',
+            hasSchedulingConflict: false,
+            previousRental: { scheduledReturnAt: '2026-10-01T08:15:00+08:00' },
+          },
+        }),
+      );
+
+      expect(result.blockers[0]?.message).toBe('前一位客人尚未還車（逾時 45 分）。');
+    });
+
+    it('還沒到前一位客人的預定還車時間：只寫尚未還車，也不另列排程衝突', () => {
+      const result = evaluatePickupReadiness(
+        baseInput({
+          vehicle: {
+            status: 'rented',
+            hasSchedulingConflict: true,
+            previousRental: { scheduledReturnAt: '2026-10-01T12:00:00+08:00' },
+          },
+        }),
+      );
+
+      expect(result.blockers).toEqual([
+        {
+          type: 'vehicle_not_deliverable',
+          reason: 'previous_rental_not_returned',
+          message: '前一位客人尚未還車。',
+        },
+      ]);
+    });
+  });
+
   describe('non-blocking warnings', () => {
     it('warns, but does not block, when the member email is missing', () => {
       const result = evaluatePickupReadiness(baseInput({ memberEmail: undefined }));

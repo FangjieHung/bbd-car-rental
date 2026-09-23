@@ -39,11 +39,28 @@
   background: var(--mat-sys-surface);
 }
 
+// 標題列：左邊「月曆｜時間軸」切換＋月份，右邊換月／今天。時間軸模式沒有月份與換月，
+// 切換鈕仍停在同一個位置，不會因為換檢視而跳動。
 .calendar-view__header {
-  @apply flex items-center justify-between min-h-fit;
+  @apply flex items-center min-h-fit;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.5rem 1rem;
   padding: 0.75rem 1rem;
+}
+
+.calendar-view__month {
+  margin: 0;
+}
+
+.calendar-view__header .calendar-view__toolbar {
+  margin-left: auto;
+}
+
+// 時間軸本身有自己的卡片與橫向捲動；這裡只留和月曆格線一樣的左右留白。
+.calendar-view__timeline {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 1rem 1rem;
 }
 
 .calendar-view__weekday-row {
@@ -107,6 +124,20 @@
   font-size: 0.85rem;
 }
 
+// 3.3：「可用 N」是參考資訊，不是待辦——平常用淡色純文字、自己佔一行放在最下面；
+// 可用數 ≤ 1 時轉成警示色加粗，提醒這天快沒車可租。
+.calendar-view__available {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.calendar-view__available--low {
+  font-weight: 600;
+  color: var(--app-warning-fg);
+}
+
 @media (max-width: 640px) {
   .calendar-view__header .ui-text-title {
     font-size: 1.25rem;
@@ -132,40 +163,85 @@
     padding: 0.125rem 0.25rem;
     font-size: clamp(0.625rem, 2.8vw, 0.75rem);
   }
+
+  .calendar-view__available {
+    font-size: clamp(0.625rem, 2.8vw, 0.75rem);
+  }
 }
 
-// vehicle-step 的三欄卡片版型是給 720px+ 內容寬設計的；side panel 只有 320–480px，
-// 靠 viewport media query 判斷不出這裡是窄容器，需強制改用堆疊版型。
-// 注意：::ng-deep 之後的選擇器不會帶 Angular 的 encapsulation 屬性，
-// 特異度會輸給 vehicle-step 元件自己的 `.vehicle-step[attr] .vehicle-card[attr]`，
-// 因此這裡把 host class 重複一次來拉高特異度。
-.calendar-view__vehicle-step.calendar-view__vehicle-step {
-  ::ng-deep .vehicle-step .vehicle-card {
-    grid-template-columns: 96px minmax(0, 1fr);
-    gap: 12px;
+// 3.4：面板分頁標籤兩行——大字「取車 2」、下方細字「已完成 0」（還車另加警示色「逾時 1」）。
+// 標籤變兩行，分頁列跟著加高（Material 的 tab 高度 token）。
+.calendar-view__panel-tabs {
+  --mat-tab-container-height: 3.75rem;
+}
 
-    @media (max-width: 767px) {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
+.panel-tab-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  line-height: 1.2;
+}
 
-  ::ng-deep .v-price {
-    grid-column: 1 / -1;
-    grid-template-rows: auto auto;
-    padding-left: 0;
-    padding-top: 12px;
-    border-left: none;
-    border-top: 1px solid var(--mat-sys-outline-variant);
-    text-align: left;
-  }
+.panel-tab-label__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 
-  ::ng-deep .v-supplier {
-    text-align: right;
-  }
+.panel-tab-label__meta {
+  display: inline-flex;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--mat-sys-on-surface-variant);
+}
 
-  ::ng-deep .v-total {
-    display: none;
+.panel-tab-label__overdue {
+  font-weight: 600;
+  color: var(--app-warning-fg);
+}
+
+// 3.2：可用分頁——上方「{選取日} 起租」與還車日／車型，下方可租清單。
+.available-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem 1rem;
+}
+
+.available-panel__query {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.available-panel__start {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--mat-sys-on-surface);
+}
+
+.available-panel__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+
+  mat-form-field {
+    width: 100%;
   }
+}
+
+.available-panel__past {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 // 取車／還車工作清單（accordion + 展開明細）共用樣式。
@@ -328,6 +404,12 @@
   .material-symbols-rounded {
     font-size: 16px;
   }
+}
+
+// 阻擋原因（例：「前一位客人尚未還車（逾時 17 小時 30 分）。」）與調度路線可能比面板寬，允許換行；
+// .ui-chip 本身是 nowrap（theme-pack，特異度 0-2-0），這裡疊兩個 class 才蓋得過。
+.ui-chip.work-list-row__status-chip {
+  white-space: normal;
 }
 
 // 阻擋／提醒清單：每一列都是 icon + 文字 + 動作按鈕的組合。

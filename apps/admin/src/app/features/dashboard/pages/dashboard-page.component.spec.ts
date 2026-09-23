@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+import { Component, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { DashboardPageComponent } from './dashboard-page.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
 import {
@@ -47,7 +49,7 @@ import { MockOcrGateway } from '../../../core/services/mock-ocr.gateway';
 import { DriverEligibilityGateway } from '../../../core/services/driver-eligibility.gateway';
 import { MockDriverEligibilityGateway } from '../../../core/services/mock-driver-eligibility.gateway';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
-import { VehiclePickerDialogComponent } from '../../bookings/dialogs/vehicle-picker-dialog.component';
+import { HeaderToolbarSlot } from '../../../layout/header/header-toolbar-slot';
 
 // Dashboard 內嵌的 CalendarViewComponent 會用到 PricingStore。
 function providePricing() {
@@ -135,6 +137,23 @@ describe('DashboardPageComponent child date contract', () => {
     expect(fixture.componentInstance.targetDate()).toEqual(selected);
     expect(child.targetDate()).toEqual(selected);
   });
+
+  it('在月曆上換日期（經總覽繞回來）保留面板目前的分頁；總覽另外指定日期才切回取車', () => {
+    const fixture = createFixture();
+    const child = fixture.debugElement.query(By.directive(CalendarViewComponent))
+      .componentInstance as CalendarViewComponent;
+
+    child.onPanelTabIndexChange(2);
+    child.selectDate(new Date(2026, 7, 4));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.targetDate()).toEqual(new Date(2026, 7, 4));
+    expect(child.panelTab()).toBe('available');
+
+    fixture.componentInstance.targetDate.set(new Date(2026, 7, 20));
+    fixture.detectChanges();
+    expect(child.selected()).toEqual(new Date(2026, 7, 20));
+    expect(child.panelTab()).toBe('pickup');
+  });
 });
 
 describe('DashboardPageComponent 今日出車／還車／待整備統計', () => {
@@ -205,81 +224,148 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
   });
 });
 
-describe('DashboardPageComponent onQuickRange', () => {
-  const vehicle: Vehicle = {
-    id: 'v1',
-    plateNumber: 'ABC-123',
-    category: 'scooter',
-    model: 'Gogoro',
-    brand: 'Gogoro',
-    year: 2022,
-    status: 'available',
-    mileage: 100,
-    createdAt: new Date().toISOString(),
-  };
 
-  function createFixture(pickedVehicle: Vehicle | null = vehicle) {
-    // 選車仍是 dialog；選到車之後改為導向 /orders/new 建立訂單頁（不再開建單 dialog）。
-    const dialogOpen = vi.fn((dialogComponent: unknown) =>
-      dialogComponent === VehiclePickerDialogComponent
-        ? { afterClosed: () => of(pickedVehicle ?? undefined) }
-        : { afterClosed: () => of(undefined) },
-    );
+/** 共用 providers：總覽內嵌的月曆／時間軸需要的 store 與 repo 全部備齊；路由由各測試自己給。 */
+function dashboardProviders(bookings: RentalBooking[] = []) {
+  return [
+    ...providePricing(),
+    ...provideOrderDetailRepos(),
+    provideNativeDateAdapter(),
+    { provide: MatDialog, useValue: { open: () => undefined } },
+    { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
+    { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+    { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
+    { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+  ];
+}
 
-    TestBed.configureTestingModule({
-      providers: [
-        ...providePricing(),
-        ...provideOrderDetailRepos(),
-        provideNativeDateAdapter(),
-        provideRouter([]),
-        { provide: MatDialog, useValue: { open: dialogOpen } },
-        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
-        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '0912000111', kind: 'local' }]) },
-        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
-      ],
-    });
-    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    const component = TestBed.createComponent(DashboardPageComponent).componentInstance;
-    return { component, dialogOpen, navigate };
+/** 頁首按鈕登記在 HeaderToolbarSlot、平常由 HeaderComponent 渲染；測試用一個最小的宿主把它畫出來。 */
+@Component({
+  imports: [NgTemplateOutlet],
+  template: '<ng-container [ngTemplateOutlet]="slot.template()" />',
+})
+class HeaderToolbarHostComponent {
+  readonly slot = inject(HeaderToolbarSlot);
+}
+
+describe('DashboardPageComponent 頁首', () => {
+  const today = new Date();
+  const at = (hour: number) =>
+    new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour).toISOString();
+
+  function renderToolbar(bookings: RentalBooking[] = []) {
+    TestBed.configureTestingModule({ providers: [...dashboardProviders(bookings), provideRouter([])] });
+    const page = TestBed.createComponent(DashboardPageComponent);
+    page.detectChanges();
+    const host = TestBed.createComponent(HeaderToolbarHostComponent);
+    host.detectChanges();
+    return { page, el: host.nativeElement as HTMLElement };
   }
 
-  it('選到車輛後導向 /orders/new，並以 query params 預填車輛與起訖時間（ISO）', async () => {
-    const { component, dialogOpen, navigate } = createFixture();
-
-    await component.onQuickRange({
-      startDateTime: '2026-08-20T10:00:00',
-      endDateTime: '2026-08-21T10:00:00',
-    });
-
-    expect(dialogOpen).toHaveBeenCalledTimes(1); // 只開選車 dialog，不再開建單 dialog
-    expect(navigate).toHaveBeenCalledWith(['/orders/new'], {
-      queryParams: {
-        vehicleId: 'v1',
-        start: new Date('2026-08-20T10:00:00').toISOString(),
-        end: new Date('2026-08-21T10:00:00').toISOString(),
+  it('「新增訂單」是唯一的實心主按鈕；待整備、待保養改成外框按鈕並保留徽章', () => {
+    // 今天有一筆已還車 → 待整備 1。
+    const { el } = renderToolbar([
+      {
+        id: 'returned', vehicleId: 'v1', memberId: 'c1', startTime: at(8), endTime: at(10),
+        pickupLocation: '', returnLocation: '', status: 'completed', depositRequired: 0,
       },
-    });
+    ]);
+
+    const filled = Array.from(el.querySelectorAll('.mat-mdc-unelevated-button'));
+    expect(filled).toHaveLength(1);
+    expect(filled[0].textContent).toContain('新增訂單');
+    expect(filled[0].getAttribute('href')).toBe('/orders/new');
+    expect(el.querySelector('.mat-tonal-button')).toBeNull();
+
+    const queues = Array.from(el.querySelectorAll<HTMLElement>('.dashboard-queue'));
+    expect(queues.map((q) => q.textContent)).toEqual([
+      expect.stringContaining('待整備'),
+      expect.stringContaining('待保養'),
+    ]);
+    for (const queue of queues) {
+      expect(queue.classList).toContain('mat-mdc-outlined-button');
+    }
+    expect(queues[0].querySelector('.mat-badge-content')?.textContent?.trim()).toBe('1');
   });
 
-  it('選車步驟被取消時，不導頁也不建立訂單', async () => {
-    const { component, navigate } = createFixture(null);
+  it('搜尋框提示文字寫出能搜什麼：姓名、電話、車牌', () => {
+    const { el } = renderToolbar();
 
-    await component.onQuickRange({
-      startDateTime: '2026-08-20T10:00:00',
-      endDateTime: '2026-08-21T10:00:00',
-    });
-
-    expect(component.bookingStore.bookings()).toHaveLength(0);
-    expect(navigate).not.toHaveBeenCalled();
+    expect(el.querySelector('input.search__input')?.getAttribute('placeholder')).toBe(
+      '搜尋訂單：姓名、電話、車牌',
+    );
   });
 
   // 1.4：總覽頁首放大鏡送出後導到訂單列表，帶入關鍵字讓訂單列表預填搜尋。
   it('onSearchSubmit 導向 /bookings，query params 帶入關鍵字', () => {
-    const { component, navigate } = createFixture();
+    const { page } = renderToolbar();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
-    component.onSearchSubmit('林美惠');
+    page.componentInstance.onSearchSubmit('林美惠');
 
     expect(navigate).toHaveBeenCalledWith(['/bookings'], { queryParams: { q: '林美惠' } });
+  });
+
+  // 3.1：上方的建單搜尋卡（車型＋租期＋選車小窗）拿掉了，月曆卡片直接接在頁首下面。
+  it('總覽不再有建單搜尋卡，第一個區塊就是月曆卡片', () => {
+    const { page } = renderToolbar();
+    const container = (page.nativeElement as HTMLElement).querySelector('.shell-container');
+
+    expect(container?.querySelector('app-date-step')).toBeNull();
+    expect(container?.firstElementChild?.tagName.toLowerCase()).toBe('app-calendar-view');
+  });
+});
+
+describe('DashboardPageComponent 月曆｜時間軸切換（3.5）', () => {
+  async function openDashboard(url: string) {
+    TestBed.configureTestingModule({
+      providers: [...dashboardProviders(), provideRouter([{ path: '', component: DashboardPageComponent }])],
+    });
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl(url, DashboardPageComponent);
+    harness.detectChanges();
+    const calendar = harness.fixture.debugElement.query(By.directive(CalendarViewComponent))
+      .componentInstance as CalendarViewComponent;
+    return { harness, page, calendar, router: TestBed.inject(Router) };
+  }
+
+  function viewButton(harness: RouterTestingHarness, label: string): HTMLButtonElement | undefined {
+    const root = harness.fixture.nativeElement as HTMLElement;
+    return Array.from(root.querySelectorAll<HTMLButtonElement>('.calendar-view__view-switch button')).find(
+      (b) => b.textContent?.includes(label),
+    );
+  }
+
+  it('網址帶 ?view=timeline 時直接顯示時間軸（重新整理後保留）', async () => {
+    const { harness, page, calendar } = await openDashboard('/?view=timeline');
+    const root = harness.fixture.nativeElement as HTMLElement;
+
+    expect(page.view()).toBe('timeline');
+    expect(calendar.view()).toBe('timeline');
+    expect(root.querySelector('app-timeline-view')).not.toBeNull();
+    expect(root.querySelector('.calendar-view__grid')).toBeNull();
+  });
+
+  it('沒有參數（或參數不認得）時是月曆', async () => {
+    const { harness, page } = await openDashboard('/?view=nope');
+
+    expect(page.view()).toBe('calendar');
+    expect((harness.fixture.nativeElement as HTMLElement).querySelector('.calendar-view__grid')).not.toBeNull();
+  });
+
+  it('切到時間軸會把 view=timeline 寫進網址；切回月曆就把參數拿掉', async () => {
+    const { harness, router } = await openDashboard('/');
+
+    viewButton(harness, '時間軸')?.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(router.url).toBe('/?view=timeline');
+    expect((harness.fixture.nativeElement as HTMLElement).querySelector('app-timeline-view')).not.toBeNull();
+
+    viewButton(harness, '月曆')?.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(router.url).toBe('/');
+    expect((harness.fixture.nativeElement as HTMLElement).querySelector('.calendar-view__grid')).not.toBeNull();
   });
 });

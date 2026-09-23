@@ -3,68 +3,117 @@
     <section class="flex flex-col flex-auto min-w-0">
       <div class="calendar-view__sticky-top">
         <div class="calendar-view__header">
-          <h2 class="ui-text-title">{{ monthLabel() }}</h2>
-          <div class="calendar-view__toolbar flex items-center gap-2 mb-2">
+          <nav class="ui-card-titleNav calendar-view__view-switch" [attr.aria-label]="t.dispatch.viewSwitch">
             <button
-              mat-icon-button
-              [attr.aria-label]="t.dispatch.prevMonth"
-              (click)="shiftMonth(-1)"
+              type="button"
+              class="ui-card-titleNav__item"
+              [class.is-active]="view() === 'calendar'"
+              [attr.aria-pressed]="view() === 'calendar'"
+              (click)="setView('calendar')"
             >
-              <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+              <span class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
+              <span>{{ t.dispatch.calendar }}</span>
             </button>
+            <button
+              type="button"
+              class="ui-card-titleNav__item"
+              [class.is-active]="view() === 'timeline'"
+              [attr.aria-pressed]="view() === 'timeline'"
+              (click)="setView('timeline')"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">view_timeline</span>
+              <span>{{ t.dispatch.timeline }}</span>
+            </button>
+          </nav>
+          @if (view() === 'calendar') {
+            <h2 class="ui-text-title calendar-view__month">{{ monthLabel() }}</h2>
+          }
+          <!-- 換月只屬於月曆；「今天」兩種檢視都有效（時間軸跟著選取日走）。 -->
+          <div class="calendar-view__toolbar flex items-center gap-2">
+            @if (view() === 'calendar') {
+              <button
+                mat-icon-button
+                [attr.aria-label]="t.dispatch.prevMonth"
+                (click)="shiftMonth(-1)"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
+              </button>
+            }
             <button matButton="outlined" (click)="goToToday()">{{ t.dispatch.today }}</button>
-            <button
-              mat-icon-button
-              [attr.aria-label]="t.dispatch.nextMonth"
-              (click)="shiftMonth(1)"
-            >
-              <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
-            </button>
+            @if (view() === 'calendar') {
+              <button
+                mat-icon-button
+                [attr.aria-label]="t.dispatch.nextMonth"
+                (click)="shiftMonth(1)"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+              </button>
+            }
           </div>
         </div>
 
-        <div class="calendar-view__weekday-row">
-          @for (label of t.dispatch.weekdays; track label) {
-            <div class="calendar-view__weekday p-2 text-center font-bold calendar-view__muted">
-              {{ label }}
-            </div>
-          }
-        </div>
-      </div>
-
-      <div class="calendar-view__grid">
-        @for (d of monthDays(); track d.getTime()) {
-          @let stats = statsOf(d);
-          <button
-            class="calendar-view__day p-2 min-h-16 text-left cursor-pointer transition-colors hover:[background:var(--mat-sys-surface-container-high)]"
-            [class.opacity-40]="d.getMonth() !== month().getMonth()"
-            [class.calendar-view__day--selected]="selected() && isSameDay(d, selected()!)"
-            (click)="selectDate(d)"
-          >
-            <div
-              class="font-bold"
-              [class.calendar-view__day-number--today]="isSameDay(d, todayDate)"
-            >
-              {{ d.getDate() }}
-            </div>
-            <div class="calendar-view__stats">
-              @if (stats.pickups > 0) {
-                <span class="ui-chip ui-chip--info calendar-view__stat-chip">
-                  {{ t.dispatch.pickups }} {{ stats.pickups }}
-                </span>
-              }
-              @if (stats.returns > 0) {
-                <span class="ui-chip ui-chip--warning calendar-view__stat-chip">
-                  {{ t.dispatch.returns }} {{ stats.returns }}
-                </span>
-              }
-              <span class="ui-chip ui-chip--positive calendar-view__stat-chip w-full">
-                {{ t.dispatch.available }} {{ stats.available }}
-              </span>
-            </div>
-          </button>
+        @if (view() === 'calendar') {
+          <div class="calendar-view__weekday-row">
+            @for (label of t.dispatch.weekdays; track label) {
+              <div class="calendar-view__weekday p-2 text-center font-bold calendar-view__muted">
+                {{ label }}
+              </div>
+            }
+          </div>
         }
       </div>
+
+      @if (view() === 'calendar') {
+        <div class="calendar-view__grid">
+          @for (d of monthDays(); track d.getTime()) {
+            @let stats = statsOf(d);
+            <button
+              class="calendar-view__day p-2 min-h-16 text-left cursor-pointer transition-colors hover:[background:var(--mat-sys-surface-container-high)]"
+              [class.opacity-40]="d.getMonth() !== month().getMonth()"
+              [class.calendar-view__day--selected]="selected() && isSameDay(d, selected()!)"
+              (click)="selectDate(d)"
+            >
+              <div
+                class="font-bold"
+                [class.calendar-view__day-number--today]="isSameDay(d, todayDate)"
+              >
+                {{ d.getDate() }}
+              </div>
+              <div class="calendar-view__stats">
+                @if (stats.pickups > 0) {
+                  <span class="ui-chip ui-chip--info calendar-view__stat-chip">
+                    {{ t.dispatch.pickups }} {{ stats.pickups }}
+                  </span>
+                }
+                @if (stats.returns > 0) {
+                  <span class="ui-chip ui-chip--warning calendar-view__stat-chip">
+                    {{ t.dispatch.returns }} {{ stats.returns }}
+                  </span>
+                }
+                @if (stats.needsDispatch > 0) {
+                  <span class="ui-chip ui-chip--warning calendar-view__stat-chip calendar-view__stat-chip--dispatch">
+                    {{ t.dispatch.workList.needsDispatch }} {{ stats.needsDispatch }}
+                  </span>
+                }
+                <!-- 可用數是參考資訊：平常淡色純文字，快沒車（≤ 1）才轉警示色；過去的日子不顯示。 -->
+                @if (!isPast(d)) {
+                  <span
+                    class="calendar-view__available"
+                    [class.calendar-view__available--low]="isLowAvailability(stats)"
+                  >
+                    {{ t.dispatch.available }} {{ stats.available }}
+                  </span>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      } @else {
+        <!-- 3.5：時間軸與月曆共用右側面板；時間軸以選取日為準。 -->
+        <div class="calendar-view__timeline">
+          <app-timeline-view [targetDate]="timelineDate()" />
+        </div>
+      }
     </section>
 
     <section class="split-view__panel">
@@ -80,13 +129,20 @@
           <span panelHeaderExtra class="calendar-view__relative-chip">{{ label }}</span>
         }
         @if (selected()) {
-          @let pickup = selectedPickupProgress();
-          @let ret = selectedReturnProgress();
+          @let pickupLabel = pickupTabLabel();
+          @let returnLabel = returnTabLabel();
           <mat-tab-group
+            class="calendar-view__panel-tabs"
             [selectedIndex]="panelTabIndex()"
             (selectedIndexChange)="onPanelTabIndexChange($event)"
           >
-            <mat-tab [label]="'取車 ' + pickup.done + '/' + pickup.total">
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <span class="panel-tab-label">
+                  <span class="panel-tab-label__title">{{ pickupLabel.title }}</span>
+                  <span class="panel-tab-label__meta">{{ pickupLabel.done }}</span>
+                </span>
+              </ng-template>
               <ng-template matTabContent>
                 <div class="flex items-center gap-2 px-3 pt-2 pb-1">
                   <mat-slide-toggle
@@ -105,7 +161,6 @@
                 <mat-accordion class="work-list-accordion">
                   @for (row of pickupWorkRows(); track row.id) {
                     @let vehicle = vehicleOf(row);
-                    @let ready = isPickupReady(row);
                     <mat-expansion-panel>
                       <mat-expansion-panel-header class="work-list-row-header">
                         <mat-panel-title class="work-list-row__title">
@@ -115,22 +170,31 @@
                           <span class="work-list-row__meta"
                             >{{ vehicle?.model ?? '—' }} · {{ memberName(row) }}</span
                           >
-                          <span
-                            class="ui-chip work-list-row__status-chip"
-                            [class.ui-chip--positive]="ready"
-                            [class.ui-chip--warning]="!ready"
-                          >
-                            <span class="material-symbols-rounded" aria-hidden="true">{{
-                              ready ? 'check_circle' : 'report'
-                            }}</span>
-                            {{ readinessLabel(row) }}
-                          </span>
+                          <!-- 就緒／阻擋提示只給尚未取車的列；已取車、已完成的列不拿現在的車況去套。 -->
+                          @if (row.booking.status === 'reserved') {
+                            @let ready = isPickupReady(row);
+                            <span
+                              class="ui-chip work-list-row__status-chip work-list-row__readiness"
+                              [class.ui-chip--positive]="ready"
+                              [class.ui-chip--warning]="!ready"
+                            >
+                              <span class="material-symbols-rounded" aria-hidden="true">{{
+                                ready ? 'check_circle' : 'report'
+                              }}</span>
+                              {{ readinessLabel(row) }}
+                            </span>
+                          } @else {
+                            <span class="ui-chip ui-chip--neutral work-list-row__status-chip work-list-row__picked-up">
+                              <span class="material-symbols-rounded" aria-hidden="true">check</span>
+                              {{ t.dispatch.workList.pickedUp }}
+                            </span>
+                          }
                           @if (needsDispatch(row)) {
-                            <span class="ui-chip ui-chip--info work-list-row__status-chip">
+                            <span class="ui-chip ui-chip--warning work-list-row__status-chip work-list-row__dispatch">
                               <span class="material-symbols-rounded" aria-hidden="true"
                                 >swap_horiz</span
                               >
-                              {{ t.dispatch.workList.needsDispatch }}
+                              {{ dispatchRouteLabel(row) }}
                             </span>
                           }
                         </mat-panel-title>
@@ -238,7 +302,18 @@
                 }
               </ng-template>
             </mat-tab>
-            <mat-tab [label]="'還車 ' + ret.done + '/' + ret.total">
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <span class="panel-tab-label">
+                  <span class="panel-tab-label__title">{{ returnLabel.title }}</span>
+                  <span class="panel-tab-label__meta">
+                    {{ returnLabel.done }}
+                    @if (returnLabel.overdue; as overdue) {
+                      <span class="panel-tab-label__overdue">{{ overdue }}</span>
+                    }
+                  </span>
+                </span>
+              </ng-template>
               <ng-template matTabContent>
                 @if (returnWorkRows().length > 0) {
                   <mat-accordion class="work-list-accordion">
@@ -345,18 +420,55 @@
                 }
               </ng-template>
             </mat-tab>
-            <mat-tab [label]="'可用 ' + availableVehicles().length + ' 筆'">
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <span class="panel-tab-label">
+                  <span class="panel-tab-label__title">{{ availableTabLabel() }}</span>
+                </span>
+              </ng-template>
               <ng-template matTabContent>
-                @if (availableVehicles().length > 0) {
-                  <app-vehicle-step
-                    class="calendar-view__vehicle-step"
-                    [vehicles]="availableVehicles()"
-                    [priceForVehicle]="priceForVehicle"
-                    [days]="1"
-                  />
-                } @else {
-                  <p class="pb-4 pt-4 text-sm calendar-view__muted">當日無可用車輛</p>
-                }
+                <div class="available-panel">
+                  @if (isSelectedPast()) {
+                    <p class="available-panel__past">{{ t.dispatch.availablePanel.pastDate }}</p>
+                  } @else {
+                    <div class="available-panel__query">
+                      <p class="available-panel__start">{{ startsOnLabel() }}</p>
+                      <div class="available-panel__fields">
+                        <mat-form-field subscriptSizing="dynamic">
+                          <mat-label>{{ t.dispatch.availablePanel.returnDate }}</mat-label>
+                          <input
+                            matInput
+                            type="date"
+                            class="available-panel__return-date"
+                            [min]="minReturnDateKey()"
+                            [value]="returnDateKey()"
+                            (change)="onReturnDateChange($event)"
+                          />
+                        </mat-form-field>
+                        <mat-form-field subscriptSizing="dynamic">
+                          <mat-label>{{ t.rentalSearch.category }}</mat-label>
+                          <mat-select
+                            class="available-panel__category"
+                            [value]="availableCategory()"
+                            (valueChange)="availableCategory.set($event)"
+                          >
+                            <mat-option value="">{{ t.rentalSearch.allCategories }}</mat-option>
+                            @for (option of categoryOptions; track option.value) {
+                              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+                      </div>
+                    </div>
+                    <app-available-vehicle-list
+                      [start]="availableStart()"
+                      [end]="availableEnd()"
+                      [category]="availableCategory()"
+                      [selectable]="false"
+                      (vehicleSelected)="openOrderFor($event)"
+                    />
+                  }
+                </div>
               </ng-template>
             </mat-tab>
           </mat-tab-group>
