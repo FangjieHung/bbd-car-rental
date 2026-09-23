@@ -36,6 +36,7 @@ import { DriverEligibilityCheckInput, DriverEligibilityGateway, DriverEligibilit
 import { ReminderDispatchResult, ReminderGateway, ScheduleReminderInput } from '../../../core/services/reminder.gateway';
 import { HandoverPanelComponent } from './handover-panel.component';
 import { HandoverStore } from '../../../stores/handover/handover.store';
+import { fmtDateTime } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 
@@ -371,9 +372,9 @@ describe('HandoverPanelComponent', () => {
      * 讓 booking().status 反應成 in_progress 後畫面自動切到還車表單，而不是另外
      * 繞過元件直接呼叫 bookingStore.pickUp()（那樣不會留下 HandoverRecord）。
      */
-    async function createFixtureAfterPickup() {
+    async function createFixtureAfterPickup(pickupOverrides: { mileage?: number; energyLevel?: number } = {}) {
       const fixture = createFixture();
-      fixture.componentInstance['pickupForm'].patchValue({ originalDocumentChecked: true });
+      fixture.componentInstance['pickupForm'].patchValue({ originalDocumentChecked: true, ...pickupOverrides });
       await fixture.componentInstance['submitPickup']();
       fixture.detectChanges();
       expect(TestBed.inject(BookingStore).bookings()[0].status).toBe('in_progress');
@@ -456,6 +457,50 @@ describe('HandoverPanelComponent', () => {
       // 若誤用方案規則（15 分鐘寬限、每單位 100）會得到 100，兩者差異明顯，足以驗證來源正確。
       expect(charges!.finalLateFee).toBe(1998);
       expect(charges!.finalEnergyFee).toBe(0);
+    });
+
+    it('取車紀錄摘要顯示本地時區格式（不是 UTC 的 ISO 字串切片）', async () => {
+      const fixture = await createFixtureAfterPickup();
+      const pickup = TestBed.inject(HandoverStore).pickupFor('b1');
+      expect(pickup).toBeDefined();
+
+      const summary = (fixture.nativeElement as HTMLElement).querySelector('.handover-panel__record-summary')
+        ?.textContent ?? '';
+      expect(summary).toContain(fmtDateTime(pickup!.actualAt));
+      // 舊版格式是 ISO 字串切前 16 碼（YYYY-MM-DDTHH:mm，帶 "T"）；本地格式（MM/DD HH:mm）不會有這個樣式。
+      expect(summary).not.toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/);
+    });
+
+    it('還車表單的里程欄提示「取車時 {n} km」、能源讀數欄提示取車時的讀數；兩者都不預填', async () => {
+      const fixture = await createFixtureAfterPickup({ mileage: 1000, energyLevel: 6 });
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+
+      expect(el.textContent).toContain('取車時 1000 km');
+      expect(el.textContent).toContain('取車時讀數 6');
+
+      const value = fixture.componentInstance['returnForm'].getRawValue();
+      expect(value.mileage).toBe(0);
+      expect(value.energyLevel).toBe(0);
+    });
+
+    it('還車里程不可小於取車里程：小於時該欄位無效並顯示錯誤訊息；等於或大於時有效', async () => {
+      const fixture = await createFixtureAfterPickup({ mileage: 1000 });
+      const mileageControl = fixture.componentInstance['returnForm'].controls.mileage;
+
+      mileageControl.setValue(900);
+      mileageControl.markAsTouched();
+      fixture.detectChanges();
+      expect(mileageControl.invalid).toBe(true);
+      expect(mileageControl.hasError('belowPickupMileage')).toBe(true);
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('不可小於取車時的里程');
+
+      mileageControl.setValue(1000);
+      fixture.detectChanges();
+      expect(mileageControl.valid).toBe(true);
+
+      mileageControl.setValue(1500);
+      expect(mileageControl.valid).toBe(true);
     });
   });
 
