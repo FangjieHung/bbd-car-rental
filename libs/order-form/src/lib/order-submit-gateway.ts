@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { ContractSnapshot } from '../../../core/models';
+import { ContractSnapshot } from '@car-rental/domain';
 import type { OrderFormValue } from './order-form';
 
 /**

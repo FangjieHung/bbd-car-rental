@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { RENTAL_BRANCHES, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { VEHICLE_CATEGORY_OPTIONS } from '@car-rental/domain';
 
 export interface VehicleFormResult {
   plateNumber: string;
@@ -36,6 +37,7 @@ export interface VehicleFormResult {
 })
 export class VehicleFormDialogComponent {
   protected readonly t = ZH_TW;
+  protected readonly vehicleCategoryOptions = VEHICLE_CATEGORY_OPTIONS;
   readonly ref = inject(MatDialogRef<VehicleFormDialogComponent>);
   readonly data = inject<Vehicle | null>(MAT_DIALOG_DATA);
   private fb = inject(NonNullableFormBuilder);

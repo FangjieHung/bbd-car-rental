@@ -1,6 +1,6 @@
 # libs/ 共用了什麼
 
-三個 app（admin/booking/affiliate）不是各自獨立寫一份邏輯，而是共用 `libs/` 底下四個庫。
+三個 app（admin/booking/affiliate）不是各自獨立寫一份邏輯，而是共用 `libs/` 底下的幾個庫。
 改 `libs/` 的東西會同時影響所有引用它的 app，這是這份文件存在的原因——先搞清楚
 「這段邏輯是誰的」，再決定要改哪裡。
 
@@ -34,7 +34,7 @@
 | `Partner` | `partner.ts` | 合作民宿（模組二新增）；`discountPercent` 協議折扣、`commission` 退佣規則 |
 | `CommissionRule` | `commission.ts` | 退佣規則（模組二新增）；`type: 'percent'\|'per_vehicle_day'` |
 | `MonthlyPayout` | `monthly-payout.ts` | 月結撥款記錄（模組二新增）；`partnerId + month + status` |
-| `SelectOption<T>` | `select-option.ts` | 下拉選單共用的「值＋預設繁中標籤」形狀，本頁與各業務 model 的選項常數（`PAYMENT_PREFERENCE_OPTIONS`、`BRANCH_TYPE_OPTIONS`…）都用它 |
+| `SelectOption<T>` | `select-option.ts` | 下拉選單共用的「值＋預設繁中標籤」形狀。各業務列舉的選項常數（`*_OPTIONS`，如 `VEHICLE_CATEGORY_OPTIONS`、`ORDER_STATUS_OPTIONS`、`PAYMENT_METHOD_OPTIONS`）與型別放在同一檔；admin 以 `optionLabelMap()` 取回 `ZH_TW`，官網依 value 翻譯。**新增列舉標籤請加在這裡，不要在 app 或元件裡另長一份** |
 
 以上列的是目前規模較大的 model；完整、隨時最新的清單以 `libs/domain/src/index.ts` 的實際匯出
 內容為準，改動前務必核對。表中偏後段那批（`PaymentRecord` 到 `ReminderStatus`）主要支援 admin
@@ -43,7 +43,7 @@
 **車輛狀態機**（`VehicleStatus`）：`available` → `rented` → `available`；隨時可轉 `maintenance`。
 **訂單狀態機**（`OrderStatus`）：只有 `reserved`／`in_progress`／`completed`／`cancelled`
 四個值，只描述車輛交接進度，**不代表付款是否完成**——付款狀態改由 `PaymentRecord` 分類帳獨立
-追蹤（見上表）。只有 `reserved`/`in_progress` 會佔用車輛時段（見下方 `isVehicleAvailable`）。
+追蹤（見上表）。只有 `reserved`/`in_progress` 會佔用車輛時段，定義在 `OCCUPYING_ORDER_STATUSES`／`isOccupyingStatus()`（`enums.ts`），可用性、衝突檢查與調度月曆都用它。
 舊資料裡的 `pending_payment`/`confirmed` 是已淘汰的 legacy 值，讀取時由
 `normalize-rental-order.ts` 統一遷移為 `reserved`，不會出現在應用程式邏輯裡；完整設計脈絡見
 `04-booking-flow.md`。
@@ -157,6 +157,23 @@ booking app 不提供，吃 root 預設值（consumer）；affiliate 的 `Partne
 
 admin 的建單第四步（`/orders/new` 的「合約」步驟）與訂單詳情的合約分頁共用同一個
 簽署 dialog。完整匯出清單與消費端需提供的 token 見 `libs/contract-signing/README.md`。
+
+## libs/order-form — 建單積木層（admin 使用，設計上供官網共用）
+
+別名 `@car-rental/order-form`。依 ADR 0001，官網與櫃檯**不共用外層流程**（admin 是 stepper 單頁、官網是可分享的
+網址頁），只共用這一層積木：
+
+| 匯出 | 用途 |
+|---|---|
+| `createOrderForm()`、`orderFormInitialFromOrder()` 等 | 型別化 FormGroup 定義、初始值、欄位連動 |
+| `createOrderFormDerived()`、`orderFormProblems()`、`orderIncompleteItems()` | 報價、衝突、訂金上限等衍生狀態；送出前檢查與待補項目 |
+| `buildContractSnapshot()`、`sameContractTerms()` | 由表單組合約快照、比對條款（先簽後建） |
+| `lib-order-rental-section` 等五個區塊元件 | 租期與車輛、承租人、費用、款項、合約 |
+| `ORDER_FORM_DATA`、`ORDER_SUBMIT_GATEWAY`、`ORDER_FORM_LABELS` | 使用端必須提供的參考資料、送出實作、文案與日期格式 |
+
+這個 lib **不帶任何文案**：admin 以 `ZH_TW` 的對應分組提供 `ORDER_FORM_LABELS`
+（`apps/admin/src/app/features/orders/data/provide-admin-order-form.ts`），官網日後接上時由它自己的字典提供。
+只依賴 `domain`、`contract-signing` 與 Angular／Material，不依賴任何 apps/\* 的程式碼。
 
 ## libs/theme-pack — 雙軸主題系統（只有 admin 套用）
 

@@ -6,10 +6,16 @@ import { OrderStore } from '../../../stores/order/order.store';
 import { PaymentStore } from '../../../stores/payment/payment.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { ReminderStore } from '../../../stores/reminder/reminder.store';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { computeOrderQuote, isInsuranceUnreconciled, selectedVehicleOf } from '../order-form/order-form';
-import { buildContractSnapshot, sameContractTerms } from '../order-form/contract-snapshot';
-import { OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
+import {
+  ORDER_FORM_DATA,
+  computeOrderQuote,
+  isInsuranceUnreconciled,
+  selectedVehicleOf,
+  buildContractSnapshot,
+  sameContractTerms,
+  OrderSubmitGateway,
+  OrderSubmitInput,
+} from '@car-rental/order-form';
 
 /** 本次寫入序列中「新建」的記錄 id——失敗時只補償清除這些，不動既有資料。 */
 interface CreatedInThisAttempt {

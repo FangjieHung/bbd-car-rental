@@ -1,8 +1,16 @@
+import { SelectOption } from './select-option';
 /**
  * 承租人類型：本國人、外國旅客、持居留證者。設計文件第 4.3 節。
  * 只有 foreign_visitor 需要查核駕照互惠資格（見 IdentityDocument 的 ReciprocityStatus）。
  */
 export type MemberKind = 'local' | 'foreign_visitor' | 'resident';
+
+/** 承租人類型的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const MEMBER_KIND_OPTIONS: SelectOption<MemberKind>[] = [
+  { value: 'local', label: '本國人' },
+  { value: 'foreign_visitor', label: '外國旅客' },
+  { value: 'resident', label: '持居留證者' },
+];
 
 /**
  * 會員基本資料。刻意不保存任何證件圖檔參照或 OCR／核對狀態——

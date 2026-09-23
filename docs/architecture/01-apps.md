@@ -48,8 +48,8 @@ admin 是唯一同時 provide 全部 Repository token 的 app（`apps/admin/src/
   的 `ORDER_DETAIL_SECTIONS`），目前分頁以 `?section=` 表示，可分享、重整後回到同一分頁。
   只有「總覽」分頁可以編輯：預設唯讀，按「編輯」後同一頁切換成表單，明確按「儲存」才送出；
   編輯中其他分頁停用。收款、上傳文件、簽約、交還車、取消都是各分頁自己的作業，不算編輯訂單。
-- 兩頁共用同一份表單定義（`order-form/`）與送出介面（`ORDER_SUBMIT_GATEWAY`），在路由層
-  `provideAdminOrderForm()` 統一提供，範圍限定在 `features/orders`。
+- 兩頁共用同一份表單定義、區塊元件與送出介面，放在共用 lib `@car-rental/order-form`（見 `02-libs.md`）；
+  admin 在路由層以 `provideAdminOrderForm()` 提供參考資料、送出實作與文案，範圍限定在 `features/orders`。
 - 合約檢視與簽署已抽成共用 lib `@car-rental/contract-signing`（見 `02-libs.md`），建單第四步
   與訂單詳情的合約分頁共用同一個簽署 dialog。
 

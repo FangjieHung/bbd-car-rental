@@ -1,6 +1,6 @@
 import { Signal, computed } from '@angular/core';
-import { PriceBreakdown, RentalOrder, Vehicle } from '../../../core/models';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { PriceBreakdown, RentalOrder, Vehicle } from '@car-rental/domain';
+import type { OrderFormLabels } from './order-form-labels';
 import type { OrderFormData } from './order-form-data';
 import {
   OrderFormValue,
@@ -8,8 +8,6 @@ import {
   isInsuranceUnreconciled,
   selectedVehicleOf,
 } from './order-form';
-
-const t = ZH_TW;
 
 /** 編輯既有訂單時需要的脈絡；新增訂單時全部留空。 */
 export interface OrderFormContext {
@@ -75,6 +73,7 @@ export interface OrderFormProblems {
 export function orderFormProblems(
   value: OrderFormValue,
   derived: Pick<OrderFormDerived, 'conflicts' | 'quoteUnavailable' | 'depositCap' | 'depositExceedsCap' | 'insuranceUnreconciled'>,
+  t: OrderFormLabels,
 ): OrderFormProblems {
   const { rental, renter, pricing } = value;
   const problems: OrderFormProblems = { rental: [], renter: [], pricing: [] };
@@ -113,6 +112,7 @@ export function orderIncompleteItems(
   value: OrderFormValue,
   quoteTotal: number,
   contract: OrderContractSigning,
+  t: OrderFormLabels,
 ): string[] {
   const items: string[] = [];
   if (!value.renter.email) items.push(t.orderForm.incomplete.missingEmail);

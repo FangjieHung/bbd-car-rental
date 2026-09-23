@@ -1,0 +1,77 @@
+import { OrderFormLabels } from './order-form-labels';
+
+/**
+ * 僅供本 lib 的 spec 使用：每個文案的值就是它自己的 key 路徑，斷言時比對的是
+ * 「用了哪一句」而不是某個語言的實際字面，lib 因此不必自帶一份真正的文案。
+ */
+export const TEST_ORDER_FORM_LABELS: OrderFormLabels = {
+  order: {
+    vehicle: 'order.vehicle',
+    startTime: 'order.startTime',
+    endTime: 'order.endTime',
+    pickupBranch: 'order.pickupBranch',
+    returnBranch: 'order.returnBranch',
+  },
+  member: {
+    name: 'member.name',
+    phone: 'member.phone',
+    email: 'member.email',
+    kind: 'member.kind',
+    kindLabels: { local: 'member.kindLabels.local', foreign_visitor: 'member.kindLabels.foreign_visitor', resident: 'member.kindLabels.resident' },
+    nationality: 'member.nationality',
+    identityNumberLabel: { local: 'member.identityNumberLabel.local', foreign_visitor: 'member.identityNumberLabel.foreign_visitor', resident: 'member.identityNumberLabel.resident' },
+    changeMember: 'member.changeMember',
+  },
+  orderForm: {
+    required: 'orderForm.required',
+    vehicleConflict: 'orderForm.vehicleConflict',
+    quoteUnavailable: 'orderForm.quoteUnavailable',
+    quotePending: 'orderForm.quotePending',
+    quoteTotal: 'orderForm.quoteTotal',
+    rentalSubtotal: 'orderForm.rentalSubtotal',
+    insuranceSubtotal: 'orderForm.insuranceSubtotal',
+    addOnSubtotal: 'orderForm.addOnSubtotal',
+    insurance: 'orderForm.insurance',
+    insuranceNone: 'orderForm.insuranceNone',
+    insuranceUnreconciled: 'orderForm.insuranceUnreconciled',
+    deposit: 'orderForm.deposit',
+    depositCap: 'orderForm.depositCap',
+    depositExceedsCap: 'orderForm.depositExceedsCap',
+    addOns: 'orderForm.addOns',
+    addOnQty: 'orderForm.addOnQty',
+    payments: 'orderForm.payments',
+    noPaymentDrafts: 'orderForm.noPaymentDrafts',
+    addPayment: 'orderForm.addPayment',
+    removePayment: 'orderForm.removePayment',
+    paymentPurpose: 'orderForm.paymentPurpose',
+    paymentPurposeLabels: { deposit: 'purpose.deposit', balance: 'purpose.balance', adjustment: 'purpose.adjustment' },
+    paymentMethod: 'orderForm.paymentMethod',
+    paymentMethodLabels: { cash: 'method.cash', credit_card: 'method.credit_card', line_pay: 'method.line_pay', bank_transfer: 'method.bank_transfer', customer_credit: 'method.customer_credit' },
+    paymentAmount: 'orderForm.paymentAmount',
+    internalNote: 'orderForm.internalNote',
+    problems: {
+      rentalBaseline: 'problems.rentalBaseline',
+      endBeforeStart: 'problems.endBeforeStart',
+      branchesRequired: 'problems.branchesRequired',
+      renterBaseline: 'problems.renterBaseline',
+      depositInvalid: 'problems.depositInvalid',
+    },
+    contract: {
+      summaryTitle: 'contract.summaryTitle',
+      previewUnavailable: 'contract.previewUnavailable',
+      unsigned: 'contract.unsigned',
+      signed: 'contract.signed',
+      resign: 'contract.resign',
+      signatureAlt: 'contract.signatureAlt',
+    },
+    incomplete: {
+      missingEmail: 'incomplete.missingEmail',
+      depositNotCollected: 'incomplete.depositNotCollected',
+      contractNotSigned: 'incomplete.contractNotSigned',
+      contractNeedsResign: 'incomplete.contractNeedsResign',
+      balanceNotCollected: 'incomplete.balanceNotCollected',
+    },
+  },
+  contractPanel: { openSigningDialog: 'contractPanel.openSigningDialog' },
+  formatDateTime: (iso) => `formatted(${iso})`,
+};

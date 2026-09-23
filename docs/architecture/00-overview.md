@@ -28,6 +28,7 @@ libs/
   domain/            # 全系統共用的 model、Repository 介面、定價/退佣純函式、seed 資料
   booking-flow/      # 預約流程四個路由頁 + CatalogStore/QuoteService，booking 和 affiliate 都用它
   contract-signing/  # 合約檢視與簽署共用元件，目前 admin 用、設計上供官網共用
+  order-form/        # 建單／編輯訂單的積木層（表單定義、區塊元件、送出介面），目前 admin 用、設計上供官網共用
   theme-pack/        # 雙軸主題系統（質地 × 配色），目前只有 admin 套用
 ```
 

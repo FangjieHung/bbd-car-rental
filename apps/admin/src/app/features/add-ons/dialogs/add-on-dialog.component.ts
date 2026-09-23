@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { AddOn } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { ADD_ON_UNIT_OPTIONS } from '@car-rental/domain';
 
 export type AddOnFormResult = Omit<AddOn, 'id'>;
 
@@ -25,6 +26,7 @@ export type AddOnFormResult = Omit<AddOn, 'id'>;
 })
 export class AddOnDialogComponent {
   protected readonly t = ZH_TW;
+  protected readonly unitOptions = ADD_ON_UNIT_OPTIONS;
   readonly ref = inject(MatDialogRef<AddOnDialogComponent>);
   readonly data = inject<AddOn | null>(MAT_DIALOG_DATA);
   private fb = inject(NonNullableFormBuilder);

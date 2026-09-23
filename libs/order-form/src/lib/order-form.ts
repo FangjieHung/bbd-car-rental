@@ -10,7 +10,7 @@ import {
   PriceBreakdown,
   RentalOrder,
   Vehicle,
-} from '../../../core/models';
+} from '@car-rental/domain';
 import type { OrderFormData } from './order-form-data';
 
 /**

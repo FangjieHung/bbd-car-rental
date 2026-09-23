@@ -4,17 +4,18 @@ import { InsurancePlan, PaymentRecord, RentalOrder } from '../../../core/models'
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { OrderStore } from '../../../stores/order/order.store';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { ORDER_SUBMIT_GATEWAY } from '../order-form/order-submit-gateway';
 import {
+  ORDER_FORM_DATA,
+  ORDER_SUBMIT_GATEWAY,
   NO_INSURANCE_VALUE,
   OrderForm,
   OrderFormInitial,
   createOrderForm,
   orderFormInitialFromOrder,
-} from '../order-form/order-form';
-import { buildContractSnapshot } from '../order-form/contract-snapshot';
-import { computeOrderQuote, selectedVehicleOf } from '../order-form/order-form';
+  buildContractSnapshot,
+  computeOrderQuote,
+  selectedVehicleOf,
+} from '@car-rental/order-form';
 import { provideAdminOrderForm } from './provide-admin-order-form';
 import { OrderRepoOptions, createOrderRepos, makeVehicle } from '../testing';
 

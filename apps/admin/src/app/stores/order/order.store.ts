@@ -1,10 +1,9 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
-import { RentalOrder } from '../../core/models';
+import { RentalOrder, isOccupyingStatus } from '../../core/models';
 import { ORDER_REPO } from '../../core/repositories/tokens';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
-const ACTIVE: RentalOrder['status'][] = ['reserved', 'in_progress'];
 
 @Injectable({ providedIn: 'root' })
 export class OrderStore {
@@ -28,7 +27,7 @@ export class OrderStore {
         (b) =>
           b.id !== excludeId &&
           b.vehicleId === vehicleId &&
-          ACTIVE.includes(b.status) &&
+          isOccupyingStatus(b.status) &&
           start < new Date(b.endTime) &&
           end > new Date(b.startTime),
       );

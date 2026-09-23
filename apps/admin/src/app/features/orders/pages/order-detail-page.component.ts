@@ -26,13 +26,16 @@ import {
   createOrderForm,
   orderFormInitialFromOrder,
   orderFormValue,
-} from '../order-form/order-form';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { OrderFormContext, createOrderFormDerived, orderFormProblems } from '../order-form/order-form-derived';
-import { ORDER_SUBMIT_GATEWAY } from '../order-form/order-submit-gateway';
-import { OrderRentalSectionComponent } from '../sections/order-rental-section.component';
-import { OrderRenterSectionComponent } from '../sections/order-renter-section.component';
-import { OrderPricingSectionComponent } from '../sections/order-pricing-section.component';
+  ORDER_FORM_DATA,
+  ORDER_FORM_LABELS,
+  OrderFormContext,
+  createOrderFormDerived,
+  orderFormProblems,
+  ORDER_SUBMIT_GATEWAY,
+  OrderRentalSectionComponent,
+  OrderRenterSectionComponent,
+  OrderPricingSectionComponent,
+} from '@car-rental/order-form';
 import { LeaveConfirmable } from '../navigation/confirm-leave.guard';
 import {
   DEFAULT_ORDER_DETAIL_SECTION,
@@ -86,6 +89,7 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   private readonly memberStore = inject(MemberStore);
   private readonly contractStore = inject(ContractStore);
   private readonly data = inject(ORDER_FORM_DATA);
+  private readonly labels = inject(ORDER_FORM_LABELS);
   private readonly gateway = inject(ORDER_SUBMIT_GATEWAY);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -232,7 +236,7 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
       this.data,
       () => this.editContext(),
     );
-    const p = orderFormProblems(value, derived);
+    const p = orderFormProblems(value, derived, this.labels);
     return [...p.rental, ...p.renter, ...p.pricing];
   }
 

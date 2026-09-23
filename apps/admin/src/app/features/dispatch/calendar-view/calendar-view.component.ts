@@ -8,7 +8,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { ResponsivePanelComponent } from '@car-rental/ui';
 import { VehicleStepComponent } from '@car-rental/booking-flow';
-import { contractSigningState } from '@car-rental/domain';
+import { contractSigningState, isOccupyingStatus } from '@car-rental/domain';
 import {
   branchName,
   IdentityDocumentType,
@@ -74,7 +74,6 @@ function toPickupReciprocityStatus(status: ReciprocityStatus): 'pending' | 'elig
   return status === 'manual_review' ? 'pending' : status;
 }
 
-const ACTIVE: RentalOrder['status'][] = ['reserved', 'in_progress'];
 
 /** 每種取車阻擋／提醒對應該去訂單詳情哪個分頁處理，供「前往處理」動作使用。 */
 const BLOCKER_SECTION: Record<PickupBlockerType, OrderDetailSection> = {
@@ -116,7 +115,7 @@ export function dayStats(
   totalVehicles: number,
   day: Date,
 ): { pickups: number; returns: number; available: number } {
-  const active = orders.filter((b) => ACTIVE.includes(b.status));
+  const active = orders.filter((b) => isOccupyingStatus(b.status));
   const dayStart = startOfDay(day);
   const dayEnd = addDays(dayStart, 1);
   const pickups = active.filter((b) => isSameDay(new Date(b.startTime), day)).length;
@@ -306,7 +305,7 @@ export class CalendarViewComponent {
   );
 
   private readonly activeOrders = computed(() =>
-    this.orderStore.orders().filter((b) => ACTIVE.includes(b.status)),
+    this.orderStore.orders().filter((b) => isOccupyingStatus(b.status)),
   );
 
   /** 還車工作清單的候選集合：in_progress（尚待辦理）與 completed（已還車，可能應收未結）。 */

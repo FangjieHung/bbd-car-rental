@@ -18,9 +18,15 @@ import { CancellationPanelComponent } from '../components/cancellation-panel.com
 import { CustomerCreditPanelComponent } from '../components/customer-credit-panel.component';
 import { OperatorRecoveryPanelComponent } from '../components/operator-recovery-panel.component';
 import { ActivityTimelineComponent } from '../components/activity-timeline.component';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
-import { createOrderForm } from '../order-form/order-form';
+import {
+  ORDER_FORM_DATA,
+  ORDER_FORM_LABELS,
+  ORDER_SUBMIT_GATEWAY,
+  OrderSubmitGateway,
+  OrderSubmitInput,
+  createOrderForm,
+} from '@car-rental/order-form';
+import { ADMIN_ORDER_FORM_LABELS } from '../data/provide-admin-order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { AdminOrderSubmitGateway } from '../data/admin-order-submit.gateway';
 import { confirmLeaveGuard } from '../navigation/confirm-leave.guard';
@@ -91,6 +97,7 @@ async function setup(url: string, options: SetupOptions = {}) {
         { path: 'orders', component: BlankComponent },
       ]),
       { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData },
+      { provide: ORDER_FORM_LABELS, useValue: ADMIN_ORDER_FORM_LABELS },
       options.gateway === 'real'
         ? { provide: ORDER_SUBMIT_GATEWAY, useClass: AdminOrderSubmitGateway }
         : { provide: ORDER_SUBMIT_GATEWAY, useValue: spyGateway },
@@ -188,7 +195,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
   it('預設唯讀：顯示分組資訊與「編輯」，不渲染表單', async () => {
     const { harness, component } = await setup('/orders/b1');
     expect(component.editing()).toBe(false);
-    expect(el(harness).querySelector('app-order-rental-section')).toBeNull();
+    expect(el(harness).querySelector('lib-order-rental-section')).toBeNull();
     const groups = Array.from(el(harness).querySelectorAll('.order-detail__group-title')).map((h) => h.textContent?.trim());
     expect(groups).toEqual([
       ZH_TW.orderDetail.groups.rental,
@@ -204,10 +211,10 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
     await settle(harness);
 
     expect(component.editing()).toBe(true);
-    expect(el(harness).querySelector('app-order-rental-section')).not.toBeNull();
-    expect(el(harness).querySelector('app-order-renter-section')).not.toBeNull();
-    expect(el(harness).querySelector('app-order-pricing-section')).not.toBeNull();
-    expect(el(harness).querySelector('app-order-payment-drafts-section')).toBeNull();
+    expect(el(harness).querySelector('lib-order-rental-section')).not.toBeNull();
+    expect(el(harness).querySelector('lib-order-renter-section')).not.toBeNull();
+    expect(el(harness).querySelector('lib-order-pricing-section')).not.toBeNull();
+    expect(el(harness).querySelector('lib-order-payment-drafts-section')).toBeNull();
     const value = component.form().getRawValue();
     expect(value.rental.vehicleId).toBe('v1');
     expect(value.renter.memberId).toBe('m1');

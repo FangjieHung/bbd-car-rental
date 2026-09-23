@@ -1,7 +1,7 @@
 # 訂單頁面化：前端與設計接續待辦
 
-**日期：** 2026-09-22 起草，2026-09-23 更新（同日下午：第 1、2 節完成）
-**狀態：** 訂單頁面化已合併 `main`（merge commit `cecda36`）。第 1 節（更名）與第 2 節（官網多語系）也已合併 `main`（merge commit `1bb110c`）
+**日期：** 2026-09-22 起草，2026-09-23 更新（同日：第 1、2、4、5 節完成）
+**狀態：** 訂單頁面化已合併 `main`（merge commit `cecda36`）。第 1 節（更名）與第 2 節（官網多語系）也已合併 `main`（merge commit `1bb110c`）；第 4、5 節隨後合併
 **給誰：** 設計＋前端接手的人（也就是下一次的自己）
 **相關文件：** 術語 `CONTEXT.md`、決策 `docs/adr/0001-order-creation-not-shared-with-booking-site.md`、後端 `docs/plans/2026-09-22-orders-page-backend-handoff.md`、業主 `docs/owner-questions.md`
 
@@ -9,7 +9,7 @@
 
 **目前基準線**（2026-09-23 下午實測，不是估計）：
 
-- 全專案 9 個 app/lib，**889 個測試全過**（原 856＋更名遷移 7＋多語系 26），沒有任何已知失敗。
+- 全專案 10 個 app/lib（新增 `libs/order-form`），**916 個測試全過**（原 856＋更名遷移 7＋多語系 26＋選項清單 27），沒有任何已知失敗。
 - 建置全過，**只有一個警告**：空殼 app `pos` 的 Nx 樣板頁樣式超標。這是刻意留著的，等 pos 開工時刪掉那頁即可——不要為了消警告去調它的門檻。
 - **lint 零 error**（只剩既有的 warning）。原本記錄是 14 個前綴 error，實測其實是 15 個——另有一個 affiliate 的「lazy-load 的 lib 被靜態引用」，一併修掉（見第 1 節）。
 - 環境：`.nvmrc` 是 **Node 24**，但預設 shell 常是 22。跑任何 nx 指令前先切到 24（本機 nvm：`export PATH=~/.nvm/versions/node/v24.18.0/bin:$PATH`；雲端 session 用 `/opt/nvm/nvm.sh` 裝 24 後改用 `/opt/nvm/versions/node/v24.*/bin`），並加 `NX_DAEMON=false`。
@@ -20,7 +20,8 @@
 1. **先看 `docs/owner-questions.md`**——10 條已填入我方暫定決定，等業主會議確認。其中第 1、3 條一旦確認就要開發（見下方第 6 節與第 3 節），**在確認之前不要動那兩塊**。截至 2026-09-23 下午仍是「暫定，待業主會議確認」，所以這兩塊還沒動。
 2. ~~`bookings → orders` 全面更名~~（第 1 節）：**已完成**，含 lint 清零。
 3. ~~官網多語系~~（第 2 節）：**已完成**；剩下的是業主確認與翻譯校對（見第 2 節「還沒做的」）。
-4. 其餘依各節的建議順序：第 4 節（建單積木搬到 lib）、第 5 節（mock 資料彙整）、第 6 節的甘特圖資訊架構。
+4. ~~建單積木搬到 lib~~（第 4 節）、~~mock 資料彙整~~（第 5 節）：**已完成**。
+5. 接下來不必等業主的只剩第 6 節（調度畫面改進）與第 7 節的零星問題。
 
 **動工前請先確認工作區乾淨**——這個 repo 常有多個 session 並行（`.worktrees/` 下有數個），未提交的改動容易被別的 session 一起 commit 走。
 
@@ -90,26 +91,33 @@ commit `ef62889`。設計與使用方式寫在 `docs/architecture/04-booking-flo
 - 官網目前**沒有載入 `libs/theme-pack` 樣式**，但簽署 lib 用到 `--app-warning-*` 等 token，要先補上主題樣式，否則「需重新簽署」提示會沒有顏色
 - 簽署元件在手機上已是全螢幕，但未在官網實機驗證過
 
-## 4. 建單流程共用給官網
+## 4. 建單流程共用給官網（2026-09-23 完成積木搬遷）
 
-依 ADR 0001，**不共用外層流程容器**，只共用積木層。admin 端已經寫成可搬移的形狀：
+依 ADR 0001，**不共用外層流程容器**，只共用積木層。積木已搬到新的共用 lib **`libs/order-form`**（`@car-rental/order-form`）：
 
-- 表單定義 `createOrderForm()`、區塊元件 `app-order-rental-section` 等、`ORDER_FORM_DATA`、`ORDER_SUBMIT_GATEWAY`，都在 `apps/admin/src/app/features/orders/order-form/`
-- 搬到 lib 時注意：區塊元件目前引用 admin 的 `ZH_TW`，要改成注入（同 booking-flow 的 `BookingFlowI18n`／字典做法；若官網也要用，文案要進三語字典）
-- 官網需要的欄位只有約 6/20 重疊，別硬把 admin 專屬欄位（身分別、國籍、訂金、款項、內部備註）塞進官網
+- 表單定義 `createOrderForm()`、衍生狀態與送出前檢查、合約快照、`ORDER_FORM_DATA`、`ORDER_SUBMIT_GATEWAY`，以及五個區塊元件（selector 改為 `lib-order-rental-section` 等）。
+- 區塊元件原本直接引用 admin 的 `ZH_TW`；現在改注入新的 `ORDER_FORM_LABELS`（文案＋日期格式），**lib 本身不帶任何文案**。admin 在 `provideAdminOrderForm()` 以 `ZH_TW` 對應的分組提供；`orderFormProblems()`／`orderIncompleteItems()` 改為接收 labels 參數。
+- lib 自己的 spec 用「值等於 key 路徑」的測試用 labels 斷言，不依賴任何語言。
+- admin 行為不變（原 456 個測試拆成 admin 446＋lib 10）。
 
-## 5. mock 資料彙整的剩餘項目
+**還沒做的（等真的要給官網用時）：**
+- 官網沒有接上：要在官網提供三個 token，`ORDER_FORM_LABELS` 的文案要進 booking-flow 的三語字典（目前 labels 形狀沿用 admin `ZH_TW` 的分組）。
+- 官網需要的欄位只有約 6/20 重疊，別硬把 admin 專屬區塊（承租人身分別／國籍、訂金、款項、內部備註）塞進官網；可能需要把 `createOrderForm()` 拆出官網用的較小版本。
 
-這次只收了據點與付款方式。還剩：
+## 5. mock 資料彙整（2026-09-23 完成）
 
-| 重複項目 | 位置 |
+照付款方式的模式——值＋預設繁中標籤放 `libs/domain`，admin 用 `optionLabelMap()` 塞回 `ZH_TW` 原位：
+
+| 原本重複的項目 | 現在 |
 |---|---|
-| 車型中文標籤（三份） | `zh-tw.ts` 的 `vehicle.typeLabels`、booking-flow 字典的 `labels.vehicleCategory` 與 `labels.vehicleGroups`（`i18n/booking-flow-messages.ts`，官網這兩份現在有三語版本） |
-| 佔用車位的訂單狀態（三份） | `libs/domain` 的 `OCCUPYING`、`calendar-view.component.ts` 的 `ACTIVE`、`stores/order/order.store.ts` 的 `ACTIVE` |
-| 各種 statusLabels | `zh-tw.ts` 內十幾組，只有 admin 有；官網需要時各自在元件裡長出 Record |
-| 寫死在模板的選項值 | `member-form-dialog`、`vehicle-form-dialog`、`pricing-plan-dialog`、`coupon-dialog`、`add-on-dialog` 的 HTML |
+| 車型中文標籤（三份） | `VEHICLE_CATEGORY_OPTIONS`；admin `vehicle.typeLabels` 與官網繁中字典的 `vehicleCategory`／`vehicleGroups` 都取自它 |
+| 佔用車位的訂單狀態（三份） | `OCCUPYING_ORDER_STATUSES`／`isOccupyingStatus()`（`libs/domain` 的 `enums.ts`），可用性、`OrderStore` 衝突檢查、調度月曆共用 |
+| `zh-tw.ts` 的各種 statusLabels | 22 組列舉標籤搬到 domain 的 `*_OPTIONS`（與型別放在同一檔）。`ZH_TW` 經比對與搬移前**逐字、逐 key 順序相同**，消費端零改動 |
+| 寫死在模板的選項值 | 會員、車輛、定價方案、優惠券、配件五個 dialog 改用選項清單產生 |
 
-做法照這次的模式：值＋預設標籤放 `libs/domain`，admin 用 `optionLabelMap()` 塞回 `ZH_TW` 原位，49 個消費端零改動。
+- 新增 domain spec 檢查所有 `*_OPTIONS` 值不重複、標籤非空。
+- 唯一可見差異：dialog 裡的車型選單順序改成與車輛列表篩選一致（機車、汽車、電動車），原本是汽車排第一。
+- 刻意留在 admin 的：活動紀錄的事件種類、取消試算的原因代碼、駕照路徑、保養類型、提醒時點——這些是後台畫面或 admin 專屬 model 的概念，官網用不到。
 
 ## 6. 調度相關
 

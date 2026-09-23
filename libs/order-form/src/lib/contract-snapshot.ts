@@ -5,7 +5,7 @@ import {
   Vehicle,
   branchName,
   evaluateContractChange,
-} from '../../../core/models';
+} from '@car-rental/domain';
 import type { OrderFormValue } from './order-form';
 
 /**

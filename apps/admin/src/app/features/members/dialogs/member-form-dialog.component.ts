@@ -21,6 +21,7 @@ import { DocumentStore } from '../../../stores/document/document.store';
 import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
 import { DocumentCaptureComponent, DocumentCaptureFieldValues } from '../components/document-capture.component';
 import { DriverEligibilityPanelComponent } from '../components/driver-eligibility-panel.component';
+import { MEMBER_KIND_OPTIONS, VEHICLE_CATEGORY_OPTIONS } from '@car-rental/domain';
 
 /** 這次拍照/選檔對應到哪一張照片欄位；同一個 key 在切換承租人類型時共用，資料不會被清空。 */
 export type DocumentSlotKey = 'identityFront' | 'licenseFront' | 'licenseBack' | 'licenseIdp' | 'licenseVisa';
@@ -75,6 +76,9 @@ function latestByUpdatedAt<T extends { updatedAt: string }>(records: T[]): T | u
 })
 export class MemberFormDialogComponent {
   protected readonly t = ZH_TW;
+  protected readonly vehicleCategoryOptions = VEHICLE_CATEGORY_OPTIONS;
+  protected readonly memberKindOptions = MEMBER_KIND_OPTIONS;
+  protected readonly licensePaths = LICENSE_PATHS;
   readonly ref = inject(MatDialogRef<MemberFormDialogComponent>);
   readonly data = inject<Member | null>(MAT_DIALOG_DATA);
   private readonly fb = inject(NonNullableFormBuilder);

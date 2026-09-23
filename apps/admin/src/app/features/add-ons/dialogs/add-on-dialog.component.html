@@ -11,8 +11,9 @@
   <mat-form-field>
     <mat-label>{{ t.addOn.unit }}</mat-label>
     <mat-select formControlName="unit">
-      <mat-option value="per_rental">{{ t.addOn.unitLabels['per_rental'] }}</mat-option>
-      <mat-option value="per_day">{{ t.addOn.unitLabels['per_day'] }}</mat-option>
+      @for (opt of unitOptions; track opt.value) {
+        <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+      }
     </mat-select>
   </mat-form-field>
 

@@ -7,9 +7,9 @@
   <mat-form-field>
     <mat-label>{{ t.vehicle.type }}</mat-label>
     <mat-select formControlName="category">
-      <mat-option value="car">{{ t.vehicle.typeLabels['car'] }}</mat-option>
-      <mat-option value="scooter">{{ t.vehicle.typeLabels['scooter'] }}</mat-option>
-      <mat-option value="ev">{{ t.vehicle.typeLabels['ev'] }}</mat-option>
+      @for (opt of vehicleCategoryOptions; track opt.value) {
+        <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+      }
     </mat-select>
   </mat-form-field>
   <mat-form-field>

@@ -7,8 +7,14 @@ import { MatStep, MatStepper } from '@angular/material/stepper';
 import { of } from 'rxjs';
 import { ContractSigningDialogComponent } from '@car-rental/contract-signing';
 import { ConfirmDialogComponent } from '../../../shared/dialogs/confirm-dialog.component';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
+import {
+  ORDER_FORM_DATA,
+  ORDER_FORM_LABELS,
+  ORDER_SUBMIT_GATEWAY,
+  OrderSubmitGateway,
+  OrderSubmitInput,
+} from '@car-rental/order-form';
+import { ADMIN_ORDER_FORM_LABELS } from '../data/provide-admin-order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { createOrderRepos, makeVehicle } from '../testing';
 import { ORDER_CREATE_STEPS, OrderCreatePageComponent } from './order-create-page.component';
@@ -40,6 +46,7 @@ function setup(options: SetupOptions = {}) {
       ...repos.providers,
       provideRouter([]),
       { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData },
+      { provide: ORDER_FORM_LABELS, useValue: ADMIN_ORDER_FORM_LABELS },
       { provide: ORDER_SUBMIT_GATEWAY, useValue: gateway },
       { provide: MatDialog, useValue: { open: dialogOpen } },
       {
