@@ -2051,6 +2051,21 @@ describe('CalendarViewComponent 月曆｜時間軸切換（3.5）', () => {
     expect(el.querySelector('.responsive-panel__body')).not.toBeNull();
   });
 
+  it('時間軸上點日期欄：選取那天，時間軸與右側面板都跟著換', () => {
+    const { fixture, component, el } = setup();
+    component.setView('timeline');
+    fixture.detectChanges();
+
+    const timeline = fixture.debugElement.query(By.directive(TimelineViewComponent))
+      .componentInstance as TimelineViewComponent;
+    timeline.dateSelect.emit(new Date(2026, 7, 6, 15, 30));
+    fixture.detectChanges();
+
+    expect(component.selected()).toEqual(new Date(2026, 7, 6));
+    expect(timeline.targetDate()).toEqual(new Date(2026, 7, 6));
+    expect(el.querySelector('.responsive-panel__body')).not.toBeNull();
+  });
+
   it('切回月曆：格線與換月鈕回來', () => {
     const { fixture, el } = setup();
     switchButton(el, '時間軸')?.click();

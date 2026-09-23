@@ -111,7 +111,7 @@
       } @else {
         <!-- 3.5：時間軸與月曆共用右側面板；時間軸以選取日為準。 -->
         <div class="calendar-view__timeline">
-          <app-timeline-view [targetDate]="timelineDate()" />
+          <app-timeline-view [targetDate]="timelineDate()" (dateSelect)="selectDate($event)" />
         </div>
       }
     </section>

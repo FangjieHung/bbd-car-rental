@@ -1,3 +1,11 @@
+// 時間軸住在總覽的月曆卡片裡，所以捲動框只用細框線＋較小圓角分區，不再套一整張卡片（避免卡片裡又一張卡片）。
+.timeline-view__scroller {
+  overflow-x: auto;
+  background: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-small);
+}
+
 // 140px 列首（車牌／車款／所在據點）＋ 14 個至少 56px 的日期欄；與 component.ts 的 gridCols 常數同步。
 .timeline-view__canvas {
   min-width: 924px;
