@@ -30,8 +30,14 @@
 5. 配件（不算日型、不算折扣，per_day 才乘天數）
    addOnSubtotal = Σ addOn.unitPrice × qty × (per_day ? days : 1)
 
-6. 總金額
-   total = afterPartner − couponDiscount + addOnSubtotal
+6. 保險（選配；沒選就是 0，同樣不算日型、不算折扣）
+   insuranceSubtotal = insurancePlan ? insurancePlan.dailyPriceFrom × days : 0
+   （官網 `search`/`order` 兩個路由頁目前不傳 `insurancePlan` 給 `QuoteService.quote()`，
+   所以消費者下單流程實際上總是算出 0；選保險方案的 `plan-page.component.ts` 存在但沒有
+   被任何路由掛上，見 `02-libs.md`。目前只有 admin 建單/編輯表單會帶入保險方案。）
+
+7. 總金額
+   total = afterPartner − couponDiscount + addOnSubtotal + insuranceSubtotal
 ```
 
 ### 例子
@@ -45,7 +51,7 @@ rentalSubtotal    = 1200 − 60 = 1140
 partnerDiscount   = round(1140 × 10%) = 114
 afterPartner      = 1140 − 114 = 1026
 couponDiscount    = min(50, 1026) = 50
-total（不含配件）  = 1026 − 50 = 976
+total（不含配件、保險） = 1026 − 50 = 976
 ```
 
 （實際測試案例見 `libs/domain/src/lib/pricing/calculate-price.spec.ts`。）
@@ -75,7 +81,8 @@ function calculateCommission(input: {
 **退佣基數固定用 `rentalSubtotal`**（上面公式的第 2 步結果：天數累折後、
 **協議折扣與優惠券折扣之前**）。這是刻意的業務規則，不是算錯：
 
-- 配件金額不算進退佣——民宿介紹的是「租車」這件事，配件是加購，車行不用為加購付民宿佣金。
+- 配件、保險金額都不算進退佣——民宿介紹的是「租車」這件事，配件與保險是加購，車行不用為
+  加購付民宿佣金。
 - 協議折扣、優惠券都不影響退佣基數——退佣是車行給民宿的獨立回饋，不因為車行自己給消費者
   折扣或民宿自己談的協議折扣而縮水，民宿介紹一筆訂單該拿多少退佣是固定的。
 

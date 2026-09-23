@@ -1,7 +1,7 @@
 # 樣式契約（Style Contract）
 
 > 純文件，**不參與編譯**。列出共用 `ui-` class 契約與可用 token，供開發者查閱。
-> 設計依據見 `docs/superpowers/specs/2026-07-15-theme-pack-architecture-design.md` §3。
+> 兩軸主題（質地 × 配色）的概觀見 `docs/architecture/02-libs.md`。
 
 元件與 template **只能**使用下列 `--mat-sys-*` 與 `--app-*` token；
 禁止寫死色碼或直接引用底層色板變數（`--primary-500` 等）——`npm run lint:theme` 會擋。

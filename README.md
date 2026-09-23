@@ -179,7 +179,7 @@ For more information on using the Angular CLI, including detailed command refere
 
 本專案採用**質地（Paradigm）× 配色（Color-theme）**的兩軸主題架構。質地管造型（圓角、陰影、字體），配色管顏色。一套配色可搭配不同質地；同一質地可套用不同配色。目前提供 Material 質地與 Verdant / Midnight 兩套配色。
 
-詳細設計見 `docs/superpowers/specs/2026-07-15-theme-pack-architecture-design.md`。
+可用的 token 與 `ui-` class 契約見 `libs/theme-pack/src/lib/styles/CONTRACT.md`。
 
 ### 樣式規則（開發者）
 

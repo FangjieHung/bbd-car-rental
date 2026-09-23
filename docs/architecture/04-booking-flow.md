@@ -16,20 +16,27 @@
 
 | | 消費者（`apps/booking`） | 民宿代訂（`apps/affiliate`） |
 |---|---|---|
-| 搜尋 | `/search?start=&end=&pickup=&return=&group=` | `/p/:slug/search?start=&end=&pickup=&return=&group=` |
-| 下單 | `/order/:vehicleId?start=&end=&pickup=&return=&group=` | `/p/:slug/order/:vehicleId?start=&end=&pickup=&return=&group=` |
+| 搜尋 | `/search?start=&end=&group=` | `/p/:slug/search?start=&end=&group=` |
+| 下單 | `/order/:vehicleId?start=&end=&group=` | `/p/:slug/order/:vehicleId?start=&end=&group=` |
 | 付款 | `/pay/:bookingId` | `/p/:slug/pay/:bookingId` |
 | 完成 | `/done/:id` | `/p/:slug/done/:id` |
 
-`pickup`／`return` 是取車／還車地點，`group` 是車輛大類（`car`／`scooter`，缺省不篩選）。
+`group` 是車輛大類（`car`／`scooter`，缺省不篩選）。**網址上沒有取車／還車地點的 query
+param**——兩個地點都已改成資料庫查得到的據點 id（見 `RENTAL_BRANCHES`，`02-libs.md`），
+不再是使用者手動輸入、適合放進網址的機場／港口／店舖三選一：
+
+- **取車據點不讓使用者選**，直接吃選定那台車的 `vehicle.location`（`order-page.component.ts`
+  的 `pickupLocation`）。這是刻意的產品決定，不是漏做欄位——車輛所在據點就是它能被取走的
+  地方，讓使用者另外選一個不同的取車據點在這個 prototype 沒有意義。
+- **還車據點**在下單頁的 `confirm-step` 表單裡選（`RentalBranch` 下拉），送出訂單時寫進
+  `returnLocation`，同樣不經過網址。
 
 **兩個頁面對缺參數的寬鬆度刻意不同**：
 
-- **搜尋頁寬容** —— 只要有 `start`／`end` 就成立，地點缺省時退回預設值（`DEFAULT_LOCATION`，
-  與 `date-step` 自己的預設一致）。這讓加入地點欄位之前發出的連結仍然可用，使用者在畫面上
-  就能改地點。若這裡也要求四者齊全，舊連結會連日期一起消失。
-- **訂單頁嚴格** —— 地點缺一就導回搜尋頁，不替使用者猜。那一頁即將寫入跟金額與履約有關的
-  訂單資料，預設一個使用者沒選過的取車地點是不能接受的。
+- **搜尋頁寬容** —— 只要有 `start`／`end` 就成立，日期缺省時查詢結果就是空的，並不會替
+  使用者猜地點或補值。這讓加入車輛篩選之前發出的連結仍然可用。
+- **訂單頁嚴格** —— 車輛或租期任一缺一就導回搜尋頁，不替使用者猜。那一頁即將寫入跟金額與
+  履約有關的訂單資料，讓畫面帶著空車輛或空日期渲染是不能接受的。
 
 `group` 來自使用者可編輯的網址字串，一律經 `toVehicleGroup()` 驗證；不認得的值當成未指定
 而非拿去查表，否則 `/search?group=truck` 會讓整頁渲染失敗。
@@ -69,17 +76,18 @@ libs/booking-flow/src/lib/
 
 | 資料 | 位置 | 重整後 |
 |---|---|---|
-| 取還日期 | query params | 保留 |
-| 取車／還車地點、車輛類型（機車/汽車） | query params | 保留 |
+| 取還日期、車輛類型（機車/汽車） | query params | 保留 |
 | 選定車輛 | route param | 保留 |
-| 配件數量、優惠碼 | 下單頁元件內 signal | 遺失 |
+| 取車地點 | 衍生值，不單獨存（`vehicle.location`） | 保留（隨選定車輛而定） |
+| 還車地點、配件數量、優惠碼 | 下單頁元件內 signal | 遺失 |
 | 訂單 | `BOOKING_REPO`（localStorage） | 保留 |
 
 配件與優惠碼刻意不放網址：那一頁不是拿來分享的，重填的成本低於把整個購物車塞進網址的複雜度。
 
 **因為網址可以被貼、被存、被過期**，兩個頁面都在載入時自我修正而不是渲染壞掉的畫面：
 `OrderPageComponent` 的 `guardEffect` 在車輛或日期不成立時導回搜尋頁，
-`PaymentPageComponent` 的 `guardEffect` 在訂單不存在或已非待付款時導向完成頁。
+`PaymentPageComponent` 的 `guardEffect` 在訂單不存在或已離開可付款的 `reserved` 狀態時導向
+完成頁（`reserved` 只代表尚未交車，不代表付款與否，見下方第三個設計決定）。
 **新增頁面時要記得比照辦理** —— 這在拆頁架構下不是防禦性程式設計，是必要行為。
 
 ### 二、夥伴身分靠注入，不靠層層傳遞
@@ -169,15 +177,20 @@ interface BookingContext {
 
 ## 已知缺口
 
-**付款頁與完成頁對 `bookingId` 沒有任何權限檢查。** 拿到網址就能把別人的待付款訂單
+**付款頁與完成頁對 `bookingId` 沒有任何權限檢查。** 拿到網址就能把別人尚未付款的訂單
 標成已付款。這與整個 app 目前免登入的架構一致，但「標記付款」是拆頁後新增的公開可達動作，
 **上線收真錢之前必須處理**。
 
+**官網下單目前不會產生合約版本。** 櫃檯（admin）建單時會同時建立 `ContractVersion`，
+但 `apps/booking/src/app/app.config.ts` 目前只 provide 八個共用 Repository（見
+`01-apps.md`「booking」一節），其中不含 `CONTRACT_VERSION_REPO` 或
+`SIGNATURE_ASSET_STORE`，官網訂單流程也從未寫入合約。結果是官網客人送出訂單後沒有東西可簽——就算之後把 `@car-rental/contract-signing`
+接到官網，也要先有合約版本才有得簽。合約該在哪個時間點產生（送出當下／付款完成後／櫃檯
+確認後）待業主決定，見 `docs/owner-questions.md` 第 3 條；接手步驟見
+`docs/plans/2026-09-22-orders-page-backend-handoff.md`。
+
 **夥伴 banner 沒有樣式。** `.partner-banner` 在 repo 中從未有過對應的 CSS 規則，
 重構前後都是裸 `div`。不是回歸，但夥伴通路的門面值得補。
-
-**`done.component` 只分「已確認」與「其他」兩種文案。** 已取消的訂單落到完成頁會顯示
-待付款字樣。
 
 **`confirm-step.component.scss` 有一批孤兒規則**（`.summary-block`、`.summary`、`.line`
 等），對應的 HTML 已在拆除時刪掉。
@@ -197,7 +210,7 @@ interface BookingContext {
 
 ## 相關文件
 
-- 設計決策的完整推導：`docs/superpowers/specs/2026-08-18-booking-flow-split-design.md`
-- 逐步實作紀錄：`docs/superpowers/plans/2026-08-18-booking-flow-split.md`
 - 定價與退佣公式：[`03-pricing-and-commission.md`](./03-pricing-and-commission.md)
 - 各 app 路由總表：[`01-apps.md`](./01-apps.md)
+- 訂單頁面化（2026-09-22）前端待辦：`docs/plans/2026-09-22-orders-page-frontend-todo.md`
+- 為什麼建單流程不與官網共用：`docs/adr/0001-order-creation-not-shared-with-booking-site.md`

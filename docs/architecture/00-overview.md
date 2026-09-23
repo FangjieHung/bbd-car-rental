@@ -25,9 +25,10 @@ apps/
   pos/         # 目前是 Nx 預設腳手架，尚未開發任何功能，先忽略
 
 libs/
-  domain/         # 全系統共用的 model、Repository 介面、定價/退佣純函式、seed 資料
-  booking-flow/   # 預約流程四個路由頁 + CatalogStore/QuoteService，booking 和 affiliate 都用它
-  theme-pack/     # 雙軸主題系統（質地 × 配色），目前只有 admin 套用
+  domain/            # 全系統共用的 model、Repository 介面、定價/退佣純函式、seed 資料
+  booking-flow/      # 預約流程四個路由頁 + CatalogStore/QuoteService，booking 和 affiliate 都用它
+  contract-signing/  # 合約檢視與簽署共用元件，目前 admin 用、設計上供官網共用
+  theme-pack/        # 雙軸主題系統（質地 × 配色），目前只有 admin 套用
 ```
 
 三個 app 是**三個獨立部署的網站**（各自的 port，未來各自的網域），不是同一站底下的分頁。
@@ -51,13 +52,12 @@ flowchart LR
         B["affiliate /p/:slug 民宿代訂"]
         C[admin 員工手動建單]
     end
-    A -->|sourcePartnerId 空| D[(RentalBooking\npending_payment)]
+    A -->|sourcePartnerId 空| D[(RentalBooking\nstatus: reserved)]
     B -->|"sourcePartnerId = partner.id"| D
     C --> D
-    D --> E[admin 訂單頁人工確認收款]
-    E --> F["status: confirmed"]
-    F -->|"sourcePartnerId 有值"| G[admin /commission 報表\n每月結算退佣]
-    F -->|"sourcePartnerId 有值"| H["affiliate /p/:slug/account\n民宿自己看對帳"]
+    D --> E[付款分類帳追加一筆\nconfirmed 的 balance 款項]
+    D -->|"sourcePartnerId 有值"| G[admin /commission 報表\n每月結算退佣]
+    D -->|"sourcePartnerId 有值"| H["affiliate /p/:slug/account\n民宿自己看對帳"]
 ```
 
 booking 與 affiliate 底層共用同一個 `libs/booking-flow`（見 `02-libs.md`），差別靠
