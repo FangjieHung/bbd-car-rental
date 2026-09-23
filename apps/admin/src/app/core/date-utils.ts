@@ -16,6 +16,15 @@ export function isSameDay(a: Date, b: Date): boolean {
   return startOfDay(a).getTime() === startOfDay(b).getTime();
 }
 
+/**
+ * 該日期所在週的週日（getDay() === 0）；與 calendar-view 產生月曆格時「補到週日起算」
+ * 的既有慣例（`addDays(first, -first.getDay())`）一致，時間軸（3.5）用它決定 14 天範圍的起點。
+ */
+export function startOfWeek(d: Date): Date {
+  const s = startOfDay(d);
+  return addDays(s, -s.getDay());
+}
+
 export function isoAt(daysFromToday: number, hour: number): string {
   const d = addDays(startOfDay(new Date()), daysFromToday);
   d.setHours(hour);

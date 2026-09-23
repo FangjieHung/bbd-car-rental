@@ -1,21 +1,104 @@
+// 140px 列首（車牌／車款／所在據點）＋ 14 個至少 56px 的日期欄；與 component.ts 的 gridCols 常數同步。
 .timeline-view__canvas {
-  min-width: 900px;
+  min-width: 924px;
 }
 
-.timeline-view__cell-header,
+// 列首固定：卡片較窄（總覽卡片約 1000px、1366 筆電更窄）時卡片內水平捲動，車牌／車款／所在據點
+// 那一欄留在原地，不隨日期欄捲走。
+.timeline-view__corner,
+.timeline-view__row-head {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--mat-sys-surface);
+}
+
+.timeline-view__cell-header {
+  border: none;
+  border-left: 1px solid var(--mat-sys-outline-variant);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// 今天／目前選取日各有標示（今天：粗體＋主色文字；選取日：淡色底色），兩者可同時出現在不同欄。
+.timeline-view__cell-header--today {
+  font-weight: 700;
+  color: var(--mat-sys-primary);
+}
+
+.timeline-view__cell-header--selected {
+  background: var(--app-info-bg);
+  color: var(--app-info-fg);
+  border-radius: var(--mat-sys-corner-small, 4px);
+}
+
 .timeline-view__day {
   border-left: 1px solid var(--mat-sys-outline-variant);
 }
 
-.timeline-view__cell-header,
 .timeline-view__muted {
   color: var(--mat-sys-on-surface-variant);
+  font-size: 0.75rem;
+}
+
+.timeline-view__plate {
+  font-weight: 600;
+}
+
+.timeline-view__maintenance-tag {
+  display: inline-block;
+  margin-top: 0.15rem;
+  border-radius: var(--mat-sys-corner-full, 999px);
+  padding: 0.05rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--app-neutral-bg);
+  color: var(--app-neutral-fg);
 }
 
 .timeline-view__vehicle-row {
   border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
+// 保養中：整列淡化＋日期欄加斜線底紋（取代舊版只在「今天」那一格上色）。
+.timeline-view__vehicle-row--maintenance .timeline-view__day {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--mat-sys-surface-variant) 0,
+    var(--mat-sys-surface-variant) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  opacity: 0.7;
+}
+
 .timeline-view__booking {
   color: var(--mat-sys-on-primary);
+}
+
+.timeline-view__booking--reserved {
+  background: var(--app-viz-2);
+}
+
+.timeline-view__booking--in-progress {
+  background: var(--mat-sys-primary);
+}
+
+// 逾時未還：延伸段用警示色，蓋過原本 reserved／in_progress 的顏色。
+.timeline-view__booking--overdue {
+  background: var(--app-danger-bg);
+  color: var(--app-danger-fg);
+}
+
+// 與逾時延伸段重疊的下一筆訂單：警示框線，色塊本身顏色不變（一眼能分辨「已逾時」跟「被卡到」）。
+.timeline-view__booking--conflict {
+  outline: 2px solid var(--app-danger-fg);
+  outline-offset: -2px;
+}
+
+.timeline-view__dispatch-icon {
+  font-size: 0.85rem;
+  line-height: 1;
 }

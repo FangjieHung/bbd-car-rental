@@ -76,11 +76,11 @@ export const ZH_TW = {
     mileageDecrease: '里程不可小於現有值',
     deleteBlocked: '此車輛尚有未完成訂單或保養紀錄，無法刪除',
     invalidTransition: '車輛狀態不允許此操作',
-    tableView: '表格',
-    timelineView: '時間軸',
     backToList: '返回車輛清單',
     location: '所在據點',
     locationUnspecified: '未指定',
+    // 3.6：車輛清單「據點」篩選裡「尚未設定所在據點」那個選項的顯示文字。
+    locationFilterUnset: '未設定',
     maintenanceOnlyFilter: '只看待保養',
     removeMaintenanceOnlyFilter: '移除「只看待保養」篩選',
   },
@@ -745,11 +745,20 @@ export const ZH_TW = {
     submitExtend: '確認展延',
     extendReasonRequired: '展延保留金必須填寫理由。',
   },
+  // 3.5：總覽時間軸元件專用字串（時間軸切換本身沿用下面 dispatch.timeline／dispatch.calendar）。
+  timeline: {
+    // 車輛列首所在據點留白時的完整說法；車輛清單欄位留白時改顯示「—」（branchName() 的既有 fallback），
+    // 這裡刻意用更完整的句子，因為時間軸列首沒有其他上下文能表明這是哪個欄位。
+    locationUnset: '所在據點未設定',
+    // 逾時未還色塊延伸段的標示文字（與 features/bookings/booking-urgency.ts 的 isOverdueReturn 同一個判斷）。
+    overdue: '逾時',
+  },
   dispatch: {
     timeline: '時間軸',
     calendar: '日曆',
-    prevRange: '前 14 天',
-    nextRange: '後 14 天',
+    // 3.5：時間軸範圍固定 14 天，左右切換改成 ±7 天（不是整段 14 天跳頁，兩週範圍才會重疊移動）。
+    prevRange: '前 7 天',
+    nextRange: '後 7 天',
     prevMonth: '上月',
     nextMonth: '下月',
     today: '今天',
