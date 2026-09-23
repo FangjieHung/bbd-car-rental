@@ -1,12 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { AddOn, Coupon, InsurancePlan, PriceBreakdown, Vehicle, VehicleCategory } from '@car-rental/domain';
-import { CatalogStore } from './catalog.store';
+import { CatalogStore, CouponResult } from './catalog.store';
 
-export interface CouponResult {
-  ok: boolean;
-  coupon?: Coupon;
-  reason?: string;
-}
+export type { CouponResult } from './catalog.store';
 
 /** 集中所有報價計算。搜尋頁與下單頁共用，避免兩邊各算一次。 */
 @Injectable({ providedIn: 'root' })

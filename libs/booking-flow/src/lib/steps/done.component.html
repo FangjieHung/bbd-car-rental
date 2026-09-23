@@ -1,6 +1,6 @@
 <div class="done-page">
-  <h1 class="ui-text-title mb-4">訂單成立</h1>
+  <h1 class="ui-text-title mb-4">{{ i18n.t().done.title }}</h1>
   <p>{{ statusMessage() }}</p>
-  <p class="booking-id">訂單編號：{{ bookingId() }}</p>
-  <a [routerLink]="homeLink()">返回首頁</a>
+  <p class="booking-id">{{ i18n.t().done.orderNumber(bookingId()) }}</p>
+  <a [routerLink]="homeLink()">{{ i18n.t().done.backHome }}</a>
 </div>

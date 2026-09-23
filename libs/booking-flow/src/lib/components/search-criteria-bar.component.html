@@ -1,6 +1,6 @@
 <div class="search-criteria-bar ui-card">
   <span class="criteria ui-text-caption">
-    {{ location }} · {{ startDate }} ～ {{ endDate }} · 共 {{ days }} 天
+    {{ summary }}
   </span>
-  <button mat-stroked-button type="button" (click)="edit.emit()">修改</button>
+  <button mat-stroked-button type="button" (click)="edit.emit()">{{ i18n.t().criteria.edit }}</button>
 </div>

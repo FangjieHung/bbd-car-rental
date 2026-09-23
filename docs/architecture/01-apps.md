@@ -76,6 +76,10 @@ query params 的實際內容（只有 `start`／`end`／`group`，沒有取車�
 （`apps/booking/src/app/app.config.ts`；官網目前不提供合約相關的 repo，這個缺口見
 `04-booking-flow.md`「已知缺口」）。
 
+**多語系**：官網是唯一啟用語言切換的 app（繁中／英文／日文），殼層放語言切換器並呼叫
+`provideBookingFlowI18n()`；頁面經本地的 `booking-pages.ts` lazy load。細節見
+`04-booking-flow.md`「多語系」。
+
 ## affiliate — 民宿代訂＋對帳站（模組二新增）
 
 **誰在用**：合作民宿業者。**免登入**：是。

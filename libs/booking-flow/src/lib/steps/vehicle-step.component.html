@@ -2,26 +2,26 @@
   @if (startTime && endTime) {
     <div class="vehicle-step__times mb-4 max-w-lg">
       <mat-form-field appearance="fill">
-        <mat-label>取車時間</mat-label>
+        <mat-label>{{ i18n.t().vehicleStep.pickupTime }}</mat-label>
         <input
           matInput
           [matTimepicker]="startPicker"
           [ngModel]="startTime"
           (ngModelChange)="onStartTimeChange($event)"
         />
-        <mat-timepicker-toggle matSuffix [for]="startPicker" aria-label="開啟取車時間選擇器" />
+        <mat-timepicker-toggle matSuffix [for]="startPicker" [attr.aria-label]="i18n.t().vehicleStep.openPickupTimePicker" />
         <mat-timepicker #startPicker />
       </mat-form-field>
 
       <mat-form-field appearance="fill">
-        <mat-label>還車時間</mat-label>
+        <mat-label>{{ i18n.t().vehicleStep.returnTime }}</mat-label>
         <input
           matInput
           [matTimepicker]="endPicker"
           [ngModel]="endTime"
           (ngModelChange)="onEndTimeChange($event)"
         />
-        <mat-timepicker-toggle matSuffix [for]="endPicker" aria-label="開啟還車時間選擇器" />
+        <mat-timepicker-toggle matSuffix [for]="endPicker" [attr.aria-label]="i18n.t().vehicleStep.openReturnTimePicker" />
         <mat-timepicker #endPicker />
       </mat-form-field>
     </div>
@@ -34,14 +34,14 @@
         subscriptSizing="dynamic"
         class="vehicle-step__filter-select vehicle-step__type-select"
       >
-        <mat-label>車型</mat-label>
+        <mat-label>{{ i18n.t().vehicleStep.vehicleClass }}</mat-label>
         <mat-select [ngModel]="selectedType()" (ngModelChange)="onTypeChange($event)">
-          <mat-option [value]="null">全部</mat-option>
+          <mat-option [value]="null">{{ i18n.t().vehicleStep.all }}</mat-option>
           @for (opt of typeOptions(); track opt.label) {
             <mat-option [value]="opt.label">
               <span>{{ opt.label }}</span>
               @if (opt.minPrice !== null) {
-                <span class="vehicle-step__type-price">最低 NT$ {{ opt.minPrice | number }}</span>
+                <span class="vehicle-step__type-price">{{ i18n.t().vehicleStep.fromPrice(i18n.money(opt.minPrice)) }}</span>
               }
             </mat-option>
           }
@@ -64,7 +64,7 @@
             </mat-slider>
             <div class="vehicle-step__price-inputs">
               <mat-form-field appearance="fill" subscriptSizing="dynamic">
-                <mat-label>最低</mat-label>
+                <mat-label>{{ i18n.t().vehicleStep.priceMin }}</mat-label>
                 <input
                   matInput
                   type="number"
@@ -73,7 +73,7 @@
                 />
               </mat-form-field>
               <mat-form-field appearance="fill" subscriptSizing="dynamic">
-                <mat-label>最高</mat-label>
+                <mat-label>{{ i18n.t().vehicleStep.priceMax }}</mat-label>
                 <input
                   matInput
                   type="number"
@@ -91,13 +91,13 @@
         subscriptSizing="dynamic"
         class="vehicle-step__filter-select"
       >
-        <mat-label>座位數</mat-label>
+        <mat-label>{{ i18n.t().vehicleStep.seats }}</mat-label>
         <mat-select
           [ngModel]="selectedSeatBucket()"
           (ngModelChange)="selectedSeatBucket.set($event)"
         >
-          <mat-option [value]="null">不限</mat-option>
-          @for (bucket of seatBuckets; track bucket.value) {
+          <mat-option [value]="null">{{ i18n.t().vehicleStep.noPreference }}</mat-option>
+          @for (bucket of seatBuckets(); track bucket.value) {
             <mat-option [value]="bucket.value">{{ bucket.label }}</mat-option>
           }
         </mat-select>
@@ -108,9 +108,9 @@
         subscriptSizing="dynamic"
         class="vehicle-step__filter-select"
       >
-        <mat-label>取車地點</mat-label>
+        <mat-label>{{ i18n.t().vehicleStep.pickupBranch }}</mat-label>
         <mat-select [ngModel]="selectedLocation()" (ngModelChange)="selectedLocation.set($event)">
-          <mat-option [value]="null">不限</mat-option>
+          <mat-option [value]="null">{{ i18n.t().vehicleStep.noPreference }}</mat-option>
           @for (loc of locations; track loc.id) {
             <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
           }
@@ -120,9 +120,9 @@
   }
 
   @if (vehicles.length === 0) {
-    <p class="empty-hint">請先選擇租期以查看可租車輛。</p>
+    <p class="empty-hint">{{ i18n.t().vehicleStep.chooseDatesFirst }}</p>
   } @else if (filteredVehicles().length === 0) {
-    <p class="empty-hint">沒有符合篩選條件的車輛，請試著調整篩選條件。</p>
+    <p class="empty-hint">{{ i18n.t().vehicleStep.noMatch }}</p>
   }
 
   <div class="vehicle-cards">
@@ -154,11 +154,11 @@
           <h4 class="v-title">
             {{ vehicle.brand }} {{ vehicle.model }} {{ vehicle.year }} edition
             <span class="v-similar">
-              或同級
+              {{ i18n.t().common.orSimilar }}
               <span
                 class="material-symbols-rounded v-info"
-                title="實際車輛以現場配車為準，將提供同等級或以上車款"
-                aria-label="實際車輛以現場配車為準，將提供同等級或以上車款"
+                [title]="i18n.t().common.orSimilarHint"
+                [attr.aria-label]="i18n.t().common.orSimilarHint"
                 >info</span
               >
             </span>
@@ -170,19 +170,19 @@
                 <span class="material-symbols-rounded" aria-hidden="true"
                   >airline_seat_recline_normal</span
                 >
-                {{ vehicle.seats }}人座
+                {{ i18n.t().common.seats(vehicle.seats) }}
               </li>
             }
             @if (vehicle.luggage) {
               <li>
                 <span class="material-symbols-rounded" aria-hidden="true">luggage</span>
-                {{ vehicle.luggage }}件行李
+                {{ i18n.t().common.luggage(vehicle.luggage) }}
               </li>
             }
             @if (vehicle.hasAirConditioner) {
               <li>
                 <span class="material-symbols-rounded" aria-hidden="true">ac_unit</span>
-                空調
+                {{ i18n.t().common.airConditioner }}
               </li>
             }
             @if (vehicle.transmission) {
@@ -200,7 +200,7 @@
           </ul>
 
           @if (vehicle.instantConfirm) {
-            <span class="v-badge">立即確認</span>
+            <span class="v-badge">{{ i18n.t().vehicleStep.instantConfirm }}</span>
           }
         </div>
 
@@ -208,12 +208,12 @@
         <div class="v-price">
           <div class="v-price__main">
             @if (isUnpriced(vehicle)) {
-              <p class="v-amount v-amount--none">暫無定價</p>
+              <p class="v-amount v-amount--none">{{ i18n.t().vehicleStep.unpriced }}</p>
             } @else {
               <p class="v-amount">
-                NT$ {{ dailyPrice(vehicle) | number }}<span class="v-unit">&nbsp;/ 天</span>
+                {{ i18n.money(dailyPrice(vehicle)!) }}<span class="v-unit">&nbsp;{{ i18n.t().common.perDay }}</span>
               </p>
-              <p class="v-total">總計 NT$ {{ totalPrice(vehicle) | number }}</p>
+              <p class="v-total">{{ i18n.t().vehicleStep.total(i18n.money(totalPrice(vehicle)!)) }}</p>
             }
           </div>
 
@@ -223,8 +223,8 @@
             [disabled]="isUnpriced(vehicle)"
             [attr.aria-label]="
               selectedVehicle?.id === vehicle.id
-                ? '已選擇 ' + vehicle.brand + ' ' + vehicle.model
-                : '選擇 ' + vehicle.brand + ' ' + vehicle.model
+                ? i18n.t().vehicleStep.vehicleSelected(vehicle.brand + ' ' + vehicle.model)
+                : i18n.t().vehicleStep.selectVehicle(vehicle.brand + ' ' + vehicle.model)
             "
             (click)="$event.stopPropagation(); select(vehicle)"
           >

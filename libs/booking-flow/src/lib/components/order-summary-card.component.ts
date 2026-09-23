@@ -1,5 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { AddOn, branchName, findBranch, PriceBreakdown, Vehicle } from '@car-rental/domain';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 
 /** 純展示的金額摘要。下單頁滾動時固定在視野內，讓使用者隨時看得到總價。 */
 @Component({
@@ -16,6 +17,8 @@ export class OrderSummaryCardComponent {
   @Input() showVehicleHeader = true;
   @Input() selectedAddOnLines: { addOn: AddOn; qty: number }[] = [];
   @Input() priceBreakdown: PriceBreakdown | null = null;
+
+  protected readonly i18n = injectBookingFlowI18n();
 
   /** 三種折扣的合計，用來判斷是否需要顯示劃線的原價 */
   get discountTotal(): number {

@@ -1,7 +1,7 @@
 <div class="block w-full" cdkOverlayOrigin #origin="cdkOverlayOrigin">
   <mat-form-field appearance="fill" (click)="open()" class="w-full">
-    <mat-label>租期</mat-label>
-    <input matInput readonly [value]="displayValue" [placeholder]="placeholder" />
+    <mat-label>{{ i18n.t().rangePicker.label }}</mat-label>
+    <input matInput readonly [value]="displayValue" [placeholder]="placeholder ?? i18n.t().rangePicker.placeholder" />
     <span matIconSuffix class="material-symbols-rounded" aria-hidden="true">calendar_month</span>
   </mat-form-field>
 </div>
@@ -25,7 +25,7 @@
     <div class="calendars-row" (mouseleave)="onHover(null)">
       <div class="calendar-pane">
         <div class="month-head">
-          <button type="button" mat-icon-button (click)="goPrev()" aria-label="上個月">
+          <button type="button" mat-icon-button (click)="goPrev()" [attr.aria-label]="i18n.t().rangePicker.prevMonth">
             <span class="material-symbols-rounded" aria-hidden="true">chevron_left</span>
           </button>
           <span class="month-label">{{ monthLabel(leftMonth) }}</span>
@@ -43,7 +43,7 @@
         <div class="month-head">
           <span class="head-spacer"></span>
           <span class="month-label">{{ monthLabel(rightMonth) }}</span>
-          <button type="button" mat-icon-button (click)="goNext()" aria-label="下個月">
+          <button type="button" mat-icon-button (click)="goNext()" [attr.aria-label]="i18n.t().rangePicker.nextMonth">
             <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
           </button>
         </div>

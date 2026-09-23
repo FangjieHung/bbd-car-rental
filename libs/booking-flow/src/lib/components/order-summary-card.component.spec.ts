@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import { BookingFlowI18n } from '../i18n/booking-flow-i18n';
 import { Vehicle } from '@car-rental/domain';
 import { OrderSummaryCardComponent } from './order-summary-card.component';
 
@@ -63,5 +65,41 @@ describe('OrderSummaryCardComponent', () => {
       couponDiscount: 0, total: 1300,
     };
     expect(component.baseFareAmount).toBe(1300); // 1000 - 100 + 400
+  });
+});
+
+describe('OrderSummaryCardComponent 多語系', () => {
+  function render() {
+    const fixture = TestBed.createComponent(OrderSummaryCardComponent);
+    fixture.componentInstance.vehicle = makeVehicle({ branchId: 'mzg-airport' });
+    fixture.componentInstance.startDate = '2026-09-22';
+    fixture.componentInstance.endDate = '2026-09-24';
+    fixture.componentInstance.priceBreakdown = {
+      dailyLines: [], rentalRaw: 1000, tierDiscountPercent: 0, tierDiscountAmount: 0,
+      rentalSubtotal: 1000, partnerDiscountPercent: 0, partnerDiscount: 0,
+      addOnLines: [], addOnSubtotal: 0, insuranceSubtotal: 600,
+      couponDiscount: 0, total: 1600,
+    };
+    fixture.detectChanges();
+    return { fixture, i18n: TestBed.inject(BookingFlowI18n) };
+  }
+
+  it('預設繁中：日期與金額依在地格式', () => {
+    const text = render().fixture.nativeElement.textContent as string;
+    expect(text).toContain('應付總計');
+    expect(text).toContain('2026/09/22');
+    expect(text).toContain('NT$1,600');
+  });
+
+  it('切換成英文後同一張卡片立即改用英文文案與日期格式；據點名稱是資料、不翻', () => {
+    const { fixture, i18n } = render();
+    i18n.setLocale('en');
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Total due');
+    expect(text).toContain('09/22/2026');
+    expect(text).toContain('NT$1,600');
+    expect(text).toContain('馬公機場櫃檯');
+    expect(text).not.toContain('應付總計');
   });
 });

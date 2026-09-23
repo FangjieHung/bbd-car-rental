@@ -135,7 +135,7 @@ describe('OrderPageComponent', () => {
     const { component } = setup(validParams);
     const before = component.priceBreakdown()!.total;
     component.onCouponCodeChange('NOPE');
-    expect(component.couponResult()).toEqual({ ok: false, reason: '查無此優惠碼' });
+    expect(component.couponResult()).toEqual({ ok: false, reason: 'not_found' });
     expect(component.priceBreakdown()!.total).toBe(before);
   });
 

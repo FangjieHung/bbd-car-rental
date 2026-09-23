@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { Vehicle } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 import { CatalogStore } from '../catalog.store';
 import { DateRange, VEHICLE_GROUP_CATEGORIES, toVehicleGroup } from '../date-range';
 import { QuoteService } from '../quote.service';
@@ -28,6 +29,7 @@ export class SearchPageComponent {
   private readonly quote = inject(QuoteService);
   private readonly context = inject(BOOKING_CONTEXT);
 
+  protected readonly i18n = injectBookingFlowI18n();
   readonly partner = this.context.partner;
 
   private readonly params = toSignal(

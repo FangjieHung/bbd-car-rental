@@ -1,9 +1,9 @@
-import { Component, EventEmitter, Input, Output, OnChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { injectBookingFlowLabels } from '../booking-flow-labels';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 import { DateRange, VehicleGroup } from '../date-range';
 import { DualMonthRangePickerComponent, SelectedDateRange } from './dual-month-range-picker.component';
 
@@ -20,12 +20,12 @@ const defaultTime = (hour: number): Date => {
   styleUrl: './date-step.component.scss',
 })
 export class DateStepComponent implements OnChanges {
-  private readonly labels = injectBookingFlowLabels();
+  protected readonly i18n = injectBookingFlowI18n();
 
   @Input() dateRange: DateRange | null = null;
   @Output() dateRangeChange = new EventEmitter<DateRange>();
 
-  protected readonly vehicleGroups = this.labels.vehicleGroups;
+  protected readonly vehicleGroups = computed(() => this.i18n.t().labels.vehicleGroups);
 
   protected vehicleGroup: VehicleGroup = 'car';
   protected startDate: Date | null = null;

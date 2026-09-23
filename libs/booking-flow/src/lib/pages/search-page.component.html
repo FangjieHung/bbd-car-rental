@@ -1,8 +1,8 @@
 <div class="search-page">
   @if (partner(); as p) {
-    <div class="partner-banner">{{ p.name }} 專屬預約</div>
+    <div class="partner-banner">{{ i18n.t().common.partnerBanner(p.name) }}</div>
   }
-  <h1 class="ui-text-title">租車預約</h1>
+  <h1 class="ui-text-title">{{ i18n.t().search.title }}</h1>
 
   <section class="date-section">
     <lib-date-step

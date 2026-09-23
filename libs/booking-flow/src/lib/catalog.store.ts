@@ -24,6 +24,15 @@ import {
   isCouponValid,
   isVehicleAvailable,
 } from '@car-rental/domain';
+import { BookingFlowError } from './booking-flow-error';
+import type { CouponRejectReason } from './i18n/booking-flow-messages';
+
+export interface CouponResult {
+  ok: boolean;
+  coupon?: Coupon;
+  /** 不能用的原因代碼；畫面依語言查文案（couponStep.reasons）。 */
+  reason?: CouponRejectReason;
+}
 
 /**
  * 訂單建立時記錄的付款偏好（PaymentPreference）與付款分類帳實際採用的付款方式
@@ -73,19 +82,19 @@ export class CatalogStore {
     insurancePlan?: InsurancePlan;
   }): PriceBreakdown {
     const plan = this.planForCategory(input.category);
-    if (!plan) throw new Error('無此車型定價');
+    if (!plan) throw new BookingFlowError('no_pricing_plan', '無此車型定價');
     return calculatePrice({ plan, calendar: this.calRepo.getAll()[0], ...input });
   }
 
   validateCoupon(
     code: string,
     ctx: { startDate: string; days: number; category: VehicleCategory },
-  ): { ok: boolean; coupon?: Coupon; reason?: string } {
+  ): CouponResult {
     const coupon = this.couponRepo
       .getAll()
       .find((c) => c.code.toLowerCase() === code.trim().toLowerCase());
-    if (!coupon) return { ok: false, reason: '查無此優惠碼' };
-    return isCouponValid(coupon, ctx) ? { ok: true, coupon } : { ok: false, reason: '不符使用條件' };
+    if (!coupon) return { ok: false, reason: 'not_found' };
+    return isCouponValid(coupon, ctx) ? { ok: true, coupon } : { ok: false, reason: 'not_applicable' };
   }
 
   submitBooking(input: {
@@ -106,7 +115,7 @@ export class CatalogStore {
     insurancePlanId?: string;
   }): RentalOrder {
     const vehicle = this.vehicleRepo.getById(input.vehicleId);
-    if (!vehicle) throw new Error('查無車輛');
+    if (!vehicle) throw new BookingFlowError('vehicle_not_found', '查無車輛');
     if (
       !isVehicleAvailable({
         vehicle,
@@ -115,7 +124,7 @@ export class CatalogStore {
         orders: this.orderRepo.getAll(),
       })
     )
-      throw new Error('車輛已被預約');
+      throw new BookingFlowError('vehicle_unavailable', '車輛已被預約');
     const coupon = input.couponCode
       ? this.couponRepo.getAll().find((c) => c.code.toLowerCase() === input.couponCode!.toLowerCase())
       : undefined;
@@ -175,7 +184,7 @@ export class CatalogStore {
    */
   markBookingPaid(bookingId: string): RentalOrder {
     const booking = this.orderRepo.getById(bookingId);
-    if (!booking) throw new Error('查無訂單');
+    if (!booking) throw new BookingFlowError('order_not_found', '查無訂單');
 
     const alreadyPaid = this.paymentRepo
       .getAll()

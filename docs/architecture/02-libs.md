@@ -104,6 +104,7 @@ libs/booking-flow/src/lib/
   components/          # 頁面用的展示元件：order-summary-card、search-criteria-bar
   steps/               # 被頁面組合的展示元件（date-step、vehicle-step、addon-step、
                         # coupon-step、confirm-step），以及 done（完成頁，實際是路由頁）
+  i18n/                 # 官網多語系（BookingFlowI18n、三語字典、語言切換器）
   booking-context.ts    # BOOKING_CONTEXT：夥伴身分與導頁前綴
   quote.service.ts      # QuoteService：報價計算
   catalog.store.ts      # CatalogStore：資料存取與訂單寫入

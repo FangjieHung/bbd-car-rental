@@ -113,7 +113,7 @@ describe('QuoteService', () => {
     expect(svc.validateCoupon('', ctx)).toBeNull();
     expect(svc.validateCoupon('  ', ctx)).toBeNull();
     expect(svc.validateCoupon('SUMMER', ctx)).toEqual({ ok: true, coupon });
-    expect(svc.validateCoupon('NOPE', ctx)).toEqual({ ok: false, reason: '查無此優惠碼' });
+    expect(svc.validateCoupon('NOPE', ctx)).toEqual({ ok: false, reason: 'not_found' });
   });
 
   it('quote 缺日期時回 null，配件會計入 addOnSubtotal', () => {

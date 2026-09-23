@@ -7,13 +7,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import {
   AddOn,
-  optionLabelMap,
-  PAYMENT_PREFERENCE_OPTIONS,
   PaymentPreference,
   PriceBreakdown,
   RENTAL_BRANCHES,
   Vehicle,
 } from '@car-rental/domain';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 
 export interface ConfirmFormValue {
   name: string;
@@ -23,8 +22,6 @@ export interface ConfirmFormValue {
   /** 還車據點 id（見 RENTAL_BRANCHES）。 */
   returnBranchId: string;
 }
-
-const PAYMENT_PREFERENCE_LABEL = optionLabelMap(PAYMENT_PREFERENCE_OPTIONS);
 
 @Component({
   selector: 'lib-confirm-step',
@@ -55,7 +52,7 @@ export class ConfirmStepComponent {
   @Input() submitError = '';
   @Output() confirm = new EventEmitter<ConfirmFormValue>();
 
-  protected readonly paymentMethodLabel = PAYMENT_PREFERENCE_LABEL;
+  protected readonly i18n = injectBookingFlowI18n();
   protected readonly paymentMethods: PaymentPreference[] = [
     'credit_card',
     'line_pay',

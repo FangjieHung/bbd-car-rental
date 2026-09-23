@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { AddOn, PriceBreakdown, RENTAL_BRANCHES, Vehicle, VEHICLE_REPO } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 import { CatalogStore } from '../catalog.store';
 import { toVehicleGroup } from '../date-range';
 import { CouponResult, QuoteService } from '../quote.service';
@@ -37,6 +38,7 @@ export class OrderPageComponent {
   private readonly context = inject(BOOKING_CONTEXT);
   private readonly vehicleRepo = inject(VEHICLE_REPO);
 
+  protected readonly i18n = injectBookingFlowI18n();
   readonly partner = this.context.partner;
 
   private readonly vehicleId = toSignal(
@@ -169,7 +171,7 @@ export class OrderPageComponent {
       });
       this.router.navigate([...this.context.basePath(), 'pay', booking.id]);
     } catch (err) {
-      this.submitError.set(err instanceof Error ? err.message : '送出失敗，請稍後再試');
+      this.submitError.set(this.i18n.errorMessage(err, this.i18n.t().order.submitFailed));
     } finally {
       this.submitting.set(false);
     }

@@ -17,8 +17,8 @@
         <li class="trip-timeline__stop">
           <span class="trip-timeline__dot"></span>
           <div class="trip-timeline__body">
-            <span class="ui-text-caption">取車</span>
-            <span class="trip-timeline__date">{{ startDate }}</span>
+            <span class="ui-text-caption">{{ i18n.t().summary.pickup }}</span>
+            <span class="trip-timeline__date">{{ i18n.date(startDate) }}</span>
             @if (vehicle.branchId) {
               <a class="ui-text-caption" [href]="mapUrl(vehicle.branchId)" target="_blank" rel="noopener">{{ branchName(vehicle.branchId) }}</a>
             }
@@ -27,8 +27,8 @@
         <li class="trip-timeline__stop">
           <span class="trip-timeline__dot"></span>
           <div class="trip-timeline__body">
-            <span class="ui-text-caption">還車</span>
-            <span class="trip-timeline__date">{{ endDate }}</span>
+            <span class="ui-text-caption">{{ i18n.t().summary.dropoff }}</span>
+            <span class="trip-timeline__date">{{ i18n.date(endDate) }}</span>
             @if (returnBranchId) {
               <a class="ui-text-caption" [href]="mapUrl(returnBranchId)" target="_blank" rel="noopener">{{ branchName(returnBranchId) }}</a>
             }
@@ -38,7 +38,7 @@
 
       @if (selectedAddOnLines.length > 0) {
         <div class="trip-card__addons">
-          <span class="ui-text-caption">加購配件</span>
+          <span class="ui-text-caption">{{ i18n.t().summary.addOns }}</span>
           <div class="trip-card__addon-list">
             @for (line of selectedAddOnLines; track line.addOn.id) {
               <span class="ui-chip ui-chip--neutral">{{ line.addOn.name }} × {{ line.qty }}</span>
@@ -49,55 +49,55 @@
     </div>
   } @else {
     <div class="ui-card trip-card">
-      <p class="empty-state">尚未選擇車輛。</p>
+      <p class="empty-state">{{ i18n.t().summary.noVehicle }}</p>
     </div>
   }
 
   @if (priceBreakdown) {
     <div class="ui-card price-card">
       <div class="ui-card-header">
-        <h3 class="ui-card-title ui-text-title">試算明細</h3>
+        <h3 class="ui-card-title ui-text-title">{{ i18n.t().common.priceBreakdown }}</h3>
       </div>
 
       <div class="price-card__lines">
-        <div class="line"><span class="ui-text-caption">租金原價</span><span>NT$ {{ priceBreakdown.rentalRaw }}</span></div>
+        <div class="line"><span class="ui-text-caption">{{ i18n.t().summary.rentalRaw }}</span><span>{{ i18n.money(priceBreakdown.rentalRaw) }}</span></div>
         @if (priceBreakdown.tierDiscountAmount > 0) {
           <div class="line discount">
-            <span class="ui-text-caption">累租折扣（{{ priceBreakdown.tierDiscountPercent }}%）</span>
-            <span>-NT$ {{ priceBreakdown.tierDiscountAmount }}</span>
+            <span class="ui-text-caption">{{ i18n.t().summary.tierDiscount(priceBreakdown.tierDiscountPercent) }}</span>
+            <span>{{ i18n.money(-priceBreakdown.tierDiscountAmount) }}</span>
           </div>
         }
-        <div class="line"><span class="ui-text-caption">租金小計</span><span>NT$ {{ priceBreakdown.rentalSubtotal }}</span></div>
+        <div class="line"><span class="ui-text-caption">{{ i18n.t().common.rentalSubtotal }}</span><span>{{ i18n.money(priceBreakdown.rentalSubtotal) }}</span></div>
         @if (priceBreakdown.partnerDiscount > 0) {
           <div class="line discount">
-            <span class="ui-text-caption">夥伴折扣（{{ priceBreakdown.partnerDiscountPercent }}%）</span>
-            <span>-NT$ {{ priceBreakdown.partnerDiscount }}</span>
+            <span class="ui-text-caption">{{ i18n.t().summary.partnerDiscount(priceBreakdown.partnerDiscountPercent) }}</span>
+            <span>{{ i18n.money(-priceBreakdown.partnerDiscount) }}</span>
           </div>
         }
         @for (addOnLine of priceBreakdown.addOnLines; track addOnLine.addOnId) {
-          <div class="line"><span class="ui-text-caption">{{ addOnLine.name }} x{{ addOnLine.qty }}</span><span>NT$ {{ addOnLine.amount }}</span></div>
+          <div class="line"><span class="ui-text-caption">{{ addOnLine.name }} x{{ addOnLine.qty }}</span><span>{{ i18n.money(addOnLine.amount) }}</span></div>
         }
         @if (priceBreakdown.addOnSubtotal > 0) {
-          <div class="line"><span class="ui-text-caption">配件費用小計</span><span>NT$ {{ priceBreakdown.addOnSubtotal }}</span></div>
+          <div class="line"><span class="ui-text-caption">{{ i18n.t().summary.addOnSubtotal }}</span><span>{{ i18n.money(priceBreakdown.addOnSubtotal) }}</span></div>
         }
         @if (priceBreakdown.insuranceSubtotal > 0) {
-          <div class="line"><span class="ui-text-caption">保險費用</span><span>NT$ {{ priceBreakdown.insuranceSubtotal }}</span></div>
+          <div class="line"><span class="ui-text-caption">{{ i18n.t().summary.insurance }}</span><span>{{ i18n.money(priceBreakdown.insuranceSubtotal) }}</span></div>
         }
         @if (priceBreakdown.couponDiscount > 0) {
           <div class="line discount">
-            <span class="ui-text-caption">優惠折抵（{{ priceBreakdown.couponCode }}）</span>
-            <span>-NT$ {{ priceBreakdown.couponDiscount }}</span>
+            <span class="ui-text-caption">{{ i18n.t().common.couponDiscount(priceBreakdown.couponCode ?? '') }}</span>
+            <span>{{ i18n.money(-priceBreakdown.couponDiscount) }}</span>
           </div>
         }
       </div>
 
       <div class="price-card__total">
-        <span class="ui-text-title">應付總計</span>
+        <span class="ui-text-title">{{ i18n.t().summary.grandTotal }}</span>
         <span class="price-card__total-amount">
           @if (discountTotal > 0) {
-            <span class="price-card__original">NT$ {{ originalTotal }}</span>
+            <span class="price-card__original">{{ i18n.money(originalTotal) }}</span>
           }
-          <span class="ui-text-title price-card__final">NT$ {{ priceBreakdown.total }}</span>
+          <span class="ui-text-title price-card__final">{{ i18n.money(priceBreakdown.total) }}</span>
         </span>
       </div>
     </div>

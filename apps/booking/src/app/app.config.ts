@@ -2,6 +2,8 @@ import { ApplicationConfig, inject, provideBrowserGlobalErrorListeners } from '@
 import { provideRouter } from '@angular/router';
 import { provideNativeDateAdapter } from '@angular/material/core';
 
+import { provideBookingFlowI18n } from '@car-rental/booking-flow';
+
 import { routes } from './app.routes';
 import {
   VEHICLE_REPO,
@@ -30,6 +32,8 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideNativeDateAdapter(),
+    // 官網多語系：偵測瀏覽器語言、記住客人的選擇，並同步 <html lang> 與月曆的地區設定。
+    provideBookingFlowI18n(),
     {
       provide: VEHICLE_REPO,
       // 舊資料可能還用更名前的 location 欄位、值是遷移前的據點類型文字/門市全名，用 normalizeVehicle 統一轉成 branchId。

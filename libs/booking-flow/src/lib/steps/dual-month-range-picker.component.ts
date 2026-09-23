@@ -19,6 +19,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { HoverPreviewRangeStrategy } from './hover-preview-range-strategy';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 
 export interface SelectedDateRange {
   start: Date;
@@ -57,7 +58,8 @@ function sameDay(a: Date | null, b: Date | null): boolean {
 export class DualMonthRangePickerComponent implements OnChanges {
   @Input() start: Date | null = null;
   @Input() end: Date | null = null;
-  @Input() placeholder = '選擇日期範圍';
+  /** 未指定時用目前語言的預設提示文字。 */
+  @Input() placeholder: string | null = null;
   @Output() rangeSelected = new EventEmitter<SelectedDateRange>();
 
   @ViewChild('leftCal') private leftCal?: MatCalendar<Date>;
@@ -67,6 +69,7 @@ export class DualMonthRangePickerComponent implements OnChanges {
   protected leftMonth = startOfMonth(new Date());
   protected selectedRange = new DateRange<Date>(null, null);
 
+  protected readonly i18n = injectBookingFlowI18n();
   private readonly hoverStrategy = inject(HoverPreviewRangeStrategy);
 
   private pendingStart: Date | null = null;
@@ -95,11 +98,11 @@ export class DualMonthRangePickerComponent implements OnChanges {
 
   protected get displayValue(): string {
     if (!this.start || !this.end) return '';
-    return `${this.formatDate(this.start)} - ${this.formatDate(this.end)}`;
+    return `${this.i18n.date(this.start)} - ${this.i18n.date(this.end)}`;
   }
 
   protected monthLabel(month: Date): string {
-    return `${month.getFullYear()}年${month.getMonth() + 1}月`;
+    return this.i18n.month(month);
   }
 
   protected open(): void {
@@ -172,10 +175,5 @@ export class DualMonthRangePickerComponent implements OnChanges {
     this.leftMonth = addMonths(this.leftMonth, delta);
     if (this.leftCal) this.leftCal.activeDate = this.leftMonth;
     if (this.rightCal) this.rightCal.activeDate = this.rightMonth;
-  }
-
-  private formatDate(date: Date): string {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())}`;
   }
 }

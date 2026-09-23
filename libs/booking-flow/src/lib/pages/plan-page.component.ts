@@ -2,7 +2,6 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
-import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import {
   deriveEnergyTypeFallback,
@@ -12,6 +11,7 @@ import {
   VEHICLE_REPO,
 } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 import { toVehicleGroup } from '../date-range';
 import { QuoteService } from '../quote.service';
 import { OrderSummaryCardComponent } from '../components/order-summary-card.component';
@@ -22,7 +22,7 @@ import { OrderSummaryCardComponent } from '../components/order-summary-card.comp
  */
 @Component({
   selector: 'lib-plan-page',
-  imports: [DecimalPipe, MatButtonModule, OrderSummaryCardComponent],
+  imports: [MatButtonModule, OrderSummaryCardComponent],
   templateUrl: './plan-page.component.html',
   styleUrl: './plan-page.component.scss',
 })
@@ -30,12 +30,14 @@ export class PlanPageComponent {
   /** 電動車沒有「油」；同一個 fuelPolicy 欄位在電動車要用電量的說法。 */
   protected energyPolicyLabel(v: Vehicle): { title: string; value: string } {
     const electric = (v.energyType ?? deriveEnergyTypeFallback(v.category)) === 'electric';
-    const title = electric ? '電量規定' : '燃油規定';
-    if (v.fuelPolicy === 'full_to_full') return { title, value: electric ? '滿電取還車' : '滿油取還車' };
-    if (v.fuelPolicy === 'full_to_empty')
-      return { title, value: electric ? '滿電取車、可低電量還車' : '滿油取車、可空車還車' };
-    return { title, value: electric ? '原電量還車' : '原油量還車' };
+    const plan = this.i18n.t().plan;
+    const policy = v.fuelPolicy ?? 'same_level';
+    return electric
+      ? { title: plan.energyTitle, value: plan.energyPolicy[policy] }
+      : { title: plan.fuelTitle, value: plan.fuelPolicy[policy] };
   }
+
+  protected readonly i18n = injectBookingFlowI18n();
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);

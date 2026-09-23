@@ -1,12 +1,12 @@
 <div class="confirm-step ui-card">
   <div class="ui-card-header">
-    <h2 class="ui-card-title ui-text-title">確認並送出</h2>
+    <h2 class="ui-card-title ui-text-title">{{ i18n.t().confirmStep.title }}</h2>
   </div>
 
   <section class="confirm-step__group">
-    <h3 class="ui-text-caption confirm-step__group-title">還車地點</h3>
+    <h3 class="ui-text-caption confirm-step__group-title">{{ i18n.t().confirmStep.returnBranch }}</h3>
     <mat-form-field appearance="outline">
-      <mat-label>還車地點</mat-label>
+      <mat-label>{{ i18n.t().confirmStep.returnBranch }}</mat-label>
       <mat-select [ngModel]="form.returnBranchId" (ngModelChange)="onReturnLocationChange($event)" name="returnBranchId">
         @for (loc of locations; track loc.id) {
           <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
@@ -16,28 +16,28 @@
   </section>
 
   <section class="confirm-step__group">
-    <h3 class="ui-text-caption confirm-step__group-title">付款人資訊</h3>
+    <h3 class="ui-text-caption confirm-step__group-title">{{ i18n.t().confirmStep.payer }}</h3>
     <div class="form-grid">
       <mat-form-field appearance="outline">
-        <mat-label>姓名</mat-label>
+        <mat-label>{{ i18n.t().confirmStep.name }}</mat-label>
         <input matInput [(ngModel)]="form.name" name="name" />
       </mat-form-field>
       <mat-form-field appearance="outline">
-        <mat-label>電話</mat-label>
+        <mat-label>{{ i18n.t().confirmStep.phone }}</mat-label>
         <input matInput [(ngModel)]="form.phone" name="phone" />
       </mat-form-field>
       <mat-form-field appearance="outline">
-        <mat-label>Email</mat-label>
+        <mat-label>{{ i18n.t().confirmStep.email }}</mat-label>
         <input matInput type="email" [(ngModel)]="form.email" name="email" />
       </mat-form-field>
     </div>
   </section>
 
   <section class="confirm-step__group">
-    <h3 class="ui-text-caption confirm-step__group-title">付款方式</h3>
+    <h3 class="ui-text-caption confirm-step__group-title">{{ i18n.t().common.paymentMethod }}</h3>
     <mat-radio-group [(ngModel)]="form.paymentMethod" name="paymentMethod" class="payment-methods">
       @for (method of paymentMethods; track method) {
-        <mat-radio-button [value]="method">{{ paymentMethodLabel[method] }}</mat-radio-button>
+        <mat-radio-button [value]="method">{{ i18n.t().labels.paymentPreference[method] }}</mat-radio-button>
       }
     </mat-radio-group>
   </section>
@@ -48,7 +48,7 @@
 
   <div class="actions">
     <button mat-flat-button color="primary" class="submit-button" [disabled]="!canSubmit" (click)="onSubmit()">
-      {{ submitting ? '處理中…' : '前往付款' }}
+      {{ submitting ? i18n.t().common.processing : i18n.t().confirmStep.submit }}
     </button>
   </div>
 </div>
