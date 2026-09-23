@@ -89,4 +89,28 @@ describe('DriverEligibilityPanelComponent', () => {
     expect(el.textContent).toContain('尚未設定規則');
     expect(el.querySelector('.driver-eligibility__status--manual_review')).toBeTruthy();
   });
+
+  it('查核完成時以 checked 送出結果（建立訂單第 2 步用它判斷待補）', async () => {
+    gateway.result = { reciprocityStatus: 'eligible' };
+    const fixture = createFixture('JP');
+    const emitted: unknown[] = [];
+    fixture.componentInstance.checked.subscribe((r) => emitted.push(r));
+
+    await fixture.componentInstance.check();
+
+    expect(emitted).toEqual([{ reciprocityStatus: 'eligible' }]);
+  });
+
+  it('發照國家改了：先前的查核結果不算數，畫面回到「尚未查核」', async () => {
+    gateway.result = { reciprocityStatus: 'eligible' };
+    const fixture = createFixture('JP');
+    await fixture.componentInstance.check();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('符合互惠資格');
+
+    fixture.componentRef.setInput('issuingCountry', 'KR');
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('尚未查核');
+  });
 });

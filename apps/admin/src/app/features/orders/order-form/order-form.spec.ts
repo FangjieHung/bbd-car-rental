@@ -15,7 +15,6 @@ import { OrderFormData } from './order-form-data';
 import {
   createOrderFormDerived,
   orderFormProblems,
-  orderIncompleteItems,
   orderRentalDays,
   orderRequirements,
   paymentDraftBalance,
@@ -86,6 +85,8 @@ function fakeData(vehicles: Vehicle[], conflicts: RentalBooking[] = [], addOns: 
       }),
     findConflicts: () => conflicts,
     depositCap: (_v, total) => Math.round(total * 0.3),
+    identityDocumentsOf: () => [],
+    driverCredentialsOf: () => [],
   };
 }
 
@@ -387,37 +388,5 @@ describe('paymentDraftBalance（本次收款 · 建立後待收）', () => {
 
   it('還沒有報價時待收算不出來（undefined），不假裝報價是 0', () => {
     expect(paymentDraftBalance([{ amount: 500 }], undefined)).toEqual({ collected: 500, due: undefined });
-  });
-});
-
-describe('orderIncompleteItems（待補項目）', () => {
-  it('沿用舊規則；需重新簽署以專屬文字提示', () => {
-    const v = filledForm().getRawValue();
-    v.pricing.depositRequired = 600;
-    expect(orderIncompleteItems(v, 2000, 'unsigned')).toEqual([
-      t.bookingForm.incomplete.missingEmail,
-      t.bookingForm.incomplete.depositNotCollected,
-      t.bookingForm.incomplete.contractNotSigned,
-      t.bookingForm.incomplete.balanceNotCollected,
-    ]);
-    expect(orderIncompleteItems(v, 2000, 'needs_resign')).toContain(t.orderForm.incomplete.contractNeedsResign);
-
-    v.renter.email = 'a@b.c';
-    v.payments.drafts = [
-      { purpose: 'deposit', method: 'cash', amount: 600 },
-      { purpose: 'balance', method: 'cash', amount: 1400 },
-    ];
-    expect(orderIncompleteItems(v, 2000, 'signed')).toEqual([]);
-  });
-
-  it('款項草稿金額為 null（畫面上還沒填）時視為 0，不當成已收，也不會噴錯', () => {
-    const v = filledForm().getRawValue();
-    v.pricing.depositRequired = 600;
-    v.renter.email = 'a@b.c';
-    v.payments.drafts = [{ purpose: 'deposit', method: 'cash', amount: null }];
-    expect(orderIncompleteItems(v, 2000, 'signed')).toEqual([
-      t.bookingForm.incomplete.depositNotCollected,
-      t.bookingForm.incomplete.balanceNotCollected,
-    ]);
   });
 });

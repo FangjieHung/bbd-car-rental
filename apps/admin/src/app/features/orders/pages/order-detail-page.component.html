@@ -99,6 +99,10 @@
               </div>
             </div>
           } @else {
+            <!-- 4.1：待補卡在總覽最上方；沒有待補（或已取消、已完成）時整張卡不出現 -->
+            @if (incompleteItems().length > 0) {
+              <app-order-incomplete-card [items]="incompleteItems()" (selectItem)="onIncompleteSelected($event)" />
+            }
             @if (canEdit()) {
               <div class="order-detail__toolbar">
                 <button mat-stroked-button type="button" class="order-detail__edit" (click)="startEdit()">
@@ -157,8 +161,11 @@
 
               <section class="ui-card order-detail__group">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.pricing }}</h2>
-                @if (b.priceBreakdown; as q) {
-                  <dl class="order-detail__fields order-detail__fields--amounts">
+                @if (!b.priceBreakdown) {
+                  <p class="muted">{{ t.orderDetail.noQuote }}</p>
+                }
+                <dl class="order-detail__fields order-detail__fields--amounts">
+                  @if (b.priceBreakdown; as q) {
                     <dt>{{ t.bookingForm.rentalSubtotal }}</dt>
                     <dd>{{ q.rentalSubtotal | twd }}</dd>
                     <dt>{{ t.bookingForm.insuranceSubtotal }}</dt>
@@ -171,30 +178,34 @@
                     }
                     <dt class="is-total">{{ t.bookingForm.quoteTotal }}</dt>
                     <dd class="is-total">{{ q.total | twd }}</dd>
-                    <dt>{{ t.orderDetail.depositRequired }}</dt>
-                    <dd>{{ b.depositRequired | twd }}</dd>
-                    <dt>{{ t.orderDetail.netPaid }}</dt>
-                    <dd>{{ (paymentSummary()?.netPaid ?? 0) | twd }}</dd>
-                    <dt>{{ t.orderDetail.balanceDue }}</dt>
-                    <dd>{{ (paymentSummary()?.balanceDue ?? 0) | twd }}</dd>
-                  </dl>
-                } @else {
-                  <p class="muted">{{ t.orderDetail.noQuote }}</p>
-                  <dl class="order-detail__fields order-detail__fields--amounts">
-                    <dt>{{ t.orderDetail.depositRequired }}</dt>
-                    <dd>{{ b.depositRequired | twd }}</dd>
-                    <dt>{{ t.orderDetail.netPaid }}</dt>
-                    <dd>{{ (paymentSummary()?.netPaid ?? 0) | twd }}</dd>
-                    <dt>{{ t.orderDetail.balanceDue }}</dt>
-                    <dd>{{ (paymentSummary()?.balanceDue ?? 0) | twd }}</dd>
-                  </dl>
-                }
+                  }
+                  <dt>{{ t.orderDetail.depositRequired }}</dt>
+                  <dd>{{ b.depositRequired | twd }}</dd>
+                  <dt>{{ t.orderDetail.netPaid }}</dt>
+                  <dd>{{ (paymentSummary()?.netPaid ?? 0) | twd }}</dd>
+                  @if (balance(); as bal) {
+                    @switch (bal.kind) {
+                      @case ('overpaid') {
+                        <dt class="is-overpaid">{{ t.orderDetail.overpaid }}</dt>
+                        <dd class="is-overpaid order-detail__balance">{{ bal.amount | twd }}</dd>
+                      }
+                      @case ('unquoted') {
+                        <dt>{{ t.orderDetail.balanceDue }}</dt>
+                        <dd class="order-detail__balance">
+                          —
+                          <span class="order-detail__balance-note">{{ t.orderDetail.noQuoteBalance }}</span>
+                        </dd>
+                      }
+                      @default {
+                        <dt>{{ t.orderDetail.balanceDue }}</dt>
+                        <dd class="order-detail__balance">{{ bal.amount | twd }}</dd>
+                      }
+                    }
+                  }
+                </dl>
               </section>
             </div>
           }
-        }
-        @case ('documents') {
-          <section class="order-detail__placeholder">{{ t.orderDetail.sections['documents'] }}</section>
         }
         @case ('payments') {
           <app-payment-panel [bookingId]="b.id" />
@@ -206,9 +217,8 @@
           <app-handover-panel [bookingId]="b.id" />
         }
         @case ('cancellation') {
-          <app-operator-recovery-panel [bookingId]="b.id" />
-          <app-cancellation-panel [bookingId]="b.id" />
-          <app-customer-credit-panel [bookingId]="b.id" />
+          <!-- 4.6：依「取消 → 退款 → 保留金」分三段，只放目前訂單狀態能做的動作 -->
+          <app-order-cancellation-tab [bookingId]="b.id" />
         }
         @case ('activity') {
           <app-activity-timeline [bookingId]="b.id" />

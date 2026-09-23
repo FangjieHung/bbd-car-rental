@@ -30,6 +30,8 @@
               }
               @case ('renter') {
                 <app-order-renter-section [form]="form" />
+                <!-- 4.2：駕駛資格（可留空，留空時列入待補「駕駛資格未查核」） -->
+                <app-order-driver-section [form]="form" [vehicleCategory]="derived.vehicle()?.category" />
               }
               @case ('payment') {
                 <!-- 報價明細已在摘要欄，這裡不再列一次（訂單詳情的編輯沒有摘要欄，維持顯示） -->

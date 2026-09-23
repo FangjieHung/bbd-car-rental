@@ -1,7 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { Component, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { BookingsPageComponent } from './bookings-page.component';
+import { BookingsPageComponent, pickupDateRange } from './bookings-page.component';
+import { HeaderToolbarSlot } from '../../../layout/header/header-toolbar-slot';
 import {
   AUDIT_ENTRY_REPO,
   CANCELLATION_CASE_REPO,
@@ -16,15 +19,23 @@ import {
   BOOKING_REPO,
   MEMBER_REPO,
   MAINTENANCE_REPO,
+  IDENTITY_DOCUMENT_REPO,
+  DRIVER_CREDENTIAL_REPO,
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
+import { OcrGateway } from '../../../core/services/ocr.gateway';
+import { MockOcrGateway } from '../../../core/services/mock-ocr.gateway';
+import { DriverEligibilityGateway } from '../../../core/services/driver-eligibility.gateway';
+import { MockDriverEligibilityGateway } from '../../../core/services/mock-driver-eligibility.gateway';
 import {
   AuditEntry,
   CancellationCase,
   ChargeAdjustment,
   ContractVersion,
   CustomerCreditLedgerEntry,
+  DriverCredential,
+  IdentityDocument,
   Vehicle,
   RentalBooking,
   Member,
@@ -35,6 +46,7 @@ import {
   ReminderStatus,
 } from '../../../core/models';
 import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 function makeVehicle(partial: Partial<Vehicle>): Vehicle {
   return {
@@ -74,12 +86,23 @@ function makeBooking(partial: Partial<RentalBooking>): RentalBooking {
 function provideOrderDetailRepos(options: {
   refunds?: RefundRecord[];
   operatorRecoveryCases?: OperatorRecoveryCase[];
+  payments?: PaymentRecord[];
+  contracts?: ContractVersion[];
+  identityDocuments?: IdentityDocument[];
+  driverCredentials?: DriverCredential[];
 } = {}) {
   return [
-    { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
+    // 4.1：待補欄讀會員的證件紀錄（DocumentStore）。
+    { provide: IDENTITY_DOCUMENT_REPO, useValue: createInMemoryRepo<IdentityDocument>(options.identityDocuments ?? []) },
+    { provide: DRIVER_CREDENTIAL_REPO, useValue: createInMemoryRepo<DriverCredential>(options.driverCredentials ?? []) },
+    MockOcrGateway,
+    { provide: OcrGateway, useExisting: MockOcrGateway },
+    MockDriverEligibilityGateway,
+    { provide: DriverEligibilityGateway, useExisting: MockDriverEligibilityGateway },
+    { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>(options.payments ?? []) },
     { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>(options.refunds ?? []) },
     { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
-    { provide: CONTRACT_VERSION_REPO, useValue: createInMemoryRepo<ContractVersion>([]) },
+    { provide: CONTRACT_VERSION_REPO, useValue: createInMemoryRepo<ContractVersion>(options.contracts ?? []) },
     { provide: CANCELLATION_CASE_REPO, useValue: createInMemoryRepo<CancellationCase>([]) },
     { provide: CUSTOMER_CREDIT_LEDGER_REPO, useValue: createInMemoryRepo<CustomerCreditLedgerEntry>([]) },
     { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>([]) },
@@ -383,5 +406,269 @@ describe('BookingsPageComponent 從網址帶入 q 參數預填搜尋', () => {
     const component = createFixture(null);
 
     expect(component.searchQuery()).toBe('');
+  });
+
+  it('網址帶入的關鍵字與取車日期篩選同時作用（4.4）', () => {
+    // makeBooking 預設取車時間 2026/08/01 09:00。
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date(2026, 7, 1, 12));
+      const component = createFixture('林美惠');
+      component.pickupDateFilter.set('today');
+      expect(component.filteredBookings().map((b) => b.id)).toEqual(['b1']);
+
+      vi.setSystemTime(new Date(2026, 7, 2, 12));
+      component.pickupDateFilter.set('week');
+      component.pickupDateFilter.set('today');
+      expect(component.filteredBookings()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+/** 4.1：訂單列表的「待補」欄（數字徽章）與「只看有待補」篩選；規則與訂單詳情的待補卡同一套。 */
+describe('BookingsPageComponent 待補欄與篩選', () => {
+  function setup() {
+    const complete: Member = { id: 'c1', name: '王小明', phone: '0912000111', kind: 'local', email: 'w@x.y' };
+    const incomplete: Member = { id: 'c2', name: '陳大文', phone: '0922000222', kind: 'local' };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        ...provideOrderDetailRepos({
+          contracts: [{ id: 'cv1', bookingId: 'done', version: 1, status: 'signed' } as ContractVersion],
+          identityDocuments: [
+            {
+              id: 'id1', memberId: 'c1', type: 'taiwan_id', documentNumber: 'A1', issuingCountry: 'TW',
+              verification: { state: 'verified' }, version: 1, createdAt: '', updatedAt: '',
+            },
+          ],
+          driverCredentials: [
+            {
+              id: 'dc1', memberId: 'c1', type: 'taiwan_license', documentNumber: 'TL-1', issuingCountry: 'TW',
+              originalVehicleClassText: '', standardizedVehicleClass: 'scooter', verification: { state: 'verified' },
+              reciprocityStatus: 'pending', version: 1, createdAt: '', updatedAt: '',
+            },
+          ],
+        }),
+        { provide: OrderDetailNavigation, useValue: { open: vi.fn(), edit: vi.fn() } },
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle({ id: 'v1', plateNumber: 'ABC-123' })]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([complete, incomplete]) },
+        {
+          provide: BOOKING_REPO,
+          useValue: createInMemoryRepo<RentalBooking>([
+            // done：Email、合約、證件、駕照都齊，訂金 0、沒有報價——沒有待補。
+            makeBooking({ id: 'done', memberId: 'c1', status: 'reserved' }),
+            // todo：陳大文沒有 Email、沒有合約與證件紀錄——4 項待補。
+            makeBooking({ id: 'todo', memberId: 'c2', status: 'reserved' }),
+            // 已取消／已完成的訂單不計待補。
+            makeBooking({ id: 'gone', memberId: 'c2', status: 'cancelled' }),
+            makeBooking({ id: 'past', memberId: 'c2', status: 'completed' }),
+          ]),
+        },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const fixture = TestBed.createComponent(BookingsPageComponent);
+    return { fixture, component: fixture.componentInstance };
+  }
+
+  function byId(component: BookingsPageComponent, id: string): RentalBooking {
+    const booking = component.store.bookings().find((b) => b.id === id);
+    if (!booking) throw new Error(`fixture: ${id}`);
+    return booking;
+  }
+
+  it('每筆訂單的待補項數；已取消、已完成的不計', () => {
+    const { component } = setup();
+    expect(component.incompleteOf(byId(component, 'done'))).toEqual([]);
+    expect(component.incompleteOf(byId(component, 'todo')).map((i) => i.kind)).toEqual([
+      'missingEmail',
+      'contractNotSigned',
+      'identityNotVerified',
+      'driverNotVerified',
+    ]);
+    expect(component.incompleteOf(byId(component, 'gone'))).toEqual([]);
+    expect(component.incompleteOf(byId(component, 'past'))).toEqual([]);
+  });
+
+  it('「只看有待補」：只留有待補的訂單，並與狀態篩選、搜尋同時作用；清除篩選會一起清掉', () => {
+    const { component } = setup();
+    component.incompleteFilter.set('has');
+    expect(component.filteredBookings().map((b) => b.id)).toEqual(['todo']);
+    expect(component.activeFilterCount()).toBe(1);
+
+    component.statusFilter.set('cancelled');
+    expect(component.filteredBookings()).toEqual([]);
+    component.statusFilter.set(null);
+    component.searchQuery.set('王小明');
+    expect(component.filteredBookings()).toEqual([]);
+
+    component.clearFilters();
+    expect(component.incompleteFilter()).toBeNull();
+    expect(component.filteredBookings().map((b) => b.id)).toEqual(['done']);
+  });
+
+  it('待補欄顯示數字徽章（0 不顯示），提示列出每一項', () => {
+    const { fixture, component } = setup();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const badges = Array.from(el.querySelectorAll('.incomplete-badge'));
+    expect(badges).toHaveLength(1);
+    expect(badges[0].querySelector('[aria-hidden="true"]')?.textContent?.trim()).toBe('4');
+    expect(badges[0].textContent).toContain(ZH_TW.booking.incompleteCount.replace('{count}', '4'));
+    expect(component.incompleteSummary(byId(component, 'todo'))).toContain(ZH_TW.bookingForm.incomplete.missingEmail);
+  });
+});
+
+describe('pickupDateRange（4.4：取車日期篩選的區間）', () => {
+  // 2026/09/24 是星期四。
+  const now = new Date(2026, 8, 24, 15, 30);
+
+  it('今天：當天 00:00 到隔天 00:00', () => {
+    expect(pickupDateRange('today', null, now)).toEqual({ from: new Date(2026, 8, 24), to: new Date(2026, 8, 25) });
+  });
+
+  it('本週：週日起算 7 天（與總覽月曆、時間軸同一個慣例）', () => {
+    expect(pickupDateRange('week', null, now)).toEqual({ from: new Date(2026, 8, 20), to: new Date(2026, 8, 27) });
+  });
+
+  it('自訂區間：含起訖兩天整天；還沒選日期時不篩', () => {
+    const custom = { start: new Date(2026, 8, 1), end: new Date(2026, 8, 3) };
+    expect(pickupDateRange('custom', custom, now)).toEqual({ from: new Date(2026, 8, 1), to: new Date(2026, 8, 4) });
+    expect(pickupDateRange('custom', null, now)).toBeNull();
+    expect(pickupDateRange(null, custom, now)).toBeNull();
+  });
+});
+
+/** 頁首工具列登記在 HeaderToolbarSlot、平常由 HeaderComponent 渲染；測試用最小的宿主把它畫出來。 */
+@Component({
+  imports: [NgTemplateOutlet],
+  template: '<ng-container [ngTemplateOutlet]="slot.template()" />',
+})
+class HeaderToolbarHostComponent {
+  readonly slot = inject(HeaderToolbarSlot);
+}
+
+describe('BookingsPageComponent 4.4：整列點擊、取車日期篩選、工具列', () => {
+  const NOW = new Date(2026, 8, 24, 12, 0); // 星期四
+
+  function setup() {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    const open = vi.fn();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        ...provideOrderDetailRepos(),
+        { provide: OrderDetailNavigation, useValue: { open, edit: vi.fn() } },
+        {
+          provide: VEHICLE_REPO,
+          useValue: createInMemoryRepo<Vehicle>([
+            makeVehicle({ id: 'v1', plateNumber: 'ABC-123' }),
+            makeVehicle({ id: 'v2', plateNumber: 'XYZ-999' }),
+          ]),
+        },
+        {
+          provide: MEMBER_REPO,
+          useValue: createInMemoryRepo<Member>([
+            { id: 'c1', name: '王小明', phone: '0912000111', kind: 'local' },
+            { id: 'c2', name: '陳大文', phone: '0922000222', kind: 'local' },
+          ]),
+        },
+        {
+          provide: BOOKING_REPO,
+          useValue: createInMemoryRepo<RentalBooking>([
+            makeBooking({ id: 'today', memberId: 'c1', startTime: new Date(2026, 8, 24, 9).toISOString() }),
+            makeBooking({ id: 'sunday', vehicleId: 'v2', memberId: 'c2', startTime: new Date(2026, 8, 20, 10).toISOString() }),
+            makeBooking({ id: 'saturday', memberId: 'c2', startTime: new Date(2026, 8, 26, 23, 30).toISOString() }),
+            makeBooking({ id: 'next-week', memberId: 'c1', startTime: new Date(2026, 8, 27, 9).toISOString() }),
+            makeBooking({
+              id: 'early',
+              memberId: 'c1',
+              status: 'in_progress',
+              startTime: new Date(2026, 8, 2, 9).toISOString(),
+              endTime: new Date(2026, 9, 2, 9).toISOString(),
+            }),
+          ]),
+        },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const fixture = TestBed.createComponent(BookingsPageComponent);
+    return { fixture, component: fixture.componentInstance, open };
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  const ids = (component: BookingsPageComponent) => component.filteredBookings().map((b) => b.id).sort();
+
+  it('今天／本週：依取車時間篩選', () => {
+    const { component } = setup();
+    component.pickupDateFilter.set('today');
+    expect(ids(component)).toEqual(['today']);
+    component.pickupDateFilter.set('week');
+    expect(ids(component)).toEqual(['saturday', 'sunday', 'today']);
+    expect(component.activeFilterCount()).toBe(1);
+  });
+
+  it('自訂區間：選了日期才篩，含迄日整天', () => {
+    const { component } = setup();
+    component.pickupDateFilter.set('custom');
+    expect(ids(component)).toHaveLength(5);
+    component.pickupRange.set({ start: new Date(2026, 8, 1), end: new Date(2026, 8, 20) });
+    expect(ids(component)).toEqual(['early', 'sunday']);
+  });
+
+  it('與狀態篩選、搜尋同時作用；清除篩選不清搜尋', () => {
+    const { component } = setup();
+    component.pickupDateFilter.set('week');
+    component.searchQuery.set('陳大文');
+    expect(ids(component)).toEqual(['saturday', 'sunday']);
+    component.searchQuery.set('XYZ');
+    expect(ids(component)).toEqual(['sunday']);
+    component.statusFilter.set('in_progress');
+    expect(ids(component)).toEqual([]);
+
+    component.clearFilters();
+    expect(component.pickupDateFilter()).toBeNull();
+    expect(component.pickupRange()).toBeNull();
+    expect(component.searchQuery()).toBe('XYZ');
+    expect(ids(component)).toEqual(['sunday']);
+  });
+
+  it('整列點擊開訂單詳情；列內按鈕照舊，不會同時觸發整列點擊', () => {
+    const { fixture, open } = setup();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const row = Array.from(el.querySelectorAll<HTMLElement>('tbody tr')).find((tr) => tr.textContent?.includes('ABC-123'));
+    if (!row) throw new Error('fixture: row missing');
+
+    const plateCell = Array.from(row.querySelectorAll('td')).find((td) => td.textContent?.trim() === 'ABC-123');
+    plateCell?.click();
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(open).toHaveBeenLastCalledWith('today');
+
+    (row.querySelector('.handover-action') as HTMLButtonElement).click();
+    expect(open).toHaveBeenCalledTimes(2);
+    expect(open).toHaveBeenLastCalledWith('today', 'handover');
+  });
+
+  it('工具列不再有「會員」連結（會員入口移到側欄），保留新增訂單；選「自訂區間」才出現日期區間欄位', () => {
+    const { fixture, component } = setup();
+    fixture.detectChanges();
+    const host = TestBed.createComponent(HeaderToolbarHostComponent);
+    host.detectChanges();
+    const toolbar = host.nativeElement as HTMLElement;
+
+    expect(toolbar.querySelector('a[href="/bookings/members"]')).toBeNull();
+    expect(toolbar.querySelector('a[href="/orders/new"]')).not.toBeNull();
+    expect(toolbar.querySelector('lib-dual-month-range-picker')).toBeNull();
+
+    component.pickupDateFilter.set('custom');
+    host.detectChanges();
+    const picker = toolbar.querySelector('lib-dual-month-range-picker');
+    expect(picker).not.toBeNull();
+    expect(picker?.querySelector('input')?.getAttribute('placeholder')).toBe(ZH_TW.booking.pickupRangePlaceholder);
   });
 });

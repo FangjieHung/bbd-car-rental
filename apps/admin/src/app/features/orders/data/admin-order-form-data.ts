@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import {
+  DriverCredential,
+  IdentityDocument,
   Member,
   PriceBreakdown,
   RentalBooking,
@@ -12,6 +14,7 @@ import { MemberStore } from '../../../stores/member/member.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 import { AddOnStore } from '../../../stores/addon/addon.store';
+import { DocumentStore } from '../../../stores/document/document.store';
 import { OrderFormData, OrderQuoteInput } from '../order-form/order-form-data';
 
 /** admin 以既有 stores 實作訂單表單的參考資料來源。 */
@@ -22,6 +25,7 @@ export class AdminOrderFormData implements OrderFormData {
   private readonly bookingStore = inject(BookingStore);
   private readonly pricingStore = inject(PricingStore);
   private readonly addOnStore = inject(AddOnStore);
+  private readonly documentStore = inject(DocumentStore);
 
   readonly vehicles = this.vehicleStore.vehicles;
   readonly addOns = this.addOnStore.addOns;
@@ -65,5 +69,13 @@ export class AdminOrderFormData implements OrderFormData {
 
   depositCap(vehicle: Vehicle | undefined, quoteTotal: number): number {
     return defaultDepositForCategory(vehicle?.category, quoteTotal);
+  }
+
+  identityDocumentsOf(memberId: string): IdentityDocument[] {
+    return this.documentStore.identityDocumentsFor(memberId);
+  }
+
+  driverCredentialsOf(memberId: string): DriverCredential[] {
+    return this.documentStore.driverCredentialsFor(memberId);
   }
 }

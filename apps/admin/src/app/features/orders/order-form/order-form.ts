@@ -8,10 +8,13 @@ import {
   PaymentMethod,
   PaymentPurpose,
   PriceBreakdown,
+  ReciprocityStatus,
   RentalBooking,
   Vehicle,
+  VehicleCategory,
 } from '../../../core/models';
 import type { OrderFormData } from './order-form-data';
+import { LicensePath, driverClassRequiredValidator } from './order-driver';
 
 /**
  * 「訂單表單」積木層（見 docs/adr/0001）：型別化的 FormGroup 定義、初始值、欄位連動。
@@ -107,9 +110,10 @@ function text(value = '', required = false): FormControl<string> {
 }
 
 /**
- * 建立訂單表單。分成五個子 group，對應可獨立擺放的表單區塊：
+ * 建立訂單表單。分成六個子 group，對應可獨立擺放的表單區塊：
  * - `rental`：車輛、租期、取／還車據點（租期與車輛區塊）
  * - `renter`：承租人；`memberId` 非 null 代表已鎖定既有會員（承租人區塊）
+ * - `driver`：駕駛人的駕駛資格（4.2，第 2 步；目前駕駛人＝承租人，見 order-driver.ts），整組可留空
  * - `pricing`：保險、加購數量、訂金（費用區塊）
  * - `payments`：建立時一併排入的款項草稿，列表本身就是紀錄（僅建立訂單使用）
  * - `contract`：內部備註
@@ -131,6 +135,21 @@ export function createOrderForm(initial: OrderFormInitial = {}) {
       email: text(),
       kind: new FormControl<MemberKind>('local', { nonNullable: true, validators: Validators.required }),
       nationality: text(),
+    }),
+    driver: new FormGroup({
+      /** 只有持居留證者需要選（台灣駕照／外國駕照＋國際駕照）；其他類型由承租人類型決定。 */
+      licensePath: new FormControl<LicensePath>('taiwan', { nonNullable: true }),
+      licenseNumber: text(),
+      licenseIssuingCountry: text(),
+      /** `<input type="date">` 的 YYYY-MM-DD。 */
+      licenseExpiryDate: text(),
+      originalVehicleClassText: text(),
+      /** 刻意不預設：選錯車種會讓取車被「准駕車種不符」擋下，寧可要人員明確選。 */
+      standardizedVehicleClass: new FormControl<VehicleCategory | null>(null, {
+        validators: driverClassRequiredValidator,
+      }),
+      /** 外國旅客在這一步按「查核互惠資格」的結果；只用來判斷待補，送出時會重新查核一次（同會員視窗）。 */
+      reciprocityStatus: new FormControl<ReciprocityStatus | null>(null),
     }),
     pricing: new FormGroup({
       insurancePlanId: text(initial.insurancePlanId ?? NO_INSURANCE_VALUE),
@@ -290,6 +309,7 @@ export interface OrderFormBehaviorOptions {
  * - 選車後，取車據點若未被手動改過，預帶該車所在據點（沒有據點資料時不覆蓋）。
  * - 還車據點若未被手動改過，跟隨取車據點。
  * - `autoDeposit`：訂金未被手動改過前，跟隨訂金上限。
+ * - 駕照號碼改變時重新驗證標準化車種（填了號碼才必填，見 driverClassRequiredValidator）。
  * 連線當下也會先套用一次（例如預填了車輛但取車據點空白）。回傳的 Subscription 可由呼叫端取消，
  * 或傳入 `destroyRef` 自動取消。
  */
@@ -300,6 +320,7 @@ export function connectOrderFormBehaviors(
 ): Subscription {
   const { vehicleId, pickupLocation, returnLocation } = form.controls.rental.controls;
   const deposit = form.controls.pricing.controls.depositRequired;
+  const { licenseNumber, standardizedVehicleClass } = form.controls.driver.controls;
 
   const applyVehicleBranch = () => {
     if (pickupLocation.dirty) return;
@@ -322,6 +343,10 @@ export function connectOrderFormBehaviors(
   sub.add(vehicleId.valueChanges.subscribe(applyVehicleBranch));
   sub.add(pickupLocation.valueChanges.subscribe(followPickup));
   sub.add(form.valueChanges.subscribe(syncDeposit));
+  // 值沒變、只是驗證結果可能變了：不發 valueChanges，避免觸發上面的連動。
+  sub.add(
+    licenseNumber.valueChanges.subscribe(() => standardizedVehicleClass.updateValueAndValidity({ emitEvent: false })),
+  );
 
   if (!pickupLocation.value) applyVehicleBranch();
   if (pickupLocation.value && !returnLocation.value) followPickup(pickupLocation.value);

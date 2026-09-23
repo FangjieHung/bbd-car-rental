@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
 import { OrderDetailNavigation } from './order-detail-navigation';
-import { parseOrderDetailSection } from './order-detail-sections';
+import { VISIBLE_ORDER_DETAIL_SECTIONS, parseOrderDetailSection } from './order-detail-sections';
 
 @Component({ template: '' })
 class BlankComponent {}
@@ -34,6 +34,12 @@ describe('OrderDetailNavigation', () => {
     expect(router.url).toBe('/orders/b1');
   });
 
+  it('open() 指定目前隱藏的「文件」分頁：改開總覽（4.6，網址不帶不存在的分頁）', async () => {
+    const { nav, router } = setup();
+    await nav.open('b1', 'documents');
+    expect(router.url).toBe('/orders/b1');
+  });
+
   it('edit() 導向 /orders/:id?edit=1', async () => {
     const { nav, router } = setup();
     await nav.edit('b2');
@@ -46,5 +52,11 @@ describe('parseOrderDetailSection', () => {
     expect(parseOrderDetailSection('payments')).toBe('payments');
     expect(parseOrderDetailSection('nope')).toBe('overview');
     expect(parseOrderDetailSection(null)).toBe('overview');
+  });
+
+  it('「文件」分頁實作前先隱藏：section=documents 落回總覽', () => {
+    expect(parseOrderDetailSection('documents')).toBe('overview');
+    expect(VISIBLE_ORDER_DETAIL_SECTIONS).not.toContain('documents');
+    expect(VISIBLE_ORDER_DETAIL_SECTIONS).toEqual(['overview', 'payments', 'contract', 'handover', 'cancellation', 'activity']);
   });
 });

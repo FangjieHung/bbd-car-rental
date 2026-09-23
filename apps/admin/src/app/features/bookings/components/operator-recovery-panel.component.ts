@@ -92,6 +92,11 @@ export class OperatorRecoveryPanelComponent {
   private readonly fb = inject(NonNullableFormBuilder);
 
   readonly bookingId = input.required<string>();
+  /**
+   * 能不能開立新的復原案件（4.6：只有已預訂的訂單可以——復原失敗的結局是業者責任取消，
+   * 而取消只允許已預訂的訂單）。不能開立時仍列出既有案件；兩者都沒有就整塊不顯示。
+   */
+  readonly allowNewCase = input(true);
 
   protected readonly booking = computed(() => this.bookingStore.bookings().find((b) => b.id === this.bookingId()));
   protected readonly vehicle = computed(() => {

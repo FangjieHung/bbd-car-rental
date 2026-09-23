@@ -24,10 +24,19 @@ type UploadDriverCredentialInput = Pick<
   | 'visaPageImageAssetId'
 >;
 
+/** 同一組紀錄裡版本號最大的一筆（新上傳的紀錄接在它後面）。 */
+function latestVersionOf<T extends { version: number }>(items: T[]): T | undefined {
+  return items.reduce<T | undefined>((latest, item) => (!latest || item.version > latest.version ? item : latest), undefined);
+}
+
 /**
  * 身分證明文件與駕駛資格的薄封裝：CRUD 寫入兩個 repository，
  * 上傳後若帶有圖檔參照會呼叫 OcrGateway 取得初步辨識結果（狀態推進到 ocr_extracted），
  * 實際核對／訂正仍要靠人員呼叫 confirm 方法才會推進到 verified —— OCR 本身不算完成驗證。
+ *
+ * 版本：模型約定「每次更新以新版本追加（version 遞增、supersededId 指回前一版）」，取車判斷與
+ * 待補都取版本號最大的一筆。所以同一位會員再上傳時接在前一版後面——身分證明文件依種類各自一條版本線
+ * （換了承租人類型、改交居留證，不算取代身分證）；駕駛資格整位會員一條（取車時看的是最新的那一張）。
  */
 @Injectable({ providedIn: 'root' })
 export class DocumentStore {
@@ -52,11 +61,15 @@ export class DocumentStore {
 
   async uploadIdentityDocument(input: UploadIdentityDocumentInput): Promise<IdentityDocument> {
     const now = new Date().toISOString();
+    const previous = latestVersionOf(
+      this.identityRepo.getAll().filter((d) => d.memberId === input.memberId && d.type === input.type),
+    );
     const document: IdentityDocument = {
       id: crypto.randomUUID(),
       ...input,
       verification: { state: 'unverified' },
-      version: 1,
+      version: previous ? previous.version + 1 : 1,
+      ...(previous ? { supersededId: previous.id } : {}),
       createdAt: now,
       updatedAt: now,
     };
@@ -100,6 +113,7 @@ export class DocumentStore {
 
   async uploadDriverCredential(input: UploadDriverCredentialInput): Promise<DriverCredential> {
     const now = new Date().toISOString();
+    const previous = latestVersionOf(this.credentialRepo.getAll().filter((d) => d.memberId === input.memberId));
     const credential: DriverCredential = {
       id: crypto.randomUUID(),
       ...input,
@@ -107,7 +121,8 @@ export class DocumentStore {
       // 是否適用互惠資格查核由呼叫端另外用 checkDriverEligibility 觸發；
       // 本國籍與居留證者本來就不會呼叫那個方法，這裡先給一個中性初始值。
       reciprocityStatus: 'pending',
-      version: 1,
+      version: previous ? previous.version + 1 : 1,
+      ...(previous ? { supersededId: previous.id } : {}),
       createdAt: now,
       updatedAt: now,
     };
@@ -164,6 +179,21 @@ export class DocumentStore {
     });
     this.reloadDriverCredentials();
     return updated;
+  }
+
+  /**
+   * 只供「建立訂單失敗、補償清除這次新建的紀錄」使用（admin-order-submit.gateway 的 compensate）。
+   * 已經存在、核對過的證件不應刪除——要更新就上傳新版本。
+   */
+  removeIdentityDocument(id: string): void {
+    this.identityRepo.remove(id);
+    this.reloadIdentityDocuments();
+  }
+
+  /** 同 removeIdentityDocument：只供建立訂單失敗時補償清除。 */
+  removeDriverCredential(id: string): void {
+    this.credentialRepo.remove(id);
+    this.reloadDriverCredentials();
   }
 
   private applyIdentityOcrResult(id: string, ocr: OcrExtractionResult): IdentityDocument {

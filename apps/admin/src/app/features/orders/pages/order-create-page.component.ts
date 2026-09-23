@@ -22,13 +22,14 @@ import {
   OrderContractSigning,
   createOrderFormDerived,
   orderFormProblems,
-  orderIncompleteItems,
   orderRequirements,
 } from '../order-form/order-form-derived';
+import { incompleteFactsFromForm, orderIncompleteItems } from '../incomplete/order-incomplete';
 import { buildContractSnapshot, sameContractTerms } from '../order-form/contract-snapshot';
 import { ORDER_SUBMIT_GATEWAY, OrderSubmitInput } from '../order-form/order-submit-gateway';
 import { OrderRentalSectionComponent } from '../sections/order-rental-section.component';
 import { OrderRenterSectionComponent } from '../sections/order-renter-section.component';
+import { OrderDriverSectionComponent } from '../sections/order-driver-section.component';
 import { OrderPricingSectionComponent } from '../sections/order-pricing-section.component';
 import { OrderPaymentDraftsSectionComponent } from '../sections/order-payment-drafts-section.component';
 import { OrderContractSectionComponent } from '../sections/order-contract-section.component';
@@ -94,6 +95,7 @@ export function orderInitialFromQuery(params: ParamMap, vehicles: Vehicle[]): Or
     MatStepperModule,
     OrderRentalSectionComponent,
     OrderRenterSectionComponent,
+    OrderDriverSectionComponent,
     OrderPricingSectionComponent,
     OrderPaymentDraftsSectionComponent,
     OrderContractSectionComponent,
@@ -175,9 +177,29 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
   });
   protected readonly signatureUrl = computed(() => this.pendingSignature()?.asset.url);
 
-  readonly incompleteItems = computed(() =>
-    orderIncompleteItems(this.value(), this.derived.quote()?.total ?? 0, this.contractSigning()),
-  );
+  /**
+   * 建立後待補：與訂單詳情、訂單列表同一套規則（incomplete/order-incomplete.ts），這裡吃表單值；
+   * 選了既有會員時，證件與駕駛資格要看他已有的紀錄。
+   */
+  readonly incompleteItems = computed(() => {
+    const value = this.value();
+    const memberId = value.renter.memberId;
+    return orderIncompleteItems(
+      incompleteFactsFromForm({
+        value,
+        quoteTotal: this.derived.quote()?.total,
+        contract: this.contractSigning(),
+        ...(memberId
+          ? {
+              memberRecords: {
+                identityDocuments: this.data.identityDocumentsOf(memberId),
+                driverCredentials: this.data.driverCredentialsOf(memberId),
+              },
+            }
+          : {}),
+      }),
+    ).map((item) => item.label);
+  });
 
   /** 左側訂單摘要欄的內容。 */
   readonly summary = computed(() =>

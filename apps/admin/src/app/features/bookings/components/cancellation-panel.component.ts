@@ -40,7 +40,8 @@ function fromDatetimeLocalValue(value: string): string {
 }
 
 /**
- * 訂單詳情「取消／退款」分頁。設計文件第 9 節：
+ * 訂單詳情「取消／退款」分頁的「取消」段。設計文件第 9 節：
+ * - 4.6：不能取消的訂單只顯示一行淡色說明（不給建案表單）；已有的取消案件照樣列出（唯讀為主）。
  * - 只有 reserved 訂單可以走這個一般取消流程（Task 3 的規則：in_progress 已交車，須走還車）。
  * - 試算金額全部委派給 Task 4 的 quoteCancellation 純函式（透過 CancellationStore.quote()），
  *   本元件不重算任何金額規則，只負責組出試算輸入、即時顯示試算結果、收集建案所需的額外
