@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   AuditEntry,
   HandoverRecord,
+  needsDispatch,
   PickupReadinessInput,
   RentalBooking,
   ReminderStatus,
@@ -554,6 +555,46 @@ describe('HandoverStore', () => {
 
       const entries = auditRepo.getAll();
       expect(entries.some((e) => e.action === 'create' && e.entityId === result.record.id)).toBe(true);
+    });
+
+    it('3.7（業主問題 #1，暫定）：甲地租乙地還，還車完成後車輛所在據點改為還車據點；之後同車從原據點取車的預訂會被判定為需調度', () => {
+      configure({
+        vehicle: { location: 'mzg-airport' },
+        booking: { pickupLocation: 'mzg-airport', returnLocation: 'mzg-store' },
+      });
+      pickUpFirst();
+      const charges = handoverStore.calculateCharges(chargeInput());
+
+      handoverStore.performReturn({
+        bookingId: 'b1',
+        record: baseRecordInput({ actualAt: T_RETURN_DUE }),
+        charges,
+        actor: { actorId: 'staff1', actorName: '櫃檯人員' },
+      });
+
+      const vehicle = vehicleStore.vehicles()[0];
+      expect(vehicle.location).toBe('mzg-store');
+      // 下一筆若仍從原據點（機場）取車，此時應被判定為需調度；改在還車據點（門市）取車則不需要。
+      expect(needsDispatch(vehicle.location, 'mzg-airport')).toBe(true);
+      expect(needsDispatch(vehicle.location, 'mzg-store')).toBe(false);
+    });
+
+    it('還車據點與取車據點相同（原地還車）：車輛所在據點維持同一個據點，不受影響', () => {
+      configure({
+        vehicle: { location: 'mzg-airport' },
+        booking: { pickupLocation: 'mzg-airport', returnLocation: 'mzg-airport' },
+      });
+      pickUpFirst();
+      const charges = handoverStore.calculateCharges(chargeInput());
+
+      handoverStore.performReturn({
+        bookingId: 'b1',
+        record: baseRecordInput({ actualAt: T_RETURN_DUE }),
+        charges,
+        actor: { actorId: 'staff1', actorName: '櫃檯人員' },
+      });
+
+      expect(vehicleStore.vehicles()[0].location).toBe('mzg-airport');
     });
 
     it('人工調整金額且附理由：ChargeAdjustment 帶有該理由', () => {
