@@ -1,25 +1,25 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { PaymentMethod, PaymentPurpose } from '../../../core/models';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { OrderForm, orderFormValue } from '../order-form/order-form';
+import { PaymentMethod, PaymentPurpose } from '@car-rental/domain';
+import { ORDER_FORM_LABELS } from '../order-form-labels';
+import { OrderForm, orderFormValue } from '../order-form';
 
 /**
  * 建立訂單時一併排入的款項草稿（送出時才寫入款項紀錄）。只用於建立訂單——
  * 訂單成立後的收款屬於各自的作業，不算「編輯訂單」。
  */
 @Component({
-  selector: 'app-order-payment-drafts-section',
+  selector: 'lib-order-payment-drafts-section',
   imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './order-payment-drafts-section.component.html',
   styleUrls: ['./order-section.scss', './order-payment-drafts-section.component.scss'],
 })
 export class OrderPaymentDraftsSectionComponent {
-  protected readonly t = ZH_TW;
+  protected readonly t = inject(ORDER_FORM_LABELS);
   protected readonly purposes: PaymentPurpose[] = ['deposit', 'balance', 'adjustment'];
   protected readonly methods: PaymentMethod[] = ['cash', 'credit_card', 'line_pay', 'bank_transfer', 'customer_credit'];
 

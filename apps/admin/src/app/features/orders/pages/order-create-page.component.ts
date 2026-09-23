@@ -15,21 +15,22 @@ import {
   connectOrderFormBehaviors,
   createOrderForm,
   orderFormValue,
-} from '../order-form/order-form';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import {
+  ORDER_FORM_DATA,
+  ORDER_FORM_LABELS,
   OrderContractSigning,
   createOrderFormDerived,
   orderFormProblems,
   orderIncompleteItems,
-} from '../order-form/order-form-derived';
-import { buildContractSnapshot, sameContractTerms } from '../order-form/contract-snapshot';
-import { ORDER_SUBMIT_GATEWAY, OrderSubmitInput } from '../order-form/order-submit-gateway';
-import { OrderRentalSectionComponent } from '../sections/order-rental-section.component';
-import { OrderRenterSectionComponent } from '../sections/order-renter-section.component';
-import { OrderPricingSectionComponent } from '../sections/order-pricing-section.component';
-import { OrderPaymentDraftsSectionComponent } from '../sections/order-payment-drafts-section.component';
-import { OrderContractSectionComponent } from '../sections/order-contract-section.component';
+  buildContractSnapshot,
+  sameContractTerms,
+  ORDER_SUBMIT_GATEWAY,
+  OrderSubmitInput,
+  OrderRentalSectionComponent,
+  OrderRenterSectionComponent,
+  OrderPricingSectionComponent,
+  OrderPaymentDraftsSectionComponent,
+  OrderContractSectionComponent,
+} from '@car-rental/order-form';
 import { LeaveConfirmable } from '../navigation/confirm-leave.guard';
 
 /** 5 個步驟：租期與車輛 → 承租人 → 費用與付款 → 合約 → 確認建立。 */
@@ -96,6 +97,7 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
   protected readonly steps = ORDER_CREATE_STEPS;
 
   private readonly data = inject(ORDER_FORM_DATA);
+  private readonly labels = inject(ORDER_FORM_LABELS);
   private readonly gateway = inject(ORDER_SUBMIT_GATEWAY);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
@@ -126,7 +128,7 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
     { initialValue: 'horizontal' as StepperOrientation },
   );
 
-  private readonly problems = computed(() => orderFormProblems(this.value(), this.derived));
+  private readonly problems = computed(() => orderFormProblems(this.value(), this.derived, this.labels));
   readonly stepProblems = computed<Record<OrderCreateStep, string[]>>(() => {
     const p = this.problems();
     return { vehicle: p.rental, renter: p.renter, payment: p.pricing, contract: [], review: [] };
@@ -154,7 +156,7 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
   protected readonly signatureUrl = computed(() => this.pendingSignature()?.asset.url);
 
   readonly incompleteItems = computed(() =>
-    orderIncompleteItems(this.value(), this.derived.quote()?.total ?? 0, this.contractSigning()),
+    orderIncompleteItems(this.value(), this.derived.quote()?.total ?? 0, this.contractSigning(), this.labels),
   );
 
   constructor() {

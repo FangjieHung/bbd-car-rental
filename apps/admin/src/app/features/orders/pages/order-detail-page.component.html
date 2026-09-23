@@ -50,15 +50,15 @@
             <div class="order-detail__groups">
               <section class="ui-card order-detail__group">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.rental }}</h2>
-                <app-order-rental-section [form]="form()" [context]="editContext()" />
+                <lib-order-rental-section [form]="form()" [context]="editContext()" />
               </section>
               <section class="ui-card order-detail__group">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.renter }}</h2>
-                <app-order-renter-section [form]="form()" />
+                <lib-order-renter-section [form]="form()" />
               </section>
               <section class="ui-card order-detail__group">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.pricing }}</h2>
-                <app-order-pricing-section [form]="form()" [context]="editContext()" />
+                <lib-order-pricing-section [form]="form()" [context]="editContext()" />
               </section>
             </div>
 

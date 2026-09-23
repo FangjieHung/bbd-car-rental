@@ -8,9 +8,9 @@
       <dt>{{ t.order.vehicle }}</dt>
       <dd>{{ s.vehicle.plateNumber }}（{{ s.vehicle.model }}）</dd>
       <dt>{{ t.order.startTime }}</dt>
-      <dd>{{ fmt(s.rentalStartTime) }}</dd>
+      <dd>{{ t.formatDateTime(s.rentalStartTime) }}</dd>
       <dt>{{ t.order.endTime }}</dt>
-      <dd>{{ fmt(s.rentalEndTime) }}</dd>
+      <dd>{{ t.formatDateTime(s.rentalEndTime) }}</dd>
       <dt>{{ t.order.pickupBranch }}</dt>
       <dd>{{ s.pickupBranchId || '—' }}</dd>
       <dt>{{ t.order.returnBranch }}</dt>

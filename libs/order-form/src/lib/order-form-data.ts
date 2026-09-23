@@ -1,5 +1,5 @@
 import { InjectionToken, Signal } from '@angular/core';
-import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalOrder, Vehicle } from '../../../core/models';
+import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalOrder, Vehicle } from '@car-rental/domain';
 
 /** 報價試算輸入：日期為 YYYY-MM-DD；`addOnQty` 的 key 為 AddOn id，未列出的項目數量視為 0。 */
 export interface OrderQuoteInput {

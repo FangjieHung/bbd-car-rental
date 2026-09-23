@@ -3,23 +3,23 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { NO_INSURANCE_VALUE, OrderForm, orderFormValue } from '../order-form/order-form';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { OrderFormContext, createOrderFormDerived } from '../order-form/order-form-derived';
+import { ORDER_FORM_LABELS } from '../order-form-labels';
+import { NO_INSURANCE_VALUE, OrderForm, orderFormValue } from '../order-form';
+import { ORDER_FORM_DATA } from '../order-form-data';
+import { OrderFormContext, createOrderFormDerived } from '../order-form-derived';
 
 /**
  * 「費用」表單區塊：報價明細、保險方案、加購項目數量、訂金（含上限提示）。
  * 款項登記不在這裡（建立訂單時另由款項區塊處理；訂單成立後屬於收款作業）。不依賴 stepper。
  */
 @Component({
-  selector: 'app-order-pricing-section',
+  selector: 'lib-order-pricing-section',
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './order-pricing-section.component.html',
   styleUrl: './order-section.scss',
 })
 export class OrderPricingSectionComponent {
-  protected readonly t = ZH_TW;
+  protected readonly t = inject(ORDER_FORM_LABELS);
   protected readonly NO_INSURANCE_VALUE = NO_INSURANCE_VALUE;
   protected readonly data = inject(ORDER_FORM_DATA);
 

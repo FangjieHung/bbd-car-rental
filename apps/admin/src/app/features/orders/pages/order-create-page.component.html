@@ -24,17 +24,17 @@
           <div class="order-create__panel">
             @switch (step) {
               @case ('vehicle') {
-                <app-order-rental-section [form]="form" />
+                <lib-order-rental-section [form]="form" />
               }
               @case ('renter') {
-                <app-order-renter-section [form]="form" />
+                <lib-order-renter-section [form]="form" />
               }
               @case ('payment') {
-                <app-order-pricing-section [form]="form" />
-                <app-order-payment-drafts-section [form]="form" />
+                <lib-order-pricing-section [form]="form" />
+                <lib-order-payment-drafts-section [form]="form" />
               }
               @case ('contract') {
-                <app-order-contract-section
+                <lib-order-contract-section
                   [form]="form"
                   [preview]="previewSnapshot()"
                   [signing]="contractSigning()"

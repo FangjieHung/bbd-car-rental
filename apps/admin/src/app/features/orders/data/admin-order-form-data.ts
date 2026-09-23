@@ -12,7 +12,7 @@ import { MemberStore } from '../../../stores/member/member.store';
 import { OrderStore } from '../../../stores/order/order.store';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 import { AddOnStore } from '../../../stores/addon/addon.store';
-import { OrderFormData, OrderQuoteInput } from '../order-form/order-form-data';
+import { OrderFormData, OrderQuoteInput } from '@car-rental/order-form';
 
 /** admin 以既有 stores 實作訂單表單的參考資料來源。 */
 @Injectable()

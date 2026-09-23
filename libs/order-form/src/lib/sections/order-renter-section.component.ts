@@ -5,17 +5,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MemberKind } from '../../../core/models';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { OrderForm, lockRenterToMember, orderFormValue, unlockRenter } from '../order-form/order-form';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
+import { MemberKind } from '@car-rental/domain';
+import { ORDER_FORM_LABELS } from '../order-form-labels';
+import { OrderForm, lockRenterToMember, orderFormValue, unlockRenter } from '../order-form';
+import { ORDER_FORM_DATA } from '../order-form-data';
 
 /**
  * 「承租人」表單區塊：輸入姓名或電話可搜尋既有會員，選到後鎖定並沿用該會員；
  * 沒選既有會員時，送出會新建會員。不依賴 stepper。
  */
 @Component({
-  selector: 'app-order-renter-section',
+  selector: 'lib-order-renter-section',
   imports: [
     ReactiveFormsModule,
     MatAutocompleteModule,
@@ -28,7 +28,7 @@ import { ORDER_FORM_DATA } from '../order-form/order-form-data';
   styleUrl: './order-section.scss',
 })
 export class OrderRenterSectionComponent {
-  protected readonly t = ZH_TW;
+  protected readonly t = inject(ORDER_FORM_LABELS);
   protected readonly kinds: MemberKind[] = ['local', 'foreign_visitor', 'resident'];
   private readonly data = inject(ORDER_FORM_DATA);
 

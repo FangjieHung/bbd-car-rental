@@ -10,7 +10,7 @@
 
 ### 1.1 前端期待的介面
 
-前端把送出寫成一個可替換的 gateway（`apps/admin/src/app/features/orders/order-form/order-submit-gateway.ts`），目前由 admin 的本機 stores 實作。後端接上時實作同一個介面即可：
+前端把送出寫成一個可替換的 gateway（`libs/order-form/src/lib/order-submit-gateway.ts`），目前由 admin 的本機 stores 實作。後端接上時實作同一個介面即可：
 
 ```text
 OrderSubmitGateway
@@ -46,7 +46,7 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 2. 若有 `presignature`，比對其快照與正式快照的**條款內容**（排除 id、時間戳等每次都不同的欄位）；一致才將簽名套用到新版本並標記為已簽署，不一致則忽略簽名、合約維持未簽署。
 3. 比對必須在伺服器端進行，不能接受前端傳來的「條款一致」旗標。
 
-前端比對規則可參考 `order-form/contract-snapshot.ts` 的 `sameContractTerms`，但後端應以自己的正規化方式為準。
+前端比對規則可參考 `libs/order-form/src/lib/contract-snapshot.ts` 的 `sameContractTerms`，但後端應以自己的正規化方式為準。
 
 ### 2.2 需重新簽署
 
@@ -121,7 +121,7 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 
 - 訂單狀態只有四個：`reserved`、`in_progress`、`completed`、`cancelled`。**沒有草稿狀態**，這是刻意的決定（新增狀態會牽動可用性計算：草稿到底佔不佔車？）。
 - 付款狀態由款項紀錄獨立追蹤，不是訂單狀態的一部分。
-- 「待補項目」（未收訂金、合約未簽、證件未查核等）是**由其他紀錄衍生**的清單，不是訂單上的欄位。前端邏輯在 `features/orders/order-form/order-form-derived.ts` 的 `orderIncompleteItems`。
+- 「待補項目」（未收訂金、合約未簽、證件未查核等）是**由其他紀錄衍生**的清單，不是訂單上的欄位。前端邏輯在 `libs/order-form/src/lib/order-form-derived.ts` 的 `orderIncompleteItems`。
 - 注意：`docs/architecture/02-libs.md` 描述的舊狀態機（`pending_payment` → `confirmed` → …）已過時，以 `libs/domain/src/lib/models/enums.ts` 為準。
 
 ## 6. 付款方式的兩套列舉

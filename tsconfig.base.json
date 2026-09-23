@@ -11,7 +11,8 @@
       "@car-rental/domain": ["./libs/domain/src/index.ts"],
       "@car-rental/booking-flow": ["./libs/booking-flow/src/index.ts"],
       "@car-rental/ui": ["./libs/ui/src/index.ts"],
-      "@car-rental/contract-signing": ["./libs/contract-signing/src/index.ts"]
+      "@car-rental/contract-signing": ["./libs/contract-signing/src/index.ts"],
+      "@car-rental/order-form": ["./libs/order-form/src/index.ts"]
     }
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { signal } from '@angular/core';
-import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalOrder, Vehicle, calculatePrice } from '../../../core/models';
+import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalOrder, Vehicle, calculatePrice } from '@car-rental/domain';
 import {
   NO_INSURANCE_VALUE,
   createOrderForm,
@@ -11,9 +11,9 @@ import {
 import { OrderFormData } from './order-form-data';
 import { createOrderFormDerived, orderFormProblems, orderIncompleteItems } from './order-form-derived';
 import { buildContractSnapshot, sameContractTerms } from './contract-snapshot';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { TEST_ORDER_FORM_LABELS } from './order-form-labels.testing';
 
-const t = ZH_TW;
+const t = TEST_ORDER_FORM_LABELS;
 
 const insurance: InsurancePlan = { id: 'ins1', name: '甲式', dailyPriceFrom: 300, tags: [], coverageItems: [] };
 
@@ -189,7 +189,7 @@ describe('buildContractSnapshot / sameContractTerms', () => {
 describe('orderFormProblems（送出前檢查）', () => {
   function problemsOf(form: ReturnType<typeof createOrderForm>, data = fakeData([makeVehicle()])) {
     const value = signal(form.getRawValue());
-    return orderFormProblems(value(), createOrderFormDerived(value, data));
+    return orderFormProblems(value(), createOrderFormDerived(value, data), t);
   }
 
   it('空白表單：租期與車輛、承租人各有問題；費用沒問題', () => {
@@ -222,19 +222,19 @@ describe('orderIncompleteItems（待補項目）', () => {
   it('沿用舊規則；需重新簽署以專屬文字提示', () => {
     const v = filledForm().getRawValue();
     v.pricing.depositRequired = 600;
-    expect(orderIncompleteItems(v, 2000, 'unsigned')).toEqual([
+    expect(orderIncompleteItems(v, 2000, 'unsigned', t)).toEqual([
       t.orderForm.incomplete.missingEmail,
       t.orderForm.incomplete.depositNotCollected,
       t.orderForm.incomplete.contractNotSigned,
       t.orderForm.incomplete.balanceNotCollected,
     ]);
-    expect(orderIncompleteItems(v, 2000, 'needs_resign')).toContain(t.orderForm.incomplete.contractNeedsResign);
+    expect(orderIncompleteItems(v, 2000, 'needs_resign', t)).toContain(t.orderForm.incomplete.contractNeedsResign);
 
     v.renter.email = 'a@b.c';
     v.payments.drafts = [
       { purpose: 'deposit', method: 'cash', amount: 600 },
       { purpose: 'balance', method: 'cash', amount: 1400 },
     ];
-    expect(orderIncompleteItems(v, 2000, 'signed')).toEqual([]);
+    expect(orderIncompleteItems(v, 2000, 'signed', t)).toEqual([]);
   });
 });
