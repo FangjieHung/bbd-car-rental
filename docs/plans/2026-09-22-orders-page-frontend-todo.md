@@ -98,9 +98,8 @@
 - **交車阻擋訊息**：`libs/domain/src/lib/handover/evaluate-pickup-readiness.ts` 擋下取車時一律顯示「最新版本合約尚未簽署」，未區分「需重新簽署」。
 - **lint 只剩元件前綴這一類**（booking-flow 13、theme-pack 1 個 error）：規則要求 lib 的元件 selector 以 `lib-` 開頭，實際是 `app-`。要改就是十幾個元件連同所有使用處一起改名，**建議併入第 1 節的更名任務**；或先確認這些 lib 的元件到底該不該用 `lib-`，若不該，要改的是規則設定而非程式碼。其餘 error（依賴宣告、無障礙、空介面）已於 2026-09-22 修掉，測試也已全綠。
 
-## 8. 過時的文件
+## 8. 過時的文件（2026-09-23 已處理）
 
-以程式碼為準，下列文件需要改寫：
+`docs/architecture/` 五份文件都已逐條對照程式碼更新（訂單狀態機、`Member`、`libs/contract-signing`、官網路由與據點、保險計價）。根目錄的初版規劃書已封存到 `docs/archive/2026-07-13-初版-MVP-規劃.md`，`docs/superpowers/` 整包移除。
 
-- `docs/architecture/02-libs.md`：訂單狀態機仍寫 `pending_payment` → `confirmed`；列了已不存在的 `Customer` model（現為 `Member`）；沒有 `libs/contract-signing`
-- `docs/architecture/04-booking-flow.md`：仍寫 `pickup` / `return` query params；實際是取車據點直接吃車輛所在據點，且據點已從「機場／港口／店舖」三個分類改為具體據點 id
+往後改動架構時記得同步這幾份——它們是現行文件，有人會照著做事。
