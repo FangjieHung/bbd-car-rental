@@ -108,7 +108,9 @@
     </ul>
 
     <h3 class="order-summary__subtitle">{{ s.incompleteTitle }}</h3>
-    @if (v.incompleteItems.length > 0) {
+    @if (!requirementsMet()) {
+      <p class="order-summary__empty">{{ s.incompleteNotReady }}</p>
+    } @else if (v.incompleteItems.length > 0) {
       <ul class="order-summary__incomplete">
         @for (item of v.incompleteItems; track item) {
           <li>{{ item }}</li>

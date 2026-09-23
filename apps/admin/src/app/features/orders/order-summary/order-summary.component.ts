@@ -38,6 +38,12 @@ export class OrderSummaryComponent {
     return pickupAt && returnAt ? `${pickupAt}${this.s.periodArrow}${returnAt}` : this.s.noPeriod;
   });
 
+  /**
+   * 「建立訂單需要」四項是否都打勾了。還沒齊之前，「建立後待補」列出的項目（未提供 Email、
+   * 合約未簽署…）都還沒意義——車、租期、承租人都還沒定，談不上補；只顯示一行淡色說明。
+   */
+  protected readonly requirementsMet = computed(() => this.summary().requirements.every((r) => r.met));
+
   toggle(): void {
     this.expanded.update((v) => !v);
   }

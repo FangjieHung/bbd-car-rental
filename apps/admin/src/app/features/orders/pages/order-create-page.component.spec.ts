@@ -343,6 +343,21 @@ describe('OrderCreatePageComponent 訂單摘要欄（2.2）', () => {
     expect(items).toContain(t.bookingForm.incomplete.contractNotSigned);
   });
 
+  it('「建立訂單需要」還沒全部打勾前，「建立後待補」只顯示提示、不列項目（2.2 走查）', () => {
+    const { fixture, component } = setup();
+    fixture.detectChanges();
+    // 空白表單其實已經算得出待補項目（例如未填 Email）；但車、租期、承租人都還沒定，列出來沒意義。
+    expect(component.incompleteItems().length).toBeGreaterThan(0);
+    expect(summaryEl(fixture).querySelector('.order-summary__incomplete')).toBeNull();
+    expect(summaryEl(fixture).querySelector('.order-summary__empty')?.textContent?.trim()).toBe(
+      t.orderSummary.incompleteNotReady,
+    );
+
+    fillBaseline(component);
+    fixture.detectChanges();
+    expect(summaryEl(fixture).querySelector('.order-summary__incomplete')).toBeTruthy();
+  });
+
   it('窄版摘要列預設收合，按一下展開完整內容', () => {
     const { fixture } = setup();
     const bar = summaryEl(fixture).querySelector('.order-summary__bar') as HTMLButtonElement;
