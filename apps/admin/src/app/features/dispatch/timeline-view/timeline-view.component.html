@@ -1,42 +1,61 @@
 <div class="timeline-view">
   <div class="flex items-center gap-2">
-    <button mat-button (click)="shift(-14)">{{ t.dispatch.prevRange }}</button>
-    <button mat-button (click)="shift(14)">{{ t.dispatch.nextRange }}</button>
+    <button mat-button (click)="shift(-7)">{{ t.dispatch.prevRange }}</button>
+    <button mat-button (click)="shift(7)">{{ t.dispatch.nextRange }}</button>
   </div>
   <div class="ui-card overflow-x-auto !p-0">
-    <div class="timeline-view__canvas min-w-[900px]">
+    <div class="timeline-view__canvas">
       <div class="grid" [style.grid-template-columns]="gridCols">
-        <div class="text-xs font-bold p-2">{{ t.booking.vehicle }}</div>
+        <div class="timeline-view__corner text-xs font-bold p-2">{{ t.booking.vehicle }}</div>
         @for (d of days(); track $index) {
-          <div class="timeline-view__cell-header text-xs text-center p-2">{{ fmtDate(d) }}</div>
+          <button
+            type="button"
+            class="timeline-view__cell-header text-xs text-center p-2"
+            [class.timeline-view__cell-header--today]="$index === todayIdx()"
+            [class.timeline-view__cell-header--selected]="$index === selectedIdx()"
+            (click)="selectDate(d)"
+          >{{ fmtDate(d) }}</button>
         }
       </div>
       @for (v of rows(); track v.id) {
-        <div class="timeline-view__vehicle-row relative">
+        <div
+          class="timeline-view__vehicle-row relative"
+          [class.timeline-view__vehicle-row--maintenance]="v.status === 'maintenance'"
+        >
           <div class="grid" [style.grid-template-columns]="gridCols">
-            <div class="text-sm p-2 whitespace-nowrap">
-              {{ v.plateNumber }}
+            <div class="timeline-view__row-head p-2">
+              <div class="timeline-view__plate text-sm">{{ v.plateNumber }}</div>
+              <div class="timeline-view__muted">{{ v.model }}</div>
+              <div class="timeline-view__muted">{{ locationLabel(v) }}</div>
               @if (v.status === 'maintenance') {
-                <span class="text-xs timeline-view__muted">（{{ t.dispatch.maintenanceBlock }}）</span>
+                <div class="timeline-view__maintenance-tag">{{ t.dispatch.maintenanceBlock }}</div>
               }
             </div>
             @for (d of days(); track $index) {
-              <div
-                class="timeline-view__day min-h-10"
-                [style.background]="v.status === 'maintenance' && $index === todayIdx() ? 'var(--app-viz-4)' : null"
-              ></div>
+              <div class="timeline-view__day min-h-10"></div>
             }
           </div>
           <div class="timeline-view__blocks absolute inset-0 grid pointer-events-none" [style.grid-template-columns]="gridCols">
             <div></div>
-            @for (block of blocksOf(v.id); track block.bookingId) {
+            @for (block of blocksOf(v); track block.bookingId) {
               <button
-                class="timeline-view__booking pointer-events-auto self-center h-6 rounded text-xs truncate px-1.5 cursor-pointer font-semibold"
-                [style.background]="block.kind === 'reserved' ? 'var(--app-viz-2)' : 'var(--mat-sys-primary)'"
+                type="button"
+                class="timeline-view__booking pointer-events-auto self-center h-6 rounded text-xs px-1.5 cursor-pointer font-semibold flex items-center gap-1"
+                [class.timeline-view__booking--reserved]="block.kind === 'reserved'"
+                [class.timeline-view__booking--in-progress]="block.kind === 'in_progress'"
+                [class.timeline-view__booking--overdue]="block.overdue"
+                [class.timeline-view__booking--conflict]="block.conflict"
                 [style.grid-column]="block.startCol + 1 + ' / span ' + block.span"
                 [style.grid-row]="1"
+                [title]="blockTitle(block)"
+                [attr.aria-label]="blockTitle(block)"
                 (click)="openDetail(block.bookingId)"
-              >{{ t.booking.statusLabels[block.kind] }}</button>
+              >
+                @if (block.needsDispatch) {
+                  <span class="material-symbols-rounded timeline-view__dispatch-icon" aria-hidden="true">swap_horiz</span>
+                }
+                <span class="truncate">{{ blockLabel(block) }}</span>
+              </button>
             }
           </div>
         </div>
