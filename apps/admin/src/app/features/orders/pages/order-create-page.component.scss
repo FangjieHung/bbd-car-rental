@@ -75,6 +75,9 @@ $summary-width: 280px;
 
 .order-create__panel {
   min-width: 0;
+  // 打磨（2.2 走查）：寬螢幕下表格式內容（第 3 步）拉得太開，視線要跑很遠；給一個舒適的閱讀寬度，
+  // 靠左貼齊步驟列左緣（不加 margin auto）。摘要欄與底部操作列是各自的 grid area，不受影響。
+  max-width: 960px;
 }
 
 // ---- 底部操作列 ----
@@ -171,6 +174,29 @@ $summary-width: 280px;
       min-height: 0;
       overflow-x: hidden;
       overflow-y: auto;
+
+      // 捲動陰影（2.2 走查）：macOS 預設不顯示捲軸，內容被裁到看不見時使用者毫無提示
+      // （實測 1920×1080 第 3 步「＋ 新增一筆收款」整個在可視範圍外）。純 CSS、不用 JS／scroll 監聽：
+      // 「蓋」用 background-attachment: local，隨內容一起捲動；「陰影」用 background-attachment: scroll，
+      // 釘在可視區邊緣不動。捲到頂／底（或內容根本沒溢出）時蓋剛好蓋住陰影，自然消失。顏色用系統
+      // token（surface 當蓋、shadow 當陰影），Midnight 深色主題會自動換成對應色值。
+      background-repeat: no-repeat;
+      background-position: top, bottom, top, bottom;
+      background-size: 100% 28px, 100% 28px, 100% 10px, 100% 10px;
+      background-attachment: local, local, scroll, scroll;
+      background-image:
+        linear-gradient(var(--mat-sys-surface) 30%, transparent),
+        linear-gradient(transparent, var(--mat-sys-surface) 70%),
+        radial-gradient(
+          farthest-side at 50% 0,
+          color-mix(in srgb, var(--mat-sys-shadow) 35%, transparent),
+          transparent
+        ),
+        radial-gradient(
+          farthest-side at 50% 100%,
+          color-mix(in srgb, var(--mat-sys-shadow) 35%, transparent),
+          transparent
+        );
     }
   }
 
