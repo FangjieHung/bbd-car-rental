@@ -26,25 +26,3 @@ html {
     )
   );
 }
-
-/* ============================================================
-   訂單工作區 dialog（Task 8）與新增訂單精靈 dialog（Task 10）共用的手機全螢幕斷點：
-   panelClass 掛在 .cdk-overlay-pane 上，這個節點是各自元件自身 view 的祖先、
-   在 Angular emulated encapsulation 的範圍之外，元件自己的 scss 沒辦法選到它，
-   所以斷點規則只能放在這份全域樣式表；兩個 dialog 共用同一組規則（同一個 media block、
-   同一套屬性），只是各自掛不同的 panelClass，不重複定義兩份規則。
-   ============================================================ */
-@media (max-width: 768px) {
-  .cdk-overlay-pane.booking-workspace-dialog,
-  .cdk-overlay-pane.booking-form-wizard-dialog {
-    width: 100vw !important;
-    height: 100dvh !important;
-    max-width: 100vw !important;
-    max-height: 100dvh !important;
-  }
-
-  .booking-workspace-dialog .mat-mdc-dialog-surface,
-  .booking-form-wizard-dialog .mat-mdc-dialog-surface {
-    border-radius: 0 !important;
-  }
-}

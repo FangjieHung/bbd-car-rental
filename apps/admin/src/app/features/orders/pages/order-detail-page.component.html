@@ -1,0 +1,196 @@
+<div class="order-detail">
+  <a class="order-detail__back" [routerLink]="returnUrl">
+    <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>
+    {{ t.orderDetail.back }}
+  </a>
+
+  @if (booking(); as b) {
+    <header class="ui-card order-detail__header">
+      <div class="order-detail__heading">
+        <p class="order-detail__eyebrow">{{ t.orderDetail.title }}</p>
+        <h1 class="ui-text-title order-detail__title">{{ member()?.name ?? '—' }}</h1>
+        <app-status-chip [label]="t.booking.statusLabels[b.status]" [status]="statusKey()" />
+      </div>
+      <dl class="order-detail__meta">
+        <div>
+          <dt>{{ t.booking.vehicle }}</dt>
+          <dd>{{ vehicle()?.plateNumber ?? '—' }}@if (vehicle(); as v) {／{{ v.model }}}</dd>
+        </div>
+        <div>
+          <dt>{{ t.orderDetail.rentalPeriod }}</dt>
+          <dd>{{ fmt(b.startTime) }} – {{ fmt(b.endTime) }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <nav class="order-detail__nav" [attr.aria-label]="t.orderDetail.navAriaLabel">
+      @for (section of sections; track section) {
+        <button
+          type="button"
+          class="order-detail__nav-item"
+          [class.is-active]="activeSection() === section"
+          [attr.aria-current]="activeSection() === section ? 'page' : null"
+          [disabled]="isSectionDisabled(section)"
+          [attr.data-section]="section"
+          (click)="selectSection(section)"
+        >
+          {{ t.orderDetail.sections[section] }}
+        </button>
+      }
+    </nav>
+
+    <p class="order-detail__status" role="status" aria-live="polite">
+      {{ editing() ? t.orderDetail.editingHint : t.orderDetail.sections[activeSection()] }}
+    </p>
+
+    <div class="order-detail__panel">
+      @switch (activeSection()) {
+        @case ('overview') {
+          @if (editing()) {
+            <div class="order-detail__groups">
+              <section class="ui-card order-detail__group">
+                <h2 class="order-detail__group-title">{{ t.orderDetail.groups.rental }}</h2>
+                <app-order-rental-section [form]="form()" [context]="editContext()" />
+              </section>
+              <section class="ui-card order-detail__group">
+                <h2 class="order-detail__group-title">{{ t.orderDetail.groups.renter }}</h2>
+                <app-order-renter-section [form]="form()" />
+              </section>
+              <section class="ui-card order-detail__group">
+                <h2 class="order-detail__group-title">{{ t.orderDetail.groups.pricing }}</h2>
+                <app-order-pricing-section [form]="form()" [context]="editContext()" />
+              </section>
+            </div>
+
+            <div class="ui-card order-detail__edit-footer">
+              @if (error()) {
+                <p class="error-message" role="alert">{{ error() }}</p>
+              }
+              <div class="order-detail__actions">
+                <button mat-button type="button" class="order-detail__cancel" (click)="cancelEdit()">
+                  {{ t.common.cancel }}
+                </button>
+                <button
+                  mat-flat-button
+                  type="button"
+                  class="order-detail__save"
+                  [disabled]="saving()"
+                  (click)="save()"
+                >
+                  {{ saving() ? t.orderDetail.saving : t.orderDetail.save }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            @if (canEdit()) {
+              <div class="order-detail__toolbar">
+                <button mat-stroked-button type="button" class="order-detail__edit" (click)="startEdit()">
+                  <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                  {{ t.orderDetail.edit }}
+                </button>
+              </div>
+            }
+            <div class="order-detail__groups">
+              <section class="ui-card order-detail__group">
+                <h2 class="order-detail__group-title">{{ t.orderDetail.groups.rental }}</h2>
+                <dl class="order-detail__fields">
+                  <dt>{{ t.booking.vehicle }}</dt>
+                  <dd>{{ vehicle()?.plateNumber ?? '—' }}@if (vehicle(); as v) {（{{ v.model }}）}</dd>
+                  <dt>{{ t.booking.startTime }}</dt>
+                  <dd>{{ fmt(b.startTime) }}</dd>
+                  <dt>{{ t.booking.endTime }}</dt>
+                  <dd>{{ fmt(b.endTime) }}</dd>
+                  <dt>{{ t.booking.pickupLocation }}</dt>
+                  <dd>
+                    <span class="order-detail__branch">
+                      {{ branchName(b.pickupLocation) }}
+                      @if (needsDispatch()) {
+                        <span class="ui-chip ui-chip--info" [attr.title]="dispatchNote()">
+                          <span class="material-symbols-rounded" aria-hidden="true">swap_horiz</span>
+                          {{ t.dispatch.workList.needsDispatch }}
+                        </span>
+                      }
+                    </span>
+                    @if (needsDispatch()) {
+                      <span class="order-detail__note">{{ dispatchNote() }}</span>
+                    }
+                  </dd>
+                  <dt>{{ t.booking.returnLocation }}</dt>
+                  <dd>{{ branchName(b.returnLocation) }}</dd>
+                </dl>
+              </section>
+
+              <section class="ui-card order-detail__group">
+                <h2 class="order-detail__group-title">{{ t.orderDetail.groups.renter }}</h2>
+                <dl class="order-detail__fields">
+                  <dt>{{ t.member.name }}</dt>
+                  <dd>{{ member()?.name ?? '—' }}</dd>
+                  <dt>{{ t.member.phone }}</dt>
+                  <dd>{{ member()?.phone || '—' }}</dd>
+                  <dt>{{ t.member.email }}</dt>
+                  <dd>{{ member()?.email || '—' }}</dd>
+                  @if (member(); as m) {
+                    <dt>{{ t.member.kind }}</dt>
+                    <dd>{{ t.member.kindLabels[m.kind] }}</dd>
+                    <dt>{{ t.member.identityNumberLabel[m.kind] }}</dt>
+                    <dd>{{ m.idNumber || '—' }}</dd>
+                  }
+                </dl>
+              </section>
+
+              <section class="ui-card order-detail__group">
+                <h2 class="order-detail__group-title">{{ t.orderDetail.groups.pricing }}</h2>
+                @if (b.priceBreakdown; as q) {
+                  <dl class="order-detail__fields order-detail__fields--amounts">
+                    <dt>{{ t.bookingForm.rentalSubtotal }}</dt>
+                    <dd>{{ q.rentalSubtotal }}</dd>
+                    <dt>{{ t.bookingForm.insuranceSubtotal }}</dt>
+                    <dd>{{ q.insuranceSubtotal }}</dd>
+                    <dt>{{ t.bookingForm.addOnSubtotal }}</dt>
+                    <dd>{{ q.addOnSubtotal }}</dd>
+                    @for (line of q.addOnLines; track line.addOnId) {
+                      <dt class="order-detail__sub">{{ line.name }} × {{ line.qty }}</dt>
+                      <dd class="order-detail__sub">{{ line.amount }}</dd>
+                    }
+                    <dt class="is-total">{{ t.bookingForm.quoteTotal }}</dt>
+                    <dd class="is-total">{{ q.total }}</dd>
+                    <dt>{{ t.orderDetail.depositRequired }}</dt>
+                    <dd>{{ b.depositRequired }}</dd>
+                  </dl>
+                } @else {
+                  <p class="muted">{{ t.orderDetail.noQuote }}</p>
+                  <dl class="order-detail__fields order-detail__fields--amounts">
+                    <dt>{{ t.orderDetail.depositRequired }}</dt>
+                    <dd>{{ b.depositRequired }}</dd>
+                  </dl>
+                }
+              </section>
+            </div>
+          }
+        }
+        @case ('documents') {
+          <section class="order-detail__placeholder">{{ t.orderDetail.sections['documents'] }}</section>
+        }
+        @case ('payments') {
+          <app-payment-panel [bookingId]="b.id" />
+        }
+        @case ('contract') {
+          <app-contract-panel [bookingId]="b.id" />
+        }
+        @case ('handover') {
+          <app-handover-panel [bookingId]="b.id" />
+        }
+        @case ('cancellation') {
+          <app-operator-recovery-panel [bookingId]="b.id" />
+          <app-cancellation-panel [bookingId]="b.id" />
+          <app-customer-credit-panel [bookingId]="b.id" />
+        }
+        @case ('activity') {
+          <app-activity-timeline [bookingId]="b.id" />
+        }
+      }
+    </div>
+  } @else {
+    <p class="empty-state">{{ t.orderDetail.notFound }}</p>
+  }
+</div>

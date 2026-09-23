@@ -1,11 +1,9 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { BookingStatus, RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
@@ -16,6 +14,7 @@ import { MemberStore } from '../../../stores/member/member.store';
 import { PaymentStore } from '../../../stores/payment/payment.store';
 import { OperatorRecoveryStore } from '../../../stores/operator-recovery/operator-recovery.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
+import { BOOKING_STATUS_KEY } from '../../../shared/chips/booking-status-key';
 import { StatusKey } from '@car-rental/theme-pack';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
@@ -24,19 +23,8 @@ import {
   FilterOption,
   FilterSelectComponent,
 } from '../../../shared/filters/filter-select.component';
-import {
-  BookingFormDialogComponent,
-  BookingFormResult,
-} from '../dialogs/booking-form-dialog.component';
-import { BookingWorkspaceService } from '../services/booking-workspace.service';
-import { WorkspaceSection } from '../dialogs/booking-workspace-dialog.component';
-
-const STATUS_KEY: Record<BookingStatus, StatusKey> = {
-  reserved: 'warning',
-  in_progress: 'processing',
-  completed: 'completed',
-  cancelled: 'archived',
-};
+import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
+import { OrderDetailSection } from '../../orders/navigation/order-detail-sections';
 
 @Component({
   selector: 'app-bookings-page',
@@ -60,9 +48,8 @@ export class BookingsPageComponent {
   readonly store = inject(BookingStore);
   readonly memberStore = inject(MemberStore);
   private vehicleStore = inject(VehicleStore);
-  private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
-  private workspace = inject(BookingWorkspaceService);
+  private orderDetail = inject(OrderDetailNavigation);
   private readonly paymentStore = inject(PaymentStore);
   private readonly operatorRecoveryStore = inject(OperatorRecoveryStore);
   readonly fmt = fmtDateTime;
@@ -134,12 +121,12 @@ export class BookingsPageComponent {
   }
 
   statusKeyOf(b: RentalBooking): StatusKey {
-    return STATUS_KEY[b.status];
+    return BOOKING_STATUS_KEY[b.status];
   }
 
   // ---------------------------------------------------------------------
   // 急迫指標：逾時未還、退款待處理、業者復原處理中——每一項在畫面上都要有 icon + 文字 +
-  // 動作（不能只靠顏色），點擊一律導向同一個訂單工作區的對應分頁，不在清單裡另做判斷邏輯。
+  // 動作（不能只靠顏色），點擊一律導向同一個訂單詳情的對應分頁，不在清單裡另做判斷邏輯。
   // ---------------------------------------------------------------------
 
   isOverdueReturn(b: RentalBooking): boolean {
@@ -158,39 +145,29 @@ export class BookingsPageComponent {
     return this.isOverdueReturn(b) || this.hasRefundPending(b) || this.hasUrgentOperatorRecovery(b);
   }
 
-  goUrgent(b: RentalBooking, section: WorkspaceSection): void {
-    this.workspace.open(b.id, section);
+  goUrgent(b: RentalBooking, section: OrderDetailSection): void {
+    void this.orderDetail.open(b.id, section);
   }
 
-  /** 「辦理取車」「辦理還車」快捷操作一律開同一個訂單工作區的交還車分頁，不再繞過就緒判斷
+  /** 「辦理取車」「辦理還車」快捷操作一律開同一個訂單詳情的交還車分頁，不再繞過就緒判斷
    *  與稽核紀錄直接呼叫 BookingStore.pickUp()/complete()——那兩個方法本身仍是狀態機把關者，
    *  但完整流程（含就緒判斷、主管覆核、費用試算與稽核）只在 HandoverPanelComponent 裡走一次。 */
   handoverAction(b: RentalBooking): void {
-    this.workspace.open(b.id, 'handover');
+    void this.orderDetail.open(b.id, 'handover');
   }
 
-  /** 「取消訂單」開同一個訂單工作區的取消分頁（含責任歸屬、試算、退款／保留金撥付的完整
+  /** 「取消訂單」開同一個訂單詳情的取消分頁（含責任歸屬、試算、退款／保留金撥付的完整
    *  流程），不再是清單裡一個 confirm() 就直接呼叫 BookingStore.cancel() 的簡化版本。 */
   cancelAction(b: RentalBooking): void {
-    this.workspace.open(b.id, 'cancellation');
+    void this.orderDetail.open(b.id, 'cancellation');
   }
 
-  openWorkspace(booking: RentalBooking): void {
-    this.workspace.open(booking.id);
+  openDetail(booking: RentalBooking): void {
+    void this.orderDetail.open(booking.id);
   }
 
-  async openForm(booking: RentalBooking | null): Promise<void> {
-    const ref = this.dialog.open(BookingFormDialogComponent, {
-      data: booking,
-      width: '80vw',
-      maxWidth: '800px',
-      maxHeight: '90dvh',
-      panelClass: 'booking-form-wizard-dialog',
-    });
-    const result: BookingFormResult | undefined = await firstValueFrom(ref.afterClosed());
-    if (!result) return;
-    // 精靈本身已經完成建立/更新訂單（含會員、款項、合約、提醒）的完整寫入序列，
-    // 這裡只需要直接開工作區讓操作人員接續補其他資料，不必再呼叫 BookingStore 寫入。
-    this.workspace.open(result.bookingId);
+  /** 編輯訂單：開啟訂單詳情並直接進入總覽的編輯狀態。 */
+  editOrder(booking: RentalBooking): void {
+    void this.orderDetail.edit(booking.id);
   }
 }

@@ -1,9 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDialog } from '@angular/material/dialog';
-import { firstValueFrom } from 'rxjs';
 import { DateRange, DateStepComponent } from '@car-rental/booking-flow';
 import { startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
@@ -17,11 +16,6 @@ import {
   returnProgress,
 } from '../../dispatch/calendar-view/calendar-view.component';
 import { pickVehicle } from '../../bookings/dialogs/vehicle-picker-dialog.component';
-import {
-  BookingFormDialogComponent,
-  BookingFormResult,
-} from '../../bookings/dialogs/booking-form-dialog.component';
-import { BookingWorkspaceService } from '../../bookings/services/booking-workspace.service';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -44,29 +38,24 @@ export class DashboardPageComponent {
   private readonly todayDate = startOfDay(new Date());
 
   private readonly dialog = inject(MatDialog);
-  private readonly workspace = inject(BookingWorkspaceService);
+  private readonly router = inject(Router);
 
   readonly targetDate = signal(startOfDay(new Date()));
 
   /**
-   * 快速查詢選到車輛後，直接開新增訂單精靈並預填車輛與時段，讓查詢直接接上建立訂單。
-   * 精靈本身已經完成建立訂單（含會員/款項/合約/提醒）的完整原子寫入序列並自行處理失敗訊息，
-   * 這裡只在精靈成功關閉後直接開工作區，不必再呼叫 BookingStore.create() 或自行 catch 錯誤。
+   * 快速查詢選到車輛後，直接前往建立訂單頁並以 query params 預填車輛與時段，讓查詢直接接上建立訂單。
+   * 建立訂單頁自行完成寫入與成功後的導向；取消時會回到儀表板。
    */
   async onQuickRange(range: DateRange): Promise<void> {
     const vehicle = await pickVehicle(this.dialog, range);
     if (!vehicle) return;
-
-    const formRef = this.dialog.open(BookingFormDialogComponent, {
-      data: { vehicleId: vehicle.id, startTime: range.startDateTime, endTime: range.endDateTime },
-      width: '80vw',
-      maxWidth: '800px',
-      maxHeight: '90dvh',
-      panelClass: 'booking-form-wizard-dialog',
+    await this.router.navigate(['/orders/new'], {
+      queryParams: {
+        vehicleId: vehicle.id,
+        start: new Date(range.startDateTime).toISOString(),
+        end: new Date(range.endDateTime).toISOString(),
+      },
     });
-    const result: BookingFormResult | undefined = await firstValueFrom(formRef.afterClosed());
-    if (!result) return;
-    this.workspace.open(result.bookingId);
   }
 
   selectCalendarDate(date: Date): void {

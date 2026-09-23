@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Vehicle } from '../../../core/models';
+import { RENTAL_BRANCHES, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 export interface VehicleFormResult {
@@ -18,6 +18,7 @@ export interface VehicleFormResult {
   mileage: number;
   nextServiceMileage?: number;
   insuranceExpiry?: string;
+  location?: string;
 }
 
 @Component({
@@ -38,6 +39,8 @@ export class VehicleFormDialogComponent {
   readonly ref = inject(MatDialogRef<VehicleFormDialogComponent>);
   readonly data = inject<Vehicle | null>(MAT_DIALOG_DATA);
   private fb = inject(NonNullableFormBuilder);
+  readonly branches = RENTAL_BRANCHES;
+  private readonly initialInsuranceExpiry = toDateInputValue(this.data?.insuranceExpiry);
 
   form = this.fb.group({
     plateNumber: [this.data?.plateNumber ?? '', Validators.required],
@@ -48,12 +51,16 @@ export class VehicleFormDialogComponent {
     displacement: [this.data?.displacement ?? null],
     mileage: [this.data?.mileage ?? 0, [Validators.required, Validators.min(0)]],
     nextServiceMileage: [this.data?.nextServiceMileage ?? null],
-    insuranceExpiry: [this.data?.insuranceExpiry ?? ''],
+    insuranceExpiry: [this.initialInsuranceExpiry],
+    location: [this.data?.location ?? ''],
   });
 
   save(): void {
     if (this.form.valid) {
       const raw = this.form.getRawValue();
+      // 沒改動就原樣保留既有值（可能是完整 ISO 時間），不因輸入框格式轉換而改寫資料。
+      const insuranceExpiry =
+        raw.insuranceExpiry === this.initialInsuranceExpiry ? this.data?.insuranceExpiry : raw.insuranceExpiry;
       const result: VehicleFormResult = {
         plateNumber: raw.plateNumber,
         category: raw.category,
@@ -63,9 +70,20 @@ export class VehicleFormDialogComponent {
         mileage: raw.mileage,
         ...(raw.displacement != null ? { displacement: raw.displacement } : {}),
         ...(raw.nextServiceMileage != null ? { nextServiceMileage: raw.nextServiceMileage } : {}),
-        ...(raw.insuranceExpiry ? { insuranceExpiry: raw.insuranceExpiry } : {}),
+        ...(insuranceExpiry ? { insuranceExpiry } : {}),
+        ...(raw.location ? { location: raw.location } : {}),
       };
       this.ref.close(result);
     }
   }
+}
+
+/** 原生 `<input type="date">` 只接受 `yyyy-MM-dd`；既有資料可能是完整 ISO 時間，依使用者當地日期轉換。 */
+function toDateInputValue(value: string | undefined): string {
+  if (!value) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }

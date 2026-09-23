@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { evaluatePickupReadiness, PickupReadinessInput } from './evaluate-pickup-readiness';
+import { contractSigningState } from '../contracts/contract-signing-state';
+import { ContractSnapshot, ContractVersion } from '../models/contract-version';
 
 const NOW = '2026-10-01T09:00:00+08:00';
 
@@ -49,6 +51,41 @@ describe('evaluatePickupReadiness', () => {
     expect(result.blockers).toEqual([
       expect.objectContaining({ type: 'latest_contract_unsigned' }),
     ]);
+  });
+
+  describe('需重新簽署（舊版已簽、目前有效版本未簽）', () => {
+    const snapshot = {} as ContractSnapshot;
+    const base = { bookingId: 'b1', snapshot, createdAt: '2026-09-01T00:00:00.000Z' };
+    const signedV1Superseded: ContractVersion = {
+      ...base,
+      id: 'cv-1',
+      version: 1,
+      status: 'superseded',
+      signedAt: '2026-09-02T00:00:00.000Z',
+      supersededReason: 'vehicle',
+    };
+    const draftV2: ContractVersion = { ...base, id: 'cv-2', version: 2, status: 'draft' };
+
+    it('以 contractSigningState 推導 latestContractSigned 時，needs_resign 等同未簽署 → 擋下取車', () => {
+      const versions = [signedV1Superseded, draftV2];
+      expect(contractSigningState(versions)).toBe('needs_resign');
+
+      const result = evaluatePickupReadiness(
+        baseInput({ latestContractSigned: contractSigningState(versions) === 'signed' }),
+      );
+
+      expect(result.ready).toBe(false);
+      expect(result.blockers).toEqual([expect.objectContaining({ type: 'latest_contract_unsigned' })]);
+    });
+
+    it('新版重新簽署後 → 不再因合約擋下', () => {
+      const versions = [signedV1Superseded, { ...draftV2, status: 'signed' as const, signedAt: NOW }];
+      const result = evaluatePickupReadiness(
+        baseInput({ latestContractSigned: contractSigningState(versions) === 'signed' }),
+      );
+
+      expect(result.ready).toBe(true);
+    });
   });
 
   it('blocks when a required identity document is missing', () => {

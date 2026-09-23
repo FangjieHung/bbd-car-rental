@@ -44,7 +44,7 @@ import { MockOcrGateway } from '../../core/services/mock-ocr.gateway';
 import { DriverEligibilityGateway } from '../../core/services/driver-eligibility.gateway';
 import { MockDriverEligibilityGateway } from '../../core/services/mock-driver-eligibility.gateway';
 import { ReminderGateway } from '../../core/services/reminder.gateway';
-import { BookingWorkspaceService } from '../bookings/services/booking-workspace.service';
+import { OrderDetailNavigation } from '../orders/navigation/order-detail-navigation';
 
 function provideBreakpoint(matches: boolean) {
   return {
@@ -70,7 +70,7 @@ function providePricing() {
  * 這些 store 建構時就會 inject 各自的 repository／gateway，即使測試不呼叫相關方法，
  * TestBed 建立元件時仍會整串 DI 解析，缺一個 provider 就會整個測試直接炸掉。
  */
-function provideBookingWorkspaceRepos() {
+function provideOrderDetailRepos() {
   return [
     { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
     { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
@@ -89,10 +89,9 @@ function provideBookingWorkspaceRepos() {
     { provide: OcrGateway, useExisting: MockOcrGateway },
     MockDriverEligibilityGateway,
     { provide: DriverEligibilityGateway, useExisting: MockDriverEligibilityGateway },
-    // 預設用假的 workspace／dialog，避免每個既有測試都要處理 ActivatedRoute／Router 這些
-    // BookingWorkspaceService 真正實作才需要的相依；需要斷言「開了哪個工作區分頁」的測試
-    // 會在自己的 TestBed.configureTestingModule 裡另外覆寫這兩個 provider。
-    { provide: BookingWorkspaceService, useValue: { open: () => undefined } },
+    // 預設用假的訂單詳情導覽／dialog，避免每個既有測試都要處理 Router 這些真正導頁才需要的相依；
+    // 需要斷言「前往哪個訂單詳情分頁」的測試會在自己的 TestBed.configureTestingModule 裡另外覆寫。
+    { provide: OrderDetailNavigation, useValue: { open: () => undefined, edit: () => undefined } },
     { provide: MatDialog, useValue: { open: () => ({ afterClosed: () => of(undefined) }) } },
   ];
 }
@@ -157,7 +156,7 @@ describe('CalendarViewComponent supplied date', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -207,7 +206,7 @@ describe('CalendarViewComponent 面板開關（窄螢幕）', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -315,7 +314,7 @@ describe('CalendarViewComponent 面板開關（寬螢幕 split view）', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -364,7 +363,7 @@ describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -430,7 +429,7 @@ describe('CalendarViewComponent 面板 DOM 行為（寬螢幕）', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -465,7 +464,7 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         {
           provide: VEHICLE_REPO,
           useValue: createInMemoryRepo<Vehicle>([
@@ -509,7 +508,7 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         {
           provide: BOOKING_REPO,
@@ -540,7 +539,7 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>(members) },
@@ -675,7 +674,7 @@ describe('returnProgress（訂單16修正的還車進度語意）', () => {
 /**
  * 取車清單欄位／動作（設計文件 6.2）：付款狀態＋待收餘額、證件查核、最新合約簽署狀態、
  * 就緒判斷（可取車或具體阻擋原因），以及 pay/edit/cancel/view-contract/pickup 五個快捷操作
- * 全部導向同一個訂單工作區（不同分頁），不在清單裡另做第二套表單。
+ * 全部導向同一個訂單詳情（不同分頁），不在清單裡另做第二套表單。
  */
 describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
   const DATE = new Date(2026, 7, 4);
@@ -755,10 +754,9 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     contract?: ContractVersion | null;
     deposit?: number;
     workspaceOpen?: ReturnType<typeof vi.fn>;
-    editDialogOpen?: ReturnType<typeof vi.fn>;
   } = {}) {
     const workspaceOpen = options.workspaceOpen ?? vi.fn();
-    const editDialogOpen = options.editDialogOpen ?? vi.fn(() => ({ afterClosed: () => of(undefined) }));
+    const workspaceEdit = vi.fn();
     const identityDoc = options.identityDoc === null ? undefined : options.identityDoc ?? makeIdentityDocument();
     const credential = options.credential === null ? undefined : options.credential ?? makeDriverCredential();
     const contract = options.contract === null ? undefined : options.contract ?? makeSignedContract();
@@ -767,9 +765,8 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
-        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
-        { provide: MatDialog, useValue: { open: editDialogOpen } },
+        ...provideOrderDetailRepos(),
+        { provide: OrderDetailNavigation, useValue: { open: workspaceOpen, edit: workspaceEdit } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([makeBooking(options.booking)]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([makeMember(options.member)]) },
@@ -808,7 +805,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     fixture.componentRef.setInput('targetDate', DATE);
     fixture.detectChanges();
     const row = fixture.componentInstance.pickupWorkRows()[0];
-    return { fixture, component: fixture.componentInstance, row, workspaceOpen, editDialogOpen };
+    return { fixture, component: fixture.componentInstance, row, workspaceOpen, workspaceEdit };
   }
 
   it('齊備資料（訂金已足、合約已簽、證件已核對）顯示可取車，付款/證件/合約欄位皆正確', () => {
@@ -823,7 +820,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     expect(component.blockersOf(row)).toEqual([]);
   });
 
-  it('訂金未收足、證件缺件、合約未建立時顯示具體阻擋原因，且每一項都能導向對應工作區分頁', () => {
+  it('訂金未收足、證件缺件、合約未建立時顯示具體阻擋原因，且每一項都能導向對應的訂單詳情分頁', () => {
     const { component, row, workspaceOpen } = setup({
       deposit: 0,
       identityDoc: null,
@@ -867,8 +864,8 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     }
   });
 
-  it('pay/edit/cancel/view-contract/pickup 快捷操作都開同一個訂單工作區，不另做第二套表單', async () => {
-    const { component, row, workspaceOpen, editDialogOpen } = setup();
+  it('pay/edit/cancel/view-contract/pickup 快捷操作都開同一個訂單詳情，不另做第二套表單', () => {
+    const { component, row, workspaceOpen, workspaceEdit } = setup();
 
     component.payAction(row);
     expect(workspaceOpen).toHaveBeenLastCalledWith('b1', 'payments');
@@ -882,10 +879,9 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     component.pickupAction(row);
     expect(workspaceOpen).toHaveBeenLastCalledWith('b1', 'handover');
 
-    await component.editAction(row);
-    // 修改沿用既有訂單編輯精靈（同一顆 BookingFormDialogComponent），不是另一套簡化表單；
-    // 這裡假的 dialog.open 回傳 undefined（模擬使用者取消精靈），因此不會再呼叫一次 workspace.open。
-    expect(editDialogOpen).toHaveBeenCalled();
+    component.editAction(row);
+    // 修改直接進入訂單詳情總覽的編輯訂單（/orders/:id?edit=1），不是另一套簡化表單。
+    expect(workspaceEdit).toHaveBeenCalledWith('b1');
   });
 });
 
@@ -976,8 +972,8 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
-        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
+        ...provideOrderDetailRepos(),
+        { provide: OrderDetailNavigation, useValue: { open: workspaceOpen, edit: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
         {
           provide: BOOKING_REPO,
@@ -1069,7 +1065,7 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
     });
   });
 
-  it('view/contact/return 快捷操作：view 與 return 都開同一個訂單工作區', () => {
+  it('view/contact/return 快捷操作：view 與 return 都開同一個訂單詳情', () => {
     const { component, workspaceOpen } = setup();
     const overdueRow = component.returnWorkRows()[0];
 
@@ -1080,5 +1076,130 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
     expect(workspaceOpen).toHaveBeenLastCalledWith('overdue', 'handover');
 
     expect(component.phoneHref(overdueRow.booking)).toBe('tel:0900000000');
+  });
+});
+
+/**
+ * 需調度標記（CONTEXT.md「需調度」）：取車據點與車輛所在據點不同、且訂單仍是 reserved
+ * （車輛還沒被取走）才算需調度。只處理取車端，還車端不在本次範圍內。
+ */
+describe('CalendarViewComponent 需調度標記與篩選', () => {
+  const DATE = new Date(2026, 7, 4);
+  const START = new Date(2026, 7, 4, 10).toISOString();
+  const END = new Date(2026, 7, 5, 10).toISOString();
+
+  function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
+    return {
+      id: 'v1', plateNumber: 'ABC-123', category: 'scooter', model: 'Gogoro',
+      brand: 'Gogoro', year: 2022, status: 'available', mileage: 100, createdAt: '',
+      ...partial,
+    };
+  }
+
+  function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+    return {
+      id: 'b1', vehicleId: 'v1', memberId: 'c1',
+      startTime: START, endTime: END,
+      pickupLocation: 'mzg-airport', returnLocation: 'mzg-airport',
+      status: 'reserved', depositRequired: 0,
+      ...partial,
+    };
+  }
+
+  function setup(vehicles: Vehicle[], bookings: RentalBooking[]) {
+    TestBed.configureTestingModule({
+      providers: [
+        ...providePricing(),
+        ...provideOrderDetailRepos(),
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        {
+          provide: MEMBER_REPO,
+          useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '', kind: 'local' }]),
+        },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+        { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
+      ],
+    });
+    const fixture = TestBed.createComponent(CalendarViewComponent);
+    fixture.componentRef.setInput('targetDate', DATE);
+    fixture.detectChanges();
+    return { fixture, component: fixture.componentInstance };
+  }
+
+  it('取車據點與車輛所在據點不同、訂單為 reserved → true', () => {
+    const { component } = setup(
+      [makeVehicle({ location: 'mzg-store' })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+    );
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.needsDispatch(row)).toBe(true);
+  });
+
+  it('取車據點與車輛所在據點相同 → false', () => {
+    const { component } = setup(
+      [makeVehicle({ location: 'mzg-airport' })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+    );
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.needsDispatch(row)).toBe(false);
+  });
+
+  it('車輛沒有所在據點（不確定）→ false', () => {
+    const { component } = setup(
+      [makeVehicle({ location: undefined })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+    );
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.needsDispatch(row)).toBe(false);
+  });
+
+  it('in_progress（已取車）訂單即使據點不同也不算需調度', () => {
+    const { component } = setup(
+      [makeVehicle({ location: 'mzg-store' })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'in_progress' })],
+    );
+    const row = component.pickupWorkRows()[0];
+
+    expect(component.needsDispatch(row)).toBe(false);
+  });
+
+  it('篩選開啟時，取車清單只剩需調度的列，數量正確，關閉後恢復', () => {
+    const { component } = setup(
+      [
+        makeVehicle({ id: 'v1', location: 'mzg-store' }),
+        makeVehicle({ id: 'v2', location: 'mzg-airport' }),
+      ],
+      [
+        makeBooking({ id: 'b1', vehicleId: 'v1', pickupLocation: 'mzg-airport', status: 'reserved' }),
+        makeBooking({ id: 'b2', vehicleId: 'v2', pickupLocation: 'mzg-airport', status: 'reserved' }),
+      ],
+    );
+
+    expect(component.pickupWorkRows()).toHaveLength(2);
+    expect(component.pickupNeedsDispatchCount()).toBe(1);
+
+    component.showNeedsDispatchOnly.set(true);
+    expect(component.pickupWorkRows()).toHaveLength(1);
+    expect(component.pickupWorkRows()[0].booking.id).toBe('b1');
+
+    component.showNeedsDispatchOnly.set(false);
+    expect(component.pickupWorkRows()).toHaveLength(2);
+  });
+
+  it('篩選開啟且當天沒有需調度的取車時，清單清空（畫面顯示空狀態文字）', () => {
+    const { fixture, component } = setup(
+      [makeVehicle({ location: 'mzg-airport' })],
+      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+    );
+
+    component.showNeedsDispatchOnly.set(true);
+    fixture.detectChanges();
+
+    expect(component.pickupWorkRows()).toHaveLength(0);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('當天沒有需調度的取車');
   });
 });

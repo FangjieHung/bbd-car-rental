@@ -111,8 +111,8 @@
         <mat-label>取車地點</mat-label>
         <mat-select [ngModel]="selectedLocation()" (ngModelChange)="selectedLocation.set($event)">
           <mat-option [value]="null">不限</mat-option>
-          @for (loc of locations; track loc) {
-            <mat-option [value]="loc">{{ loc }}</mat-option>
+          @for (loc of locations; track loc.id) {
+            <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
@@ -194,7 +194,7 @@
             @if (vehicle.location) {
               <li>
                 <span class="material-symbols-rounded" aria-hidden="true">location_on</span>
-                {{ vehicle.location }}
+                {{ branchName(vehicle.location) }}
               </li>
             }
           </ul>

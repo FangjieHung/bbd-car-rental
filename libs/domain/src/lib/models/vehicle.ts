@@ -6,11 +6,6 @@ export type VehicleCategory = 'car' | 'scooter' | 'ev';
 /** 排檔方式：自排 / 手排 */
 export type Transmission = 'auto' | 'manual';
 
-/** 據點：機場 / 港口 / 店舖 */
-export type RentalLocation = '機場' | '港口' | '店舖';
-
-export const RENTAL_LOCATIONS: RentalLocation[] = ['機場', '港口', '店舖'];
-
 /** 油量政策 */
 export type FuelPolicy = 'full_to_full' | 'full_to_empty' | 'same_level';
 
@@ -60,8 +55,8 @@ export interface Vehicle {
   instantConfirm?: boolean;
   /** 提供此車款的供應商數量 */
   supplierCount?: number;
-  /** 車輛所屬據點；未填時視為不確定，篩選特定據點時不會出現 */
-  location?: RentalLocation;
+  /** 車輛所在據點 id（見 RENTAL_BRANCHES）；未填時視為不確定，篩選特定據點時不會出現 */
+  location?: string;
   /** 可選購的保險方案 */
   insurancePlans?: InsurancePlan[];
   /** 油量政策 */

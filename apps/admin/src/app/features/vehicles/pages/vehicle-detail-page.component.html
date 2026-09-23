@@ -12,6 +12,7 @@
       <p>{{ t.vehicle.year }}：{{ vehicle()!.year }}</p>
       <p>{{ t.vehicle.status }}：{{ t.vehicle.statusLabels[vehicle()!.status] }}</p>
       <p>{{ t.vehicle.mileage }}：{{ vehicle()!.mileage }}</p>
+      <p>{{ t.vehicle.location }}：{{ branchName(vehicle()!.location) }}</p>
     </section>
 
     <section class="stack-block">

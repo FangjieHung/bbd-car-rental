@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { DashboardPageComponent } from './dashboard-page.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
@@ -48,11 +48,6 @@ import { DriverEligibilityGateway } from '../../../core/services/driver-eligibil
 import { MockDriverEligibilityGateway } from '../../../core/services/mock-driver-eligibility.gateway';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
 import { VehiclePickerDialogComponent } from '../../bookings/dialogs/vehicle-picker-dialog.component';
-import {
-  BookingFormDialogComponent,
-  BookingFormResult,
-} from '../../bookings/dialogs/booking-form-dialog.component';
-import { BookingWorkspaceService } from '../../bookings/services/booking-workspace.service';
 
 // Dashboard 內嵌的 CalendarViewComponent 會用到 PricingStore。
 function providePricing() {
@@ -69,9 +64,9 @@ function providePricing() {
  * CalendarViewComponent（Task 16）的付款／文件／合約／取車就緒／還車提醒欄位額外依賴了
  * PaymentStore、DocumentStore、ContractStore、HandoverStore 與 REMINDER_STATUS_REPO，
  * DashboardPageComponent 內嵌了它，因此這裡的每個 TestBed 也都得備齊，理由同
- * calendar-view.spec.ts 的 provideBookingWorkspaceRepos()。
+ * calendar-view.spec.ts 的 provideOrderDetailRepos()。
  */
-function provideBookingWorkspaceRepos() {
+function provideOrderDetailRepos() {
   return [
     { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
     { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
@@ -98,7 +93,7 @@ describe('DashboardPageComponent child date contract', () => {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
@@ -166,7 +161,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
@@ -222,59 +217,52 @@ describe('DashboardPageComponent onQuickRange', () => {
     createdAt: new Date().toISOString(),
   };
 
-  // 新增訂單精靈已經自行完成建立訂單（含會員/款項/合約/提醒）的完整寫入序列，
-  // 只回傳新建訂單的 id；dashboard-page 不再自己呼叫 BookingStore.create()。
-  const formResult: BookingFormResult = { bookingId: 'b-new' };
-
-  function createFixture() {
-    const workspaceOpen = vi.fn();
-    // pickVehicle()/openForm() 各自對同一個 MatDialog.open() 呼叫兩次、開不同的元件；
-    // 依傳入的元件類別回傳對應的假 afterClosed() 結果，模擬使用者選車→填單兩步都完成。
-    const dialogOpen = vi.fn((dialogComponent: unknown) => {
-      if (dialogComponent === VehiclePickerDialogComponent) return { afterClosed: () => of(vehicle) };
-      if (dialogComponent === BookingFormDialogComponent) return { afterClosed: () => of(formResult) };
-      return { afterClosed: () => of(undefined) };
-    });
+  function createFixture(pickedVehicle: Vehicle | null = vehicle) {
+    // 選車仍是 dialog；選到車之後改為導向 /orders/new 建立訂單頁（不再開建單 dialog）。
+    const dialogOpen = vi.fn((dialogComponent: unknown) =>
+      dialogComponent === VehiclePickerDialogComponent
+        ? { afterClosed: () => of(pickedVehicle ?? undefined) }
+        : { afterClosed: () => of(undefined) },
+    );
 
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
-        ...provideBookingWorkspaceRepos(),
+        ...provideOrderDetailRepos(),
         provideNativeDateAdapter(),
         provideRouter([]),
         { provide: MatDialog, useValue: { open: dialogOpen } },
-        { provide: BookingWorkspaceService, useValue: { open: workspaceOpen } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
         { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '0912000111', kind: 'local' }]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const component = TestBed.createComponent(DashboardPageComponent).componentInstance;
-    return { component, workspaceOpen };
+    return { component, dialogOpen, navigate };
   }
 
-  it('快速建單成功後，用精靈回傳的訂單 id 呼叫 BookingWorkspaceService.open() 直接進工作區', async () => {
-    const { component, workspaceOpen } = createFixture();
+  it('選到車輛後導向 /orders/new，並以 query params 預填車輛與起訖時間（ISO）', async () => {
+    const { component, dialogOpen, navigate } = createFixture();
 
     await component.onQuickRange({
       startDateTime: '2026-08-20T10:00:00',
       endDateTime: '2026-08-21T10:00:00',
     });
 
-    expect(workspaceOpen).toHaveBeenCalledWith('b-new');
+    expect(dialogOpen).toHaveBeenCalledTimes(1); // 只開選車 dialog，不再開建單 dialog
+    expect(navigate).toHaveBeenCalledWith(['/orders/new'], {
+      queryParams: {
+        vehicleId: 'v1',
+        start: new Date('2026-08-20T10:00:00').toISOString(),
+        end: new Date('2026-08-21T10:00:00').toISOString(),
+      },
+    });
   });
 
-  it('選車或填單任一步驟被取消時，不建立訂單也不開工作區', async () => {
-    const { component, workspaceOpen } = createFixture();
-    // 這個 fixture 的 dialogOpen 對 VehiclePickerDialogComponent 一律回傳 vehicle；
-    // 改成回傳 undefined 來模擬「選車步驟被取消」。
-    (TestBed.inject(MatDialog).open as ReturnType<typeof vi.fn>).mockImplementation(
-      (dialogComponent: unknown) =>
-        dialogComponent === VehiclePickerDialogComponent
-          ? { afterClosed: () => of(undefined) }
-          : { afterClosed: () => of(formResult) },
-    );
+  it('選車步驟被取消時，不導頁也不建立訂單', async () => {
+    const { component, navigate } = createFixture(null);
 
     await component.onQuickRange({
       startDateTime: '2026-08-20T10:00:00',
@@ -282,6 +270,6 @@ describe('DashboardPageComponent onQuickRange', () => {
     });
 
     expect(component.bookingStore.bookings()).toHaveLength(0);
-    expect(workspaceOpen).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

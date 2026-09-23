@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { AddOn, PriceBreakdown, Vehicle } from '@car-rental/domain';
+import { AddOn, branchName, findBranch, PriceBreakdown, Vehicle } from '@car-rental/domain';
 
 /** 純展示的金額摘要。下單頁滾動時固定在視野內，讓使用者隨時看得到總價。 */
 @Component({
@@ -41,7 +41,14 @@ export class OrderSummaryCardComponent {
     return this.originalTotal === 0 ? 0 : Math.round((this.discountTotal / this.originalTotal) * 100);
   }
 
-  protected mapUrl(location: string): string {
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+  /** 據點 id → 顯示名稱（相容尚未遷移的舊資料：查不到 id 時原樣顯示）。 */
+  protected branchName(locationId: string): string {
+    return branchName(locationId);
+  }
+
+  /** 優先用據點地址查 Google 地圖，查不到據點時退回用（可能是舊資料的）原始文字查詢。 */
+  protected mapUrl(locationId: string): string {
+    const query = findBranch(locationId)?.address ?? locationId;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   }
 }

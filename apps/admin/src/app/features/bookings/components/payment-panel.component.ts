@@ -5,12 +5,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { PaymentMethod, PaymentPurpose } from '../../../core/models';
+import { PAYMENT_METHOD_OPTIONS, PaymentMethod, PaymentPurpose } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { PaymentStore } from '../../../stores/payment/payment.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
 
-const PAYMENT_METHODS: PaymentMethod[] = ['cash', 'credit_card', 'line_pay', 'bank_transfer', 'customer_credit'];
+const PAYMENT_METHODS: PaymentMethod[] = PAYMENT_METHOD_OPTIONS.map((option) => option.value);
 const PAYMENT_PURPOSES: PaymentPurpose[] = ['deposit', 'balance', 'adjustment'];
 
 /** 金額必須是大於 0 的正數；0 或負數（含手滑打錯的負號）一律視為無效輸入。 */
@@ -22,7 +22,7 @@ function positiveAmountValidator(control: { value: unknown }) {
 const BANK_LAST_FIVE_VALIDATORS = [Validators.required, Validators.pattern(/^\d{5}$/)];
 
 /**
- * 訂單工作區「款項」分頁的收付款分類帳 UI。設計文件第 4.2 節：
+ * 訂單詳情「款項」分頁的收付款分類帳 UI。設計文件第 4.2 節：
  * - 摘要區塊：原訂單報價、已確認費用調整、最新應付總額、淨實收、待收餘額、訂金應收、推導狀態。
  * - 交易列：每筆付款各自成列且不可刪除，作廢只改狀態（PaymentStore.voidPayment），
  *   維持分類帳「保留歷史」的原則（見設計原則 2）。

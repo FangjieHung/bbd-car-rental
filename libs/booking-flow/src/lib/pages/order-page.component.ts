@@ -2,7 +2,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
-import { AddOn, PriceBreakdown, Vehicle, VEHICLE_REPO } from '@car-rental/domain';
+import { AddOn, PriceBreakdown, RENTAL_BRANCHES, Vehicle, VEHICLE_REPO } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
 import { toVehicleGroup } from '../date-range';
@@ -146,7 +146,8 @@ export class OrderPageComponent {
         vehicleId: vehicle.id,
         startTime: start,
         endTime: end,
-        pickupLocation: this.pickupLocation() || '機場',
+        // 車輛沒有所在據點資料（未填視為不確定）時，落回第一個據點當保守預設值。
+        pickupLocation: this.pickupLocation() || RENTAL_BRANCHES[0].id,
         returnLocation: form.returnLocation,
         member: { name: form.name, phone: form.phone, email: form.email },
         category: vehicle.category,

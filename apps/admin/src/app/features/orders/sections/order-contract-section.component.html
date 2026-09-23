@@ -1,0 +1,65 @@
+<div class="order-section">
+  <h3 class="order-section__subtitle">{{ t.orderForm.contract.summaryTitle }}</h3>
+
+  @if (preview(); as s) {
+    <dl class="order-section__dl">
+      <dt>{{ t.member.name }}</dt>
+      <dd>{{ s.renter.name || '—' }}</dd>
+      <dt>{{ t.booking.vehicle }}</dt>
+      <dd>{{ s.vehicle.plateNumber }}（{{ s.vehicle.model }}）</dd>
+      <dt>{{ t.booking.startTime }}</dt>
+      <dd>{{ fmt(s.rentalStartTime) }}</dd>
+      <dt>{{ t.booking.endTime }}</dt>
+      <dd>{{ fmt(s.rentalEndTime) }}</dd>
+      <dt>{{ t.booking.pickupLocation }}</dt>
+      <dd>{{ s.pickupLocation || '—' }}</dd>
+      <dt>{{ t.booking.returnLocation }}</dt>
+      <dd>{{ s.returnLocation || '—' }}</dd>
+      <dt>{{ t.bookingForm.quoteTotal }}</dt>
+      <dd>{{ s.pricing.total }}</dd>
+      <dt>{{ t.bookingForm.deposit }}</dt>
+      <dd>{{ s.depositRequired }}</dd>
+    </dl>
+
+    <div class="contract-sign" [class.is-signed]="signing() === 'signed'" [class.is-stale]="signing() === 'needs_resign'">
+      @switch (signing()) {
+        @case ('signed') {
+          <div class="contract-sign__status" role="status">
+            <span class="material-symbols-rounded" aria-hidden="true">task_alt</span>
+            {{ t.orderForm.contract.signed }}
+          </div>
+          @if (signatureUrl(); as url) {
+            <img class="contract-sign__thumb" [src]="url" [alt]="t.orderForm.contract.signatureAlt" />
+          }
+        }
+        @case ('needs_resign') {
+          <div class="contract-sign__status" role="status">
+            <span class="material-symbols-rounded" aria-hidden="true">error</span>
+            {{ signingLabels.needsResignNotice }}
+          </div>
+        }
+        @default {
+          <p class="contract-sign__hint">{{ t.orderForm.contract.unsigned }}</p>
+        }
+      }
+      @if (signing() === 'signed') {
+        <button mat-stroked-button type="button" class="contract-sign__action" (click)="signRequested.emit()">
+          {{ t.orderForm.contract.resign }}
+        </button>
+      } @else {
+        <button mat-flat-button type="button" class="contract-sign__action" (click)="signRequested.emit()">
+          {{ signing() === 'needs_resign' ? t.orderForm.contract.resign : t.contractPanel.openSigningDialog }}
+        </button>
+      }
+    </div>
+  } @else {
+    <p class="order-section__hint">{{ t.orderForm.contract.previewUnavailable }}</p>
+  }
+
+  <div [formGroup]="form().controls.contract" class="contract-note">
+    <mat-form-field>
+      <mat-label>{{ t.bookingForm.internalNote }}</mat-label>
+      <textarea matInput rows="3" formControlName="internalNote"></textarea>
+    </mat-form-field>
+  </div>
+</div>

@@ -2,6 +2,10 @@
   @if (versions().length === 0) {
     <p class="contract-panel__empty">{{ t.contractPanel.noVersions }}</p>
   } @else {
+    @if (signingState() === 'needs_resign') {
+      <p class="contract-panel__needs-resign" role="status">{{ signingLabels.needsResignNotice }}</p>
+    }
+
     <nav class="contract-panel__version-nav" [attr.aria-label]="t.contractPanel.versionLabel">
       @for (v of versions(); track v.id) {
         <button
@@ -20,8 +24,6 @@
     </nav>
 
     @if (selectedVersion(); as version) {
-      <p class="contract-panel__disclaimer">{{ t.contractPanel.disclaimer }}</p>
-
       @if (version.status === 'signed') {
         <p class="contract-panel__readonly-note is-signed">{{ t.contractPanel.readOnlySigned }}</p>
       } @else if (version.status === 'superseded') {
@@ -34,154 +36,15 @@
         </p>
       }
 
-      <dl class="contract-panel__meta">
-        <dt>{{ t.contractPanel.createdAt }}</dt>
-        <dd>{{ version.createdAt | slice: 0 : 16 }}</dd>
-        @if (version.signedAt) {
-          <dt>{{ t.contractPanel.signedAt }}</dt>
-          <dd>{{ version.signedAt | slice: 0 : 16 }}</dd>
-        }
-      </dl>
-
-      <section class="contract-panel__section">
-        <h3>{{ t.contractPanel.renterSection }}</h3>
-        <dl class="contract-panel__grid">
-          <dt>{{ t.member.name }}</dt>
-          <dd>{{ version.snapshot.renter.name }}</dd>
-          <dt>{{ t.member.phone }}</dt>
-          <dd>{{ version.snapshot.renter.phone }}</dd>
-          @if (version.snapshot.renter.idNumber) {
-            <dt>{{ t.member.idNumber }}</dt>
-            <dd>{{ version.snapshot.renter.idNumber }}</dd>
-          }
-        </dl>
-
-        <h4>{{ t.contractPanel.driverSection }}</h4>
-        @if (sameDriverAsRenter()) {
-          <p class="contract-panel__same-as-renter">{{ t.contractPanel.sameAsRenter }}</p>
-        } @else {
-          <dl class="contract-panel__grid">
-            <dt>{{ t.member.name }}</dt>
-            <dd>{{ version.snapshot.driver.name }}</dd>
-            <dt>{{ t.member.phone }}</dt>
-            <dd>{{ version.snapshot.driver.phone }}</dd>
-          </dl>
-        }
-      </section>
-
-      <section class="contract-panel__section">
-        <h3>{{ t.contractPanel.vehicleSection }}</h3>
-        <dl class="contract-panel__grid">
-          <dt>{{ t.vehicle.plateNumber }}</dt>
-          <dd>{{ version.snapshot.vehicle.plateNumber }}</dd>
-          <dt>{{ t.vehicle.brand }} / {{ t.vehicle.model }}</dt>
-          <dd>{{ version.snapshot.vehicle.brand }} {{ version.snapshot.vehicle.model }}</dd>
-          <dt>{{ t.vehicle.type }}</dt>
-          <dd>{{ t.vehicle.typeLabels[version.snapshot.vehicle.category] }}</dd>
-          @if (version.snapshot.vehicle.fuelPolicy) {
-            <dt>{{ t.contractPanel.fuelPolicy }}</dt>
-            <dd>{{ t.contractPanel.fuelPolicyLabels[version.snapshot.vehicle.fuelPolicy] }}</dd>
-          }
-          @if (version.snapshot.vehicle.mileagePolicy) {
-            <dt>{{ t.contractPanel.mileagePolicy }}</dt>
-            <dd>{{ t.contractPanel.mileagePolicyLabels[version.snapshot.vehicle.mileagePolicy] }}</dd>
-          }
-          @if (version.snapshot.vehicle.energyType) {
-            <dt>{{ t.contractPanel.energyType }}</dt>
-            <dd>{{ t.contractPanel.energyTypeLabels[version.snapshot.vehicle.energyType] }}</dd>
-          }
-        </dl>
-      </section>
-
-      <section class="contract-panel__section">
-        <h3>{{ t.contractPanel.periodSection }}</h3>
-        <dl class="contract-panel__grid">
-          <dt>{{ t.booking.startTime }}</dt>
-          <dd>{{ version.snapshot.rentalStartTime | slice: 0 : 16 }}</dd>
-          <dt>{{ t.booking.endTime }}</dt>
-          <dd>{{ version.snapshot.rentalEndTime | slice: 0 : 16 }}</dd>
-          <dt>{{ t.booking.pickupLocation }}</dt>
-          <dd>{{ version.snapshot.pickupLocation }}</dd>
-          <dt>{{ t.booking.returnLocation }}</dt>
-          <dd>{{ version.snapshot.returnLocation }}</dd>
-        </dl>
-      </section>
-
-      <section class="contract-panel__section">
-        <h3>{{ t.contractPanel.pricingSection }}</h3>
-        <dl class="contract-panel__grid">
-          <dt>{{ t.bookingForm.rentalSubtotal }}</dt>
-          <dd>{{ version.snapshot.pricing.rentalSubtotal }}</dd>
-          <dt>{{ t.bookingForm.addOnSubtotal }}</dt>
-          <dd>{{ version.snapshot.pricing.addOnSubtotal }}</dd>
-          <dt>{{ t.bookingForm.insuranceSubtotal }}</dt>
-          <dd>{{ version.snapshot.pricing.insuranceSubtotal }}</dd>
-          <dt>{{ t.bookingForm.quoteTotal }}</dt>
-          <dd>{{ version.snapshot.pricing.total }}</dd>
-          <dt>{{ t.bookingForm.deposit }}</dt>
-          <dd>{{ version.snapshot.depositRequired }}</dd>
-        </dl>
-
-        @if (version.snapshot.pricing.addOnLines.length > 0) {
-          <h4>{{ t.contractPanel.addOnsSection }}</h4>
-          <ul class="contract-panel__add-on-list">
-            @for (line of version.snapshot.pricing.addOnLines; track line.addOnId) {
-              <li>{{ line.name }} × {{ line.qty }}（{{ line.amount }}）</li>
-            }
-          </ul>
-        }
-      </section>
-
-      <section class="contract-panel__section">
-        <h3>{{ t.contractPanel.disclosedRulesSection }}</h3>
-        <dl class="contract-panel__grid">
-          <dt>{{ t.contractPanel.cancellationRule }}</dt>
-          <dd>
-            {{ t.contractPanel.cancellationContractKindLabels[version.snapshot.disclosedRules.cancellationContractKind] }}
-            （{{ t.contractPanel.ruleVersion }}：{{ version.snapshot.disclosedRules.cancellationRuleVersion }}）
-          </dd>
-        </dl>
-
-        @if (version.snapshot.disclosedRules.lateReturnPolicy; as late) {
-          <h4>{{ t.contractPanel.lateReturnPolicy }}</h4>
-          <dl class="contract-panel__grid">
-            <dt>{{ t.contractPanel.graceMinutes }}</dt>
-            <dd>{{ late.graceMinutes }}</dd>
-            <dt>{{ t.contractPanel.unitMinutes }}</dt>
-            <dd>{{ late.unitMinutes }}</dd>
-            <dt>{{ t.contractPanel.feePerUnit }}</dt>
-            <dd>{{ late.feePerUnit }}</dd>
-            <dt>{{ t.contractPanel.dailyCap }}</dt>
-            <dd>{{ late.dailyCap }}</dd>
-          </dl>
-        }
-
-        @if (version.snapshot.disclosedRules.energyReturnPolicy; as energy) {
-          <h4>{{ t.contractPanel.energyReturnPolicy }}</h4>
-          <dl class="contract-panel__grid">
-            <dt>{{ t.contractPanel.energyMeasureLabels[energy.measure] }}</dt>
-            <dd>{{ energy.feePerUnit }}</dd>
-            <dt>{{ t.contractPanel.serviceFee }}</dt>
-            <dd>{{ energy.serviceFee }}</dd>
-          </dl>
-        }
-
-        @if (version.snapshot.disclosedRules.otherDisclosures?.length) {
-          <h4>{{ t.contractPanel.otherDisclosures }}</h4>
-          <ul class="contract-panel__other-disclosures">
-            @for (item of version.snapshot.disclosedRules.otherDisclosures; track item) {
-              <li>{{ item }}</li>
-            }
-          </ul>
-        }
-      </section>
-
       @if (canSign()) {
-        <section class="contract-panel__section contract-panel__sign-section">
-          <h3>{{ t.contractPanel.signSectionTitle }}</h3>
-          <app-signature-pad (signed)="onSigned($event)" />
-        </section>
+        <div class="contract-panel__sign-action">
+          <button type="button" mat-flat-button (click)="openSigningDialog()">
+            {{ t.contractPanel.openSigningDialog }}
+          </button>
+        </div>
       }
+
+      <lib-contract-document [snapshot]="version.snapshot" [version]="version" />
     }
   }
 </div>

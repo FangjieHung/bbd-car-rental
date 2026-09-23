@@ -12,7 +12,9 @@ export interface RentalBooking {
   memberId: string;
   startTime: string; // ISO
   endTime: string; // ISO
+  /** 取車據點 id（見 RENTAL_BRANCHES）；可與車輛所在據點不同，需調度時由 needsDispatch 判斷。 */
   pickupLocation: string;
+  /** 還車據點 id（見 RENTAL_BRANCHES）；可與取車據點不同（甲地租、乙地還）。 */
   returnLocation: string;
   status: BookingStatus;
   addOns?: BookingAddOnLine[];

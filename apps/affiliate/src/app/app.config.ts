@@ -16,6 +16,7 @@ import {
   PAYMENT_REPO,
   LocalStorageRepository,
   normalizeRentalBooking,
+  normalizeVehicle,
   seedVehicles,
   seedBookings,
   seedMembers,
@@ -35,7 +36,9 @@ export const appConfig: ApplicationConfig = {
     provideNativeDateAdapter(),
     {
       provide: VEHICLE_REPO,
-      useFactory: () => new LocalStorageRepository('cr.vehicles', seedVehicles),
+      // 舊資料的 location 可能還是遷移前的據點類型文字/門市全名，用 normalizeVehicle 統一轉成據點 id。
+      useFactory: () =>
+        new LocalStorageRepository('cr.vehicles', seedVehicles, undefined, normalizeVehicle),
     },
     {
       provide: BOOKING_REPO,

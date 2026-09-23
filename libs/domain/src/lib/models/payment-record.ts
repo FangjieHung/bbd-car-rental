@@ -1,9 +1,20 @@
+import { SelectOption } from './select-option';
+
 export type PaymentMethod =
   | 'cash'
   | 'credit_card'
   | 'line_pay'
   | 'bank_transfer'
   | 'customer_credit';
+
+/** 標籤取自 admin apps/admin/src/app/core/i18n/zh-tw.ts 原本的 paymentMethodLabels（現已統一到這裡）。 */
+export const PAYMENT_METHOD_OPTIONS: SelectOption<PaymentMethod>[] = [
+  { value: 'cash', label: '現金' },
+  { value: 'credit_card', label: '信用卡' },
+  { value: 'line_pay', label: 'LINE Pay' },
+  { value: 'bank_transfer', label: '匯款' },
+  { value: 'customer_credit', label: '會員購物金' },
+];
 
 export type PaymentPurpose = 'deposit' | 'balance' | 'adjustment';
 export type PaymentRecordStatus = 'pending' | 'confirmed' | 'failed' | 'voided';

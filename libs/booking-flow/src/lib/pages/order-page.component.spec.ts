@@ -160,7 +160,7 @@ describe('OrderPageComponent', () => {
     component.onConfirmSubmit(confirmForm);
     const created = bookingRepo.getAll();
     expect(created).toHaveLength(1);
-    expect(created[0].pickupLocation).toBe('機場');
+    expect(created[0].pickupLocation).toBe('mzg-airport');
   });
 
   it('缺日期時導回搜尋頁且不建立訂單', () => {

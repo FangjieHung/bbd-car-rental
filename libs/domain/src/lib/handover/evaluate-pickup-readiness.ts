@@ -63,6 +63,11 @@ export interface PickupReadinessInput {
   evaluatedAt: string;
   depositRequired: number;
   depositPaid: number;
+  /**
+   * 目前有效的合約版本是否已簽署。呼叫端請一律用
+   * `contractSigningState(versions) === 'signed'` 推導，不要自行判斷——
+   * 「需重新簽署」（舊版已簽、目前有效版本未簽）對交車而言等同未簽署，必須是 false。
+   */
   latestContractSigned: boolean;
   requiredDocuments: PickupRequiredDocument[];
   driverCredential: PickupDriverCredential;

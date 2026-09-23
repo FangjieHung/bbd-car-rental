@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { branchName } from '@car-rental/domain';
 
-/** 下單頁頂端的租期摘要，取還地點來自搜尋頁選擇並經 URL 帶入。 */
+/** 下單頁頂端的租期摘要，取還地點來自搜尋頁選擇並經 URL 帶入（皆為據點 id）。 */
 @Component({
   selector: 'app-search-criteria-bar',
   imports: [MatButtonModule],
@@ -20,8 +21,8 @@ export class SearchCriteriaBarComponent {
   protected get location(): string {
     if (!this.pickupLocation) return '';
     if (!this.returnLocation || this.returnLocation === this.pickupLocation) {
-      return this.pickupLocation;
+      return branchName(this.pickupLocation);
     }
-    return `取車 ${this.pickupLocation} ・ 還車 ${this.returnLocation}`;
+    return `取車 ${branchName(this.pickupLocation)} ・ 還車 ${branchName(this.returnLocation)}`;
   }
 }

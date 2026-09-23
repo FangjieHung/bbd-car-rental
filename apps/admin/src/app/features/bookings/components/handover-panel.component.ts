@@ -14,6 +14,7 @@ import {
   RentalBooking,
   ReturnChargeResult,
   Vehicle,
+  contractSigningState,
   deriveEnergyTypeFallback,
 } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
@@ -67,7 +68,7 @@ function fromDatetimeLocalValue(value: string): string {
 }
 
 /**
- * 訂單工作區「交還車」分頁。設計文件第 7 節與本任務 brief：
+ * 訂單詳情「交還車」分頁。設計文件第 7 節與本任務 brief：
  * - reserved 訂單顯示取車表單：即時依會員／文件／合約／付款／車輛狀態組出就緒判斷輸入，
  *   透過 HandoverStore.evaluateReadiness() 即時反映阻擋與警示；一般取車被阻擋時可視情況
  *   填寫主管覆核（操作人＋理由）；法律資格或車輛安全類別的阻擋永遠不能覆核放行。
@@ -147,7 +148,6 @@ export class HandoverPanelComponent {
       this.documentStore.identityDocumentsFor(booking.memberId).filter((d) => d.type === requiredKind),
     );
     const credential = latestByVersion(this.documentStore.driverCredentialsFor(booking.memberId));
-    const contract = this.contractStore.latestFor(booking.id);
     const depositPaid = this.paymentStore
       .paymentsFor(booking.id)
       .filter((p) => p.purpose === 'deposit' && p.status === 'confirmed')
@@ -160,7 +160,8 @@ export class HandoverPanelComponent {
       evaluatedAt: new Date().toISOString(),
       depositRequired: booking.depositRequired,
       depositPaid,
-      latestContractSigned: contract?.status === 'signed',
+      // 需重新簽署（舊版已簽、目前有效版本未簽）對交車等同未簽署，一律由領域規則判定。
+      latestContractSigned: contractSigningState(this.contractStore.versionsFor(booking.id)) === 'signed',
       requiredDocuments: [
         {
           kind: requiredKind,
