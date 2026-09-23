@@ -9,3 +9,4 @@ export * from './lib/payments';
 export * from './lib/cancellation';
 export * from './lib/handover';
 export * from './lib/contracts';
+export * from './lib/formatting';

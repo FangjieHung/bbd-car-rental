@@ -24,11 +24,33 @@ export function isoAt(daysFromToday: number, hour: number): string {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-export function fmtDateTime(iso: string): string {
-  const d = new Date(iso);
-  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+/** 全站日期格式（1.8）：「YYYY/MM/DD」。不可再顯示「YYYY-MM-DD」或 ISO 字串切片。 */
+export function fmtDate(d: Date): string {
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
 }
 
-export function fmtDate(d: Date): string {
-  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+/**
+ * 純日期欄位（例如駕照互惠查核的合法使用截止日、優惠券生效／到期日）存的是不含時間的日期
+ * 字串（"YYYY-MM-DD" 或帶時間但沒有意義的 ISO），用 fmtDateTime 會多印出一個無意義的
+ * 「00:00」讓人誤以為有實際時間點。這裡固定轉成 Date 後只取日期部分（「YYYY/MM/DD」），
+ * 不受參考年份影響（純日期欄位一律印完整年份，不像 fmtDateTime 會省略同年年份）。
+ */
+export function fmtIsoDate(iso: string): string {
+  return fmtDate(new Date(iso));
+}
+
+/**
+ * 全站日期時間格式（1.8）：與參考日期（預設「今天」）同一年只顯示「MM/DD HH:mm」，
+ * 跨年才加上年份「YYYY/MM/DD HH:mm」——列表裡大多是近期訂單，同年時不必每筆都印年份。
+ * `now` 可傳入固定的參考日期，測試才不必依賴執行當下的實際日期；一律用 `new Date(iso)`
+ * 轉換再讀本地的 getFullYear/getMonth/getDate/getHours/getMinutes，不能用字串切片
+ * （iso 是 UTC，字串切片會露出跟本地時間差 8 小時的錯誤日期／時間）。
+ */
+export function fmtDateTime(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  const sameYear = d.getFullYear() === now.getFullYear();
+  const datePart = sameYear
+    ? `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
+    : `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+  return `${datePart} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
