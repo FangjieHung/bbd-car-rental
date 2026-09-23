@@ -180,13 +180,3 @@
   justify-content: flex-end;
   gap: 0.5rem;
 }
-
-.order-detail__placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-  border: 1px dashed var(--mat-sys-outline-variant);
-  border-radius: 12px;
-  color: var(--mat-sys-on-surface-variant);
-}

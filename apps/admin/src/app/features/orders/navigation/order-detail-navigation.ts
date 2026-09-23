@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { DEFAULT_ORDER_DETAIL_SECTION, OrderDetailSection } from './order-detail-sections';
+import { DEFAULT_ORDER_DETAIL_SECTION, OrderDetailSection, isVisibleOrderDetailSection } from './order-detail-sections';
 
 /** 進入編輯狀態的 query param（`/orders/:id?edit=1`）；詳情頁讀到後會把它從網址拿掉。 */
 export const ORDER_DETAIL_EDIT_PARAM = 'edit';
@@ -14,10 +14,12 @@ export const ORDER_DETAIL_SECTION_PARAM = 'section';
 export class OrderDetailNavigation {
   private readonly router = inject(Router);
 
+  /** 目前隱藏的分頁（「文件」，見 VISIBLE_ORDER_DETAIL_SECTIONS）改開總覽，網址不帶一個不存在的分頁。 */
   open(bookingId: string, section: OrderDetailSection = DEFAULT_ORDER_DETAIL_SECTION): Promise<boolean> {
+    const target = isVisibleOrderDetailSection(section) ? section : DEFAULT_ORDER_DETAIL_SECTION;
     return this.router.navigate(
       ['/orders', bookingId],
-      section === DEFAULT_ORDER_DETAIL_SECTION ? {} : { queryParams: { [ORDER_DETAIL_SECTION_PARAM]: section } },
+      target === DEFAULT_ORDER_DETAIL_SECTION ? {} : { queryParams: { [ORDER_DETAIL_SECTION_PARAM]: target } },
     );
   }
 

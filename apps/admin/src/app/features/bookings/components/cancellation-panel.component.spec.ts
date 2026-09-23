@@ -138,6 +138,41 @@ describe('CancellationPanelComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain(ZH_TW.cancellationPanel.notApplicableNotice);
     expect(el.querySelector('form')).toBeNull();
+    // 4.6：沒有既有案件時只剩那一行說明
+    expect(el.textContent).not.toContain(ZH_TW.cancellationPanel.casesTitle);
+  });
+
+  it('4.6 已取消的訂單：不給建案表單，但照樣列出當初的取消案件', () => {
+    configure({ booking: { status: 'cancelled' } });
+    TestBed.inject(CancellationStore).createCase({
+      bookingId: 'b1',
+      contractKind: 'passenger_car',
+      responsibility: 'customer',
+      reason: 'customer_change_of_mind',
+      requestedAt: '2026-07-08T02:00:00.000Z',
+      ruleVersion: '2026.1',
+      originalDepositPaid: 500,
+      originalOtherPrepayment: 0,
+      quote: {
+        status: 'quoted',
+        disposition: 'refund',
+        daysBeforePickup: 12,
+        depositRefundRate: 1,
+        depositRefund: 500,
+        otherPrepaymentRefund: 0,
+        statutoryCompensation: 0,
+        goodwillCompensation: 0,
+        transferFee: 0,
+        totalCashDue: 500,
+        reason: 'customer_cancellation_tier_100pct',
+      },
+    });
+    const fixture = createFixture();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('form')).toBeNull();
+    expect(el.textContent).toContain(ZH_TW.cancellationPanel.notApplicableNotice);
+    expect(el.textContent).toContain(ZH_TW.cancellationPanel.casesTitle);
+    expect(el.textContent).toContain(ZH_TW.cancellationPanel.responsibilityLabels['customer']);
   });
 
   it('選擇責任歸屬與原因後，試算結果精確吻合 Task4 quoteCancellation 的輸出', () => {

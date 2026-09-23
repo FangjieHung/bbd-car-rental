@@ -27,12 +27,10 @@ import {
 import { PaymentPanelComponent } from '../../bookings/components/payment-panel.component';
 import { ContractPanelComponent } from '../../bookings/components/contract-panel.component';
 import { HandoverPanelComponent } from '../../bookings/components/handover-panel.component';
-import { CancellationPanelComponent } from '../../bookings/components/cancellation-panel.component';
-import { CustomerCreditPanelComponent } from '../../bookings/components/customer-credit-panel.component';
-import { OperatorRecoveryPanelComponent } from '../../bookings/components/operator-recovery-panel.component';
 import { ActivityTimelineComponent } from '../../bookings/components/activity-timeline.component';
 import { MemberFormDialogComponent } from '../../bookings/dialogs/member-form-dialog.component';
 import { OrderIncompleteCardComponent } from '../detail/order-incomplete-card.component';
+import { OrderCancellationTabComponent } from '../detail/order-cancellation-tab.component';
 import { OrderIncompleteItem } from '../incomplete/order-incomplete';
 import { OrderIncompleteService } from '../incomplete/order-incomplete.service';
 import {
@@ -51,8 +49,8 @@ import { OrderPricingSectionComponent } from '../sections/order-pricing-section.
 import { LeaveConfirmable } from '../navigation/confirm-leave.guard';
 import {
   DEFAULT_ORDER_DETAIL_SECTION,
-  ORDER_DETAIL_SECTIONS,
   OrderDetailSection,
+  VISIBLE_ORDER_DETAIL_SECTIONS,
   parseOrderDetailSection,
 } from '../navigation/order-detail-sections';
 import { ORDER_DETAIL_EDIT_PARAM, ORDER_DETAIL_SECTION_PARAM } from '../navigation/order-detail-navigation';
@@ -61,7 +59,8 @@ import { ORDER_DETAIL_EDIT_PARAM, ORDER_DETAIL_SECTION_PARAM } from '../navigati
 const FALLBACK_RETURN_URL = '/bookings';
 
 /**
- * `/orders/:id` 訂單詳情：頁首是訂單識別資訊，下方七個分頁，目前分頁以 `?section=` 表示（可分享、重新整理後回到同一分頁）。
+ * `/orders/:id` 訂單詳情：頁首是訂單識別資訊，下方分頁（「文件」尚未實作、先隱藏），目前分頁以 `?section=` 表示
+ * （可分享、重新整理後回到同一分頁）。
  *
  * 「編輯訂單」只作用在總覽：預設唯讀，按「編輯」後總覽在同一頁切換成表單（租期與車輛／承租人／費用三個可重用區塊），
  * 明確按「儲存」才送出，「取消」丟棄所有改動。編輯中其他分頁停用，讓儲存範圍清楚；
@@ -79,9 +78,7 @@ const FALLBACK_RETURN_URL = '/bookings';
     PaymentPanelComponent,
     ContractPanelComponent,
     HandoverPanelComponent,
-    CancellationPanelComponent,
-    CustomerCreditPanelComponent,
-    OperatorRecoveryPanelComponent,
+    OrderCancellationTabComponent,
     ActivityTimelineComponent,
     OrderIncompleteCardComponent,
     TwdPipe,
@@ -92,7 +89,8 @@ const FALLBACK_RETURN_URL = '/bookings';
 })
 export class OrderDetailPageComponent implements LeaveConfirmable {
   protected readonly t = ZH_TW;
-  protected readonly sections = ORDER_DETAIL_SECTIONS;
+  /** 分頁列：「文件」實作前先隱藏（4.6），網址帶 section=documents 時落回總覽（parseOrderDetailSection）。 */
+  protected readonly sections = VISIBLE_ORDER_DETAIL_SECTIONS;
   protected readonly fmt = fmtDateTime;
   protected readonly branchName = branchName;
 

@@ -461,6 +461,12 @@ export const ZH_TW = {
         renter: '編輯承租人資料',
       } as Record<string, string>,
     },
+    // 4.6：「取消/退款」分頁依流程分三段，各段只放目前訂單狀態能做的動作。
+    cancellationStages: {
+      cancel: '取消',
+      refund: '退款',
+      credit: '保留金',
+    },
     sections: {
       overview: '總覽',
       documents: '文件',
@@ -590,7 +596,7 @@ export const ZH_TW = {
     reminderMockSuffix: '開發模擬，非真實寄送結果',
   },
   cancellationPanel: {
-    notApplicableNotice: '此訂單狀態不適用取消流程，只有「保留」中的訂單可以取消。',
+    notApplicableNotice: '只有已預訂的訂單可以取消。',
     operatorRecoveryHint:
       '若取消原因是業者過失（車輛故障、超賣、人員調度失誤等），請先於下方「業者復原」嘗試同級調車、免費升等或合作同業轉單；三者皆失敗或顧客不同意，才在這裡建立業者責任取消案件。',
     newCaseTitle: '建立取消案件',
@@ -735,6 +741,9 @@ export const ZH_TW = {
   customerCreditPanel: {
     title: '退款與保留金撥付',
     noDisposableCases: '目前沒有待撥付的取消案件。',
+    // 4.6：退款段列出這筆訂單的退款紀錄（「退款待處理」的急迫徽章點進來要看得到那一筆）。
+    refundsTitle: '退款紀錄',
+    noCreditToExtend: '目前沒有保留金，不需要展延。',
     caseLabel: '取消案件',
     disposableAmount: '應退總額',
     disposition: '撥付方式',

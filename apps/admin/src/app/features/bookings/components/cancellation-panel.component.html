@@ -119,7 +119,12 @@
         </div>
       </form>
     </section>
+  } @else {
+    <!-- 4.6：不能取消的訂單只留一行淡色說明；已有的取消案件（例如已取消的訂單）照樣列在下面 -->
+    <p class="cancellation-panel__empty">{{ t.cancellationPanel.notApplicableNotice }}</p>
+  }
 
+  @if (eligible() || cases().length > 0) {
     <section class="cancellation-panel__section">
       <h3 class="cancellation-panel__section-title">{{ t.cancellationPanel.casesTitle }}</h3>
 
@@ -162,7 +167,5 @@
         </ul>
       }
     </section>
-  } @else {
-    <p class="cancellation-panel__empty">{{ t.cancellationPanel.notApplicableNotice }}</p>
   }
 </div>

@@ -31,6 +31,7 @@ import { ReminderGateway } from '../../../core/services/reminder.gateway';
 import { CustomerCreditPanelComponent } from './customer-credit-panel.component';
 import { CancellationStore } from '../../../stores/cancellation/cancellation.store';
 import { CreditStore, addMonths } from '../../../stores/credit/credit.store';
+import { PaymentStore } from '../../../stores/payment/payment.store';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 const T_START = '2026-07-20T09:00:00.000Z';
@@ -242,5 +243,49 @@ describe('CustomerCreditPanelComponent', () => {
     expect(() =>
       creditStore.extend({ memberId: 'm1', amount: 0, occurredAt: '2026-07-02T00:00:00.000Z', handledBy: 'staff1' }),
     ).toThrow('展延保留金必須填寫理由');
+  });
+
+  it('4.6 part="refund"：只有撥付與退款紀錄，不含保留金餘額與展延', () => {
+    const fixture = TestBed.createComponent(CustomerCreditPanelComponent);
+    fixture.componentRef.setInput('bookingId', 'b1');
+    fixture.componentRef.setInput('part', 'refund');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain(ZH_TW.customerCreditPanel.noDisposableCases);
+    expect(el.textContent).not.toContain(ZH_TW.customerCreditPanel.creditBalanceTitle);
+  });
+
+  it('4.6 part="credit"：只有保留金餘額與展延，不含撥付；沒有保留金時不給展延表單', () => {
+    seedQuotedCase();
+    const fixture = TestBed.createComponent(CustomerCreditPanelComponent);
+    fixture.componentRef.setInput('bookingId', 'b1');
+    fixture.componentRef.setInput('part', 'credit');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain(ZH_TW.customerCreditPanel.creditBalanceTitle);
+    expect(el.textContent).not.toContain(ZH_TW.customerCreditPanel.submitDisposition);
+    expect(el.querySelector('form')).toBeNull();
+    expect(el.textContent).toContain(ZH_TW.customerCreditPanel.noCreditToExtend);
+
+    TestBed.inject(CreditStore).issue({ memberId: 'm1', amount: 100, occurredAt: '2026-07-01T00:00:00.000Z', handledBy: 'staff1' });
+    fixture.detectChanges();
+    expect(el.querySelector('form')).not.toBeNull();
+    expect(el.textContent).not.toContain(ZH_TW.customerCreditPanel.noCreditToExtend);
+  });
+
+  it('4.6 退款段列出這筆訂單的退款紀錄（唯讀）', () => {
+    TestBed.inject(PaymentStore).recordRefund({
+      bookingId: 'b1',
+      amount: 300,
+      method: 'cash',
+      status: 'pending',
+      handledBy: 'staff2',
+      note: '退款處理中，待出納撥款',
+    });
+    const fixture = createFixture();
+    const list = (fixture.nativeElement as HTMLElement).querySelector('.customer-credit-panel__refunds');
+    expect(list?.textContent).toContain('NT$300');
+    expect(list?.textContent).toContain(ZH_TW.activityTimeline.refundStatusLabels['pending']);
+    expect(list?.textContent).toContain('退款處理中，待出納撥款');
   });
 });

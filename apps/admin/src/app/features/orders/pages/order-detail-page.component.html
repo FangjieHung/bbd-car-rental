@@ -197,9 +197,6 @@
             </div>
           }
         }
-        @case ('documents') {
-          <section class="order-detail__placeholder">{{ t.orderDetail.sections['documents'] }}</section>
-        }
         @case ('payments') {
           <app-payment-panel [bookingId]="b.id" />
         }
@@ -210,9 +207,8 @@
           <app-handover-panel [bookingId]="b.id" />
         }
         @case ('cancellation') {
-          <app-operator-recovery-panel [bookingId]="b.id" />
-          <app-cancellation-panel [bookingId]="b.id" />
-          <app-customer-credit-panel [bookingId]="b.id" />
+          <!-- 4.6：依「取消 → 退款 → 保留金」分三段，只放目前訂單狀態能做的動作 -->
+          <app-order-cancellation-tab [bookingId]="b.id" />
         }
         @case ('activity') {
           <app-activity-timeline [bookingId]="b.id" />

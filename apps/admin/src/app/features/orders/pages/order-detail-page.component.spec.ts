@@ -24,10 +24,8 @@ import { ConfirmDialogComponent } from '../../../shared/dialogs/confirm-dialog.c
 import { PaymentPanelComponent } from '../../bookings/components/payment-panel.component';
 import { ContractPanelComponent } from '../../bookings/components/contract-panel.component';
 import { HandoverPanelComponent } from '../../bookings/components/handover-panel.component';
-import { CancellationPanelComponent } from '../../bookings/components/cancellation-panel.component';
-import { CustomerCreditPanelComponent } from '../../bookings/components/customer-credit-panel.component';
-import { OperatorRecoveryPanelComponent } from '../../bookings/components/operator-recovery-panel.component';
 import { ActivityTimelineComponent } from '../../bookings/components/activity-timeline.component';
+import { OrderCancellationTabComponent } from '../detail/order-cancellation-tab.component';
 import { MemberFormDialogComponent } from '../../bookings/dialogs/member-form-dialog.component';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
 import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
@@ -48,12 +46,8 @@ class PaymentPanelStub { readonly bookingId = input<string>(); }
 class ContractPanelStub { readonly bookingId = input<string>(); }
 @Component({ selector: 'app-handover-panel', template: '' })
 class HandoverPanelStub { readonly bookingId = input<string>(); }
-@Component({ selector: 'app-cancellation-panel', template: '' })
-class CancellationPanelStub { readonly bookingId = input<string>(); }
-@Component({ selector: 'app-customer-credit-panel', template: '' })
-class CustomerCreditPanelStub { readonly bookingId = input<string>(); }
-@Component({ selector: 'app-operator-recovery-panel', template: '' })
-class OperatorRecoveryPanelStub { readonly bookingId = input<string>(); }
+@Component({ selector: 'app-order-cancellation-tab', template: '' })
+class CancellationTabStub { readonly bookingId = input<string>(); }
 @Component({ selector: 'app-activity-timeline', template: '' })
 class ActivityTimelineStub { readonly bookingId = input<string>(); }
 
@@ -129,22 +123,12 @@ async function setup(url: string, options: SetupOptions = {}) {
         PaymentPanelComponent,
         ContractPanelComponent,
         HandoverPanelComponent,
-        CancellationPanelComponent,
-        CustomerCreditPanelComponent,
-        OperatorRecoveryPanelComponent,
+        OrderCancellationTabComponent,
         ActivityTimelineComponent,
       ],
     },
     add: {
-      imports: [
-        PaymentPanelStub,
-        ContractPanelStub,
-        HandoverPanelStub,
-        CancellationPanelStub,
-        CustomerCreditPanelStub,
-        OperatorRecoveryPanelStub,
-        ActivityTimelineStub,
-      ],
+      imports: [PaymentPanelStub, ContractPanelStub, HandoverPanelStub, CancellationTabStub, ActivityTimelineStub],
     },
   });
 
@@ -200,6 +184,20 @@ describe('OrderDetailPageComponent 分頁與網址', () => {
     navButton(harness, 'overview').click();
     await settle(harness);
     expect(router.url).toBe('/orders/b1');
+  });
+
+  it('「文件」分頁實作前先隱藏；網址帶 section=documents 時落回總覽（4.6）', async () => {
+    const { component, harness } = await setup('/orders/b1?section=documents');
+    expect(navButton(harness, 'documents')).toBeNull();
+    const tabs = Array.from(el(harness).querySelectorAll('.order-detail__nav-item')).map((b) => b.getAttribute('data-section'));
+    expect(tabs).toEqual(['overview', 'payments', 'contract', 'handover', 'cancellation', 'activity']);
+    expect(component.activeSection()).toBe('overview');
+    expect(navButton(harness, 'overview').classList).toContain('is-active');
+  });
+
+  it('「取消/退款」分頁交給分三段的分頁元件（4.6）', async () => {
+    const { harness } = await setup('/orders/b1?section=cancellation');
+    expect(el(harness).querySelector('app-order-cancellation-tab')).not.toBeNull();
   });
 
   it('找不到訂單時顯示空狀態', async () => {
@@ -485,7 +483,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
     component.startEdit();
     await settle(harness);
 
-    for (const s of ['documents', 'payments', 'contract', 'handover', 'cancellation', 'activity']) {
+    for (const s of ['payments', 'contract', 'handover', 'cancellation', 'activity']) {
       expect(navButton(harness, s).disabled).toBe(true);
     }
     expect(navButton(harness, 'overview').disabled).toBe(false);
