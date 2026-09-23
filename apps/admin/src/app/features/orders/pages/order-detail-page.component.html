@@ -1,34 +1,32 @@
 <div class="order-detail">
-  <a class="order-detail__back" [routerLink]="returnUrl">
-    <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>
-    {{ t.orderDetail.back }}
-  </a>
+  <!-- 2.1：狀態 chip／急迫徽章移到頁首標題旁（appHeaderTitleExtra，見 header-title-extra-slot.ts）。
+       承租人姓名、eyebrow 與「← 返回」也搬到頁首（大標題＋麵包屑左側的返回按鈕，見 constructor 的 provideHeaderTitle）。 -->
+  <ng-template appHeaderTitleExtra>
+    @if (booking(); as b) {
+      <app-status-chip [label]="t.booking.statusLabels[b.status]" [status]="statusKey()" />
+      @if (isOverdueReturn()) {
+        <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('handover')">
+          <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
+          {{ t.dispatch.workList.urgentOverdueReturn }}
+        </button>
+      }
+      @if (hasRefundPending()) {
+        <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('cancellation')">
+          <span class="material-symbols-rounded" aria-hidden="true">currency_exchange</span>
+          {{ t.dispatch.workList.urgentRefundPending }}
+        </button>
+      }
+      @if (hasUrgentOperatorRecovery()) {
+        <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('cancellation')">
+          <span class="material-symbols-rounded" aria-hidden="true">build</span>
+          {{ t.dispatch.workList.urgentOperatorRecovery }}
+        </button>
+      }
+    }
+  </ng-template>
 
   @if (booking(); as b) {
     <header class="ui-card order-detail__header">
-      <div class="order-detail__heading">
-        <p class="order-detail__eyebrow">{{ t.orderDetail.title }}</p>
-        <h1 class="ui-text-title order-detail__title">{{ member()?.name ?? '—' }}</h1>
-        <app-status-chip [label]="t.booking.statusLabels[b.status]" [status]="statusKey()" />
-        @if (isOverdueReturn()) {
-          <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('handover')">
-            <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
-            {{ t.dispatch.workList.urgentOverdueReturn }}
-          </button>
-        }
-        @if (hasRefundPending()) {
-          <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('cancellation')">
-            <span class="material-symbols-rounded" aria-hidden="true">currency_exchange</span>
-            {{ t.dispatch.workList.urgentRefundPending }}
-          </button>
-        }
-        @if (hasUrgentOperatorRecovery()) {
-          <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('cancellation')">
-            <span class="material-symbols-rounded" aria-hidden="true">build</span>
-            {{ t.dispatch.workList.urgentOperatorRecovery }}
-          </button>
-        }
-      </div>
       <dl class="order-detail__meta">
         <div>
           <dt>{{ t.booking.vehicle }}</dt>

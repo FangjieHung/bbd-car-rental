@@ -7,6 +7,8 @@ import { VehicleDetailPageComponent } from './vehicle-detail-page.component';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { Vehicle, RentalBooking, MaintenanceRecord } from '../../../core/models';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { HeaderTitleSlot } from '../../../layout/header/header-title';
 import {
   MaintenanceRecordDialogComponent,
   RecordFormResult,
@@ -87,14 +89,25 @@ describe('VehicleDetailPageComponent', () => {
     return TestBed.createComponent(VehicleDetailPageComponent);
   }
 
-  it('標題同時顯示車輛型號與車牌，型號在前（型號・車牌）', () => {
+  it('2.1：頁首標題（HeaderTitleSlot）是車牌，麵包屑是商品管理 › 車輛清單；頁面自己不再渲染 h1', () => {
     const fixture = createFixture('v1', [
       makeVehicle({ id: 'v1', model: 'Gogoro 2', plateNumber: 'AAA-111' }),
     ]);
     fixture.detectChanges();
-    const el = fixture.nativeElement as HTMLElement;
-    const heading = el.querySelector('h1');
-    expect(heading?.textContent).toContain('Gogoro 2・AAA-111');
+
+    const slot = TestBed.inject(HeaderTitleSlot);
+    expect(slot.entry()?.value).toEqual({
+      title: 'AAA-111',
+      breadcrumbs: [{ label: ZH_TW.nav.productGroup }, { label: ZH_TW.nav.vehicles, route: '/vehicles' }],
+    });
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('h1')).toHaveLength(0);
+  });
+
+  it('找不到車輛時標題退回 em dash', () => {
+    const fixture = createFixture('nope', [makeVehicle({ id: 'v1', plateNumber: 'AAA-111' })]);
+    fixture.detectChanges();
+
+    expect(TestBed.inject(HeaderTitleSlot).entry()?.value.title).toBe('—');
   });
 
   it('依路由參數 id 解析出對應的車輛', () => {

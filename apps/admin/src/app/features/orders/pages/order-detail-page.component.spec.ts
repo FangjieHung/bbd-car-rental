@@ -26,6 +26,8 @@ import { AdminOrderSubmitGateway } from '../data/admin-order-submit.gateway';
 import { confirmLeaveGuard } from '../navigation/confirm-leave.guard';
 import { ORDER_ROUTES } from '../orders.routes';
 import { createOrderRepos, makeVehicle } from '../testing';
+import { HeaderTitleSlot } from '../../../layout/header/header-title';
+import { HeaderTitleExtraSlot } from '../../../layout/header/header-title-extra-slot';
 import { OrderDetailPageComponent } from './order-detail-page.component';
 
 // 各分頁的 panel 元件有自己的測試；這裡只驗證詳情頁的殼（分頁、網址、編輯訂單），用同 selector 的替身避開它們的相依。
@@ -150,15 +152,14 @@ function navButton(harness: RouterTestingHarness, section: string): HTMLButtonEl
 }
 
 describe('OrderDetailPageComponent 分頁與網址', () => {
-  it('沒帶 section 時停在總覽；頁首顯示客人、車牌／車型與狀態', async () => {
+  it('沒帶 section 時停在總覽；頁內卡片顯示車牌／車型（客人姓名與狀態改由頁首顯示，見下方頁首標題測試）', async () => {
     const { component, harness } = await setup('/orders/b1');
     expect(component.activeSection()).toBe('overview');
     expect(navButton(harness, 'overview').classList).toContain('is-active');
     const header = el(harness).querySelector('.order-detail__header')?.textContent ?? '';
-    expect(header).toContain('王小明');
     expect(header).toContain('ABC-123');
-    expect(header).toContain(ZH_TW.booking.statusLabels['reserved']);
-    expect(el(harness).querySelector('.order-detail__eyebrow')?.textContent?.trim()).toBe(ZH_TW.orderDetail.title);
+    // 2.1：姓名不再重複顯示在頁內卡片，只在頁首的大標題（h1）。
+    expect(header).not.toContain('王小明');
   });
 
   it('網址 → 分頁：?section=handover 直接開在交還車分頁', async () => {
@@ -190,33 +191,35 @@ describe('OrderDetailPageComponent 分頁與網址', () => {
   });
 });
 
+// 2.1：狀態 chip／急迫徽章改在頁首（appHeaderTitleExtra 登記到 HeaderTitleExtraSlot，由
+// HeaderComponent 渲染），不在這個頁面元件自己的 fixture DOM 裡（跟 vehicles-page.component.spec.ts
+// 對 HeaderToolbarSlot 內容的驗證方式一樣）。所以這裡驗證驅動 @if 顯示的判斷式本身，
+// 以及點擊會呼叫的 selectSection 確實把分頁切過去；樣板的 (click) 只是呼叫它，不必重複驗證。
 describe('OrderDetailPageComponent 標題旁的急迫狀態（與訂單列表同一套判斷）', () => {
-  it('逾時未還：出租中且還車時間已過，顯示急迫徽章；點擊跳到交還車分頁', async () => {
+  it('逾時未還：出租中且還車時間已過，isOverdueReturn() 成立；selectSection 能跳到交還車分頁', async () => {
     // makeBooking() 預設 endTime 是 2026-01-07（相對「現在」已過去），只要狀態是出租中就成立。
     const { component, harness } = await setup('/orders/b1', { bookings: [makeBooking({ status: 'in_progress' })] });
-    const header = el(harness).querySelector('.order-detail__header') as HTMLElement;
-    expect(header.textContent).toContain(ZH_TW.dispatch.workList.urgentOverdueReturn);
+    expect(component['isOverdueReturn']()).toBe(true);
 
-    (header.querySelector('.urgent-indicator') as HTMLButtonElement).click();
+    component.selectSection('handover');
     await settle(harness);
     expect(component.activeSection()).toBe('handover');
   });
 
-  it('退款待處理：顯示急迫徽章；點擊跳到取消/退款分頁', async () => {
+  it('退款待處理：hasRefundPending() 成立；selectSection 能跳到取消/退款分頁', async () => {
     const { component, harness } = await setup('/orders/b1', {
       bookings: [makeBooking({ status: 'cancelled' })],
       refunds: [{ id: 'r1', bookingId: 'b1', amount: 500, method: 'cash', status: 'pending', handledBy: '' }],
     });
-    const header = el(harness).querySelector('.order-detail__header') as HTMLElement;
-    expect(header.textContent).toContain(ZH_TW.dispatch.workList.urgentRefundPending);
+    expect(component['hasRefundPending']()).toBe(true);
 
-    (header.querySelector('.urgent-indicator') as HTMLButtonElement).click();
+    component.selectSection('cancellation');
     await settle(harness);
     expect(component.activeSection()).toBe('cancellation');
   });
 
-  it('業者復原處理中：顯示急迫徽章；點擊跳到取消/退款分頁', async () => {
-    const { harness } = await setup('/orders/b1', {
+  it('業者復原處理中：hasUrgentOperatorRecovery() 成立', async () => {
+    const { component } = await setup('/orders/b1', {
       operatorRecoveryCases: [
         {
           id: 'orc1',
@@ -234,13 +237,44 @@ describe('OrderDetailPageComponent 標題旁的急迫狀態（與訂單列表同
         },
       ],
     });
-    const header = el(harness).querySelector('.order-detail__header') as HTMLElement;
-    expect(header.textContent).toContain(ZH_TW.dispatch.workList.urgentOperatorRecovery);
+    expect(component['hasUrgentOperatorRecovery']()).toBe(true);
   });
 
-  it('一般訂單（無急迫狀態）不顯示任何急迫徽章', async () => {
+  it('一般訂單（無急迫狀態）三個判斷都不成立', async () => {
+    const { component } = await setup('/orders/b1');
+    expect(component['isOverdueReturn']()).toBe(false);
+    expect(component['hasRefundPending']()).toBe(false);
+    expect(component['hasUrgentOperatorRecovery']()).toBe(false);
+  });
+});
+
+describe('OrderDetailPageComponent 頁首標題（2.1：麵包屑「訂單管理」› 大標題＝承租人姓名）', () => {
+  it('登記到 HeaderTitleSlot：標題是承租人姓名、麵包屑指回訂單列表、backTo 帶 returnUrl', async () => {
+    const { component } = await setup('/orders/b1');
+    const slot = TestBed.inject(HeaderTitleSlot);
+
+    expect(slot.entry()?.value).toEqual({
+      title: '王小明',
+      breadcrumbs: [{ label: ZH_TW.nav.bookings, route: '/bookings' }],
+      backTo: component['returnUrl'],
+    });
+  });
+
+  it('找不到會員時標題退回 em dash，不是空字串或例外', async () => {
+    const { component } = await setup('/orders/b1', { bookings: [makeBooking({ memberId: 'no-such-member' })] });
+    const slot = TestBed.inject(HeaderTitleSlot);
+    expect(slot.entry()?.value.title).toBe('—');
+    expect(component['member']()).toBeUndefined();
+  });
+
+  it('appHeaderTitleExtra 已登記模板（狀態 chip／急迫徽章的渲染位置）', async () => {
+    await setup('/orders/b1');
+    expect(TestBed.inject(HeaderTitleExtraSlot).template()).not.toBeNull();
+  });
+
+  it('頁面本身不再渲染 h1（頁面唯一的 h1 在頁首）', async () => {
     const { harness } = await setup('/orders/b1');
-    expect(el(harness).querySelector('.urgent-indicator')).toBeNull();
+    expect(el(harness).querySelectorAll('h1')).toHaveLength(0);
   });
 });
 

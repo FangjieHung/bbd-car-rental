@@ -15,6 +15,7 @@ import { ORDER_CREATE_STEPS, OrderCreatePageComponent } from './order-create-pag
 import { ORDER_ROUTES } from '../orders.routes';
 import { confirmLeaveGuard } from '../navigation/confirm-leave.guard';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { HeaderTitleSlot } from '../../../layout/header/header-title';
 
 interface SetupOptions {
   query?: Record<string, string>;
@@ -269,5 +270,18 @@ describe('OrderCreatePageComponent 離開確認（confirmLeaveGuard）', () => {
     await component.cancel();
     expect(navigateByUrl).toHaveBeenCalledWith('/bookings');
     expect(component.unsavedChangesMessage()).toBeNull();
+  });
+});
+
+describe('OrderCreatePageComponent 頁首標題（2.1：麵包屑「訂單管理」› 大標題「新增訂單」）', () => {
+  it('登記到 HeaderTitleSlot，取代頁內自己的標題；頁面本身不再有 h1', () => {
+    const { fixture } = setup();
+    const slot = TestBed.inject(HeaderTitleSlot);
+
+    expect(slot.entry()?.value).toEqual({
+      title: ZH_TW.bookingForm.title,
+      breadcrumbs: [{ label: ZH_TW.nav.bookings, route: '/bookings' }],
+    });
+    expect(fixture.nativeElement.querySelectorAll('h1')).toHaveLength(0);
   });
 });

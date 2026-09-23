@@ -48,8 +48,10 @@
   font-size: 1.1rem;
 }
 
-.brand-copy h1 {
+.brand-copy .brand-name {
   margin: 0;
+  // 現在是 <p>，會被下面 `.brand-copy p` 的 muted 色蓋到；換回原本 h1 時期繼承的 --app-shell-on。
+  color: var(--app-shell-on);
   font-size: 1rem;
   font-weight: 700;
 }

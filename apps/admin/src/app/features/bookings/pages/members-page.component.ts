@@ -10,6 +10,7 @@ import { MemberStore } from '../../../stores/member/member.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
+import { provideHeaderTitle } from '../../../layout/header/header-title';
 import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
 import { MemberFormDialogComponent } from '../dialogs/member-form-dialog.component';
 
@@ -33,6 +34,14 @@ export class MembersPageComponent {
   private snackBar = inject(MatSnackBar);
 
   readonly labels = ADMIN_DATA_TABLE_LABELS;
+
+  constructor() {
+    // 2.1：頁首麵包屑「訂單管理」（可點回列表）› 大標題「會員」（原本誤顯示「訂單管理」）。
+    provideHeaderTitle(() => ({
+      title: this.t.membersPage.title,
+      breadcrumbs: [{ label: this.t.nav.bookings, route: '/bookings' }],
+    }));
+  }
 
   readonly columns: DataTableColumn<Member>[] = [
     { key: 'name', label: this.t.member.name, primary: true },

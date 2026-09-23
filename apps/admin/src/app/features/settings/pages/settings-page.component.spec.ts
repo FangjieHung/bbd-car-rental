@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { COLOR_THEMES, ThemeService, texture } from '@car-rental/theme-pack';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { HeaderTitleSlot } from '../../../layout/header/header-title';
 import { SettingsPageComponent } from './settings-page.component';
 
 describe('SettingsPageComponent', () => {
@@ -9,15 +11,25 @@ describe('SettingsPageComponent', () => {
     TestBed.configureTestingModule({ imports: [SettingsPageComponent] });
   });
 
-  it('顯示系統設定標題與建置中文案', () => {
+  it('顯示外觀設定文案', () => {
     const fixture = TestBed.createComponent(SettingsPageComponent);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-    expect(text).toContain('系統設定');
     expect(text).toContain('外觀設定');
     expect(text).toContain('質地');
     expect(text).toContain('配色');
+  });
+
+  it('2.1：頁首標題登記為「設定」（不再誤退回「總覽」），頁面本身不渲染 h1', () => {
+    const fixture = TestBed.createComponent(SettingsPageComponent);
+    fixture.detectChanges();
+
+    expect(TestBed.inject(HeaderTitleSlot).entry()?.value).toEqual({
+      title: ZH_TW.settingsPage.title,
+      breadcrumbs: [],
+    });
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('h1')).toHaveLength(0);
   });
 
   it('顯示所有質地與配色選項', () => {

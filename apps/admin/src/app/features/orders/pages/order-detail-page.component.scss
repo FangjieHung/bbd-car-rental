@@ -22,50 +22,11 @@
   }
 }
 
-.order-detail__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  width: fit-content;
-  color: var(--mat-sys-on-surface-variant);
-  text-decoration: none;
-  font-size: 0.875rem;
-
-  .material-symbols-rounded {
-    font-size: 1.125rem;
-  }
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .order-detail__header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  justify-content: space-between;
   gap: 0.75rem 2rem;
-}
-
-.order-detail__heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.75rem;
-  min-width: 0;
-}
-
-.order-detail__eyebrow {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: 0.8125rem;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.order-detail__title {
-  margin: 0;
-  overflow-wrap: anywhere;
 }
 
 .order-detail__meta {

@@ -2,6 +2,10 @@ import { optionLabelMap, PAYMENT_METHOD_OPTIONS } from '@car-rental/domain';
 
 export const ZH_TW = {
   app: { title: '澎湖租車後台' },
+  // /login 頁首標題（找不到選單對應時的頁面覆寫，見 2.1）。
+  loginPage: {
+    title: '登入',
+  },
   nav: {
     dashboard: '總覽',
     productGroup: '商品管理',
@@ -79,6 +83,10 @@ export const ZH_TW = {
     locationUnspecified: '未指定',
     maintenanceOnlyFilter: '只看待保養',
     removeMaintenanceOnlyFilter: '移除「只看待保養」篩選',
+  },
+  // /bookings/members 頁首標題（2.1：頁首大標題不再誤顯示「訂單管理」）。
+  membersPage: {
+    title: '會員',
   },
   member: {
     name: '姓名',
@@ -763,6 +771,10 @@ export const ZH_TW = {
     validFrom: '生效日',
     validTo: '到期日',
   },
+  // /settings 頁首標題（2.1：不再誤退回「總覽」）。
+  settingsPage: {
+    title: '設定',
+  },
   // 總覽頁首按鈕（1.4：原本寫死在樣板裡的中文，改從這裡讀）。
   dashboard: {
     newOrder: '新增訂單',
@@ -806,5 +818,8 @@ export const ZH_TW = {
     adminUser: '管理員',
     loggedIn: '已登入',
     copyright: '版權所有',
+    // 2.1：頁首麵包屑／返回（各頁的標題文字仍各自放在對應頁面的 i18n 區塊）。
+    breadcrumbAriaLabel: '麵包屑',
+    back: '返回',
   },
 } as const;

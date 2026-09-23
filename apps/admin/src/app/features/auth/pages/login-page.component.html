@@ -2,7 +2,8 @@
   <section class="ui-card login-card p-4 sm:p-6">
     <div class="brand-mark" aria-hidden="true">P</div>
     <p class="ui-text-caption">澎湖租車後台</p>
-    <h1 id="login-title" class="ui-text-title">登入</h1>
+    <!-- 2.1：頁面唯一的 h1 在頁首（provideHeaderTitle，見 login-page.component.ts constructor）。 -->
+    <p id="login-title" class="ui-text-title">{{ t.loginPage.title }}</p>
     <p class="empty-state">目前提供示範登入流程。</p>
     <button matButton="filled" type="button" (click)="enterSystem()">進入系統</button>
   </section>

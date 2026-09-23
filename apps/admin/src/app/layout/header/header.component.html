@@ -1,18 +1,31 @@
 <header class="topbar">
-  <div class="flex items-center gap-2">
+  <div class="topbar-lead">
     <button mat-icon-button class="menu-toggle" type="button" (click)="menuToggle.emit()">
       <span class="material-symbols-rounded" aria-hidden="true">menu</span>
     </button>
-    <div class="topbar-title">
-      <div class="breadcrumb">
-        @if (currentGroupLabel()) {
-          <span>{{ currentGroupLabel() }}</span>
-          <span class="material-symbols-rounded breadcrumb-sep" aria-hidden="true">chevron_right</span>
+
+    @if (backTo(); as back) {
+      <a class="topbar-back" [routerLink]="back" [attr.aria-label]="t.layout.back">
+        <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>
+      </a>
+    }
+
+    <nav class="topbar-title" [attr.aria-label]="t.layout.breadcrumbAriaLabel">
+      @for (crumb of breadcrumbs(); track crumb.label) {
+        @if (crumb.route) {
+          <a class="breadcrumb-link" [routerLink]="crumb.route">{{ crumb.label }}</a>
+        } @else {
+          <span class="breadcrumb-text">{{ crumb.label }}</span>
         }
-        <span>{{ currentTitle() }}</span>
-      </div>
-      <h2>{{ currentTitle() }}</h2>
-    </div>
+        <span class="material-symbols-rounded breadcrumb-sep" aria-hidden="true">chevron_right</span>
+      }
+      <span class="topbar-heading">
+        <h1 aria-current="page">{{ currentTitle() }}</h1>
+        @if (titleExtraTemplate(); as extra) {
+          <ng-container [ngTemplateOutlet]="extra" />
+        }
+      </span>
+    </nav>
   </div>
 
   @if (toolbarTemplate(); as toolbar) {

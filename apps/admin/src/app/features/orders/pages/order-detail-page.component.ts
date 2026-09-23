@@ -1,12 +1,14 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subscription, distinctUntilChanged, map, skip } from 'rxjs';
 import { branchName, contractSigningState, needsDispatch } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
+import { provideHeaderTitle } from '../../../layout/header/header-title';
+import { HeaderTitleExtraDirective } from '../../../layout/header/header-title-extra-slot';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
@@ -63,9 +65,9 @@ const FALLBACK_RETURN_URL = '/bookings';
 @Component({
   selector: 'app-order-detail-page',
   imports: [
-    RouterLink,
     MatButtonModule,
     StatusChipComponent,
+    HeaderTitleExtraDirective,
     OrderRentalSectionComponent,
     OrderRenterSectionComponent,
     OrderPricingSectionComponent,
@@ -184,6 +186,15 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   constructor() {
     const destroyRef = inject(DestroyRef);
     destroyRef.onDestroy(() => this.behaviors?.unsubscribe());
+
+    // 2.1：頁首麵包屑「訂單管理」› 大標題＝承租人姓名；「← 返回」交給頁首（回 returnUrl，
+    // 可能是來源頁而非固定回列表，跟麵包屑的上一層不一定相同，所以另外帶 backTo）。
+    // 狀態 chip／急迫徽章改在 template 用 appHeaderTitleExtra 登記，渲染在頁首標題旁。
+    provideHeaderTitle(() => ({
+      title: this.member()?.name ?? '—',
+      breadcrumbs: [{ label: this.t.nav.bookings, route: '/bookings' }],
+      backTo: this.returnUrl,
+    }));
 
     // 同一個元件換到另一筆訂單（/orders/a → /orders/b）時，離開編輯狀態。
     this.route.paramMap

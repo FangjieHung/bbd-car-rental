@@ -51,6 +51,14 @@ describe('SideNavComponent', () => {
     expect(text).toContain('商品管理');
   });
 
+  it('2.1：側欄品牌不再是 h1（頁面唯一的 h1 是頁首的大標題），但品牌文字仍顯示', () => {
+    const fixture = setup();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('h1')).toHaveLength(0);
+    expect(el.querySelector('.brand')?.textContent).toContain('澎湖租車後台');
+  });
+
   it('點擊群組觸發 toggleGroup 事件', () => {
     const fixture = setup();
     fixture.detectChanges();

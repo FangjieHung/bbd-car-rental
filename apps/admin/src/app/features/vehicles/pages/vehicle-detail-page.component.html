@@ -1,11 +1,9 @@
 <div class="stack-block">
-  <a class="back-link" [routerLink]="['/vehicles']">← {{ t.vehicle.backToList }}</a>
-
+  <!-- 2.1：「← 返回車輛清單」併入頁首麵包屑（商品管理 › 車輛清單 › 車牌），標題也改在頁首。 -->
   @if (!vehicle()) {
     <p class="empty-state">{{ t.common.empty }}</p>
   } @else {
     <section class="ui-card flex flex-col gap-1 p-4 sm:p-6 break-words">
-      <h1 class="ui-text-title">{{ vehicle()!.model }}・{{ vehicle()!.plateNumber }}</h1>
       <p>{{ t.vehicle.type }}：{{ t.vehicle.typeLabels[vehicle()!.category] }}</p>
       <p>{{ t.vehicle.model }}：{{ vehicle()!.model }}</p>
       <p>{{ t.vehicle.brand }}：{{ vehicle()!.brand }}</p>

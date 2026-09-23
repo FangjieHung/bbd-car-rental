@@ -9,6 +9,7 @@ import { map } from 'rxjs';
 import { SignatureAsset, openContractSigningDialog } from '@car-rental/contract-signing';
 import { ContractSnapshot, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { provideHeaderTitle } from '../../../layout/header/header-title';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import {
   OrderFormInitial,
@@ -159,6 +160,11 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
 
   constructor() {
     connectOrderFormBehaviors(this.form, this.data, { autoDeposit: true, destroyRef: inject(DestroyRef) });
+    // 2.1：頁首麵包屑「訂單管理」（可點回列表）› 大標題「新增訂單」，取代頁內原本自己的標題。
+    provideHeaderTitle(() => ({
+      title: this.t.bookingForm.title,
+      breadcrumbs: [{ label: this.t.nav.bookings, route: '/bookings' }],
+    }));
   }
 
   stepHasError(step: OrderCreateStep): boolean {

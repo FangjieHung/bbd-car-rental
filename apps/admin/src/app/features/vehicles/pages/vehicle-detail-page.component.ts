@@ -1,5 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { firstValueFrom } from 'rxjs';
@@ -10,6 +10,7 @@ import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@ca
 import { branchName, MaintenanceRecord } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
+import { provideHeaderTitle } from '../../../layout/header/header-title';
 import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { MileagePipe } from '../../../shared/pipes/mileage.pipe';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -22,7 +23,7 @@ import {
 
 @Component({
   selector: 'app-vehicle-detail-page',
-  imports: [DataTableComponent, DataTableCellDirective, MatButtonModule, RouterLink, TwdPipe, MileagePipe],
+  imports: [DataTableComponent, DataTableCellDirective, MatButtonModule, TwdPipe, MileagePipe],
   templateUrl: './vehicle-detail-page.component.html',
   styleUrls: ['../../../app.scss', './vehicle-detail-page.component.scss'],
 })
@@ -45,6 +46,15 @@ export class VehicleDetailPageComponent {
   readonly vehicle = computed(() =>
     this.vehicleStore.vehicles().find((v) => v.id === this.vehicleId()),
   );
+
+  constructor() {
+    // 2.1：頁首麵包屑「商品管理 › 車輛清單」（車輛清單可點回列表）› 大標題＝車牌。
+    // 「← 返回車輛清單」併入麵包屑（跟麵包屑同一個目的地，不需要另外的 backTo）。
+    provideHeaderTitle(() => ({
+      title: this.vehicle()?.plateNumber ?? '—',
+      breadcrumbs: [{ label: this.t.nav.productGroup }, { label: this.t.nav.vehicles, route: '/vehicles' }],
+    }));
+  }
 
   readonly records = computed(() =>
     this.maintenanceStore.records().filter((r) => r.vehicleId === this.vehicleId()),
