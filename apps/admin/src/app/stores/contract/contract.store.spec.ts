@@ -12,8 +12,8 @@ function snapshot(overrides: Partial<ContractSnapshot> = {}): ContractSnapshot {
     vehicle: { vehicleId: 'v1', plateNumber: 'ABC-123', brand: 'Toyota', model: 'Yaris', category: 'car' },
     rentalStartTime: '2026-07-20T09:00:00.000Z',
     rentalEndTime: '2026-07-22T18:00:00.000Z',
-    pickupLocation: '馬公',
-    returnLocation: '馬公',
+    pickupBranchId: '馬公',
+    returnBranchId: '馬公',
     depositRequired: 1000,
     pricing: {
       dailyLines: [],

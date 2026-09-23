@@ -8,7 +8,7 @@ import {
   PaymentMethod,
   PaymentPurpose,
   PriceBreakdown,
-  RentalBooking,
+  RentalOrder,
   Vehicle,
 } from '../../../core/models';
 import type { OrderFormData } from './order-form-data';
@@ -37,8 +37,8 @@ export interface OrderFormInitial {
   vehicleId?: string;
   startTime?: string;
   endTime?: string;
-  pickupLocation?: string;
-  returnLocation?: string;
+  pickupBranchId?: string;
+  returnBranchId?: string;
   /** 提供時直接鎖定為既有會員（承租人欄位帶入並停用），送出時沿用該會員、不新建。 */
   member?: Member;
   /** 保險方案 id；`NO_INSURANCE_VALUE` 為明確不加保，`''` 為「還沒解決」（僅編輯模式反推失敗時使用）。 */
@@ -74,8 +74,8 @@ export function createOrderForm(initial: OrderFormInitial = {}) {
       vehicleId: text(initial.vehicleId, true),
       startLocal: text(initial.startTime ? toLocalInputValue(initial.startTime) : '', true),
       endLocal: text(initial.endTime ? toLocalInputValue(initial.endTime) : '', true),
-      pickupLocation: text(initial.pickupLocation, true),
-      returnLocation: text(initial.returnLocation, true),
+      pickupBranchId: text(initial.pickupBranchId, true),
+      returnBranchId: text(initial.returnBranchId, true),
     }),
     renter: new FormGroup({
       memberId: new FormControl<string | null>(null),
@@ -142,20 +142,20 @@ export function unlockRenter(form: OrderForm): void {
  *   反推不出方案、但車輛目前確實有保險方案可選時，設為 `''`（還沒解決），讓 `isInsuranceUnreconciled`
  *   擋住送出、要求重新選擇，避免報價悄悄把原本的保險金額歸零；車輛完全沒有保險方案時維持「不加保」。
  */
-export function orderFormInitialFromBooking(
-  booking: RentalBooking,
+export function orderFormInitialFromOrder(
+  order: RentalOrder,
   refs: { vehicle?: Vehicle; member?: Member } = {},
 ): OrderFormInitial {
   const initial: OrderFormInitial = {
-    vehicleId: booking.vehicleId,
-    startTime: booking.startTime,
-    endTime: booking.endTime,
-    pickupLocation: booking.pickupLocation,
-    returnLocation: booking.returnLocation,
-    depositRequired: booking.depositRequired,
+    vehicleId: order.vehicleId,
+    startTime: order.startTime,
+    endTime: order.endTime,
+    pickupBranchId: order.pickupBranchId,
+    returnBranchId: order.returnBranchId,
+    depositRequired: order.depositRequired,
     ...(refs.member ? { member: refs.member } : {}),
   };
-  const original = booking.priceBreakdown;
+  const original = order.priceBreakdown;
   if (!original) return initial;
 
   if (original.addOnLines.length > 0) {
@@ -255,17 +255,17 @@ export function connectOrderFormBehaviors(
   data: OrderFormData,
   options: OrderFormBehaviorOptions,
 ): Subscription {
-  const { vehicleId, pickupLocation, returnLocation } = form.controls.rental.controls;
+  const { vehicleId, pickupBranchId, returnBranchId } = form.controls.rental.controls;
   const deposit = form.controls.pricing.controls.depositRequired;
 
   const applyVehicleBranch = () => {
-    if (pickupLocation.dirty) return;
-    const branchId = selectedVehicleOf(form.getRawValue(), data)?.location;
-    if (branchId && pickupLocation.value !== branchId) pickupLocation.setValue(branchId);
+    if (pickupBranchId.dirty) return;
+    const branchId = selectedVehicleOf(form.getRawValue(), data)?.branchId;
+    if (branchId && pickupBranchId.value !== branchId) pickupBranchId.setValue(branchId);
   };
   const followPickup = (pickup: string) => {
-    if (returnLocation.dirty) return;
-    if (returnLocation.value !== pickup) returnLocation.setValue(pickup);
+    if (returnBranchId.dirty) return;
+    if (returnBranchId.value !== pickup) returnBranchId.setValue(pickup);
   };
   const syncDeposit = () => {
     if (!options.autoDeposit || deposit.dirty) return;
@@ -277,11 +277,11 @@ export function connectOrderFormBehaviors(
 
   const sub = new Subscription();
   sub.add(vehicleId.valueChanges.subscribe(applyVehicleBranch));
-  sub.add(pickupLocation.valueChanges.subscribe(followPickup));
+  sub.add(pickupBranchId.valueChanges.subscribe(followPickup));
   sub.add(form.valueChanges.subscribe(syncDeposit));
 
-  if (!pickupLocation.value) applyVehicleBranch();
-  if (pickupLocation.value && !returnLocation.value) followPickup(pickupLocation.value);
+  if (!pickupBranchId.value) applyVehicleBranch();
+  if (pickupBranchId.value && !returnBranchId.value) followPickup(pickupBranchId.value);
   syncDeposit();
 
   options.destroyRef?.onDestroy(() => sub.unsubscribe());

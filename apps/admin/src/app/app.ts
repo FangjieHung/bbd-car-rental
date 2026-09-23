@@ -36,10 +36,10 @@ export class App implements OnInit {
       ],
     },
     {
-      route: '/bookings',
-      label: this.t.nav.bookings,
+      route: '/orders',
+      label: this.t.nav.orders,
       icon: 'calendar_month',
-      matchPrefixes: ['/orders/'],
+      matchPrefixes: ['/members'],
     },
     {
       label: this.t.nav.pricingGroup,

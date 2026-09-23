@@ -1,7 +1,7 @@
 export {
   seedVehicles,
   seedMembers,
-  seedBookings,
+  seedOrders,
   seedPricingPlans,
   seedSeasonCalendar,
   seedAddOns,

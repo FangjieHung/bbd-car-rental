@@ -25,9 +25,9 @@ interface SetupOptions {
 
 function setup(options: SetupOptions = {}) {
   const repos = createOrderRepos({
-    vehicles: [makeVehicle({ id: 'v1', location: 'mzg-port' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999' })],
+    vehicles: [makeVehicle({ id: 'v1', branchId: 'mzg-port' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999' })],
   });
-  const create = vi.fn<OrderSubmitGateway['create']>(async () => 'new-booking-id');
+  const create = vi.fn<OrderSubmitGateway['create']>(async () => 'new-order-id');
   const gateway: OrderSubmitGateway = { create, update: vi.fn(async (id: string) => id) };
   const dialogOpen = vi.fn((component: unknown) => {
     if (component === ContractSigningDialogComponent) return { afterClosed: () => of(options.signingResult) };
@@ -137,7 +137,7 @@ describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
     expect(input.value.rental.vehicleId).toBe('v1');
     expect(input.value.renter.email).toBe('');
     expect(input.presignature).toBeUndefined();
-    expect(navigate).toHaveBeenCalledWith(['/orders', 'new-booking-id']);
+    expect(navigate).toHaveBeenCalledWith(['/orders', 'new-order-id']);
     expect(component.unsavedChangesMessage()).toBeNull(); // 已建立，導頁不再被離開確認擋下
     expect(component.incompleteItems().length).toBeGreaterThan(0); // 未填的部分成為待補項目
   });
@@ -219,8 +219,8 @@ describe('OrderCreatePageComponent query params 預填與取消', () => {
       vehicleId: 'v1',
       startLocal: '2026-08-20T10:00',
       endLocal: '2026-08-21T10:00',
-      pickupLocation: 'mzg-port',
-      returnLocation: 'mzg-port',
+      pickupBranchId: 'mzg-port',
+      returnBranchId: 'mzg-port',
     });
     expect(component.form.dirty).toBe(false);
   });
@@ -234,7 +234,7 @@ describe('OrderCreatePageComponent query params 預填與取消', () => {
     const { component, dialogOpen, navigateByUrl } = setup();
     await component.cancel();
     expect(dialogOpen).not.toHaveBeenCalled();
-    expect(navigateByUrl).toHaveBeenCalledWith('/bookings');
+    expect(navigateByUrl).toHaveBeenCalledWith('/orders');
   });
 
   it('表單有改動時取消會先確認；不確認就留在頁面', async () => {
@@ -267,7 +267,7 @@ describe('OrderCreatePageComponent 離開確認（confirmLeaveGuard）', () => {
     const { component, navigateByUrl } = setup({ confirmResult: true });
     component.form.controls.renter.controls.name.markAsDirty();
     await component.cancel();
-    expect(navigateByUrl).toHaveBeenCalledWith('/bookings');
+    expect(navigateByUrl).toHaveBeenCalledWith('/orders');
     expect(component.unsavedChangesMessage()).toBeNull();
   });
 });

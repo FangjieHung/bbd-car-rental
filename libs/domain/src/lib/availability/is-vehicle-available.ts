@@ -1,11 +1,11 @@
-import { Vehicle, RentalBooking, BookingStatus } from '../models';
+import { Vehicle, RentalOrder, OrderStatus } from '../models';
 import { rangesOverlap } from './ranges-overlap';
-const OCCUPYING: BookingStatus[] = ['reserved', 'in_progress'];
+const OCCUPYING: OrderStatus[] = ['reserved', 'in_progress'];
 export function isVehicleAvailable(input: {
-  vehicle: Vehicle; startTime: string; endTime: string; bookings: RentalBooking[];
+  vehicle: Vehicle; startTime: string; endTime: string; orders: RentalOrder[];
 }): boolean {
   if (input.vehicle.status === 'maintenance') return false;
-  return !input.bookings.some(
+  return !input.orders.some(
     (b) => b.vehicleId === input.vehicle.id &&
       OCCUPYING.includes(b.status) &&
       rangesOverlap(input.startTime, input.endTime, b.startTime, b.endTime),

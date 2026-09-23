@@ -4,9 +4,9 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { VehicleDetailPageComponent } from './vehicle-detail-page.component';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord } from '../../../core/models';
+import { Vehicle, RentalOrder, MaintenanceRecord } from '../../../core/models';
 import {
   MaintenanceRecordDialogComponent,
   RecordFormResult,
@@ -60,7 +60,7 @@ describe('VehicleDetailPageComponent', () => {
           },
         },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });
@@ -80,7 +80,7 @@ describe('VehicleDetailPageComponent', () => {
           },
         },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });

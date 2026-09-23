@@ -36,19 +36,15 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'bookings/members',
+    path: 'members',
     loadComponent: () =>
-      import('./features/bookings/pages/members-page.component').then(
+      import('./features/members/pages/members-page.component').then(
         (m) => m.MembersPageComponent,
       ),
   },
-  {
-    path: 'bookings',
-    loadComponent: () =>
-      import('./features/bookings/pages/bookings-page.component').then(
-        (m) => m.BookingsPageComponent,
-      ),
-  },
+  // 舊網址（更名前的書籤）轉到新位置
+  { path: 'bookings/members', redirectTo: 'members' },
+  { path: 'bookings', redirectTo: 'orders' },
   {
     path: 'orders',
     loadChildren: () => import('./features/orders/orders.routes').then((m) => m.ORDER_ROUTES),

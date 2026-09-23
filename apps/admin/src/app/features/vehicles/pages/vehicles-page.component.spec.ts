@@ -4,9 +4,9 @@ import { provideRouter, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { VehiclesPageComponent } from './vehicles-page.component';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord } from '../../../core/models';
+import { Vehicle, RentalOrder, MaintenanceRecord } from '../../../core/models';
 import {
   MaintenanceRecordDialogComponent,
   RecordFormResult,
@@ -60,7 +60,7 @@ describe('VehiclesPageComponent filtering', () => {
             }),
           ]),
         },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -134,7 +134,7 @@ describe('VehiclesPageComponent 保養整合（送修／完修／查看紀錄）
         provideRouter([]),
         { provide: MatDialog, useValue: { open: dialogOpen } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });
@@ -196,7 +196,7 @@ describe('VehiclesPageComponent 整列點擊導航', () => {
         provideRouter([]),
         { provide: MatDialog, useValue: { open: dialogOpen } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -270,7 +270,7 @@ describe('VehiclesPageComponent 保養提醒釘選與徽章', () => {
       providers: [
         provideRouter([]),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });

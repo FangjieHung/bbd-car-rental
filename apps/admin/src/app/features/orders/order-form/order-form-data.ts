@@ -1,5 +1,5 @@
 import { InjectionToken, Signal } from '@angular/core';
-import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalBooking, Vehicle } from '../../../core/models';
+import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalOrder, Vehicle } from '../../../core/models';
 
 /** 報價試算輸入：日期為 YYYY-MM-DD；`addOnQty` 的 key 為 AddOn id，未列出的項目數量視為 0。 */
 export interface OrderQuoteInput {
@@ -26,7 +26,7 @@ export interface OrderFormData {
   /** 報價試算；該車型沒有可用定價方案或試算失敗時回傳 undefined。 */
   quote(input: OrderQuoteInput): PriceBreakdown | undefined;
   /** 同一台車在時段內重疊的有效訂單；`excludeBookingId` 用於編輯時排除自己。 */
-  findConflicts(vehicleId: string, startIso: string, endIso: string, excludeBookingId?: string): RentalBooking[];
+  findConflicts(vehicleId: string, startIso: string, endIso: string, excludeBookingId?: string): RentalOrder[];
   /** 訂金上限（亦為新增訂單的預設訂金）。 */
   depositCap(vehicle: Vehicle | undefined, quoteTotal: number): number;
 }

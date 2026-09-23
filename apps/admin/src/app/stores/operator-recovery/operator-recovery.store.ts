@@ -16,7 +16,7 @@ import {
   quoteCancellation,
 } from '@car-rental/domain';
 import { OPERATOR_RECOVERY_CASE_REPO } from '../../core/repositories/tokens';
-import { BookingStore } from '../booking/booking.store';
+import { OrderStore } from '../order/order.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { ContractStore } from '../contract/contract.store';
 import { CancellationStore } from '../cancellation/cancellation.store';
@@ -211,10 +211,10 @@ function isEligibleReplacement(
  * 業者責任案件的復原與補償：依設計文件第 10 節「流程不是先取消，而是依序救單」——
  * 同級調車 → 免費升等 → 合作同業轉單 → （皆失敗或顧客不同意）業者責任取消。
  *
- * - 同級調車／免費升等使用本社車隊：接受後透過 BookingStore.updateBooking() 換車（沿用既有
+ * - 同級調車／免費升等使用本社車隊：接受後透過 OrderStore.updateOrder() 換車（沿用既有
  *   通用 patch 方法，不新增訂單狀態轉換），並透過 ContractStore.reviseIfChanged()（Task 6）
  *   判斷是否構成合約重大異動、需要新版本——不重新實作比對邏輯。
- * - 合作同業轉單使用外部車輛，不屬於本社車隊，不觸動 BookingStore／ContractStore。
+ * - 合作同業轉單使用外部車輛，不屬於本社車隊，不觸動 OrderStore／ContractStore。
  * - 業者責任取消整段委派給既有 quoteCancellation 純函式與 CancellationStore（Task 4／14）：
  *   金額試算、manual_review 判斷（業者故意違約、顧客另有損害待鑑定）、退款/保留金撥付的
  *   顧客同意與金額比對規則，全部原封不動沿用，這裡只負責「決定何時可以呼叫」。
@@ -224,7 +224,7 @@ function isEligibleReplacement(
 @Injectable({ providedIn: 'root' })
 export class OperatorRecoveryStore {
   private readonly repo = inject(OPERATOR_RECOVERY_CASE_REPO);
-  private readonly bookingStore = inject(BookingStore);
+  private readonly orderStore = inject(OrderStore);
   private readonly vehicleStore = inject(VehicleStore);
   private readonly contractStore = inject(ContractStore);
   private readonly cancellationStore = inject(CancellationStore);
@@ -247,8 +247,8 @@ export class OperatorRecoveryStore {
     type: OperatorRecoveryRemedyType | undefined,
   ): Vehicle[] {
     if (type !== 'same_class_replacement' && type !== 'free_upgrade') return [];
-    const booking = this.bookingStore.bookings().find((candidate) => candidate.id === bookingId);
-    const original = booking && this.vehicleStore.vehicles().find((vehicle) => vehicle.id === booking.vehicleId);
+    const order = this.orderStore.orders().find((candidate) => candidate.id === bookingId);
+    const original = order && this.vehicleStore.vehicles().find((vehicle) => vehicle.id === order.vehicleId);
     if (!original) return [];
     return this.vehicleStore
       .vehicles()
@@ -287,7 +287,7 @@ export class OperatorRecoveryStore {
    * - 必須有 customerConsent === true 與非空 approvedBy，否則分別丟 ConsentRequiredError／
    *   ApprovalRequiredError。
    * - 同級調車／免費升等：重新檢查 replacementVehicleId 目前是否為 available（否則丟
-   *   RemedyVehicleUnavailableError），透過 BookingStore.updateBooking() 換車，並用
+   *   RemedyVehicleUnavailableError），透過 OrderStore.updateOrder() 換車，並用
    *   ContractStore.reviseIfChanged() 視需要產生新合約版本。訂單的 priceBreakdown／
    *   depositRequired 完全不變動——顧客價格不因此增加，價差只記在 absorbedDifference。
    * - 合作同業轉單：不動本社車輛／合約，只記錄合作業者與外部報價資訊。
@@ -325,18 +325,18 @@ export class OperatorRecoveryStore {
         if (!vehicleId) {
           throw new Error('replacementVehicleId is required when accepting same_class_replacement or free_upgrade');
         }
-        const booking = this.bookingStore.bookings().find((candidate) => candidate.id === kase.bookingId);
-        if (!booking) throw new Error(`not found: ${kase.bookingId}`);
+        const order = this.orderStore.orders().find((candidate) => candidate.id === kase.bookingId);
+        if (!order) throw new Error(`not found: ${kase.bookingId}`);
         const vehicle = this.vehicleStore.vehicles().find((v) => v.id === vehicleId);
         if (!vehicle || vehicle.status !== 'available') {
           throw new RemedyVehicleUnavailableError(vehicleId);
         }
-        const originalVehicle = this.vehicleStore.vehicles().find((v) => v.id === booking.vehicleId);
+        const originalVehicle = this.vehicleStore.vehicles().find((v) => v.id === order.vehicleId);
         if (!originalVehicle || !isEligibleReplacement(originalVehicle, vehicle, input.type)) {
           throw new RemedyVehicleIneligibleError(vehicleId);
         }
 
-        this.bookingStore.updateBooking(kase.bookingId, { vehicleId });
+        this.orderStore.updateOrder(kase.bookingId, { vehicleId });
 
         const latestContract = this.contractStore.latestFor(kase.bookingId);
         if (latestContract) {
@@ -359,7 +359,7 @@ export class OperatorRecoveryStore {
           }
         }
       }
-      // partner_transfer：外部車輛，不屬於本社車隊，不動 BookingStore／ContractStore。
+      // partner_transfer：外部車輛，不屬於本社車隊，不動 OrderStore／ContractStore。
     }
 
     const attempt: OperatorRecoveryRemedyAttempt = {
@@ -419,8 +419,8 @@ export class OperatorRecoveryStore {
       throw new ApprovalRequiredError('進入業者責任取消');
     }
 
-    const booking = this.bookingStore.bookings().find((b) => b.id === kase.bookingId);
-    if (!booking) throw new Error(`not found: ${kase.bookingId}`);
+    const order = this.orderStore.orders().find((b) => b.id === kase.bookingId);
+    if (!order) throw new Error(`not found: ${kase.bookingId}`);
 
     const responsibility = input.intentionalConduct ? 'operator_intentional' : 'operator_fault';
 
@@ -428,7 +428,7 @@ export class OperatorRecoveryStore {
       contractKind: input.contractKind,
       responsibility,
       cancellationRequestedAt: input.requestedAt,
-      pickupAt: booking.startTime,
+      pickupAt: order.startTime,
       depositPaid: input.depositPaid,
       otherPrepayment: input.otherPrepayment,
       additionalCustomerDamageClaimed: input.additionalCustomerDamageClaimed,

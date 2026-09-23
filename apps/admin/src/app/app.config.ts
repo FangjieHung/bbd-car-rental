@@ -12,7 +12,7 @@ import { routes } from './app.routes';
 import {
   VEHICLE_REPO,
   MEMBER_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   MAINTENANCE_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
@@ -37,7 +37,7 @@ import { LocalStorageRepository } from './core/repositories/local-storage-reposi
 import {
   seedVehicles,
   seedMembers,
-  seedBookings,
+  seedOrders,
   seedMaintenanceRecords,
   seedPricingPlans,
   seedSeasonCalendar,
@@ -60,7 +60,7 @@ import {
 } from './core/repositories/seed-data';
 import { ZH_TW } from './core/i18n/zh-tw';
 import { ThemeService } from '@car-rental/theme-pack';
-import { normalizeRentalBooking, normalizeVehicle } from '@car-rental/domain';
+import { normalizeRentalOrder, normalizeVehicle } from '@car-rental/domain';
 import { DocumentAssetGateway } from './core/services/document-asset.gateway';
 import { SIGNATURE_ASSET_STORE } from '@car-rental/contract-signing';
 import { IndexedDbDocumentAssetGateway } from './core/services/indexed-db-document-asset.gateway';
@@ -83,7 +83,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(ThemeService).init()),
     {
       provide: VEHICLE_REPO,
-      // 舊資料的 location 可能還是遷移前的據點類型文字/門市全名，用 normalizeVehicle 統一轉成據點 id。
+      // 舊資料可能還用更名前的 location 欄位、值是遷移前的據點類型文字/門市全名，用 normalizeVehicle 統一轉成 branchId。
       useFactory: () =>
         new LocalStorageRepository(
           'cr.vehicles',
@@ -102,17 +102,17 @@ export const appConfig: ApplicationConfig = {
         ),
     },
     {
-      provide: BOOKING_REPO,
-      // 舊資料可能還是遷移前的 schema（pending_payment/confirmed 狀態、paymentMethod 欄位名、
-      // 缺 depositRequired）——用 normalizeRentalBooking 統一轉成目前的 RentalBooking 形狀；
+      provide: ORDER_REPO,
+      // 舊資料可能還是遷移前的 schema（pending_payment/confirmed 狀態、paymentMethod／pickupLocation／returnLocation 欄位名、
+      // 缺 depositRequired）——用 normalizeRentalOrder 統一轉成目前的 RentalOrder 形狀；
       // 小客車的訂金安全預設值需要查車型，所以要能拿到 VEHICLE_REPO。
       useFactory: () => {
         const vehicleRepo = inject(VEHICLE_REPO);
         return new LocalStorageRepository(
           'cr.bookings',
-          seedBookings,
+          seedOrders,
           notifyStorageReset(inject(MatSnackBar)),
-          (item) => normalizeRentalBooking(item, (vehicleId) => vehicleRepo.getById(vehicleId)?.category),
+          (item) => normalizeRentalOrder(item, (vehicleId) => vehicleRepo.getById(vehicleId)?.category),
         );
       },
     },

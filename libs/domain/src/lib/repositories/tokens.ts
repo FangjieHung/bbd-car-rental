@@ -2,7 +2,7 @@ import { InjectionToken } from '@angular/core';
 import {
   Vehicle,
   Member,
-  RentalBooking,
+  RentalOrder,
   PricingPlan,
   SeasonCalendar,
   AddOn,
@@ -26,7 +26,7 @@ import { Repository } from './repository';
 
 export const VEHICLE_REPO = new InjectionToken<Repository<Vehicle>>('VEHICLE_REPO');
 export const MEMBER_REPO = new InjectionToken<Repository<Member>>('MEMBER_REPO');
-export const BOOKING_REPO = new InjectionToken<Repository<RentalBooking>>('BOOKING_REPO');
+export const ORDER_REPO = new InjectionToken<Repository<RentalOrder>>('ORDER_REPO');
 export const PRICING_PLAN_REPO = new InjectionToken<Repository<PricingPlan>>('PRICING_PLAN_REPO');
 export const SEASON_CALENDAR_REPO = new InjectionToken<Repository<SeasonCalendar>>(
   'SEASON_CALENDAR_REPO',

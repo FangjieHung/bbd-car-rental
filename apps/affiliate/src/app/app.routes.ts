@@ -23,26 +23,26 @@ export const routes: Routes = [
       {
         path: 'search',
         loadComponent: () =>
-          import('@car-rental/booking-flow').then((m) => m.SearchPageComponent),
+          import('./features/partner-booking/partner-pages').then((m) => m.SearchPageComponent),
       },
       {
         path: 'vehicle/:vehicleId/plan',
         loadComponent: () =>
-          import('@car-rental/booking-flow').then((m) => m.PlanPageComponent),
+          import('./features/partner-booking/partner-pages').then((m) => m.PlanPageComponent),
       },
       {
         path: 'order/:vehicleId',
         loadComponent: () =>
-          import('@car-rental/booking-flow').then((m) => m.OrderPageComponent),
+          import('./features/partner-booking/partner-pages').then((m) => m.OrderPageComponent),
       },
       {
         path: 'pay/:bookingId',
         loadComponent: () =>
-          import('@car-rental/booking-flow').then((m) => m.PaymentPageComponent),
+          import('./features/partner-booking/partner-pages').then((m) => m.PaymentPageComponent),
       },
       {
         path: 'done/:id',
-        loadComponent: () => import('@car-rental/booking-flow').then((m) => m.DoneComponent),
+        loadComponent: () => import('./features/partner-booking/partner-pages').then((m) => m.DoneComponent),
       },
     ],
   },

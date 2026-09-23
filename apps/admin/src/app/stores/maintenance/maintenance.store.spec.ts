@@ -4,12 +4,12 @@ import { MaintenanceStore } from './maintenance.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import {
   VEHICLE_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   MAINTENANCE_REPO,
   MEMBER_REPO,
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord, Member } from '../../core/models';
+import { Vehicle, RentalOrder, MaintenanceRecord, Member } from '../../core/models';
 
 const NOW = new Date('2026-07-20T12:00:00.000Z');
 
@@ -17,7 +17,7 @@ function setup(vehicles: Vehicle[], records: MaintenanceRecord[]) {
   TestBed.configureTestingModule({
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>() },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>() },
       { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>() },
       { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
     ],

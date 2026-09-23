@@ -21,8 +21,8 @@
     <input matInput formControlName="brand" />
   </mat-form-field>
   <mat-form-field>
-    <mat-label>{{ t.vehicle.location }}</mat-label>
-    <mat-select formControlName="location">
+    <mat-label>{{ t.vehicle.branch }}</mat-label>
+    <mat-select formControlName="branchId">
       <mat-option value="">{{ t.vehicle.locationUnspecified }}</mat-option>
       @for (branch of branches; track branch.id) {
         <mat-option [value]="branch.id">{{ branch.name }}</mat-option>

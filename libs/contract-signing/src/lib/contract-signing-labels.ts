@@ -41,8 +41,8 @@ export interface ContractDocumentLabels {
   periodSection: string;
   startTime: string;
   endTime: string;
-  pickupLocation: string;
-  returnLocation: string;
+  pickupBranchId: string;
+  returnBranchId: string;
 
   pricingSection: string;
   rentalSubtotal: string;
@@ -154,8 +154,8 @@ export const DEFAULT_CONTRACT_SIGNING_LABELS: ContractSigningLabels = {
     periodSection: '租期與取還車地點',
     startTime: '開始時間',
     endTime: '結束時間',
-    pickupLocation: '取車地點',
-    returnLocation: '還車地點',
+    pickupBranchId: '取車地點',
+    returnBranchId: '還車地點',
 
     pricingSection: '租金、保險與計價明細',
     rentalSubtotal: '租金小計',

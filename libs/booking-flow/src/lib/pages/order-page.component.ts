@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { AddOn, PriceBreakdown, RENTAL_BRANCHES, Vehicle, VEHICLE_REPO } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 import { CatalogStore } from '../catalog.store';
 import { toVehicleGroup } from '../date-range';
 import { CouponResult, QuoteService } from '../quote.service';
@@ -18,7 +19,7 @@ import { ConfirmFormValue, ConfirmStepComponent } from '../steps/confirm-step.co
  * 送出後訂單履約狀態為 reserved，實際扣款由付款頁負責。
  */
 @Component({
-  selector: 'app-order-page',
+  selector: 'lib-order-page',
   imports: [
     SearchCriteriaBarComponent,
     AddonStepComponent,
@@ -37,6 +38,7 @@ export class OrderPageComponent {
   private readonly context = inject(BOOKING_CONTEXT);
   private readonly vehicleRepo = inject(VEHICLE_REPO);
 
+  protected readonly i18n = injectBookingFlowI18n();
   readonly partner = this.context.partner;
 
   private readonly vehicleId = toSignal(
@@ -61,7 +63,7 @@ export class OrderPageComponent {
   readonly startDate = computed(() => this.params().start.slice(0, 10));
   readonly endDate = computed(() => this.params().end.slice(0, 10));
   /** 取車地點直接吃該車的所屬據點，不再讓使用者另外選 */
-  readonly pickupLocation = computed(() => this.vehicle()?.location ?? '');
+  readonly pickupBranchId = computed(() => this.vehicle()?.branchId ?? '');
   readonly days = computed(() => this.quote.daysBetween(this.startDate(), this.endDate()));
 
   readonly addOnQty = signal<Record<string, number>>({});
@@ -154,8 +156,8 @@ export class OrderPageComponent {
         startTime: start,
         endTime: end,
         // 車輛沒有所在據點資料（未填視為不確定）時，落回第一個據點當保守預設值。
-        pickupLocation: this.pickupLocation() || RENTAL_BRANCHES[0].id,
-        returnLocation: form.returnLocation,
+        pickupBranchId: this.pickupBranchId() || RENTAL_BRANCHES[0].id,
+        returnBranchId: form.returnBranchId,
         member: { name: form.name, phone: form.phone, email: form.email },
         category: vehicle.category,
         startDate: this.startDate(),
@@ -169,7 +171,7 @@ export class OrderPageComponent {
       });
       this.router.navigate([...this.context.basePath(), 'pay', booking.id]);
     } catch (err) {
-      this.submitError.set(err instanceof Error ? err.message : '送出失敗，請稍後再試');
+      this.submitError.set(this.i18n.errorMessage(err, this.i18n.t().order.submitFailed));
     } finally {
       this.submitting.set(false);
     }

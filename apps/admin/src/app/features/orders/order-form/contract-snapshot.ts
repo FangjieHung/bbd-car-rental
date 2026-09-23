@@ -43,8 +43,8 @@ export function buildContractSnapshot(
     rentalStartTime: new Date(v.rental.startLocal).toISOString(),
     rentalEndTime: new Date(v.rental.endLocal).toISOString(),
     // 合約快照存據點「名稱」文字（不可變快照），表單／訂單存據點 id。
-    pickupLocation: branchName(v.rental.pickupLocation),
-    returnLocation: branchName(v.rental.returnLocation),
+    pickupBranchId: branchName(v.rental.pickupBranchId),
+    returnBranchId: branchName(v.rental.returnBranchId),
     depositRequired: v.pricing.depositRequired,
     pricing: quote,
     disclosedRules: {

@@ -30,7 +30,7 @@
   </ng-template>
 
   <section class="ui-card px-5 pt-5 mb-4 min-h-fit xl:w-fit">
-    <app-date-step (dateRangeChange)="onQuickRange($event)" />
+    <lib-date-step (dateRangeChange)="onQuickRange($event)" />
   </section>
 
   <app-calendar-view class="flex-auto" [targetDate]="targetDate()" (dateSelected)="selectCalendarDate($event)" />

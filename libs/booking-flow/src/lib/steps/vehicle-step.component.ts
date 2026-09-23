@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +8,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { branchName, RENTAL_BRANCHES, Vehicle, VehicleCategory } from '@car-rental/domain';
-import { injectBookingFlowLabels, SeatBucket, SortOrder } from '../booking-flow-labels';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
+import { SeatBucket, SortOrder } from '../i18n/booking-flow-messages';
 
 const CATEGORY_ICON: Record<VehicleCategory, string> = {
   car: 'directions_car',
@@ -23,9 +23,8 @@ interface TypeOption {
 }
 
 @Component({
-  selector: 'app-vehicle-step',
+  selector: 'lib-vehicle-step',
   imports: [
-    DecimalPipe,
     FormsModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -64,11 +63,11 @@ export class VehicleStepComponent {
   @Input() endTime: Date | null = null;
   @Output() timeChange = new EventEmitter<{ startTime: Date; endTime: Date }>();
 
-  private readonly labels = injectBookingFlowLabels();
+  protected readonly i18n = injectBookingFlowI18n();
 
   protected readonly locations = RENTAL_BRANCHES;
-  protected readonly seatBuckets = this.labels.seatBuckets;
-  protected readonly sortOptions = this.labels.sortOptions;
+  protected readonly seatBuckets = computed(() => this.i18n.t().labels.seatBuckets);
+  protected readonly sortOptions = computed(() => this.i18n.t().labels.sortOptions);
 
   protected readonly selectedType = signal<string | null>(null);
   protected readonly priceLow = signal<number | null>(null);
@@ -115,7 +114,7 @@ export class VehicleStepComponent {
 
     let list = this._vehicles().filter((vehicle) => {
       if (type && this.classLabel(vehicle) !== type) return false;
-      if (location && vehicle.location !== location) return false;
+      if (location && vehicle.branchId !== location) return false;
       if (seatBucket && this.seatBucketOf(vehicle) !== seatBucket) return false;
       const price = this.totalPrice(vehicle);
       if (price !== null && (price < lo || price > hi)) return false;
@@ -176,7 +175,7 @@ export class VehicleStepComponent {
   }
 
   protected classLabel(vehicle: Vehicle): string {
-    return vehicle.classLabel ?? this.labels.vehicleCategory[vehicle.category];
+    return vehicle.classLabel ?? this.i18n.t().labels.vehicleCategory[vehicle.category];
   }
 
   protected categoryIcon(vehicle: Vehicle): string {
@@ -184,14 +183,14 @@ export class VehicleStepComponent {
   }
 
   protected transmissionLabel(vehicle: Vehicle): string {
-    return this.labels.transmission[vehicle.transmission === 'manual' ? 'manual' : 'auto'];
+    return this.i18n.t().labels.transmission[vehicle.transmission === 'manual' ? 'manual' : 'auto'];
   }
 
   protected transmissionMark(vehicle: Vehicle): string {
     return vehicle.transmission === 'manual' ? 'M' : 'A';
   }
 
-  /** 車輛所在據點顯示名稱（vehicle.location 存的是據點 id）。 */
+  /** 車輛所在據點顯示名稱（vehicle.branchId 存的是據點 id）。 */
   protected branchName(locationId: string | null | undefined): string {
     return branchName(locationId);
   }

@@ -1,6 +1,6 @@
 # 訂單頁面化與據點統一：後端 Hand-off
 
-**日期：** 2026-09-22
+**日期：** 2026-09-22（2026-09-23 補第 8、9 節：更名後的欄位、官網多語系）
 **上游：** `docs/plans/2026-09-18-rental-operations-backend-handoff.md`（通用原則、身分權限、證件、OCR、付款、合約證據等，本文不重複）
 **術語：** 以 repo 根目錄 `CONTEXT.md` 為準
 **待業主確認：** `docs/owner-questions.md`（本文多處依賴其中答案，標示為「待業主 #n」）
@@ -83,7 +83,7 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 
 ### 3.2 引用關係
 
-- `Vehicle.location`（車輛所在據點）、`RentalBooking.pickupLocation` / `returnLocation`（取／還車據點）**現在存的都是據點 id**。欄位名稱是歷史遺留，前端之後會更名（見前端待辦），API 設計時建議直接用 `pickupBranchId` 這類名稱。
+- `Vehicle.branchId`（車輛所在據點）、`RentalOrder.pickupBranchId` / `returnBranchId`（取／還車據點）存的都是據點 id。前端已於 2026-09-23 從舊名 `location`／`pickupLocation`／`returnLocation` 改過來（見第 8 節），API 請直接用這組名稱。
 - **合約快照存據點名稱文字**，不存 id——快照是不可變的人類可讀文件，據點日後改名不應回頭改動已簽的合約。
 
 ### 3.3 舊資料遷移
@@ -97,7 +97,7 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 | `店舖` | `mzg-store` |
 | `馬公門市` | `mzg-store` |
 
-查無對應的值原樣保留，不要猜測。
+查無對應的值原樣保留，不要猜測。除了「值」要對照，**欄位名稱**也可能是舊的（見第 8.2 節）。
 
 ### 3.4 保險方案
 
@@ -145,3 +145,73 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 6. 車輛所在據點或取車據點任一改變，需調度判定即時反映。
 7. 以舊值（`馬公門市` 等）匯入的資料全部對應到有效據點 id。
 8. 簽署連結在合約改版後失效。
+9. 以舊欄位名（`pickupLocation`、`Vehicle.location`）匯入的資料對應到新欄位；新舊並存時以新欄位為準（第 8.2 節）。
+10. 官網相關 API 的錯誤回應只帶約定的代碼，不需要前端解析訊息文字（第 9.1 節）。
+
+## 8. 訂單更名後的欄位與識別碼（2026-09-23）
+
+前端已把程式裡的「booking（預約）」統一改叫「order（訂單）」，與術語表 `CONTEXT.md` 一致。後端設計 API 與資料表時請直接採用新名稱，不要沿用前端的歷史名稱。
+
+### 8.1 已改名（前端現況）
+
+| 舊名 | 新名 | 說明 |
+|---|---|---|
+| `RentalBooking` | `RentalOrder` | 訂單型別 |
+| `BookingStatus` | `OrderStatus` | 值不變：`reserved`／`in_progress`／`completed`／`cancelled` |
+| `pickupLocation` / `returnLocation` | `pickupBranchId` / `returnBranchId` | 訂單的取／還車據點 id |
+| `Vehicle.location` | `Vehicle.branchId` | 車輛所在據點 id |
+
+### 8.2 匯入既有資料時
+
+使用者瀏覽器裡的資料可能還是舊欄位名。前端讀取時已自動轉換（`libs/domain` 的 `normalizeRentalOrder`、`normalizeVehicle`），後端匯入請套用相同規則：
+
+- 訂單：`pickupLocation` → `pickupBranchId`、`returnLocation` → `returnBranchId`；車輛：`location` → `branchId`。
+- **新舊欄位同時存在時以新欄位為準**。
+- 值再依第 3.3 節的對照表轉成據點 id。
+
+### 8.3 刻意還沒改的（後端請用新名，前端接 API 時再對應）
+
+- **`bookingId`**：付款、退款、合約版本、交車紀錄、取消案件、保留金、提醒、業者復原案件等紀錄上指向訂單的外鍵。前端因為已寫進 localStorage 沒有改名；**API 請用 `orderId`**，前端接 API 時在 gateway 層對應。
+- **稽核紀錄 `entityType: 'booking'`**：意思就是「訂單」。後端請定義為 `order`，匯入舊資料時把 `booking` 對應成 `order`。
+- **localStorage key `cr.bookings`**：純前端 prototype 的儲存位置，與後端無關，列出來只為避免有人以為它代表另一種實體。
+- 官網路由參數 `pay/:bookingId` 是對外網址，暫不改；它帶的就是訂單 id。
+
+## 9. 官網多語系對後端的要求（2026-09-23）
+
+官網（`apps/booking`）已支援繁中、英文、日文切換（語言清單待業主 #8 確認）；後台只有繁中。前端怎麼做見 `docs/architecture/04-booking-flow.md`「多語系」。以下是後端接手時需要配合的地方。
+
+### 9.1 錯誤一律回代碼，不回中文訊息
+
+前端依代碼查目前語言的文案，**不解析、也不直接顯示**後端的訊息文字（與第 1.1 節的原則一致）。前端目前用到的代碼：
+
+| 情境 | 代碼 |
+|---|---|
+| 該車型沒有定價方案 | `no_pricing_plan` |
+| 車輛不存在 | `vehicle_not_found` |
+| 車輛在該時段已被預約 | `vehicle_unavailable` |
+| 訂單不存在 | `order_not_found` |
+| 優惠碼不存在 | `not_found`（優惠碼驗證的 `reason`） |
+| 優惠碼不符使用條件 | `not_applicable`（同上） |
+
+後端可以回更細的原因（例如優惠碼已過期、未達最低天數），但請先與前端約定代碼，前端要為每個代碼補三種語言的文案；未約定的代碼前端只會顯示通用的「送出失敗」。
+
+### 9.2 記錄客人的語言
+
+客人用哪個語言下單，後續 Email 通知、付款頁、（業主 #3、#4 確認後的）手機簽約連結都應該用同一個語言。建議：
+
+- 建立訂單時帶上客人當下的語言（`zh-TW`／`en`／`ja`），後端存在**訂單**上（同一位會員不同訂單可能用不同語言），而不是只靠 `Accept-Language`。**前端目前還沒送**（prototype 的 `RentalOrder` 沒有這個欄位，也沒有要用它的地方），接 API 時由官網的送出流程補上。
+- 通知範本需要三語版本；寄送時點與內容仍待業主 #9 確認。
+- 合約本文是否要有外文版本、以哪個語言的版本為準，屬法務問題，請併入業主 #4／#9 討論。**在確認之前，合約快照維持繁中**。
+
+### 9.3 主檔資料目前不翻譯
+
+依已定案的界線「會隨資料庫變動的是資料、不翻」，下列內容切到英文／日文時仍顯示繁中：據點名稱與地址、車款型號、車型分類標籤（`classLabel`，如「小型轎車」）、保險方案名稱／標籤／保障項目、加購配件名稱。
+
+實際畫面上英日文頁面會夾雜這些繁中字，觀感不佳。若業主決定要翻（業主 #8 已提出「車款名稱、據點名稱是否也需要翻譯版本」），**翻譯應放在主檔**：這些資料表需要多語欄位（或另建翻譯表），API 依請求語言回傳對應版本、缺翻譯時回繁中。前端不會自己維護一份資料的翻譯對照表，避免主檔改名時兩邊不同步。
+
+### 9.4 金額、幣別與日期
+
+- 金額維持整數新台幣，由前端依語言加千分位與 `NT$` 前綴；API 不要回傳格式化過的金額字串。
+- 保險保障項目帶有 `currency` 欄位（目前都是 `TWD`），前端已能顯示 `JPY`（`¥`）。若未來真的有外幣商品，請一併定義匯率與結帳幣別的規則——目前結帳一律以新台幣計。
+- 日期時間維持 ISO 8601；只有日期的欄位用 `YYYY-MM-DD`，前端視為當地（台灣）日期，不做時區換算。
+

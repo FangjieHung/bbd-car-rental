@@ -56,7 +56,7 @@ export interface Vehicle {
   /** 提供此車款的供應商數量 */
   supplierCount?: number;
   /** 車輛所在據點 id（見 RENTAL_BRANCHES）；未填時視為不確定，篩選特定據點時不會出現 */
-  location?: string;
+  branchId?: string;
   /** 可選購的保險方案 */
   insurancePlans?: InsurancePlan[];
   /** 油量政策 */

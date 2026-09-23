@@ -37,7 +37,7 @@ export const ORDER_CREATE_STEPS = ['vehicle', 'renter', 'payment', 'contract', '
 export type OrderCreateStep = (typeof ORDER_CREATE_STEPS)[number];
 
 /** 直接輸入網址進來、沒有站內上一頁時，取消回到這裡。 */
-const FALLBACK_RETURN_URL = '/bookings';
+const FALLBACK_RETURN_URL = '/orders';
 /**
  * 步驟導覽改為直式的斷點。橫式需要約 650px 內容寬才放得下 5 個步驟標籤，
  * 而 900px 以上側欄會常駐佔去約 330px，因此在 1024px 以下就改用直式。

@@ -1,10 +1,10 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { Vehicle, VehicleStatus, VehicleCategory } from '../../core/models';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
 /**
- * 允許的狀態轉換。取車／還車不直接呼叫這裡——BookingStore.pickUp()／complete() 是
+ * 允許的狀態轉換。取車／還車不直接呼叫這裡——OrderStore.pickUp()／complete() 是
  * 唯一會觸發 rented／available 轉換的入口，而它們又是被 HandoverStore.performPickup()／
  * performReturn()（Task 13）依序呼叫，車輛轉換永遠緊跟在對應訂單轉換之前。
  */
@@ -18,7 +18,7 @@ const ALLOWED: Record<VehicleStatus, VehicleStatus[]> = {
 @Injectable({ providedIn: 'root' })
 export class VehicleStore {
   private repo = inject(VEHICLE_REPO);
-  private bookingRepo = inject(BOOKING_REPO);
+  private orderRepo = inject(ORDER_REPO);
   private maintenanceRepo = inject(MAINTENANCE_REPO);
 
   private _vehicles = signal<Vehicle[]>(this.repo.getAll());
@@ -94,11 +94,11 @@ export class VehicleStore {
   }
 
   remove(id: string): void {
-    const hasActiveBooking = this.bookingRepo
+    const hasActiveOrder = this.orderRepo
       .getAll()
       .some((b) => b.vehicleId === id && (b.status === 'reserved' || b.status === 'in_progress'));
     const hasRecords = this.maintenanceRepo.getAll().some((r) => r.vehicleId === id);
-    if (hasActiveBooking || hasRecords) throw new Error(ZH_TW.vehicle.deleteBlocked);
+    if (hasActiveOrder || hasRecords) throw new Error(ZH_TW.vehicle.deleteBlocked);
     this.repo.remove(id);
     this.reload();
   }

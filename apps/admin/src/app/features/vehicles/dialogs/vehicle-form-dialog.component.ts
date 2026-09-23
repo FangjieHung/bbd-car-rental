@@ -18,7 +18,7 @@ export interface VehicleFormResult {
   mileage: number;
   nextServiceMileage?: number;
   insuranceExpiry?: string;
-  location?: string;
+  branchId?: string;
 }
 
 @Component({
@@ -52,7 +52,7 @@ export class VehicleFormDialogComponent {
     mileage: [this.data?.mileage ?? 0, [Validators.required, Validators.min(0)]],
     nextServiceMileage: [this.data?.nextServiceMileage ?? null],
     insuranceExpiry: [this.initialInsuranceExpiry],
-    location: [this.data?.location ?? ''],
+    branchId: [this.data?.branchId ?? ''],
   });
 
   save(): void {
@@ -71,7 +71,7 @@ export class VehicleFormDialogComponent {
         ...(raw.displacement != null ? { displacement: raw.displacement } : {}),
         ...(raw.nextServiceMileage != null ? { nextServiceMileage: raw.nextServiceMileage } : {}),
         ...(insuranceExpiry ? { insuranceExpiry } : {}),
-        ...(raw.location ? { location: raw.location } : {}),
+        ...(raw.branchId ? { branchId: raw.branchId } : {}),
       };
       this.ref.close(result);
     }

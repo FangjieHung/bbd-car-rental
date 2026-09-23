@@ -1,6 +1,6 @@
 /** 稽核事件涉及的實體類型。涵蓋本次工作流新增的模型；後續 task 如新增實體須擴充此清單。 */
 export type AuditEntityType =
-  | 'booking'
+  | 'booking' // 即「訂單」；已寫入 localStorage 的持久化值，改名需附資料遷移，故保留舊值
   | 'member'
   | 'identity_document'
   | 'driver_credential'

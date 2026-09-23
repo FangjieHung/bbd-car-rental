@@ -5,7 +5,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatDialog } from '@angular/material/dialog';
 import { DateRange, DateStepComponent } from '@car-rental/booking-flow';
 import { startOfDay } from '../../../core/date-utils';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
@@ -15,7 +15,7 @@ import {
   pickupProgress,
   returnProgress,
 } from '../../dispatch/calendar-view/calendar-view.component';
-import { pickVehicle } from '../../bookings/dialogs/vehicle-picker-dialog.component';
+import { pickVehicle } from '../../orders/dialogs/vehicle-picker-dialog.component';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -32,7 +32,7 @@ import { pickVehicle } from '../../bookings/dialogs/vehicle-picker-dialog.compon
   styleUrls: ['../../../app.scss'],
 })
 export class DashboardPageComponent {
-  readonly bookingStore = inject(BookingStore);
+  readonly orderStore = inject(OrderStore);
   readonly memberStore = inject(MemberStore);
   readonly maintenanceStore = inject(MaintenanceStore);
   private readonly todayDate = startOfDay(new Date());
@@ -63,14 +63,14 @@ export class DashboardPageComponent {
   }
 
   private readonly todayPickup = computed(() =>
-    pickupProgress(this.bookingStore.bookings(), this.todayDate),
+    pickupProgress(this.orderStore.orders(), this.todayDate),
   );
   readonly todayPickupTotal = computed(() => this.todayPickup().total);
   readonly todayPickupDone = computed(() => this.todayPickup().done);
   readonly todayPickupPending = computed(() => this.todayPickup().pending);
 
   private readonly todayReturn = computed(() =>
-    returnProgress(this.bookingStore.bookings(), this.todayDate),
+    returnProgress(this.orderStore.orders(), this.todayDate),
   );
   readonly todayReturnTotal = computed(() => this.todayReturn().total);
   readonly todayReturnDone = computed(() => this.todayReturn().done);

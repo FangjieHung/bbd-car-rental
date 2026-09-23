@@ -5,7 +5,7 @@ import { ThemeService } from '../theme/theme.service';
 import { texture, COLOR_THEMES } from '../theme/theme.token';
 
 @Component({
-  selector: 'app-theme-switcher',
+  selector: 'lib-theme-switcher',
   imports: [MatButtonModule, MatMenuModule],
   template: `
     <button

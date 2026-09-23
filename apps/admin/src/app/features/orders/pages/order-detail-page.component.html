@@ -4,16 +4,16 @@
     {{ t.orderDetail.back }}
   </a>
 
-  @if (booking(); as b) {
+  @if (order(); as b) {
     <header class="ui-card order-detail__header">
       <div class="order-detail__heading">
         <p class="order-detail__eyebrow">{{ t.orderDetail.title }}</p>
         <h1 class="ui-text-title order-detail__title">{{ member()?.name ?? '—' }}</h1>
-        <app-status-chip [label]="t.booking.statusLabels[b.status]" [status]="statusKey()" />
+        <app-status-chip [label]="t.order.statusLabels[b.status]" [status]="statusKey()" />
       </div>
       <dl class="order-detail__meta">
         <div>
-          <dt>{{ t.booking.vehicle }}</dt>
+          <dt>{{ t.order.vehicle }}</dt>
           <dd>{{ vehicle()?.plateNumber ?? '—' }}@if (vehicle(); as v) {／{{ v.model }}}</dd>
         </div>
         <div>
@@ -94,16 +94,16 @@
               <section class="ui-card order-detail__group">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.rental }}</h2>
                 <dl class="order-detail__fields">
-                  <dt>{{ t.booking.vehicle }}</dt>
+                  <dt>{{ t.order.vehicle }}</dt>
                   <dd>{{ vehicle()?.plateNumber ?? '—' }}@if (vehicle(); as v) {（{{ v.model }}）}</dd>
-                  <dt>{{ t.booking.startTime }}</dt>
+                  <dt>{{ t.order.startTime }}</dt>
                   <dd>{{ fmt(b.startTime) }}</dd>
-                  <dt>{{ t.booking.endTime }}</dt>
+                  <dt>{{ t.order.endTime }}</dt>
                   <dd>{{ fmt(b.endTime) }}</dd>
-                  <dt>{{ t.booking.pickupLocation }}</dt>
+                  <dt>{{ t.order.pickupBranch }}</dt>
                   <dd>
                     <span class="order-detail__branch">
-                      {{ branchName(b.pickupLocation) }}
+                      {{ branchName(b.pickupBranchId) }}
                       @if (needsDispatch()) {
                         <span class="ui-chip ui-chip--info" [attr.title]="dispatchNote()">
                           <span class="material-symbols-rounded" aria-hidden="true">swap_horiz</span>
@@ -115,8 +115,8 @@
                       <span class="order-detail__note">{{ dispatchNote() }}</span>
                     }
                   </dd>
-                  <dt>{{ t.booking.returnLocation }}</dt>
-                  <dd>{{ branchName(b.returnLocation) }}</dd>
+                  <dt>{{ t.order.returnBranch }}</dt>
+                  <dd>{{ branchName(b.returnBranchId) }}</dd>
                 </dl>
               </section>
 
@@ -142,17 +142,17 @@
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.pricing }}</h2>
                 @if (b.priceBreakdown; as q) {
                   <dl class="order-detail__fields order-detail__fields--amounts">
-                    <dt>{{ t.bookingForm.rentalSubtotal }}</dt>
+                    <dt>{{ t.orderForm.rentalSubtotal }}</dt>
                     <dd>{{ q.rentalSubtotal }}</dd>
-                    <dt>{{ t.bookingForm.insuranceSubtotal }}</dt>
+                    <dt>{{ t.orderForm.insuranceSubtotal }}</dt>
                     <dd>{{ q.insuranceSubtotal }}</dd>
-                    <dt>{{ t.bookingForm.addOnSubtotal }}</dt>
+                    <dt>{{ t.orderForm.addOnSubtotal }}</dt>
                     <dd>{{ q.addOnSubtotal }}</dd>
                     @for (line of q.addOnLines; track line.addOnId) {
                       <dt class="order-detail__sub">{{ line.name }} × {{ line.qty }}</dt>
                       <dd class="order-detail__sub">{{ line.amount }}</dd>
                     }
-                    <dt class="is-total">{{ t.bookingForm.quoteTotal }}</dt>
+                    <dt class="is-total">{{ t.orderForm.quoteTotal }}</dt>
                     <dd class="is-total">{{ q.total }}</dd>
                     <dt>{{ t.orderDetail.depositRequired }}</dt>
                     <dd>{{ b.depositRequired }}</dd>
