@@ -12,7 +12,14 @@ import {
   unlockRenter,
 } from './order-form';
 import { OrderFormData } from './order-form-data';
-import { createOrderFormDerived, orderFormProblems, orderIncompleteItems } from './order-form-derived';
+import {
+  createOrderFormDerived,
+  orderFormProblems,
+  orderIncompleteItems,
+  orderRentalDays,
+  orderRequirements,
+  paymentDraftBalance,
+} from './order-form-derived';
 import { buildContractSnapshot, sameContractTerms } from './contract-snapshot';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 
@@ -284,6 +291,102 @@ describe('orderFormProblems（送出前檢查）', () => {
 
     form.controls.payments.controls.drafts.at(0)?.controls.amount.setValue(500);
     expect(problemsOf(form).pricing).toEqual([]);
+  });
+});
+
+describe('orderFormProblems：車輛與租期都沒填時，同一句提示只列一次', () => {
+  it('空白表單的 rental 問題不重複', () => {
+    const value = signal(createOrderForm().getRawValue());
+    const p = orderFormProblems(value(), createOrderFormDerived(value, fakeData([makeVehicle()])));
+    expect(p.rental.filter((m) => m === t.orderForm.problems.rentalBaseline)).toHaveLength(1);
+  });
+});
+
+describe('orderRequirements（訂單摘要欄的「建立訂單需要」：與擋送出的檢查同一套）', () => {
+  function requirementsOf(form: ReturnType<typeof createOrderForm>, data = fakeData([makeVehicle()])) {
+    const value = signal(form.getRawValue());
+    return orderRequirements(value(), createOrderFormDerived(value, data));
+  }
+
+  it('依車輛／租期／據點／承租人四項排列；空白表單四項都是「還沒填」', () => {
+    const r = requirementsOf(createOrderForm());
+    expect(r.map((x) => x.group)).toEqual(['vehicle', 'period', 'branches', 'renter']);
+    expect(r.every((x) => !x.met && x.missing && x.issues.length === 0)).toBe(true);
+  });
+
+  it('底線齊全時四項都打勾', () => {
+    expect(requirementsOf(filledForm()).every((x) => x.met && !x.missing)).toBe(true);
+  });
+
+  it('只缺承租人時只有承租人未完成', () => {
+    const form = filledForm();
+    form.controls.renter.patchValue({ phone: '' });
+    const r = requirementsOf(form);
+    expect(r.filter((x) => !x.met).map((x) => x.group)).toEqual(['renter']);
+  });
+
+  it('填了但不合格：還車早於取車→租期未完成並帶原因；時段衝突→車輛未完成並帶原因（不算「還沒填」）', () => {
+    const form = filledForm();
+    form.controls.rental.controls.endLocal.setValue('2026-01-04T09:00');
+    const period = requirementsOf(form).find((x) => x.group === 'period');
+    expect(period).toEqual({ group: 'period', met: false, missing: false, issues: [t.orderForm.problems.endBeforeStart] });
+
+    const conflicted = requirementsOf(filledForm(), fakeData([makeVehicle()], [{ id: 'x' } as RentalBooking]));
+    expect(conflicted.find((x) => x.group === 'vehicle')).toEqual({
+      group: 'vehicle',
+      met: false,
+      missing: false,
+      issues: [t.bookingForm.vehicleConflict],
+    });
+  });
+
+  it('打勾與擋送出一致：四項都打勾時，租期與車輛、承租人兩個步驟都沒有問題', () => {
+    const form = filledForm();
+    const value = signal(form.getRawValue());
+    const derived = createOrderFormDerived(value, fakeData([makeVehicle()]));
+    expect(orderRequirements(value(), derived).every((x) => x.met)).toBe(true);
+    const problems = orderFormProblems(value(), derived);
+    expect(problems.rental).toEqual([]);
+    expect(problems.renter).toEqual([]);
+  });
+
+  it('費用類問題（訂金超過上限）會擋送出，但不屬於「建立訂單需要」的任何一項', () => {
+    const form = filledForm();
+    form.controls.pricing.controls.depositRequired.setValue(999_999);
+    const value = signal(form.getRawValue());
+    const derived = createOrderFormDerived(value, fakeData([makeVehicle()]));
+    expect(orderFormProblems(value(), derived).pricing).toHaveLength(1);
+    expect(orderRequirements(value(), derived).every((x) => x.met)).toBe(true);
+  });
+});
+
+describe('orderRentalDays（與報價引擎同一個天數定義）', () => {
+  it('取車日到還車日之間的日曆天數，只看日期不看時刻', () => {
+    expect(orderRentalDays({ startLocal: '2026-01-05T09:00', endLocal: '2026-01-07T09:00' })).toBe(2);
+    expect(orderRentalDays({ startLocal: '2026-01-05T18:00', endLocal: '2026-01-07T09:00' })).toBe(2);
+    expect(orderRentalDays({ startLocal: '2026-01-31T09:00', endLocal: '2026-02-02T09:00' })).toBe(2);
+  });
+
+  it('與報價的 dailyLines 天數一致', () => {
+    const form = filledForm();
+    const quote = createOrderFormDerived(signal(form.getRawValue()), fakeData([makeVehicle()])).quote();
+    expect(orderRentalDays(form.getRawValue().rental)).toBe(quote?.dailyLines.length);
+  });
+
+  it('租期未填完、或還車日早於取車日：undefined', () => {
+    expect(orderRentalDays({ startLocal: '', endLocal: '2026-01-07T09:00' })).toBeUndefined();
+    expect(orderRentalDays({ startLocal: '2026-01-07T09:00', endLocal: '2026-01-05T09:00' })).toBeUndefined();
+  });
+});
+
+describe('paymentDraftBalance（本次收款 · 建立後待收）', () => {
+  it('待收＝報價合計−本次收款；負數代表溢收；還沒填的金額視為 0', () => {
+    expect(paymentDraftBalance([{ amount: 500 }, { amount: null }], 2000)).toEqual({ collected: 500, due: 1500 });
+    expect(paymentDraftBalance([{ amount: 2500 }], 2000)).toEqual({ collected: 2500, due: -500 });
+  });
+
+  it('還沒有報價時待收算不出來（undefined），不假裝報價是 0', () => {
+    expect(paymentDraftBalance([{ amount: 500 }], undefined)).toEqual({ collected: 500, due: undefined });
   });
 });
 

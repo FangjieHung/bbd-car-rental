@@ -72,7 +72,8 @@
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.renter }}</h2>
                 <app-order-renter-section [form]="form()" />
               </section>
-              <section class="ui-card order-detail__group">
+              <!-- 2.4：費用區塊改成保險方案／加購配件表格，需要整列寬度才放得下，不和另外兩塊並排 -->
+              <section class="ui-card order-detail__group order-detail__group--wide">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.pricing }}</h2>
                 <app-order-pricing-section [form]="form()" [context]="editContext()" />
               </section>

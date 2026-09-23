@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
+import { FILL_PAGE_DATA_KEY } from './layout/fill-page';
 
 @Component({ template: '' })
 class BlankComponent {}
@@ -17,6 +18,10 @@ describe('App', () => {
           { path: 'vehicles/:id', component: BlankComponent },
           { path: 'settings', component: BlankComponent },
           { path: 'no-nav-match', component: BlankComponent },
+          {
+            path: 'orders',
+            children: [{ path: 'new', component: BlankComponent, data: { [FILL_PAGE_DATA_KEY]: true } }],
+          },
         ]),
       ],
     }).compileComponents();
@@ -79,6 +84,23 @@ describe('App', () => {
       await router.navigateByUrl('/no-nav-match');
       expect(app['defaultTitle']).toEqual({ title: '', breadcrumbs: [] });
       expect(app['currentGroupLabel']).toBeNull();
+    });
+  });
+
+  describe('2.2 滿版頁（路由 data 標記）', () => {
+    it('標記為滿版頁的路由：主內容區加上 page-shell--fill（撐滿頁首與頁尾之間的高度）；其他頁面沒有', async () => {
+      const fixture = TestBed.createComponent(App);
+      const router = TestBed.inject(Router);
+      await fixture.whenStable();
+      const shell = () => (fixture.nativeElement as HTMLElement).querySelector('.page-shell') as HTMLElement;
+
+      await router.navigateByUrl('/orders/new');
+      fixture.detectChanges();
+      expect(shell().classList.contains('page-shell--fill')).toBe(true);
+
+      await router.navigateByUrl('/vehicles');
+      fixture.detectChanges();
+      expect(shell().classList.contains('page-shell--fill')).toBe(false);
     });
   });
 });

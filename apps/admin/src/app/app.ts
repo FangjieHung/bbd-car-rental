@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { ConnectedPosition } from '@angular/cdk/overlay';
 import { MatSidenavContainer, MatSidenavModule } from '@angular/material/sidenav';
@@ -10,6 +10,7 @@ import { NavEntry, NavGroup, isNavGroup } from './layout/side-nav/nav-item.model
 import { HeaderComponent } from './layout/header/header.component';
 import { HeaderTitleData } from './layout/header/header-title';
 import { FooterComponent } from './layout/footer/footer.component';
+import { isFillPageRoute } from './layout/fill-page';
 
 @Component({
   selector: 'app-root',
@@ -74,6 +75,8 @@ export class App implements OnInit {
   protected currentGroupLabel: string | null = null;
   protected openGroupLabel: string | null = null;
   protected collapsed = false;
+  /** 目前頁面是「滿版頁」（路由 data 標記，見 layout/fill-page.ts）：主內容區撐滿頁首與頁尾之間的高度。 */
+  protected readonly fillPage = signal(false);
 
   protected readonly flyoutPositions: ConnectedPosition[] = [
     { originX: 'end', originY: 'top', overlayX: 'start', overlayY: 'top', offsetX: 8 },
@@ -126,6 +129,7 @@ export class App implements OnInit {
           title: active?.label ?? '',
           breadcrumbs: activeGroup ? [{ label: activeGroup.label }] : [],
         };
+        this.fillPage.set(isFillPageRoute(this.router.routerState.snapshot.root));
       });
   }
 

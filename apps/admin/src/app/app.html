@@ -29,7 +29,7 @@
         (menuToggle)="toggleSidenav()"
       />
 
-      <main class="page-shell">
+      <main class="page-shell" [class.page-shell--fill]="fillPage()">
         <router-outlet />
       </main>
 

@@ -27,8 +27,14 @@
   align-self: center;
 }
 
+.payment-drafts__add {
+  align-self: flex-start;
+}
+
 .payment-drafts__footer {
+  align-self: flex-end;
   margin: 0.25rem 0 0.75rem;
+  text-align: right;
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
   color: var(--mat-sys-on-surface);

@@ -109,6 +109,10 @@
   min-width: 0;
 }
 
+.order-detail__group--wide {
+  grid-column: 1 / -1;
+}
+
 .order-detail__group-title {
   margin: 0 0 0.75rem;
   font-size: 1rem;

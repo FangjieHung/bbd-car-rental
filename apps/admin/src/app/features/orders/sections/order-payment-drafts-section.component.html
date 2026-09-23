@@ -47,9 +47,14 @@
         </li>
       }
     </ul>
-
-    <p class="payment-drafts__footer" [class.is-overpaid]="isOverpaid()">{{ footerText() }}</p>
   }
 
-  <button mat-button type="button" (click)="addDraft()">{{ t.orderForm.addPaymentDraft }}</button>
+  <!-- 2.4：新增鈕緊接在收款列表下方、靠左；「本次收款 · 建立後待收」在區塊最底、靠右 -->
+  <button mat-button type="button" class="payment-drafts__add" (click)="addDraft()">
+    {{ t.orderForm.addPaymentDraft }}
+  </button>
+
+  @if (draftGroups().length > 0) {
+    <p class="payment-drafts__footer" [class.is-overpaid]="isOverpaid()">{{ footerText() }}</p>
+  }
 </div>
