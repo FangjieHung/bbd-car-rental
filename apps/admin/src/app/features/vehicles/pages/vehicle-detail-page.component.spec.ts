@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
+import { Component, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { of } from 'rxjs';
 import { VehicleDetailPageComponent } from './vehicle-detail-page.component';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
@@ -9,6 +12,8 @@ import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { Vehicle, RentalBooking, MaintenanceRecord } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { HeaderTitleSlot } from '../../../layout/header/header-title';
+import { HeaderToolbarSlot } from '../../../layout/header/header-toolbar-slot';
+import { VehicleFormDialogComponent, VehicleFormResult } from '../dialogs/vehicle-form-dialog.component';
 import {
   MaintenanceRecordDialogComponent,
   RecordFormResult,
@@ -170,5 +175,124 @@ describe('VehicleDetailPageComponent', () => {
     await component.addRecord();
 
     expect(component.maintenanceStore.records()).toHaveLength(0);
+  });
+});
+
+/** 頁首工具列登記在 HeaderToolbarSlot、平常由 HeaderComponent 渲染；測試用一個最小的宿主把它畫出來。 */
+@Component({
+  imports: [NgTemplateOutlet],
+  template: '<ng-container [ngTemplateOutlet]="slot.template()" />',
+})
+class HeaderToolbarHostComponent {
+  readonly slot = inject(HeaderToolbarSlot);
+}
+
+describe('VehicleDetailPageComponent 4.7 頁首「編輯」', () => {
+  const vehicle = makeVehicle({
+    id: 'v1',
+    plateNumber: 'AAA-111',
+    model: 'Gogoro 2',
+    mileage: 1000,
+    location: 'mzg-airport',
+  });
+
+  function formResult(partial: Partial<VehicleFormResult> = {}): VehicleFormResult {
+    return {
+      plateNumber: 'AAA-111',
+      category: 'scooter',
+      model: 'Gogoro 2',
+      brand: 'Gogoro',
+      year: 2022,
+      mileage: 1000,
+      location: 'mzg-airport',
+      ...partial,
+    };
+  }
+
+  function setup(options: { vehicles?: Vehicle[]; dialogResult?: VehicleFormResult } = {}) {
+    const dialogOpen = vi.fn().mockReturnValue({ afterClosed: () => of(options.dialogResult) });
+    const snackBarOpen = vi.fn();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: MatDialog, useValue: { open: dialogOpen } },
+        { provide: MatSnackBar, useValue: { open: snackBarOpen } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { paramMap: convertToParamMap({ id: 'v1' }) },
+            paramMap: of(convertToParamMap({ id: 'v1' })),
+          },
+        },
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(options.vehicles ?? [vehicle]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const page = TestBed.createComponent(VehicleDetailPageComponent);
+    page.detectChanges();
+    const host = TestBed.createComponent(HeaderToolbarHostComponent);
+    host.detectChanges();
+    const editButton = () =>
+      (host.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.vehicle-detail__edit');
+    return { page, host, editButton, dialogOpen, snackBarOpen };
+  }
+
+  it('頁首工具列有外框的「編輯」按鈕，點了開車輛表單 dialog 並帶入這台車', () => {
+    const { editButton, dialogOpen } = setup();
+
+    expect(editButton()?.textContent).toContain('編輯');
+    expect(editButton()?.classList).toContain('mat-mdc-outlined-button');
+    editButton()?.click();
+
+    expect(dialogOpen).toHaveBeenCalledWith(
+      VehicleFormDialogComponent,
+      expect.objectContaining({ data: expect.objectContaining({ id: 'v1', plateNumber: 'AAA-111' }) }),
+    );
+  });
+
+  it('存檔後頁面即時更新：頁首車牌、型號、里程、所在據點都換成新值', async () => {
+    const { page, dialogOpen } = setup({
+      dialogResult: formResult({ plateNumber: 'AAA-999', model: 'Gogoro 3', mileage: 1500, location: 'mzg-port' }),
+    });
+
+    await page.componentInstance.edit();
+    page.detectChanges();
+
+    expect(dialogOpen).toHaveBeenCalledTimes(1);
+    expect(page.componentInstance.vehicle()).toEqual(
+      expect.objectContaining({ plateNumber: 'AAA-999', model: 'Gogoro 3', mileage: 1500, location: 'mzg-port' }),
+    );
+    expect(TestBed.inject(HeaderTitleSlot).entry()?.value.title).toBe('AAA-999');
+    const text = (page.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Gogoro 3');
+    expect(text).toContain('1,500');
+    expect(text).toContain('馬公港櫃檯');
+  });
+
+  it('取消 dialog 不改任何資料', async () => {
+    const { page } = setup({ dialogResult: undefined });
+
+    await page.componentInstance.edit();
+
+    expect(page.componentInstance.vehicle()).toEqual(vehicle);
+  });
+
+  it('存不進去（車牌與別台重複）時顯示原因，資料不變', async () => {
+    const other = makeVehicle({ id: 'v2', plateNumber: 'BBB-222' });
+    const { page, snackBarOpen } = setup({
+      vehicles: [vehicle, other],
+      dialogResult: formResult({ plateNumber: 'BBB-222' }),
+    });
+
+    await page.componentInstance.edit();
+
+    expect(snackBarOpen).toHaveBeenCalledWith(ZH_TW.vehicle.plateDuplicate, undefined, { duration: 3000 });
+    expect(page.componentInstance.vehicle()?.plateNumber).toBe('AAA-111');
+  });
+
+  it('找不到車輛時頁首沒有「編輯」', () => {
+    const { editButton } = setup({ vehicles: [] });
+
+    expect(editButton()).toBeNull();
   });
 });

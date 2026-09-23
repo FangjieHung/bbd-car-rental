@@ -11,6 +11,8 @@ import { branchName, MaintenanceRecord } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
 import { provideHeaderTitle } from '../../../layout/header/header-title';
+import { HeaderToolbarDirective } from '../../../layout/header/header-toolbar-slot';
+import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
 import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { MileagePipe } from '../../../shared/pipes/mileage.pipe';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -20,10 +22,19 @@ import {
   MaintenanceRecordDialogComponent,
   RecordFormResult,
 } from '../../maintenance/dialogs/maintenance-record-dialog.component';
+import { VehicleFormDialogComponent, VehicleFormResult } from '../dialogs/vehicle-form-dialog.component';
 
 @Component({
   selector: 'app-vehicle-detail-page',
-  imports: [DataTableComponent, DataTableCellDirective, MatButtonModule, TwdPipe, MileagePipe],
+  imports: [
+    DataTableComponent,
+    DataTableCellDirective,
+    MatButtonModule,
+    TwdPipe,
+    MileagePipe,
+    HeaderToolbarDirective,
+    PageToolbarComponent,
+  ],
   templateUrl: './vehicle-detail-page.component.html',
   styleUrls: ['../../../app.scss', './vehicle-detail-page.component.scss'],
 })
@@ -91,6 +102,24 @@ export class VehicleDetailPageComponent {
   onExportFailed(e: Error): void {
     console.error('DataTable 匯出失敗', e);
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
+  }
+
+  /**
+   * 4.7：頁首「編輯」——開車輛清單同一個表單 dialog（不必再回列表才能改）。存檔寫進 VehicleStore，
+   * vehicle() 是從 store 的 signal 算出來的，頁首車牌（標題）與下方資料會跟著即時換新。
+   * 失敗（例如車牌重複、里程變小）時跟車輛清單一樣用 snackbar 顯示原因，資料不變。
+   */
+  async edit(): Promise<void> {
+    const vehicle = this.vehicle();
+    if (!vehicle) return;
+    const ref = this.dialog.open(VehicleFormDialogComponent, { data: vehicle, width: '400px' });
+    const result: VehicleFormResult | undefined = await firstValueFrom(ref.afterClosed());
+    if (!result) return;
+    try {
+      this.vehicleStore.update(vehicle.id, result);
+    } catch (e) {
+      this.snackBar.open((e as Error).message, undefined, { duration: 3000 });
+    }
   }
 
   async addRecord(): Promise<void> {
