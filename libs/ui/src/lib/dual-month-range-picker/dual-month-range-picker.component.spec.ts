@@ -149,3 +149,149 @@ describe('DualMonthRangePickerComponent 畫面文字與相依', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('mat-label')?.textContent?.trim()).toBe('租期');
   });
 });
+
+describe('DualMonthRangePickerComponent 鍵盤操作（WCAG combobox/datepicker pattern）', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<DualMonthRangePickerComponent>>;
+  let component: DualMonthRangePickerComponent;
+  let input: HTMLInputElement;
+
+  // `.dual-calendar-panel` is CDK overlay content: it renders into the global
+  // `.cdk-overlay-container` appended under `document.body`, not under `fixture.nativeElement` —
+  // so it has to be queried from `document`, not from the fixture.
+  const panel = () => document.querySelector<HTMLElement>('.dual-calendar-panel');
+  const pressKey = (target: EventTarget, init: KeyboardEventInit & { keyCode?: number }) => {
+    const { keyCode, ...rest } = init;
+    const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...rest });
+    // Angular's `(keydown.foo)` bindings match on `event.key`, but `MatCalendarBody`'s own arrow-key
+    // handling (Material-internal, not our code) still switches on the legacy numeric `event.keyCode`
+    // — which the standard `KeyboardEvent` constructor never derives from `key`. Force it for callers
+    // that need to drive that path.
+    if (keyCode !== undefined) {
+      Object.defineProperty(event, 'keyCode', { get: () => keyCode });
+    }
+    target.dispatchEvent(event);
+  };
+
+  /**
+   * `MatCalendar.focusActiveCell()` (called from this component's `ngAfterViewChecked` once the
+   * panel attaches) does not move focus synchronously — Material's own `MatCalendarBody
+   * ._focusActiveCell` schedules the real `.focus()` call via `afterNextRender(() => setTimeout(...))`.
+   * A couple of real macrotask turns (plus a `detectChanges` to give `afterNextRender` a render to
+   * hook onto) reliably flushes it in this zoneless test setup.
+   */
+  const flushFocusActiveCell = async (f: typeof fixture) => {
+    f.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    f.detectChanges();
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [DualMonthRangePickerComponent],
+      providers: [provideNativeDateAdapter(), { provide: DUAL_MONTH_RANGE_PICKER_LABELS, useValue: LABELS }],
+    });
+    fixture = TestBed.createComponent(DualMonthRangePickerComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    input = (fixture.nativeElement as HTMLElement).querySelector('input') as HTMLInputElement;
+  });
+
+  it('觸發欄位是原生可以被 Tab 聚焦到的 input（沒有被拿掉 tab 順序）', () => {
+    expect(input.tabIndex).not.toBe(-1);
+    input.focus();
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('欄位有 aria-haspopup="dialog"；aria-expanded 隨開關狀態真的切換，不是寫死', () => {
+    expect(input.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+
+    // Goes through the real keydown/Escape paths (not a direct `component['open']()` call): a plain
+    // property write made outside Angular's event dispatch never gets picked up by `detectChanges()`
+    // here, since nothing marks the view dirty for it — the same reason production code must always
+    // flip `isOpen` from inside a template-bound handler.
+    input.focus();
+    pressKey(input, { key: 'Enter' });
+    fixture.detectChanges();
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+
+    pressKey(panel()!, { key: 'Escape' });
+    fixture.detectChanges();
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('聚焦欄位時按 Enter 會開啟面板', () => {
+    input.focus();
+    pressKey(input, { key: 'Enter' });
+    expect(component['isOpen']).toBe(true);
+  });
+
+  it('聚焦欄位時按空白鍵會開啟面板', () => {
+    input.focus();
+    pressKey(input, { key: ' ' });
+    expect(component['isOpen']).toBe(true);
+  });
+
+  it('聚焦欄位時按 Alt+↓ 會開啟面板', () => {
+    input.focus();
+    pressKey(input, { key: 'ArrowDown', altKey: true });
+    expect(component['isOpen']).toBe(true);
+  });
+
+  it('單純按 ↓（沒按 Alt）不會開啟面板——確認只有指定的三鍵有效', () => {
+    input.focus();
+    pressKey(input, { key: 'ArrowDown' });
+    expect(component['isOpen']).toBe(false);
+  });
+
+  it('滑鼠點欄位仍然正常開啟面板（既有滑鼠行為不能變）', () => {
+    const formField = (fixture.nativeElement as HTMLElement).querySelector('mat-form-field') as HTMLElement;
+    formField.click();
+    expect(component['isOpen']).toBe(true);
+  });
+
+  it('開啟後焦點真的進入月曆面板本體，不是停在原欄位或消失', async () => {
+    input.focus();
+    pressKey(input, { key: 'Enter' });
+    fixture.detectChanges();
+    // `MatCalendar.focusActiveCell()` doesn't focus synchronously: Material's own
+    // `MatCalendarBody._focusActiveCell` schedules the real `.focus()` call via
+    // `afterNextRender(() => setTimeout(...))`. Give both a turn before asserting.
+    await flushFocusActiveCell(fixture);
+
+    expect(document.activeElement).not.toBe(input);
+    expect(document.activeElement?.classList.contains('mat-calendar-body-cell')).toBe(true);
+    expect(panel()?.contains(document.activeElement)).toBe(true);
+  });
+
+  it('面板開啟時方向鍵可以在格子間移動焦點——Material 內建行為，確認我方接線沒有擋住它', async () => {
+    input.focus();
+    pressKey(input, { key: 'Enter' });
+    fixture.detectChanges();
+    await flushFocusActiveCell(fixture);
+    const firstActiveCell = document.activeElement;
+    expect(firstActiveCell?.classList.contains('mat-calendar-body-cell')).toBe(true);
+
+    pressKey(firstActiveCell!, { key: 'ArrowRight', keyCode: 39 });
+    // Material's own re-focus after an arrow-key move is likewise deferred (`_focusActiveCellAfterViewChecked`
+    // → the same `afterNextRender`/`setTimeout` chain as the initial open).
+    await flushFocusActiveCell(fixture);
+
+    expect(document.activeElement).not.toBe(firstActiveCell);
+    expect(document.activeElement?.classList.contains('mat-calendar-body-cell')).toBe(true);
+  });
+
+  it('面板打開時按 Esc 會關閉面板，並把焦點還給原本的觸發欄位', () => {
+    input.focus();
+    pressKey(input, { key: 'Enter' });
+    fixture.detectChanges();
+    expect(component['isOpen']).toBe(true);
+
+    pressKey(panel()!, { key: 'Escape' });
+    fixture.detectChanges();
+
+    expect(component['isOpen']).toBe(false);
+    expect(document.activeElement).toBe(input);
+  });
+});

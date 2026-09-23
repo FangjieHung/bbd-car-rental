@@ -1,6 +1,8 @@
 import { OverlayModule } from '@angular/cdk/overlay';
 import {
+  AfterViewChecked,
   Component,
+  ElementRef,
   EventEmitter,
   Input,
   OnChanges,
@@ -60,7 +62,7 @@ function sameDay(a: Date | null, b: Date | null): boolean {
     { provide: MAT_DATE_RANGE_SELECTION_STRATEGY, useExisting: HoverPreviewRangeStrategy },
   ],
 })
-export class DualMonthRangePickerComponent implements OnChanges {
+export class DualMonthRangePickerComponent implements OnChanges, AfterViewChecked {
   @Input() start: Date | null = null;
   @Input() end: Date | null = null;
   @Output() rangeSelected = new EventEmitter<SelectedDateRange>();
@@ -69,6 +71,7 @@ export class DualMonthRangePickerComponent implements OnChanges {
 
   @ViewChild('leftCal') private leftCal?: MatCalendar<Date>;
   @ViewChild('rightCal') private rightCal?: MatCalendar<Date>;
+  @ViewChild('triggerInput') private triggerInput?: ElementRef<HTMLInputElement>;
 
   protected isOpen = false;
   protected leftMonth = startOfMonth(new Date());
@@ -80,8 +83,24 @@ export class DualMonthRangePickerComponent implements OnChanges {
   private pendingEnd: Date | null = null;
   private hoverDate: Date | null = null;
 
+  /**
+   * Set by {@link onPanelAttached}, consumed here. `(attach)` fires as soon as the overlay content
+   * exists, which can race this component's own `@ViewChild('leftCal')` query for that
+   * just-created calendar — calling `focusActiveCell()` straight from the `(attach)` handler risks
+   * `leftCal` still being `undefined`. Deferring to `ngAfterViewChecked` guarantees the query has
+   * resolved first. Mirrors `MatCalendar`'s own `_moveFocusOnNextTick` pattern for the same problem.
+   */
+  private focusCalendarOnNextCheck = false;
+
   constructor() {
     this.hoverStrategy.onHover = (date) => this.onHover(date);
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.focusCalendarOnNextCheck) {
+      this.focusCalendarOnNextCheck = false;
+      this.leftCal?.focusActiveCell();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -120,6 +139,38 @@ export class DualMonthRangePickerComponent implements OnChanges {
     this.hoverDate = null;
     this.syncSelectedRange();
     this.isOpen = false;
+  }
+
+  /**
+   * Bound to the trigger input's `(keydown.enter)` / `(keydown.space)` / `(keydown.alt.arrowdown)` —
+   * the WCAG combobox/datepicker convention for opening a popup from a closed, focused field.
+   * `preventDefault` guards Space's default (inserting a character — moot since the field is
+   * `readonly`, but explicit is cheap) without touching the existing mouse-driven `(click)="open()"`.
+   */
+  protected openViaKeyboard(event: Event): void {
+    event.preventDefault();
+    this.open();
+  }
+
+  /**
+   * Bound to `(attach)` on the overlay template: content just got attached, so it's the right moment
+   * to move focus into the panel (requirement: focus must land inside, not stay on the trigger or
+   * disappear). Actually calling `focusActiveCell()` is deferred — see {@link focusCalendarOnNextCheck}.
+   */
+  protected onPanelAttached(): void {
+    this.focusCalendarOnNextCheck = true;
+  }
+
+  /**
+   * Bound to `(keydown.escape)` on the panel. `cdkConnectedOverlayDisableClose` on the template
+   * disables CDK's own Escape-closes-overlay default, so this is the only Escape path — it closes
+   * and returns focus to the trigger field. Deliberately not folded into `close()`: that method is
+   * also called on backdrop click and on finishing a selection, and moving focus there would be an
+   * unrequested behaviour change on those (mouse-driven) paths.
+   */
+  protected onPanelEscape(): void {
+    this.close();
+    this.triggerInput?.nativeElement.focus();
   }
 
   protected goPrev(): void {
