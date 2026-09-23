@@ -34,7 +34,7 @@
     <mat-form-field class="order-section__full">
       <mat-label>{{ t.bookingForm.deposit }}</mat-label>
       <input matInput type="number" min="0" formControlName="depositRequired" />
-      <mat-hint>{{ t.bookingForm.depositCap }} {{ derived.depositCap() }}</mat-hint>
+      <mat-hint>{{ depositCapHint() }}</mat-hint>
     </mat-form-field>
   </div>
   @if (derived.depositExceedsCap()) {

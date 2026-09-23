@@ -3,9 +3,12 @@ import { signal } from '@angular/core';
 import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalBooking, Vehicle, calculatePrice } from '../../../core/models';
 import {
   NO_INSURANCE_VALUE,
+  addPaymentDraft,
   createOrderForm,
   lockRenterToMember,
   orderFormInitialFromBooking,
+  removePaymentDraft,
+  setPaymentDrafts,
   unlockRenter,
 } from './order-form';
 import { OrderFormData } from './order-form-data';
@@ -117,6 +120,63 @@ describe('createOrderForm', () => {
   });
 });
 
+describe('addPaymentDraft／removePaymentDraft／setPaymentDrafts（款項草稿：列表就是紀錄）', () => {
+  it('addPaymentDraft 新增一列，getRawValue 立即反映列上的值', () => {
+    const form = createOrderForm();
+    addPaymentDraft(form, { method: 'cash', purpose: 'deposit', amount: 600 });
+    expect(form.getRawValue().payments.drafts).toEqual([{ method: 'cash', purpose: 'deposit', amount: 600 }]);
+  });
+
+  it('直接修改列上的欄位（不呼叫 addPaymentDraft 以外的任何提交動作）：getRawValue 立即反映新值——這是原本 bug 的修法核心', () => {
+    const form = createOrderForm();
+    addPaymentDraft(form, { method: 'cash', purpose: 'deposit', amount: 0 });
+    // 對應使用者直接在列上打金額，沒有另外按任何「新增」或「送出」——列本身就是紀錄。
+    form.controls.payments.controls.drafts.at(0)?.controls.amount.setValue(500);
+    expect(form.getRawValue().payments.drafts).toEqual([{ method: 'cash', purpose: 'deposit', amount: 500 }]);
+  });
+
+  it('可新增多列，依序保留；removePaymentDraft 依 index 移除、其餘列順序不變', () => {
+    const form = createOrderForm();
+    addPaymentDraft(form, { method: 'cash', purpose: 'deposit', amount: 600 });
+    addPaymentDraft(form, { method: 'line_pay', purpose: 'balance', amount: 1400 });
+    addPaymentDraft(form, { method: 'cash', purpose: 'adjustment', amount: 100 });
+    expect(form.getRawValue().payments.drafts.map((d) => d.amount)).toEqual([600, 1400, 100]);
+
+    removePaymentDraft(form, 1);
+    expect(form.getRawValue().payments.drafts.map((d) => d.amount)).toEqual([600, 100]);
+    expect(form.getRawValue().payments.drafts.map((d) => d.purpose)).toEqual(['deposit', 'adjustment']);
+  });
+
+  it('金額必填且大於 0：null、0、負數皆無效；正數才有效', () => {
+    const form = createOrderForm();
+    addPaymentDraft(form, { method: 'cash', purpose: 'balance', amount: null });
+    const amount = form.controls.payments.controls.drafts.at(0)?.controls.amount;
+    expect(amount?.valid).toBe(false);
+
+    amount?.setValue(0);
+    expect(amount?.valid).toBe(false);
+
+    amount?.setValue(-100);
+    expect(amount?.valid).toBe(false);
+
+    amount?.setValue(500);
+    expect(amount?.valid).toBe(true);
+  });
+
+  it('setPaymentDrafts 整批帶入，取代原本所有列', () => {
+    const form = createOrderForm();
+    addPaymentDraft(form, { method: 'cash', purpose: 'deposit', amount: 600 });
+    setPaymentDrafts(form, [
+      { method: 'line_pay', purpose: 'balance', amount: 1400 },
+      { method: 'cash', purpose: 'adjustment', amount: 100 },
+    ]);
+    expect(form.getRawValue().payments.drafts).toEqual([
+      { method: 'line_pay', purpose: 'balance', amount: 1400 },
+      { method: 'cash', purpose: 'adjustment', amount: 100 },
+    ]);
+  });
+});
+
 describe('orderFormInitialFromBooking（編輯訂單的 hydration）', () => {
   const booking: RentalBooking = {
     id: 'b1',
@@ -216,6 +276,15 @@ describe('orderFormProblems（送出前檢查）', () => {
     rich.controls.pricing.controls.depositRequired.setValue(999_999);
     expect(problemsOf(rich).pricing[0]).toContain(t.bookingForm.depositExceedsCap);
   });
+
+  it('本次收款有任一列金額未填或不大於 0 時擋下（掛在費用與付款的 pricing 問題）', () => {
+    const form = filledForm();
+    addPaymentDraft(form, { method: 'cash', purpose: 'deposit', amount: null });
+    expect(problemsOf(form).pricing).toContain(t.orderForm.problems.paymentDraftAmountInvalid);
+
+    form.controls.payments.controls.drafts.at(0)?.controls.amount.setValue(500);
+    expect(problemsOf(form).pricing).toEqual([]);
+  });
 });
 
 describe('orderIncompleteItems（待補項目）', () => {
@@ -236,5 +305,16 @@ describe('orderIncompleteItems（待補項目）', () => {
       { purpose: 'balance', method: 'cash', amount: 1400 },
     ];
     expect(orderIncompleteItems(v, 2000, 'signed')).toEqual([]);
+  });
+
+  it('款項草稿金額為 null（畫面上還沒填）時視為 0，不當成已收，也不會噴錯', () => {
+    const v = filledForm().getRawValue();
+    v.pricing.depositRequired = 600;
+    v.renter.email = 'a@b.c';
+    v.payments.drafts = [{ purpose: 'deposit', method: 'cash', amount: null }];
+    expect(orderIncompleteItems(v, 2000, 'signed')).toEqual([
+      t.bookingForm.incomplete.depositNotCollected,
+      t.bookingForm.incomplete.balanceNotCollected,
+    ]);
   });
 });

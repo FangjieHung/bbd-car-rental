@@ -99,6 +99,10 @@ export function orderFormProblems(
   }
   if (derived.insuranceUnreconciled()) problems.pricing.push(t.bookingForm.insuranceUnreconciled);
 
+  if (value.payments.drafts.some((d) => d.amount == null || d.amount <= 0)) {
+    problems.pricing.push(t.orderForm.problems.paymentDraftAmountInvalid);
+  }
+
   return problems;
 }
 
@@ -119,13 +123,15 @@ export function orderIncompleteItems(
 
   const drafts = value.payments.drafts;
   const deposit = value.pricing.depositRequired;
-  const depositCollected = drafts.filter((p) => p.purpose === 'deposit').reduce((sum, p) => sum + p.amount, 0);
+  const depositCollected = drafts
+    .filter((p) => p.purpose === 'deposit')
+    .reduce((sum, p) => sum + (p.amount ?? 0), 0);
   if (deposit > 0 && depositCollected < deposit) items.push(t.bookingForm.incomplete.depositNotCollected);
 
   if (contract === 'unsigned') items.push(t.bookingForm.incomplete.contractNotSigned);
   if (contract === 'needs_resign') items.push(t.orderForm.incomplete.contractNeedsResign);
 
-  const totalCollected = drafts.reduce((sum, p) => sum + p.amount, 0);
+  const totalCollected = drafts.reduce((sum, p) => sum + (p.amount ?? 0), 0);
   if (quoteTotal > 0 && totalCollected < quoteTotal) items.push(t.bookingForm.incomplete.balanceNotCollected);
   return items;
 }

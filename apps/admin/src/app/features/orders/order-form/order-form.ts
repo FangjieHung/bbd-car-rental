@@ -1,6 +1,6 @@
 import { DestroyRef, Signal, computed, effect, isSignal, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription, map } from 'rxjs';
 import {
   Member,
@@ -30,6 +30,52 @@ export interface PaymentDraft {
   method: PaymentMethod;
   amount: number;
   purpose: PaymentPurpose;
+}
+
+/**
+ * 一列款項草稿在表單裡的輸入值：金額在使用者填寫前允許 `null`（畫面顯示空白，見
+ * `addPaymentDraft` 「之後預設」的規則），不預先塞一個看似合理、其實是亂猜的 0。
+ */
+export interface PaymentDraftRowInput {
+  method: PaymentMethod;
+  amount: number | null;
+  purpose: PaymentPurpose;
+}
+
+/** 金額必須是大於 0 的正數；`null`、0 或負數一律視為無效輸入（沿用付款分頁 positiveAmountValidator 同一條規則）。 */
+function positiveAmountValidator(control: { value: unknown }) {
+  const value = control.value;
+  return typeof value === 'number' && value > 0 ? null : { nonPositive: true };
+}
+
+function createPaymentDraftGroup(row: PaymentDraftRowInput) {
+  return new FormGroup({
+    method: new FormControl<PaymentMethod>(row.method, { nonNullable: true }),
+    amount: new FormControl<number | null>(row.amount, { validators: [Validators.required, positiveAmountValidator] }),
+    purpose: new FormControl<PaymentPurpose>(row.purpose, { nonNullable: true }),
+  });
+}
+
+export type PaymentDraftGroup = ReturnType<typeof createPaymentDraftGroup>;
+
+/**
+ * 「列表就是紀錄」：每一列都是可直接編輯的表單群組，畫面上看到的值就是送出時會寫入的值，
+ * 不再有獨立於列表之外、需要另外按一次「新增」才會被記住的輸入列——那正是原本會把打好的
+ * 金額默默丟掉的 bug 來源。`removePaymentDraft`／`setPaymentDrafts` 同理直接操作這個 FormArray。
+ */
+export function addPaymentDraft(form: OrderForm, row: PaymentDraftRowInput): void {
+  form.controls.payments.controls.drafts.push(createPaymentDraftGroup(row));
+}
+
+export function removePaymentDraft(form: OrderForm, index: number): void {
+  form.controls.payments.controls.drafts.removeAt(index);
+}
+
+/** 整批帶入「已完整」的款項草稿（金額皆為正數）；供測試與程式化建立表單使用。 */
+export function setPaymentDrafts(form: OrderForm, drafts: PaymentDraft[]): void {
+  const array = form.controls.payments.controls.drafts;
+  array.clear();
+  for (const draft of drafts) array.push(createPaymentDraftGroup(draft));
 }
 
 /** `createOrderForm` 的初始值；時間一律是 ISO 字串，表單內部再轉成 datetime-local 格式。 */
@@ -65,7 +111,7 @@ function text(value = '', required = false): FormControl<string> {
  * - `rental`：車輛、租期、取／還車據點（租期與車輛區塊）
  * - `renter`：承租人；`memberId` 非 null 代表已鎖定既有會員（承租人區塊）
  * - `pricing`：保險、加購數量、訂金（費用區塊）
- * - `payments`：建立時一併排入的款項草稿與輸入列（僅建立訂單使用）
+ * - `payments`：建立時一併排入的款項草稿，列表本身就是紀錄（僅建立訂單使用）
  * - `contract`：內部備註
  */
 export function createOrderForm(initial: OrderFormInitial = {}) {
@@ -95,10 +141,7 @@ export function createOrderForm(initial: OrderFormInitial = {}) {
       }),
     }),
     payments: new FormGroup({
-      drafts: new FormControl<PaymentDraft[]>([], { nonNullable: true }),
-      method: new FormControl<PaymentMethod>('cash', { nonNullable: true }),
-      amount: new FormControl(0, { nonNullable: true }),
-      purpose: new FormControl<PaymentPurpose>('deposit', { nonNullable: true }),
+      drafts: new FormArray<PaymentDraftGroup>([]),
     }),
     contract: new FormGroup({
       internalNote: text(initial.internalNote),

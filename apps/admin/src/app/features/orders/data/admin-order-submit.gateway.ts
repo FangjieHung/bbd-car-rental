@@ -108,8 +108,13 @@ export class AdminOrderSubmitGateway implements OrderSubmitGateway {
         created.bookingId = booking.id;
       }
 
-      // 4. 寫入本次排入的款項紀錄。
+      // 4. 寫入本次排入的款項紀錄。金額為 null／非正數理論上已被 orderFormProblems 擋在按下
+      // 「建立訂單」之前；這裡仍再次守門，寧可整筆送出失敗（觸發下方補償）也不要把無效金額
+      // 寫成一筆看似正常的付款紀錄。
       for (const draft of v.payments.drafts) {
+        if (draft.amount == null || draft.amount <= 0) {
+          throw new Error(this.t.orderForm.problems.paymentDraftAmountInvalid);
+        }
         const payment = this.paymentStore.recordPayment({
           bookingId: booking.id,
           amount: draft.amount,

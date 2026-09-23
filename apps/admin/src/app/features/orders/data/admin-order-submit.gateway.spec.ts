@@ -10,8 +10,10 @@ import {
   NO_INSURANCE_VALUE,
   OrderForm,
   OrderFormInitial,
+  addPaymentDraft,
   createOrderForm,
   orderFormInitialFromBooking,
+  setPaymentDrafts,
 } from '../order-form/order-form';
 import { buildContractSnapshot } from '../order-form/contract-snapshot';
 import { computeOrderQuote, selectedVehicleOf } from '../order-form/order-form';
@@ -49,7 +51,7 @@ describe('AdminOrderSubmitGateway.create（搬自舊建單 dialog 的原子寫�
     const { gateway, memberRepo, bookingRepo, paymentRepo, contractRepo, reminderStatusRepo } = setup();
     const form = baselineForm();
     form.controls.pricing.controls.depositRequired.setValue(600);
-    form.controls.payments.controls.drafts.setValue([{ purpose: 'deposit', method: 'cash', amount: 600 }]);
+    setPaymentDrafts(form, [{ purpose: 'deposit', method: 'cash', amount: 600 }]);
 
     const id = await gateway.create({ value: form.getRawValue() });
 
@@ -63,6 +65,20 @@ describe('AdminOrderSubmitGateway.create（搬自舊建單 dialog 的原子寫�
     expect(contractRepo.getAll()).toHaveLength(1);
     expect(contractRepo.getAll()[0]).toMatchObject({ bookingId: id, version: 1, status: 'draft' });
     expect(reminderStatusRepo.getAll().length).toBeGreaterThan(0);
+  });
+
+  it('BUG 重現／修復：新增一列款項後直接改列上的金額欄位（不呼叫任何「新增」以外的提交動作），送出仍會寫入款項紀錄', async () => {
+    const { gateway, paymentRepo } = setup();
+    const form = baselineForm();
+    // 對應畫面上按一次「＋ 新增一筆收款」：新增一列，此時金額欄位還是預設值。
+    addPaymentDraft(form, { method: 'cash', purpose: 'deposit', amount: 0 });
+    // 「列表就是紀錄」：直接改列上的金額欄位本身，不透過任何獨立於列表之外的輸入列或
+    // 「新增」以外的提交動作——這正是舊版「打了金額沒按＋新增款項，這筆錢被默默丟掉」的情境。
+    form.controls.payments.controls.drafts.at(0)?.controls.amount.setValue(500);
+
+    const id = await gateway.create({ value: form.getRawValue() });
+
+    expect(paymentRepo.getAll().map((p) => [p.bookingId, p.amount])).toEqual([[id, 500]]);
   });
 
   it('鎖定既有會員時沿用該會員、不新建', async () => {
@@ -136,7 +152,7 @@ describe('AdminOrderSubmitGateway.create（搬自舊建單 dialog 的原子寫�
       return originalCreate(item);
     });
     const form = baselineForm();
-    form.controls.payments.controls.drafts.setValue([
+    setPaymentDrafts(form, [
       { purpose: 'deposit', method: 'cash', amount: 100 },
       { purpose: 'balance', method: 'cash', amount: 200 },
     ]);

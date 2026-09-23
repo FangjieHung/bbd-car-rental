@@ -1,42 +1,55 @@
-<div class="order-section" [formGroup]="form().controls.payments">
-  <h3 class="order-section__subtitle">{{ t.bookingForm.payments }}</h3>
+<div class="order-section">
+  <h3 class="order-section__subtitle">{{ t.orderForm.paymentsSectionTitle }}</h3>
 
-  @if (drafts().length === 0) {
+  @if (draftGroups().length === 0) {
     <p class="order-section__hint">{{ t.orderForm.noPaymentDrafts }}</p>
   } @else {
     <ul class="payment-drafts">
-      @for (draft of drafts(); track $index; let i = $index) {
-        <li class="payment-drafts__row">
-          <span>{{ t.bookingForm.paymentPurposeLabels[draft.purpose] }}</span>
-          <span class="payment-drafts__method">{{ t.bookingForm.paymentMethodLabels[draft.method] }}</span>
-          <span class="payment-drafts__amount">{{ draft.amount }}</span>
-          <button mat-button type="button" (click)="removeDraft(i)">{{ t.bookingForm.removePayment }}</button>
+      @for (group of draftGroups(); track $index; let i = $index) {
+        <li class="payment-drafts__row" [formGroup]="group">
+          <mat-form-field class="payment-drafts__field">
+            <mat-label>{{ t.orderForm.paymentPurpose }}</mat-label>
+            <mat-select formControlName="purpose">
+              @for (p of purposes; track p) {
+                <mat-option [value]="p">{{ t.bookingForm.paymentPurposeLabels[p] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="payment-drafts__field">
+            <mat-label>{{ t.orderForm.paymentMethod }}</mat-label>
+            <mat-select formControlName="method">
+              @for (m of methods; track m) {
+                <mat-option [value]="m">{{ t.bookingForm.paymentMethodLabels[m] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="payment-drafts__field payment-drafts__field--amount">
+            <mat-label>{{ t.orderForm.paymentAmount }}</mat-label>
+            <input matInput type="number" min="0" formControlName="amount" />
+            @if (group.controls.amount.invalid && group.controls.amount.touched) {
+              <mat-error>{{ t.orderForm.paymentAmountInvalid }}</mat-error>
+            }
+          </mat-form-field>
+
+          <button
+            mat-icon-button
+            type="button"
+            color="warn"
+            class="payment-drafts__delete"
+            [matTooltip]="t.orderForm.removePaymentDraft"
+            [attr.aria-label]="t.orderForm.removePaymentDraft"
+            (click)="removeDraft(i)"
+          >
+            <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+          </button>
         </li>
       }
     </ul>
+
+    <p class="payment-drafts__footer" [class.is-overpaid]="isOverpaid()">{{ footerText() }}</p>
   }
 
-  <div class="payment-drafts__form">
-    <mat-form-field>
-      <mat-label>{{ t.orderForm.paymentPurpose }}</mat-label>
-      <mat-select formControlName="purpose">
-        @for (p of purposes; track p) {
-          <mat-option [value]="p">{{ t.bookingForm.paymentPurposeLabels[p] }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{ t.orderForm.paymentMethod }}</mat-label>
-      <mat-select formControlName="method">
-        @for (m of methods; track m) {
-          <mat-option [value]="m">{{ t.bookingForm.paymentMethodLabels[m] }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{ t.orderForm.paymentAmount }}</mat-label>
-      <input matInput type="number" min="0" formControlName="amount" />
-    </mat-form-field>
-    <button mat-stroked-button type="button" (click)="addDraft()">{{ t.bookingForm.addPayment }}</button>
-  </div>
+  <button mat-button type="button" (click)="addDraft()">{{ t.orderForm.addPaymentDraft }}</button>
 </div>
