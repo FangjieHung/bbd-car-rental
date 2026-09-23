@@ -174,6 +174,30 @@ describe('AvailableVehicleListComponent 標題、租金、不能租', () => {
     ]);
   });
 
+  // 打磨（5）：閱讀順序要跟可租列一致——車牌（主字）＋車款在前，用專屬的 .avl__blocked-vehicle
+  // 包住（不是重用可租列兩行堆疊、grid-area 綁定 'vehicle' 的 .avl__vehicle），原因在後、淡化。
+  it('「不能租」清單每列：車牌＋車款在前用專屬 wrapper 包住、原因在後面淡化呈現，不是可點擊元素', () => {
+    const { el, fixture } = setup();
+    (el.querySelector('.avl__blocked-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const row = rowWith(el.querySelectorAll('.avl__blocked-row'), 'CDE-345');
+    const vehicleWrap = row.querySelector('.avl__blocked-vehicle');
+    const reasonEl = row.querySelector('.avl__reason');
+    expect(vehicleWrap).toBeTruthy();
+    expect(reasonEl).toBeTruthy();
+    expect(vehicleWrap?.querySelector('.avl__plate')?.textContent?.trim()).toBe('CDE-345');
+    expect(vehicleWrap?.querySelector('.avl__model')?.textContent?.trim()).toBe('Vios');
+    // 車牌在前、原因在後——DOM 順序即畫面上由左到右／由上到下的閱讀順序。
+    if (vehicleWrap && reasonEl) {
+      const position = vehicleWrap.compareDocumentPosition(reasonEl);
+      expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    // 整列不是按鈕／連結，不可點擊、不可選。
+    expect(row.tagName).toBe('LI');
+    expect(row.querySelector('button, a')).toBeNull();
+  });
+
   it('整段期間都沒有可租的車：寫「這段期間沒有可租的{車型}」，不能租清單預設展開', () => {
     const { el } = setup({
       vehicles: [

@@ -1,10 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { computeBlocks, TimelineViewComponent } from './timeline-view/timeline-view.component';
+import {
+  computeBlocks,
+  laneCountOf,
+  shortDateLabel,
+  TimelineViewComponent,
+} from './timeline-view/timeline-view.component';
 import { Member, RENTAL_BRANCHES, RentalBooking, Vehicle } from '../../core/models';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO, MEMBER_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { startOfDay } from '../../core/date-utils';
+import { fmtDate, startOfDay } from '../../core/date-utils';
 import { OrderDetailNavigation } from '../orders/navigation/order-detail-navigation';
 
 function requireBranch(id: string) {
@@ -66,6 +71,7 @@ describe('computeBlocks：範圍裁切（既有行為）', () => {
         overdue: false,
         needsDispatch: false,
         conflict: false,
+        lane: 0,
       },
     ]);
   });
@@ -204,6 +210,10 @@ describe('computeBlocks：逾時延伸與衝突（MNO-345 情境：出租中逾�
     const overdue = blocks.find((b) => b.bookingId === 'b-overdue');
     expect(overdue?.conflict).toBe(false); // 逾時本身不需要再標自己衝突
     expect(next?.conflict).toBe(true);
+    // 打磨（3）：互相重疊時分到不同 lane，畫面上才會是上下兩條、兩筆都完整可讀。
+    expect(overdue?.lane).toBe(0);
+    expect(next?.lane).toBe(1);
+    expect(laneCountOf(blocks)).toBe(2);
   });
 
   it('下一筆預訂沒有真的與延伸段重疊：不標示 conflict', () => {
@@ -224,6 +234,9 @@ describe('computeBlocks：逾時延伸與衝突（MNO-345 情境：出租中逾�
     const blocks = computeBlocks([overdueBooking, laterBooking], 'v1', undefined, od, 14, now);
     const later = blocks.find((b) => b.bookingId === 'b-later');
     expect(later?.conflict).toBe(false);
+    // 沒有真的重疊（欄位不相交）：兩筆都留在 lane 0，不需要疊成兩條。
+    expect(later?.lane).toBe(0);
+    expect(laneCountOf(blocks)).toBe(1);
   });
 
   it('不同車輛的訂單不會互相標示 conflict', () => {
@@ -246,6 +259,44 @@ describe('computeBlocks：逾時延伸與衝突（MNO-345 情境：出租中逾�
     const blocks = computeBlocks([overdueBooking, otherVehicleBooking], 'v1', undefined, od, 14, now);
     expect(blocks).toHaveLength(1);
     expect(blocks[0].bookingId).toBe('b-overdue');
+  });
+});
+
+describe('computeBlocks／laneCountOf：lane 分配（打磨 3，同一列重疊色塊改上下兩條）', () => {
+  it('三筆互相重疊：分別拿到 0／1／2 三條不同的 lane', () => {
+    const blocks = computeBlocks(
+      [
+        mk({ id: 'a', status: 'reserved', startTime: new Date(2026, 6, 20).toISOString(), endTime: new Date(2026, 6, 25).toISOString() }),
+        mk({ id: 'b', status: 'reserved', startTime: new Date(2026, 6, 21).toISOString(), endTime: new Date(2026, 6, 26).toISOString() }),
+        mk({ id: 'c', status: 'reserved', startTime: new Date(2026, 6, 22).toISOString(), endTime: new Date(2026, 6, 27).toISOString() }),
+      ],
+      'v1',
+      undefined,
+      rangeStart,
+      14,
+    );
+    const lanes = blocks.map((b) => b.lane).sort();
+    expect(lanes).toEqual([0, 1, 2]);
+    expect(laneCountOf(blocks)).toBe(3);
+  });
+
+  it('先後兩筆不重疊（首尾相接）：都留在 lane 0，不會白白疊成兩條', () => {
+    const blocks = computeBlocks(
+      [
+        mk({ id: 'a', startTime: new Date(2026, 6, 20).toISOString(), endTime: new Date(2026, 6, 22).toISOString() }),
+        mk({ id: 'b', startTime: new Date(2026, 6, 23).toISOString(), endTime: new Date(2026, 6, 25).toISOString() }),
+      ],
+      'v1',
+      undefined,
+      rangeStart,
+      14,
+    );
+    expect(blocks.map((b) => b.lane)).toEqual([0, 0]);
+    expect(laneCountOf(blocks)).toBe(1);
+  });
+
+  it('laneCountOf([])：沒有色塊時仍回傳 1（不縮成 0，列高維持正常最小高度）', () => {
+    expect(laneCountOf([])).toBe(1);
   });
 });
 
@@ -347,6 +398,56 @@ describe('TimelineViewComponent dateSelect 輸出', () => {
     (headerButtons[2] as HTMLElement).click();
 
     expect(emitted).toEqual([fixture.componentInstance.days()[2]]);
+  });
+});
+
+describe('shortDateLabel（打磨 1：時間軸日期欄精簡標題）', () => {
+  it('月份、日期都不補零，例如 9/20、9/5', () => {
+    expect(shortDateLabel(new Date(2026, 8, 20))).toBe('9/20');
+    expect(shortDateLabel(new Date(2026, 8, 5))).toBe('9/5');
+  });
+
+  it('跨月時自然看得出換月，例如 10 月 1 號寫「10/1」', () => {
+    expect(shortDateLabel(new Date(2026, 9, 1))).toBe('10/1');
+  });
+});
+
+describe('TimelineViewComponent 日期欄標題（打磨 1：精簡標題＋完整日期放 aria-label）', () => {
+  it('標題分兩行：上行精簡日期、下行星期；完整日期改放 aria-label／title，不再重疊亂碼', () => {
+    const fixture = createFixture();
+    fixture.componentRef.setInput('targetDate', new Date(2026, 6, 20)); // 週一，範圍週日（7/19）起
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const headers = Array.from(el.querySelectorAll<HTMLElement>('.timeline-view__cell-header'));
+    expect(headers).toHaveLength(14);
+
+    const days = fixture.componentInstance.days();
+    headers.forEach((header, i) => {
+      const dateEl = header.querySelector('.timeline-view__cell-header-date');
+      const weekdayEl = header.querySelector('.timeline-view__cell-header-weekday');
+      expect(dateEl?.textContent?.trim()).toBe(shortDateLabel(days[i]));
+      expect(weekdayEl?.textContent?.trim()).toBe(['日', '一', '二', '三', '四', '五', '六'][days[i].getDay()]);
+      expect(header.getAttribute('aria-label')).toBe(fmtDate(days[i]));
+      expect(header.title).toBe(fmtDate(days[i]));
+    });
+    // jsdom 不做真實排版（scrollWidth/clientWidth 恆為 0），標題會不會互相疊字要靠實機截圖
+    // 用 Playwright 量測（見驗收流程），這裡只驗證內容與結構本身是正確的精簡格式。
+  });
+
+  it('範圍跨月（例如 9/30 → 10/1）：10 月 1 號的標題自然寫「10/1」，看得出換月', () => {
+    const fixture = createFixture();
+    fixture.componentRef.setInput('targetDate', new Date(2026, 8, 27)); // 週日，範圍含 9/27–10/10
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const days = fixture.componentInstance.days();
+    const oct1Idx = days.findIndex((d) => d.getMonth() === 9 && d.getDate() === 1);
+    expect(oct1Idx).toBeGreaterThanOrEqual(0);
+
+    const headers = el.querySelectorAll<HTMLElement>('.timeline-view__cell-header');
+    const dateEl = headers[oct1Idx].querySelector('.timeline-view__cell-header-date');
+    expect(dateEl?.textContent?.trim()).toBe('10/1');
   });
 });
 
@@ -465,7 +566,7 @@ describe('TimelineViewComponent 色塊文字與需調度標記', () => {
 });
 
 describe('TimelineViewComponent 逾時延伸（透過真正的元件，相對「現在」計算，非固定 now）', () => {
-  it('出租中且已過預定還車時間的訂單套用 overdue 樣式並延伸到今天；重疊的下一筆訂單套用 conflict 樣式', () => {
+  function setupOverdueWithConflict() {
     const today = startOfDay(new Date());
     const fixture = createFixture({
       vehicles: [mkVehicle({ id: 'v1' })],
@@ -487,10 +588,40 @@ describe('TimelineViewComponent 逾時延伸（透過真正的元件，相對「
     });
     // targetDate 維持預設（今天），範圍自然涵蓋今天那一欄。
     fixture.detectChanges();
+    return fixture;
+  }
 
+  it('出租中且已過預定還車時間的訂單套用 overdue 樣式並延伸到今天；重疊的下一筆訂單套用 conflict 樣式', () => {
+    const fixture = setupOverdueWithConflict();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.timeline-view__booking--overdue')).toBeTruthy();
     expect(el.querySelector('.timeline-view__booking--conflict')).toBeTruthy();
+  });
+
+  // 打磨（2）：逾時未還在畫面上要有常駐可見的警示圖示＋「逾時」文字，不能只在 title／aria-label 裡
+  // （先前跟「需調度」不一致：需調度有常駐圖示，逾時沒有）。
+  it('逾時色塊常駐顯示警示圖示與「逾時」文字，不只在 title／aria-label 裡', () => {
+    const fixture = setupOverdueWithConflict();
+    const el = fixture.nativeElement as HTMLElement;
+    const overdueBlock = el.querySelector('.timeline-view__booking--overdue') as HTMLElement;
+    expect(overdueBlock.querySelector('.timeline-view__overdue-icon')).toBeTruthy();
+    expect(overdueBlock.querySelector('.timeline-view__overdue-label')?.textContent?.trim()).toBe('逾時');
+  });
+
+  // 打磨（3）：逾時延伸段跟同車下一筆預訂重疊時，改成上下兩條（不同 grid-row），該列的日期欄
+  // 也跟著加高（modifier class），兩筆訂單才都完整可讀，不會互相蓋住。
+  it('重疊的兩筆訂單分成上下兩條：grid-row 不同，該列的日期欄加上長高的 modifier class', () => {
+    const fixture = setupOverdueWithConflict();
+    const el = fixture.nativeElement as HTMLElement;
+
+    const bookingButtons = Array.from(el.querySelectorAll<HTMLElement>('.timeline-view__booking'));
+    expect(bookingButtons).toHaveLength(2);
+    const gridRows = bookingButtons.map((b) => b.style.gridRow);
+    expect(new Set(gridRows).size).toBe(2); // 兩筆各自佔一條，不是同一個 grid-row
+
+    const dayCells = el.querySelectorAll('.timeline-view__day');
+    expect(dayCells.length).toBeGreaterThan(0);
+    dayCells.forEach((cell) => expect(cell.classList.contains('timeline-view__day--tall')).toBe(true));
   });
 });
 

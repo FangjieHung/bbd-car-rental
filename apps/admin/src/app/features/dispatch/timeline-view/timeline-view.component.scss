@@ -21,13 +21,33 @@
   background: var(--mat-sys-surface);
 }
 
+// 精簡標題（批次3打磨 1）：上行「9/20」、下行星期「三」，月份／日期都不補零。原本的
+// 「YYYY/MM/DD」（fmtDate）在 56px 欄寬會互相疊字變亂碼，完整日期改放 title／aria-label。
 .timeline-view__cell-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  padding: 0.3rem 0.125rem;
   border: none;
   border-left: 1px solid var(--mat-sys-outline-variant);
   background: none;
   font: inherit;
   cursor: pointer;
   color: var(--mat-sys-on-surface-variant);
+}
+
+.timeline-view__cell-header-date {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.timeline-view__cell-header-weekday {
+  font-size: 0.6875rem;
+  line-height: 1;
 }
 
 // 今天／目前選取日各有標示（今天：粗體＋主色文字；選取日：淡色底色），兩者可同時出現在不同欄。
@@ -44,6 +64,13 @@
 
 .timeline-view__day {
   border-left: 1px solid var(--mat-sys-outline-variant);
+  min-height: 2.5rem;
+}
+
+// 打磨（3）：同一列有重疊色塊（例如逾時延伸段蓋到同車下一筆預訂）時，改成上下兩條，
+// 列跟著長高，兩筆才都放得下、完整可讀，不必其中一筆被蓋住。
+.timeline-view__day--tall {
+  min-height: 3.5rem;
 }
 
 .timeline-view__muted {
@@ -82,6 +109,12 @@
   opacity: 0.7;
 }
 
+// 同一列有兩條 lane 時，色塊各自貼齊自己那條（grid-row 由 component 依 block.lane 指定），
+// 這裡只留 lane 之間的垂直間距。
+.timeline-view__blocks {
+  row-gap: 0.25rem;
+}
+
 .timeline-view__booking {
   color: var(--mat-sys-on-primary);
 }
@@ -109,4 +142,21 @@
 .timeline-view__dispatch-icon {
   font-size: 0.85rem;
   line-height: 1;
+}
+
+// 打磨（2）：逾時未還常駐可見的警示圖示＋「逾時」文字（先前只在 title／aria-label，畫面上
+// 完全看不出來，與「需調度」的常駐圖示不一致）。圖示 flex-shrink:0 永遠留著；空間不夠時
+// 文字（跟承租人姓名共用的 truncate 名稱）會先被壓縮，符合「空間不夠時至少保留圖示」。
+.timeline-view__overdue-icon {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.timeline-view__overdue-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

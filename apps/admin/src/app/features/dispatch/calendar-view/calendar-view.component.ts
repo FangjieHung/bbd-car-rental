@@ -59,6 +59,16 @@ function fill(template: string, params: Record<string, string | number>): string
   return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in params ? String(params[key]) : match));
 }
 
+/**
+ * 打磨（4）：取車列阻擋 chip 顯示用——把完整句子尾端的句號拿掉（例如「前一位客人尚未還車
+ * （逾時 24 小時 46 分）。」→「…46 分）」）。evaluate-pickup-readiness.ts 的每一則 blocker
+ * message 都是寫給「完整句子」情境的（例如展開的阻擋清單 work-list-severity，那裡仍保留句號），
+ * 這裡只處理塞進小圓角 chip 時的顯示，不改原始文案本身。
+ */
+function stripTrailingPeriod(text: string): string {
+  return text.endsWith('。') ? text.slice(0, -1) : text;
+}
+
 function isSameMonth(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
@@ -783,7 +793,8 @@ export class CalendarViewComponent {
     const readiness = this.readiness(row);
     if (!readiness) return '—';
     if (readiness.ready) return this.t.dispatch.workList.ready;
-    return readiness.blockers[0]?.message ?? this.t.dispatch.workList.ready;
+    const message = readiness.blockers[0]?.message ?? this.t.dispatch.workList.ready;
+    return stripTrailingPeriod(message);
   }
 
   isPickupReady(row: WorkListRow): boolean {

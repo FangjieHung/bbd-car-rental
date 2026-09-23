@@ -196,21 +196,41 @@
   border-radius: var(--mat-sys-corner-medium);
 }
 
+// 打磨（5）：跟可租列同樣的閱讀順序——車牌（主字）＋車款在前，原因在後面（或空間不夠時換行），
+// 淡化呈現、整列不可點擊／不可選。原本用 grid 兩欄（原因欄還比車輛欄寬）讓原因搶了視覺重量、
+// 列高又固定撐到 84px 大半是空的；改成單行 flex，靠 min-height 把列高收緊到 44–48px。
 .avl__blocked-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem 1rem;
+  column-gap: 0.75rem;
+  row-gap: 0.125rem;
   padding: 0.5rem 1rem;
-  color: var(--mat-sys-on-surface-variant);
+  min-height: 44px;
+  box-sizing: border-box;
+  color: var(--mat-sys-on-surface);
 
   & + & {
     border-top: 1px solid var(--mat-sys-outline-variant);
   }
 }
 
+// 車牌＋車款同一行、不可縮寫換行；維持「車輛在前」的閱讀順序。
+.avl__blocked-vehicle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+// 原因淡化呈現（不可選——整列本身就不可點擊，這裡只是視覺次要）；
+// 空間不夠時文字自己換行，不犧牲可讀性硬塞成一行。
 .avl__reason {
-  font-size: 0.875rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 // 窄螢幕：車輛與租金同一行，所在據點換到下一行。
@@ -229,7 +249,6 @@
       '. where where';
   }
 
-  .avl__blocked-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  // 打磨（5）：.avl__blocked-row 改用 flex + flex-wrap 後在任何寬度都會自然換行，
+  // 不再需要窄螢幕另外覆寫 grid-template-columns。
 }

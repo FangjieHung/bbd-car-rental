@@ -10,14 +10,21 @@
         @for (d of days(); track $index) {
           <button
             type="button"
-            class="timeline-view__cell-header text-xs text-center p-2"
+            class="timeline-view__cell-header"
             [class.timeline-view__cell-header--today]="$index === todayIdx()"
             [class.timeline-view__cell-header--selected]="$index === selectedIdx()"
+            [title]="fmtDate(d)"
+            [attr.aria-label]="fmtDate(d)"
             (click)="selectDate(d)"
-          >{{ fmtDate(d) }}</button>
+          >
+            <span class="timeline-view__cell-header-date">{{ shortDateLabel(d) }}</span>
+            <span class="timeline-view__cell-header-weekday">{{ weekdayLabel(d) }}</span>
+          </button>
         }
       </div>
       @for (v of rows(); track v.id) {
+        @let blocks = blocksOf(v);
+        @let lanes = laneCountOf(blocks);
         <div
           class="timeline-view__vehicle-row relative"
           [class.timeline-view__vehicle-row--maintenance]="v.status === 'maintenance'"
@@ -32,12 +39,12 @@
               }
             </div>
             @for (d of days(); track $index) {
-              <div class="timeline-view__day min-h-10"></div>
+              <div class="timeline-view__day" [class.timeline-view__day--tall]="lanes > 1"></div>
             }
           </div>
           <div class="timeline-view__blocks absolute inset-0 grid pointer-events-none" [style.grid-template-columns]="gridCols">
             <div></div>
-            @for (block of blocksOf(v); track block.bookingId) {
+            @for (block of blocks; track block.bookingId) {
               <button
                 type="button"
                 class="timeline-view__booking pointer-events-auto self-center h-6 rounded text-xs px-1.5 cursor-pointer font-semibold flex items-center gap-1"
@@ -46,13 +53,17 @@
                 [class.timeline-view__booking--overdue]="block.overdue"
                 [class.timeline-view__booking--conflict]="block.conflict"
                 [style.grid-column]="block.startCol + 1 + ' / span ' + block.span"
-                [style.grid-row]="1"
+                [style.grid-row]="block.lane + 1"
                 [title]="blockTitle(block)"
                 [attr.aria-label]="blockTitle(block)"
                 (click)="openDetail(block.bookingId)"
               >
                 @if (block.needsDispatch) {
                   <span class="material-symbols-rounded timeline-view__dispatch-icon" aria-hidden="true">swap_horiz</span>
+                }
+                @if (block.overdue) {
+                  <span class="material-symbols-rounded timeline-view__overdue-icon" aria-hidden="true">schedule</span>
+                  <span class="timeline-view__overdue-label">{{ t.timeline.overdue }}</span>
                 }
                 <span class="truncate">{{ blockLabel(block) }}</span>
               </button>
