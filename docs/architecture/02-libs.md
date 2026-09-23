@@ -34,7 +34,7 @@
 | `Partner` | `partner.ts` | 合作民宿（模組二新增）；`discountPercent` 協議折扣、`commission` 退佣規則 |
 | `CommissionRule` | `commission.ts` | 退佣規則（模組二新增）；`type: 'percent'\|'per_vehicle_day'` |
 | `MonthlyPayout` | `monthly-payout.ts` | 月結撥款記錄（模組二新增）；`partnerId + month + status` |
-| `SelectOption<T>` | `select-option.ts` | 下拉選單共用的「值＋預設繁中標籤」形狀，本頁與各業務 model 的選項常數（`PAYMENT_PREFERENCE_OPTIONS`、`BRANCH_TYPE_OPTIONS`…）都用它 |
+| `SelectOption<T>` | `select-option.ts` | 下拉選單共用的「值＋預設繁中標籤」形狀。各業務列舉的選項常數（`*_OPTIONS`，如 `VEHICLE_CATEGORY_OPTIONS`、`ORDER_STATUS_OPTIONS`、`PAYMENT_METHOD_OPTIONS`）與型別放在同一檔；admin 以 `optionLabelMap()` 取回 `ZH_TW`，官網依 value 翻譯。**新增列舉標籤請加在這裡，不要在 app 或元件裡另長一份** |
 
 以上列的是目前規模較大的 model；完整、隨時最新的清單以 `libs/domain/src/index.ts` 的實際匯出
 內容為準，改動前務必核對。表中偏後段那批（`PaymentRecord` 到 `ReminderStatus`）主要支援 admin
@@ -43,7 +43,7 @@
 **車輛狀態機**（`VehicleStatus`）：`available` → `rented` → `available`；隨時可轉 `maintenance`。
 **訂單狀態機**（`OrderStatus`）：只有 `reserved`／`in_progress`／`completed`／`cancelled`
 四個值，只描述車輛交接進度，**不代表付款是否完成**——付款狀態改由 `PaymentRecord` 分類帳獨立
-追蹤（見上表）。只有 `reserved`/`in_progress` 會佔用車輛時段（見下方 `isVehicleAvailable`）。
+追蹤（見上表）。只有 `reserved`/`in_progress` 會佔用車輛時段，定義在 `OCCUPYING_ORDER_STATUSES`／`isOccupyingStatus()`（`enums.ts`），可用性、衝突檢查與調度月曆都用它。
 舊資料裡的 `pending_payment`/`confirmed` 是已淘汰的 legacy 值，讀取時由
 `normalize-rental-order.ts` 統一遷移為 `reserved`，不會出現在應用程式邏輯裡；完整設計脈絡見
 `04-booking-flow.md`。
