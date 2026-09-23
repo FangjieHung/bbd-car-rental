@@ -275,6 +275,19 @@ app-dashboard-page {
   color: var(--app-warning-fg);
 }
 
+// 1.4：車輛清單「只看待保養」可移除篩選標籤——套用 .ui-chip 的形狀／色調，
+// 但它是個 <button>，額外蓋掉原生按鈕的邊框／背景，並補上可點擊的視覺回饋。
+.maintenance-only-filter-chip {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--app-info-dot);
+  }
+}
+
 .section-header {
   display: flex;
   flex-wrap: wrap;

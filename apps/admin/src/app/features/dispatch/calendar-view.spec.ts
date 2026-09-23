@@ -3,7 +3,12 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatDialog } from '@angular/material/dialog';
-import { CalendarViewComponent, dayStats, returnProgress } from './calendar-view/calendar-view.component';
+import {
+  CalendarViewComponent,
+  dayStats,
+  pickupProgress,
+  returnProgress,
+} from './calendar-view/calendar-view.component';
 import {
   AuditEntry,
   ChargeAdjustment,
@@ -109,8 +114,21 @@ const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
   ...partial,
 });
 
+const mkVehicle = (id: string, status: Vehicle['status'] = 'available'): Vehicle => ({
+  id,
+  plateNumber: id,
+  category: 'car',
+  model: 'X',
+  brand: 'Y',
+  year: 2022,
+  status,
+  mileage: 0,
+  createdAt: '',
+});
+
 describe('dayStats', () => {
-  it('取/還/可用數', () => {
+  it('取/還/可用數（1.2：與 pickupProgress／returnProgress 同一份定義）', () => {
+    const vehicles = [mkVehicle('v1'), mkVehicle('v2'), mkVehicle('v3')];
     const bookings = [
       mk({}),
       mk({
@@ -121,31 +139,76 @@ describe('dayStats', () => {
       }),
     ];
     // 7/21：b1 取車、v1 佔用
-    expect(dayStats(bookings, 3, new Date(2026, 6, 21))).toEqual({
+    expect(dayStats(bookings, vehicles, new Date(2026, 6, 21))).toEqual({
       pickups: 1,
       returns: 0,
       available: 2,
     });
     // 7/23：b1 還車、b2 取車，v1 v2 都佔用
-    expect(dayStats(bookings, 3, new Date(2026, 6, 23))).toEqual({
+    expect(dayStats(bookings, vehicles, new Date(2026, 6, 23))).toEqual({
       pickups: 1,
       returns: 1,
       available: 1,
     });
     // 7/26：無事，全可用
-    expect(dayStats(bookings, 3, new Date(2026, 6, 26))).toEqual({
+    expect(dayStats(bookings, vehicles, new Date(2026, 6, 26))).toEqual({
       pickups: 0,
       returns: 0,
       available: 3,
     });
   });
 
-  it('cancelled/completed 不計', () => {
-    expect(dayStats([mk({ status: 'cancelled' })], 3, new Date(2026, 6, 21))).toEqual({
+  it('cancelled 不計入取還車數', () => {
+    const vehicles = [mkVehicle('v1'), mkVehicle('v2'), mkVehicle('v3')];
+    expect(dayStats([mk({ status: 'cancelled' })], vehicles, new Date(2026, 6, 21))).toEqual({
       pickups: 0,
       returns: 0,
       available: 3,
     });
+  });
+
+  // 1.2：過去一天已完成的取還——過去日期的月曆格先前看不到已完成的訂單，這裡驗證
+  // completed 訂單的取／還車日照樣計入（即使那天早就過去了）。completed 不在 OCCUPYING
+  // （只看 reserved／in_progress），所以也不影響同一天的可用數判斷（v1 仍可用）。
+  it('過去一天已完成的取還照樣計入取／還車數，且不影響可用數', () => {
+    const vehicles = [mkVehicle('v1')];
+    const pastDay = new Date(2026, 6, 10);
+    const completed = mk({
+      status: 'completed',
+      startTime: new Date(2026, 6, 10, 9).toISOString(),
+      endTime: new Date(2026, 6, 10, 18).toISOString(),
+    });
+    expect(dayStats([completed], vehicles, pastDay)).toEqual({
+      pickups: 1,
+      returns: 1,
+      available: 1,
+    });
+  });
+
+  // 1.3：保養中的車不計入可用數（JKL-012：月曆先前只算「總車數－當天佔用」，沒扣保養中的車）。
+  it('保養中的車不計入可用數', () => {
+    const vehicles = [mkVehicle('v1'), mkVehicle('v2', 'maintenance'), mkVehicle('v3')];
+    expect(dayStats([], vehicles, new Date(2026, 6, 21)).available).toBe(2);
+  });
+
+  // 1.2：月曆數字＝面板總數——用同一組 bookings／day 直接比對 dayStats 與
+  // pickupProgress／returnProgress 的結果，證明兩邊永遠是同一份定義算出來的。
+  it('月曆的取／還數字與 pickupProgress／returnProgress 的 total 永遠一致', () => {
+    const vehicles = [mkVehicle('v1'), mkVehicle('v2'), mkVehicle('v3', 'maintenance')];
+    const day = new Date(2026, 6, 21);
+    const bookings = [
+      mk({ id: 'b-reserved', status: 'reserved', startTime: new Date(2026, 6, 21, 9).toISOString() }),
+      mk({
+        id: 'b-return-not-picked-up',
+        status: 'reserved',
+        vehicleId: 'v2',
+        endTime: new Date(2026, 6, 21, 18).toISOString(),
+      }),
+      mk({ id: 'b-cancelled', status: 'cancelled', startTime: new Date(2026, 6, 21, 9).toISOString() }),
+    ];
+    const stats = dayStats(bookings, vehicles, day);
+    expect(stats.pickups).toBe(pickupProgress(bookings, day).total);
+    expect(stats.returns).toBe(returnProgress(bookings, day).total);
   });
 });
 
@@ -644,7 +707,7 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
   });
 });
 
-describe('returnProgress（訂單16修正的還車進度語意）', () => {
+describe('returnProgress（1.2 修正：尚未取車的預訂到期也列入還車清單）', () => {
   const mkBooking = (partial: Partial<RentalBooking>): RentalBooking => ({
     id: 'b',
     vehicleId: 'v1',
@@ -658,7 +721,10 @@ describe('returnProgress（訂單16修正的還車進度語意）', () => {
     ...partial,
   });
 
-  it('reserved 訂單永遠不計入還車統計，即使 endTime 剛好是這天', () => {
+  // 舊版（訂單16）曾經刻意把 reserved 排除在還車統計外；1.2 反過來要求尚未取車的預訂
+  // 到了還車日也要列入當天的還車清單（標「尚未取車」，不算 done），才能讓月曆格的
+  // 「還 N」與面板的還車總數一致（月曆格先前用的是 reserved／in_progress 都算的口徑）。
+  it('reserved（尚未取車）訂單到了還車日也計入還車統計的 total，但不算 done', () => {
     const day = new Date(2026, 7, 4);
     const bookings = [
       mkBooking({ id: 'reserved', status: 'reserved' }),
@@ -667,7 +733,7 @@ describe('returnProgress（訂單16修正的還車進度語意）', () => {
       mkBooking({ id: 'cancelled', status: 'cancelled' }),
     ];
 
-    expect(returnProgress(bookings, day)).toEqual({ total: 2, done: 1, pending: 1 });
+    expect(returnProgress(bookings, day)).toEqual({ total: 3, done: 1, pending: 2 });
   });
 });
 
@@ -1201,5 +1267,130 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
 
     expect(component.pickupWorkRows()).toHaveLength(0);
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('當天沒有需調度的取車');
+  });
+});
+
+/**
+ * 1.2 驗收情境：規格列出的四種情況——未來一天有尚未取車的預訂到期、今天的逾時未還、
+ * 月曆數字＝面板總數（前兩種已用純函式測過，這裡從元件角度驗證清單內容與畫面顯示）。
+ */
+describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => {
+  function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
+    return {
+      id: 'v1', plateNumber: 'ABC-123', category: 'scooter', model: 'Gogoro',
+      brand: 'Gogoro', year: 2022, status: 'available', mileage: 100, createdAt: '',
+      ...partial,
+    };
+  }
+
+  function setup(bookings: RentalBooking[], now?: Date) {
+    if (now) {
+      vi.useFakeTimers();
+      vi.setSystemTime(now);
+    }
+    TestBed.configureTestingModule({
+      providers: [
+        ...providePricing(),
+        ...provideOrderDetailRepos(),
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '林美惠', phone: '0900000000', kind: 'local' }]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+        provideBreakpoint(false),
+      ],
+    });
+    const fixture = TestBed.createComponent(CalendarViewComponent);
+    return { fixture, component: fixture.componentInstance };
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('未來一天有尚未取車的預訂到期時，列入當天還車清單並標「尚未取車」，不提供辦理還車', () => {
+    const futureDay = new Date(2026, 8, 25);
+    const booking: RentalBooking = {
+      id: 'b-future-return', vehicleId: 'v1', memberId: 'c1',
+      startTime: new Date(2026, 8, 23, 10).toISOString(),
+      endTime: new Date(2026, 8, 25, 17).toISOString(),
+      pickupLocation: '', returnLocation: '', status: 'reserved', depositRequired: 0,
+    };
+    const { fixture, component } = setup([booking]);
+    // 建構子裡的 effect() 要等第一次 detectChanges() 才會真正 flush，若在那之前呼叫
+    // selectDate() 會被這次 effect 的初次執行用 targetDate 預設值（今天）蓋回去。
+    fixture.detectChanges();
+    component.selectDate(futureDay);
+    fixture.detectChanges();
+
+    expect(component.returnWorkRows().map((r) => r.booking.id)).toEqual(['b-future-return']);
+    // 這天的還車統計 total 也要看得到它（面板 tab 標籤與月曆格共用同一份數字）。
+    expect(component.selectedReturnProgress()).toEqual({ total: 1, done: 0, pending: 1 });
+    expect(component.statsOf(futureDay).returns).toBe(1);
+
+    // matTabContent 延遲渲染，MatTabGroup 內部切換動畫走的是計時器；要先開 fake timers
+    // 再觸發切換，才能用 advanceTimersByTime 把還車 tab 的內容真正推進 DOM。
+    vi.useFakeTimers();
+    component.onPanelTabIndexChange(1);
+    fixture.detectChanges();
+    vi.advanceTimersByTime(1000);
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('尚未取車');
+    const returnButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.work-list-actions button'),
+    ) as HTMLElement[];
+    expect(returnButtons.some((b) => b.textContent?.includes('還車'))).toBe(false);
+  });
+
+  it('今天的還車清單另外列出逾時未還（即使還車日不是今天），但月曆格的還車數不計逾時', () => {
+    const today = new Date(2026, 8, 23, 12, 0, 0);
+    // 三天前就該還車、狀態仍是 in_progress（尚未還車）——不是「今天」到期的還車。
+    const overdueFromDaysAgo: RentalBooking = {
+      id: 'b-overdue-old', vehicleId: 'v1', memberId: 'c1',
+      startTime: new Date(2026, 8, 18, 9).toISOString(),
+      endTime: new Date(2026, 8, 20, 9).toISOString(),
+      pickupLocation: '', returnLocation: '', status: 'in_progress', depositRequired: 0,
+    };
+    const { fixture, component } = setup([overdueFromDaysAgo], today);
+    fixture.detectChanges();
+    component.selectDate(today);
+    fixture.detectChanges();
+
+    // 清單裡看得到它（今天視角另外列出的逾時未還）。
+    expect(component.returnWorkRows().map((r) => r.booking.id)).toEqual(['b-overdue-old']);
+    expect(component.isOverdue(component.returnWorkRows()[0])).toBe(true);
+
+    // 但它的還車日是 9/20、不是今天，今天（9/23）的還車統計 total／月曆格「還 N」不計它。
+    expect(component.selectedReturnProgress()).toEqual({ total: 0, done: 0, pending: 0 });
+    expect(component.statsOf(today).returns).toBe(0);
+  });
+
+  it('月曆可用數＝可用清單筆數（1.3：保養中的車在兩邊都不計入）', () => {
+    const day = new Date(2026, 8, 25);
+    const vehicles: Vehicle[] = [
+      makeVehicle({ id: 'v1', status: 'available' }),
+      makeVehicle({ id: 'v2', status: 'maintenance' }),
+      makeVehicle({ id: 'v3', status: 'available' }),
+    ];
+    TestBed.configureTestingModule({
+      providers: [
+        ...providePricing(),
+        ...provideOrderDetailRepos(),
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+        provideBreakpoint(false),
+      ],
+    });
+    const fixture = TestBed.createComponent(CalendarViewComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+    component.selectDate(day);
+    fixture.detectChanges();
+
+    expect(component.availableVehicles().map((v) => v.id)).toEqual(['v1', 'v3']);
+    expect(component.statsOf(day).available).toBe(component.availableVehicles().length);
   });
 });

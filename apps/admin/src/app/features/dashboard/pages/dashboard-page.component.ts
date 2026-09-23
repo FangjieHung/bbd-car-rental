@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDialog } from '@angular/material/dialog';
 import { DateRange, DateStepComponent } from '@car-rental/booking-flow';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { startOfDay } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { MemberStore } from '../../../stores/member/member.store';
@@ -32,6 +33,7 @@ import { pickVehicle } from '../../bookings/dialogs/vehicle-picker-dialog.compon
   styleUrls: ['../../../app.scss'],
 })
 export class DashboardPageComponent {
+  protected readonly t = ZH_TW;
   readonly bookingStore = inject(BookingStore);
   readonly memberStore = inject(MemberStore);
   readonly maintenanceStore = inject(MaintenanceStore);
@@ -60,6 +62,11 @@ export class DashboardPageComponent {
 
   selectCalendarDate(date: Date): void {
     this.targetDate.set(startOfDay(date));
+  }
+
+  /** 1.4：總覽的放大鏡送出後導到訂單列表，帶入關鍵字讓訂單列表預填搜尋。 */
+  onSearchSubmit(query: string): void {
+    void this.router.navigate(['/bookings'], { queryParams: { q: query } });
   }
 
   private readonly todayPickup = computed(() =>

@@ -1,6 +1,6 @@
 <div class="shell-container">
   <ng-template appHeaderToolbar>
-    <app-page-toolbar>
+    <app-page-toolbar (searchSubmit)="onSearchSubmit($event)">
       <button
         actions
         matButton="tonal"
@@ -9,23 +9,24 @@
         matBadgeColor="warn"
       >
         <span class="material-symbols-rounded" aria-hidden="true">build</span>
-        待整備
+        {{ t.dashboard.pendingPrep }}
       </button>
       <a
         actions
         matButton="tonal"
         routerLink="/vehicles"
+        [queryParams]="{ maintenance: 'due' }"
         [matBadge]="maintenanceStore.alerts().length"
         [matBadgeHidden]="maintenanceStore.alerts().length === 0"
         matBadgeColor="warn"
       >
         <span class="material-symbols-rounded" aria-hidden="true">car_repair</span>
-        待保養
+        {{ t.dashboard.maintenanceDue }}
       </a>
-      <button actions matButton="tonal">
+      <a actions matButton="tonal" routerLink="/orders/new">
         <span class="material-symbols-rounded" aria-hidden="true">add</span>
-        新增訂單
-      </button>
+        {{ t.dashboard.newOrder }}
+      </a>
     </app-page-toolbar>
   </ng-template>
 

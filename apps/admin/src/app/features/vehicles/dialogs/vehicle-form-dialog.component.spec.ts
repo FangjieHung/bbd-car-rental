@@ -109,3 +109,75 @@ describe('VehicleFormDialogComponent 所在據點', () => {
     expect(fixture.componentInstance.form.controls.location.value).toBe('');
   });
 });
+
+/**
+ * 1.5：清空欄位存不進去的根因不是「result.location === undefined」（缺 key 時存取一樣是
+ * undefined，看不出差別），而是 VehicleStore.update → repository 的淺合併
+ * （{...current, ...patch}）——key 被省略等於沒改這個欄位，舊值原封不動留著；key 存在但值是
+ * undefined 才會真的蓋掉。這裡直接檢查 key 是否存在於 result 物件上，才抓得到這個根因。
+ */
+describe('VehicleFormDialogComponent 清空欄位時 key 仍要存在於結果物件（1.5）', () => {
+  function createFixture(data: Vehicle) {
+    const closed: VehicleFormResult[] = [];
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: MatDialogRef, useValue: { close: (r?: VehicleFormResult) => r && closed.push(r) } },
+        { provide: MAT_DIALOG_DATA, useValue: data },
+      ],
+    });
+    const fixture = TestBed.createComponent(VehicleFormDialogComponent);
+    fixture.detectChanges();
+    return { fixture, closed };
+  }
+
+  it('清空所在據點：location key 仍存在於結果物件上（值為 undefined）', () => {
+    const { fixture, closed } = createFixture(makeVehicle({ location: 'mzg-airport' }));
+
+    fixture.componentInstance.form.controls.location.setValue('');
+    fixture.componentInstance.save();
+
+    expect(Object.prototype.hasOwnProperty.call(closed[0], 'location')).toBe(true);
+    expect(closed[0].location).toBeUndefined();
+  });
+
+  it('清空排氣量：displacement key 仍存在於結果物件上（值為 undefined）', () => {
+    const { fixture, closed } = createFixture(makeVehicle({ displacement: 150 }));
+
+    fixture.componentInstance.form.controls.displacement.setValue(null);
+    fixture.componentInstance.save();
+
+    expect(Object.prototype.hasOwnProperty.call(closed[0], 'displacement')).toBe(true);
+    expect(closed[0].displacement).toBeUndefined();
+  });
+
+  it('清空下次保養里程：nextServiceMileage key 仍存在於結果物件上（值為 undefined）', () => {
+    const { fixture, closed } = createFixture(makeVehicle({ nextServiceMileage: 30000 }));
+
+    fixture.componentInstance.form.controls.nextServiceMileage.setValue(null);
+    fixture.componentInstance.save();
+
+    expect(Object.prototype.hasOwnProperty.call(closed[0], 'nextServiceMileage')).toBe(true);
+    expect(closed[0].nextServiceMileage).toBeUndefined();
+  });
+
+  it('清空保險到期日：insuranceExpiry key 仍存在於結果物件上（值為 undefined）', () => {
+    const iso = new Date(2027, 0, 15).toISOString();
+    const { fixture, closed } = createFixture(makeVehicle({ insuranceExpiry: iso }));
+
+    fixture.componentInstance.form.controls.insuranceExpiry.setValue('');
+    fixture.componentInstance.save();
+
+    expect(Object.prototype.hasOwnProperty.call(closed[0], 'insuranceExpiry')).toBe(true);
+    expect(closed[0].insuranceExpiry).toBeUndefined();
+  });
+
+  it('排氣量是 0 時仍視為有效值，不會被當成清空（? ?? 而非 ||）', () => {
+    const { fixture, closed } = createFixture(makeVehicle({ displacement: 150 }));
+
+    fixture.componentInstance.form.controls.displacement.setValue(0);
+    fixture.componentInstance.save();
+
+    expect(closed[0].displacement).toBe(0);
+  });
+});
