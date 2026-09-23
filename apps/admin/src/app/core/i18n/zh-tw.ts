@@ -191,6 +191,37 @@ export const ZH_TW = {
     clearPick: '清除選擇',
     openDetail: '訂單詳情',
   },
+  // 2.3：建單第 1 步「先選租期，再列可租的車」的搜尋列與可租清單；可租清單元件在總覽「可用」分頁也會用。
+  // 帶 {…} 的字串由使用處代入（同 common.selectedCount 的寫法）。
+  rentalSearch: {
+    category: '車型',
+    allCategories: '全部',
+    /** 「可租 N 台{車型}」在「全部」時的車型字樣。 */
+    anyCategory: '車',
+    period: '租期',
+    periodPlaceholder: '選擇日期範圍',
+    prevMonth: '上個月',
+    nextMonth: '下個月',
+    monthTitle: '{year}年{month}月',
+    startTime: '取車時間',
+    endTime: '還車時間',
+    pickupLocation: '取車據點',
+    returnLocation: '還車據點',
+    choosePeriodFirst: '選好租期後，這裡會列出這段期間可以租的車',
+    listTitle: '這段期間可租 {count} 台{category}',
+    pickupFirstHint: '已在取車據點的排前面',
+    empty: '這段期間沒有可租的{category}',
+    atBranch: '在 {branch}',
+    noDispatch: '免調度',
+    needsDispatch: '需調度 {from}→{to}',
+    locationUnset: '所在據點未設定',
+    days: '{days} 天',
+    blockedToggle: '另有 {count} 台這段期間不能租',
+    booked: '已預訂 {start}–{end}',
+    maintenance: '保養中',
+    reasonSeparator: '、',
+    originalUnavailable: '原本選的 {plate} 這段期間不能租',
+  },
   bookingForm: {
     title: '新增訂單',
     steps: {

@@ -3,6 +3,9 @@ import { InsurancePlan } from './insurance-plan';
 
 export type VehicleCategory = 'car' | 'scooter' | 'ev';
 
+/** 全部車種，依對客顯示的慣用順序（汽車、機車、電動車）；需要列出車種選項時用這份，不各自手寫。 */
+export const VEHICLE_CATEGORIES: readonly VehicleCategory[] = ['car', 'scooter', 'ev'];
+
 /** 排檔方式：自排 / 手排 */
 export type Transmission = 'auto' | 'manual';
 
