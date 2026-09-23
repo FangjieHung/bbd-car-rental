@@ -4,7 +4,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
-import { InsurancePlan, PriceBreakdown, Vehicle, VEHICLE_REPO } from '@car-rental/domain';
+import {
+  deriveEnergyTypeFallback,
+  InsurancePlan,
+  PriceBreakdown,
+  Vehicle,
+  VEHICLE_REPO,
+} from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { toVehicleGroup } from '../date-range';
 import { QuoteService } from '../quote.service';
@@ -21,6 +27,16 @@ import { OrderSummaryCardComponent } from '../components/order-summary-card.comp
   styleUrl: './plan-page.component.scss',
 })
 export class PlanPageComponent {
+  /** 電動車沒有「油」；同一個 fuelPolicy 欄位在電動車要用電量的說法。 */
+  protected energyPolicyLabel(v: Vehicle): { title: string; value: string } {
+    const electric = (v.energyType ?? deriveEnergyTypeFallback(v.category)) === 'electric';
+    const title = electric ? '電量規定' : '燃油規定';
+    if (v.fuelPolicy === 'full_to_full') return { title, value: electric ? '滿電取還車' : '滿油取還車' };
+    if (v.fuelPolicy === 'full_to_empty')
+      return { title, value: electric ? '滿電取車、可低電量還車' : '滿油取車、可空車還車' };
+    return { title, value: electric ? '原電量還車' : '原油量還車' };
+  }
+
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly quote = inject(QuoteService);

@@ -1,5 +1,6 @@
 import {
   Vehicle,
+  insurancePlansFor,
   Member,
   RentalBooking,
   PricingPlan,
@@ -48,18 +49,7 @@ export function seedVehicles(): Vehicle[] {
       instantConfirm: true,
       supplierCount: 1,
       location: 'mzg-airport',
-      insurancePlans: [
-        {
-          id: 'ins-basic',
-          name: '基本保障',
-          dailyPriceFrom: 200,
-          tags: ['有自負額', '最低保障'],
-          coverageItems: [
-            { name: '租車自負額', deductibleMin: 10000, deductibleMax: 30000, currency: 'TWD' },
-            { name: '第三人責任險', deductibleMin: 10000, deductibleMax: 30000, currency: 'TWD' },
-          ],
-        },
-      ],
+      insurancePlans: insurancePlansFor('ev'),
       fuelPolicy: 'full_to_full',
       mileagePolicy: 'unlimited',
     },
@@ -83,6 +73,9 @@ export function seedVehicles(): Vehicle[] {
       instantConfirm: false,
       supplierCount: 2,
       location: 'mzg-store',
+      insurancePlans: insurancePlansFor('scooter'),
+      fuelPolicy: 'full_to_full',
+      mileagePolicy: 'unlimited',
     },
     {
       id: 'v3',
@@ -104,6 +97,9 @@ export function seedVehicles(): Vehicle[] {
       instantConfirm: true,
       supplierCount: 1,
       location: 'mzg-airport',
+      insurancePlans: insurancePlansFor('car'),
+      fuelPolicy: 'full_to_full',
+      mileagePolicy: 'unlimited',
     },
     {
       id: 'v4',
@@ -125,6 +121,9 @@ export function seedVehicles(): Vehicle[] {
       instantConfirm: false,
       supplierCount: 1,
       location: 'mzg-port',
+      insurancePlans: insurancePlansFor('car'),
+      fuelPolicy: 'full_to_full',
+      mileagePolicy: 'unlimited',
     },
     {
       id: 'v5',
@@ -149,6 +148,9 @@ export function seedVehicles(): Vehicle[] {
       instantConfirm: true,
       supplierCount: 3,
       location: 'mzg-airport',
+      insurancePlans: insurancePlansFor('scooter'),
+      fuelPolicy: 'full_to_full',
+      mileagePolicy: 'unlimited',
     },
     {
       id: 'v6',
@@ -170,6 +172,9 @@ export function seedVehicles(): Vehicle[] {
       instantConfirm: true,
       supplierCount: 2,
       location: 'mzg-port',
+      insurancePlans: insurancePlansFor('car'),
+      fuelPolicy: 'full_to_full',
+      mileagePolicy: 'unlimited',
     },
   ];
 }

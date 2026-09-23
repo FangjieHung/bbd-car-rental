@@ -113,8 +113,8 @@
         <section class="plan-settings">
           @if (v.fuelPolicy) {
             <div class="plan-settings__row">
-              <span>燃油規定</span>
-              <span class="ui-chip ui-chip--neutral">{{ v.fuelPolicy === 'full_to_full' ? '滿油取還車' : v.fuelPolicy === 'full_to_empty' ? '滿油取車、可空車還車' : '原油量還車' }}</span>
+              <span>{{ energyPolicyLabel(v).title }}</span>
+              <span class="ui-chip ui-chip--neutral">{{ energyPolicyLabel(v).value }}</span>
             </div>
           }
           @if (v.mileagePolicy) {

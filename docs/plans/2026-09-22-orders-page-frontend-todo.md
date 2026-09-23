@@ -92,7 +92,7 @@
 ## 7. 這次發現、沒處理的小問題
 
 - **首屏 bundle**：`mat-stepper` 帶進約 17 kB（壓縮後約 4 kB）——`@angular/material/stepper` 發佈檔有一行無條件的 `import '@angular/common/http'`，打包工具無法剔除。不是我們的程式問題，且接上後端後這段本來就需要。**預算門檻已重訂**（原本是 Angular 新專案預設的 500 kB，長年在響）：admin 720/850 kB、booking 420/500 kB、affiliate 430/500 kB，現在全部零警告——之後再看到警告就是真的有東西變胖了。
-- **只有 v1 這台車有保險方案資料**：種子資料裡其餘車輛都沒有 `insurancePlans`，選方案頁會跳過方案區塊（不會壞，只是沒得選）。要不要幫其他車補方案、每台車各有哪些方案，是業務決定。（2026-09-23 已把選方案這一步接回流程；它曾在 09-18 的 `417493a` 被暫時拿掉，期間官網保費一律算成 0。）
+- **保險方案是示範費率**：依車輛分類各三個級距（`libs/domain/src/lib/models/insurance-catalog.ts`），六台車都帶得到方案。實際商品與費率待業主提供（`docs/owner-questions.md` 第 10 條）。
 - **後台沒有任何登入守衛**：`apps/admin` 的路由完全沒有 `canActivate`，`AuthService` 只是在 localStorage 寫一個值，沒有任何地方讀它。也就是說直接輸入網址就能進任何頁面，登入畫面目前是裝飾性的。prototype 階段沒有實害，但接後端時這是必須一起補的（權限設計見 `docs/plans/2026-09-18-rental-operations-backend-handoff.md` 第 2 節）。
 - **孤兒簽名**：客人在建單第四步簽了名、但最後沒建立訂單就離開，簽名檔會留在 IndexedDB，沒有合約引用它，也沒有清理機制。
 - **外國旅客國籍**：建單時不擋也沒列入待補項目（舊精靈會擋「下一步」）。要不要列為待補項目？
