@@ -4,6 +4,15 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { MAT_DATE_RANGE_SELECTION_STRATEGY } from '@angular/material/datepicker';
 import { DualMonthRangePickerComponent, SelectedDateRange } from './dual-month-range-picker.component';
 import { HoverPreviewRangeStrategy } from './hover-preview-range-strategy';
+import { DUAL_MONTH_RANGE_PICKER_LABELS, DualMonthRangePickerLabels } from './dual-month-range-picker-labels';
+
+const LABELS: DualMonthRangePickerLabels = {
+  field: '租期',
+  placeholder: '選擇日期範圍',
+  prevMonth: '上個月',
+  nextMonth: '下個月',
+  monthTitle: '{year}年{month}月',
+};
 
 const AUG_28 = new Date(2026, 7, 28);
 const SEP_3 = new Date(2026, 8, 3);
@@ -17,7 +26,7 @@ describe('DualMonthRangePickerComponent hover 預覽', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [DualMonthRangePickerComponent],
-      providers: [provideNativeDateAdapter()],
+      providers: [provideNativeDateAdapter(), { provide: DUAL_MONTH_RANGE_PICKER_LABELS, useValue: LABELS }],
     });
     fixture = TestBed.createComponent(DualMonthRangePickerComponent);
     component = fixture.componentInstance;
@@ -106,5 +115,37 @@ describe('DualMonthRangePickerComponent hover 預覽', () => {
 
     expect(range().start).toEqual(AUG_28);
     expect(range().end).toEqual(SEP_5);
+  });
+});
+
+describe('DualMonthRangePickerComponent 畫面文字與相依', () => {
+  it('欄位標籤、提示文字、月份標題都取自 DUAL_MONTH_RANGE_PICKER_LABELS（libs/ui 不內建文字）', () => {
+    TestBed.configureTestingModule({
+      imports: [DualMonthRangePickerComponent],
+      providers: [
+        provideNativeDateAdapter(),
+        {
+          provide: DUAL_MONTH_RANGE_PICKER_LABELS,
+          useValue: { ...LABELS, field: 'Dates', placeholder: 'Pick dates', monthTitle: '{month}/{year}' },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(DualMonthRangePickerComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('mat-label')?.textContent?.trim()).toBe('Dates');
+    expect(el.querySelector('input')?.getAttribute('placeholder')).toBe('Pick dates');
+    expect(fixture.componentInstance['monthLabel'](SEP_3)).toBe('9/2026');
+  });
+
+  it('面板還沒開啟時不需要 DateAdapter 也建得起來（月曆開啟時才需要）', () => {
+    TestBed.configureTestingModule({
+      imports: [DualMonthRangePickerComponent],
+      providers: [{ provide: DUAL_MONTH_RANGE_PICKER_LABELS, useValue: LABELS }],
+    });
+    const fixture = TestBed.createComponent(DualMonthRangePickerComponent);
+    expect(() => fixture.detectChanges()).not.toThrow();
+    expect((fixture.nativeElement as HTMLElement).querySelector('mat-label')?.textContent?.trim()).toBe('租期');
   });
 });

@@ -1,5 +1,6 @@
 import { InjectionToken, inject } from '@angular/core';
 import { AddOn, Transmission, VehicleCategory } from '@car-rental/domain';
+import { DualMonthRangePickerLabels } from '@car-rental/ui';
 import { VehicleGroup } from './date-range';
 
 /** 座位數區間：officeUI 篩選用的粗分級距，不是真實資料欄位。 */
@@ -20,6 +21,8 @@ export interface BookingFlowLabels {
   transmission: Record<Transmission, string>;
   addOnUnit: Record<AddOn['unit'], string>;
   vehicleGroups: { value: VehicleGroup; label: string }[];
+  /** 搜尋列的雙月日期區間選擇器（元件在 libs/ui，文字由這裡帶入）。 */
+  dateRangePicker: DualMonthRangePickerLabels;
 }
 
 /**
@@ -54,6 +57,14 @@ export const DEFAULT_BOOKING_FLOW_LABELS: BookingFlowLabels = {
     { value: 'scooter', label: '機車' },
     { value: 'car', label: '汽車' },
   ],
+  // 選擇器搬到 libs/ui 之前寫死在它模板裡的文字，原樣搬來，官網畫面不變。
+  dateRangePicker: {
+    field: '租期',
+    placeholder: '選擇日期範圍',
+    prevMonth: '上個月',
+    nextMonth: '下個月',
+    monthTitle: '{year}年{month}月',
+  },
 };
 
 export const BOOKING_FLOW_LABELS = new InjectionToken<BookingFlowLabels>('BOOKING_FLOW_LABELS', {
