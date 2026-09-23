@@ -1,7 +1,7 @@
 # 訂單頁面化：前端與設計接續待辦
 
 **日期：** 2026-09-22 起草，2026-09-23 更新（同日下午：第 1、2 節完成）
-**狀態：** 訂單頁面化已合併 `main`（merge commit `cecda36`）。第 1 節（更名）與第 2 節（官網多語系）在分支 `claude/brave-noether-cewsf2`（commit `407c3cc`、`ef62889`），尚待合併
+**狀態：** 訂單頁面化已合併 `main`（merge commit `cecda36`）。第 1 節（更名）與第 2 節（官網多語系）也已合併 `main`（merge commit `1bb110c`）
 **給誰：** 設計＋前端接手的人（也就是下一次的自己）
 **相關文件：** 術語 `CONTEXT.md`、決策 `docs/adr/0001-order-creation-not-shared-with-booking-site.md`、後端 `docs/plans/2026-09-22-orders-page-backend-handoff.md`、業主 `docs/owner-questions.md`
 
