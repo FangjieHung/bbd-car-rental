@@ -103,6 +103,7 @@ export class CatalogStore {
     paymentMethod: PaymentPreference;
     partnerDiscountPercent?: number;
     sourcePartnerId?: string;
+    insurancePlanId?: string;
   }): RentalBooking {
     const vehicle = this.vehicleRepo.getById(input.vehicleId);
     if (!vehicle) throw new Error('查無車輛');
@@ -118,6 +119,9 @@ export class CatalogStore {
     const coupon = input.couponCode
       ? this.couponRepo.getAll().find((c) => c.code.toLowerCase() === input.couponCode!.toLowerCase())
       : undefined;
+    const insurancePlan = input.insurancePlanId
+      ? vehicle.insurancePlans?.find((p) => p.id === input.insurancePlanId)
+      : undefined;
     const priceBreakdown = this.price({
       category: input.category,
       startDate: input.startDate,
@@ -125,6 +129,7 @@ export class CatalogStore {
       addOns: input.addOns,
       coupon,
       partnerDiscountPercent: input.partnerDiscountPercent,
+      insurancePlan,
     });
     const member: Member = {
       id: crypto.randomUUID(),
@@ -151,6 +156,7 @@ export class CatalogStore {
       paymentPreference: input.paymentMethod,
       depositRequired: 0,
       ...(input.sourcePartnerId ? { sourcePartnerId: input.sourcePartnerId } : {}),
+      ...(input.insurancePlanId ? { insurancePlanId: input.insurancePlanId } : {}),
     };
     this.bookingRepo.create(booking);
     return booking;

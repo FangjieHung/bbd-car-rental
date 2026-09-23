@@ -112,7 +112,7 @@ export class SearchPageComponent {
   onVehicleSelect(vehicle: Vehicle): void {
     const range = this.dateRange();
     if (!range) return;
-    this.router.navigate([...this.context.basePath(), 'order', vehicle.id], {
+    this.router.navigate([...this.context.basePath(), 'vehicle', vehicle.id, 'plan'], {
       queryParams: {
         start: range.startDateTime,
         end: range.endDateTime,

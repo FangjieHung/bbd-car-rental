@@ -100,7 +100,7 @@ key 統一 `cr.` 前綴（如 `cr.vehicles`、`cr.partners`）。**這是換真�
 
 ```
 libs/booking-flow/src/lib/
-  pages/               # 四個路由頁：search / order / payment（另有 plan-page，見下方註記）
+  pages/               # 五個路由頁：search / plan / order / payment / done
   components/          # 頁面用的展示元件：order-summary-card、search-criteria-bar
   steps/               # 被頁面組合的展示元件（date-step、vehicle-step、addon-step、
                         # coupon-step、confirm-step），以及 done（完成頁，實際是路由頁）
@@ -137,9 +137,8 @@ booking app 不提供，吃 root 預設值（consumer）；affiliate 的 `Partne
 `admin` 也直接引用這個 lib 的 `DateStepComponent`、`VehicleStepComponent`、`DateRange`
 （分別用在 dashboard 與選車 dialog），所以改這三者的 input/output 會同時影響 admin。
 
-**`plan-page.component.ts`（選保險方案）目前沒有被任何路由使用**——三個 app 的
-`app.routes.ts` 都只掛 search/order/pay/done 四頁，這個檔案存在但是孤兒元件，改動前留意
-不要誤以為它是目前流程的一部分。
+`plan-page.component.ts`（選保險方案）掛在 `vehicle/:vehicleId/plan`，是 search 與 order
+之間的一步；它在 2026-09-18 到 09-23 之間曾被暫時從路由拿掉，期間官網的保費一律算成 0。
 
 ## libs/contract-signing — 合約檢視與簽署（admin 使用，設計上供官網共用）
 

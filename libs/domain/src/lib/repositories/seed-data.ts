@@ -48,6 +48,20 @@ export function seedVehicles(): Vehicle[] {
       instantConfirm: true,
       supplierCount: 1,
       location: 'mzg-airport',
+      insurancePlans: [
+        {
+          id: 'ins-basic',
+          name: '基本保障',
+          dailyPriceFrom: 200,
+          tags: ['有自負額', '最低保障'],
+          coverageItems: [
+            { name: '租車自負額', deductibleMin: 10000, deductibleMax: 30000, currency: 'TWD' },
+            { name: '第三人責任險', deductibleMin: 10000, deductibleMax: 30000, currency: 'TWD' },
+          ],
+        },
+      ],
+      fuelPolicy: 'full_to_full',
+      mileagePolicy: 'unlimited',
     },
     {
       id: 'v2',

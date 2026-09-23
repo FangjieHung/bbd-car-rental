@@ -17,7 +17,8 @@
 | | 消費者（`apps/booking`） | 民宿代訂（`apps/affiliate`） |
 |---|---|---|
 | 搜尋 | `/search?start=&end=&group=` | `/p/:slug/search?start=&end=&group=` |
-| 下單 | `/order/:vehicleId?start=&end=&group=` | `/p/:slug/order/:vehicleId?start=&end=&group=` |
+| 選方案 | `/vehicle/:vehicleId/plan?start=&end=&group=` | `/p/:slug/vehicle/:vehicleId/plan?start=&end=&group=` |
+| 下單 | `/order/:vehicleId?start=&end=&group=&planId=` | `/p/:slug/order/:vehicleId?start=&end=&group=&planId=` |
 | 付款 | `/pay/:bookingId` | `/p/:slug/pay/:bookingId` |
 | 完成 | `/done/:id` | `/p/:slug/done/:id` |
 

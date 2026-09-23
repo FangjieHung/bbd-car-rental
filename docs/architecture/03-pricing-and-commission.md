@@ -32,9 +32,9 @@
 
 6. 保險（選配；沒選就是 0，同樣不算日型、不算折扣）
    insuranceSubtotal = insurancePlan ? insurancePlan.dailyPriceFrom × days : 0
-   （官網 `search`/`order` 兩個路由頁目前不傳 `insurancePlan` 給 `QuoteService.quote()`，
-   所以消費者下單流程實際上總是算出 0；選保險方案的 `plan-page.component.ts` 存在但沒有
-   被任何路由掛上，見 `02-libs.md`。目前只有 admin 建單/編輯表單會帶入保險方案。）
+   （官網選完車會先進 `plan` 頁選方案，選到的 `planId` 經 query param 帶到 `order` 頁，
+   再一路進入 `QuoteService.quote()` 與 `submitBooking()`；沒有方案可選的車輛就維持 0。
+   admin 的建單／編輯表單則是在費用步驟直接選方案。）
 
 7. 總金額
    total = afterPartner − couponDiscount + addOnSubtotal + insuranceSubtotal

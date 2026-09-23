@@ -25,4 +25,5 @@ export interface RentalBooking {
   /** 應收訂金；由建立時的報價與車型規則算出，履約狀態變動不會回頭改它。 */
   depositRequired: number;
   sourcePartnerId?: string;
+  insurancePlanId?: string;
 }
