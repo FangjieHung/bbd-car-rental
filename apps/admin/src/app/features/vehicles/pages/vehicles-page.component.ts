@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -61,6 +61,7 @@ export class VehiclesPageComponent {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   readonly labels = ADMIN_DATA_TABLE_LABELS;
   readonly fmt = fmtDateTime;
 
@@ -87,6 +88,8 @@ export class VehiclesPageComponent {
   readonly statusFilter = signal<VehicleStatus | null>(null);
   readonly selectedVehicles = signal<readonly Vehicle[]>([]);
   readonly viewMode = signal<'table' | 'timeline'>('table');
+  // 1.4：總覽「待保養 N」帶 ?maintenance=due 進來，只顯示有保養警示（逾期或即將到期）的車。
+  readonly maintenanceOnlyFilter = signal(this.route.snapshot.queryParamMap.get('maintenance') === 'due');
 
   readonly typeOptions: FilterOption<VehicleCategory>[] = (
     Object.entries(this.t.vehicle.typeLabels) as [VehicleCategory, string][]
@@ -104,9 +107,11 @@ export class VehiclesPageComponent {
     const query = this.searchQuery().trim().toLowerCase();
     const type = this.typeFilter();
     const status = this.statusFilter();
+    const maintenanceOnly = this.maintenanceOnlyFilter();
     return this.store.vehicles().filter((v) => {
       if (type && v.category !== type) return false;
       if (status && v.status !== status) return false;
+      if (maintenanceOnly && !this.hasOverdueAlert(v) && !this.hasUpcomingAlert(v)) return false;
       if (
         query &&
         !v.plateNumber.toLowerCase().includes(query) &&
@@ -146,6 +151,17 @@ export class VehiclesPageComponent {
   clearFilters(): void {
     this.typeFilter.set(null);
     this.statusFilter.set(null);
+  }
+
+  /** 移除「只看待保養」篩選標籤；同時把網址上的 maintenance 參數清掉，避免重新整理又跳回來。 */
+  clearMaintenanceOnlyFilter(): void {
+    this.maintenanceOnlyFilter.set(false);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { maintenance: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   statusKeyOf(v: Vehicle): StatusKey {

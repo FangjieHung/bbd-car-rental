@@ -18,6 +18,18 @@
         [options]="statusOptions"
         [(value)]="statusFilter"
       />
+      @if (maintenanceOnlyFilter()) {
+        <button
+          filters
+          type="button"
+          class="ui-chip ui-chip--info maintenance-only-filter-chip"
+          [attr.aria-label]="t.vehicle.removeMaintenanceOnlyFilter"
+          (click)="clearMaintenanceOnlyFilter()"
+        >
+          {{ t.vehicle.maintenanceOnlyFilter }}
+          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+        </button>
+      }
       <button actions class="flex-auto" mat-flat-button (click)="openForm(null)">
         <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
         {{ t.common.create }}{{ t.vehicle.vehicle }}

@@ -12,6 +12,7 @@ import { contractSigningState } from '@car-rental/domain';
 import {
   branchName,
   IdentityDocumentType,
+  isVehicleAvailable,
   Member,
   MemberKind,
   needsDispatch as computeNeedsDispatch,
@@ -76,6 +77,13 @@ function toPickupReciprocityStatus(status: ReciprocityStatus): 'pending' | 'elig
 
 const ACTIVE: RentalBooking['status'][] = ['reserved', 'in_progress'];
 
+/**
+ * 1.2：月曆格與右側面板取／還數字的共用定義——會佔用車輛的有效訂單（reserved／in_progress）
+ * ＋已完成（completed），排除已取消（cancelled）。資料模型沒有「尚未成立」的前置階段
+ * （CONTEXT.md「訂單」：建立當下就成立），所以「排除尚未成立者」在這裡沒有對應狀態要處理。
+ */
+const COUNTED: RentalBooking['status'][] = ['reserved', 'in_progress', 'completed'];
+
 /** 每種取車阻擋／提醒對應該去訂單詳情哪個分頁處理，供「前往處理」動作使用。 */
 const BLOCKER_SECTION: Record<PickupBlockerType, OrderDetailSection> = {
   deposit_below_threshold: 'payments',
@@ -111,22 +119,35 @@ interface WorkListRow {
 type PanelTab = 'pickup' | 'return' | 'available';
 const PANEL_TABS: PanelTab[] = ['pickup', 'return', 'available'];
 
-export function dayStats(
-  bookings: RentalBooking[],
-  totalVehicles: number,
-  day: Date,
-): { pickups: number; returns: number; available: number } {
-  const active = bookings.filter((b) => ACTIVE.includes(b.status));
+/** 1.3：某一天可租車輛清單——月曆「可用 N」與面板的可用清單共用同一個判斷（isVehicleAvailable，
+ *  會扣掉保養中的車），不是月曆自己另外用「總車數－當天佔用」土法算一次。 */
+function vehiclesAvailableOn(vehicles: Vehicle[], bookings: RentalBooking[], day: Date): Vehicle[] {
   const dayStart = startOfDay(day);
   const dayEnd = addDays(dayStart, 1);
-  const pickups = active.filter((b) => isSameDay(new Date(b.startTime), day)).length;
-  const returns = active.filter((b) => isSameDay(new Date(b.endTime), day)).length;
-  const occupied = new Set(
-    active
-      .filter((b) => new Date(b.startTime) < dayEnd && new Date(b.endTime) > dayStart)
-      .map((b) => b.vehicleId),
+  return vehicles.filter((v) =>
+    isVehicleAvailable({
+      vehicle: v,
+      startTime: dayStart.toISOString(),
+      endTime: dayEnd.toISOString(),
+      bookings,
+    }),
   );
-  return { pickups, returns, available: totalVehicles - occupied.size };
+}
+
+/**
+ * 1.2／1.3：月曆格「取 N／還 N／可用 N」——直接沿用 pickupProgress／returnProgress／
+ * vehiclesAvailableOn 三個函式，確保月曆格與右側面板永遠是同一份數字，不會各算各的。
+ */
+export function dayStats(
+  bookings: RentalBooking[],
+  vehicles: Vehicle[],
+  day: Date,
+): { pickups: number; returns: number; available: number } {
+  return {
+    pickups: pickupProgress(bookings, day).total,
+    returns: returnProgress(bookings, day).total,
+    available: vehiclesAvailableOn(vehicles, bookings, day).length,
+  };
 }
 
 export interface DayProgress {
@@ -135,25 +156,26 @@ export interface DayProgress {
   pending: number;
 }
 
+/** 取車進度：某天取車時間（startTime）落在當天、且訂單有效（COUNTED）的筆數；
+ *  done＝已經不是 reserved（in_progress／completed 都代表車已經被取走）。 */
 export function pickupProgress(bookings: RentalBooking[], day: Date): DayProgress {
   const relevant = bookings.filter(
-    (b) =>
-      isSameDay(new Date(b.startTime), day) &&
-      (b.status === 'reserved' || b.status === 'in_progress' || b.status === 'completed'),
+    (b) => isSameDay(new Date(b.startTime), day) && COUNTED.includes(b.status),
   );
   const done = relevant.filter((b) => b.status !== 'reserved').length;
   return { total: relevant.length, done, pending: relevant.length - done };
 }
 
 /**
- * 還車進度：total 只計 in_progress／completed（已取車、租期進行中或已完成的訂單）中還車日
- * 是這天的——reserved 訂單根本還沒被取走，永遠不計入還車統計（即使 endTime 剛好是這天）。
- * done 只計 completed（真正已辦理還車完成）；in_progress 即使已逾期，也還是「未完成」。
+ * 還車進度（1.2 修正）：某天還車時間（endTime）落在當天、且訂單有效（COUNTED）的筆數——
+ * 這裡刻意把 reserved 也算進來：尚未取車的預訂到了還車日，一樣要出現在當天的還車清單裡
+ * （標「尚未取車」，不提供「辦理還車」），不能像先前那樣完全不計。
+ * done 只計 completed（真正已辦理還車完成）；in_progress 即使已逾期，也還是「未完成」；
+ * reserved（尚未取車）自然也算未完成。
  */
 export function returnProgress(bookings: RentalBooking[], day: Date): DayProgress {
   const relevant = bookings.filter(
-    (b) =>
-      isSameDay(new Date(b.endTime), day) && (b.status === 'in_progress' || b.status === 'completed'),
+    (b) => isSameDay(new Date(b.endTime), day) && COUNTED.includes(b.status),
   );
   const done = relevant.filter((b) => b.status === 'completed').length;
   return { total: relevant.length, done, pending: relevant.length - done };
@@ -294,7 +316,7 @@ export class CalendarViewComponent {
   }
 
   statsOf(d: Date) {
-    return dayStats(this.bookingStore.bookings(), this.vehicleStore.vehicles().length, d);
+    return dayStats(this.bookingStore.bookings(), this.vehicleStore.vehicles(), d);
   }
 
   readonly selectedPickupProgress = computed(() =>
@@ -309,9 +331,12 @@ export class CalendarViewComponent {
     this.bookingStore.bookings().filter((b) => ACTIVE.includes(b.status)),
   );
 
-  /** 還車工作清單的候選集合：in_progress（尚待辦理）與 completed（已還車，可能應收未結）。 */
+  /**
+   * 還車工作清單的候選集合（1.2）：reserved（尚未取車，還車日到了也要列入並標「尚未取車」）、
+   * in_progress（尚待辦理）與 completed（已還車，可能應收未結）——與 returnProgress 同一份定義。
+   */
   private readonly returnEligibleBookings = computed(() =>
-    this.bookingStore.bookings().filter((b) => b.status === 'in_progress' || b.status === 'completed'),
+    this.bookingStore.bookings().filter((b) => COUNTED.includes(b.status)),
   );
 
   /** 「只看需調度」篩選開關；獨立於 selected() 的日期，換日期時維持使用者的選擇。 */
@@ -343,9 +368,29 @@ export class CalendarViewComponent {
   readonly returnWorkRows = computed<WorkListRow[]>(() => {
     const day = this.selected();
     if (!day) return [];
-    const rows = this.returnEligibleBookings()
+    const sameDayRows = this.returnEligibleBookings()
       .filter((b) => isSameDay(new Date(b.endTime), day))
       .map((booking) => ({ id: `return-${booking.id}`, booking, kind: 'return' as const }));
+
+    // 1.2：今天的還車清單另外列出「逾時未還」（in_progress 且還車時間已過）的訂單，即使
+    // 它的還車日不是今天（例如兩三天前就該還、至今仍未還）——這是為了讓櫃檯人員在「今天」
+    // 這個操作視角就能看到全部積壓的逾時未還訂單，不必回頭一天一天翻找。這些額外併入的筆數
+    // 不計入 returnProgress 的當日總數，月曆格「還 N」也不計逾時（該數字只反映當天到期的還車）。
+    let rows = sameDayRows;
+    if (isSameDay(day, this.todayDate)) {
+      const alreadyIncluded = new Set(sameDayRows.map((row) => row.booking.id));
+      const overdueFromOtherDays = this.bookingStore
+        .bookings()
+        .filter(
+          (b) =>
+            b.status === 'in_progress' &&
+            !alreadyIncluded.has(b.id) &&
+            new Date(b.endTime).getTime() < Date.now(),
+        )
+        .map((booking) => ({ id: `return-${booking.id}`, booking, kind: 'return' as const }));
+      rows = [...sameDayRows, ...overdueFromOtherDays];
+    }
+
     // 穩定排序疊加兩次：先照還車時間排好基礎順序，再照「是否逾時」排一次——
     // Array.prototype.sort 在現代 JS 引擎皆為穩定排序，逾時（急迫）的列會被移到最前面，
     // 但同一急迫層級內仍維持原本的時間先後順序，不必寫一個複合比較器。
@@ -354,17 +399,12 @@ export class CalendarViewComponent {
     return rows;
   });
 
+  /** 1.3：與月曆「可用 N」（statsOf().available）同一個判斷（vehiclesAvailableOn），
+   *  保養中的車不會再被誤列為可租。 */
   readonly availableVehicles = computed<Vehicle[]>(() => {
     const day = this.selected();
     if (!day) return [];
-    const dayStart = startOfDay(day);
-    const dayEnd = addDays(dayStart, 1);
-    const occupied = new Set(
-      this.activeBookings()
-        .filter((b) => new Date(b.startTime) < dayEnd && new Date(b.endTime) > dayStart)
-        .map((b) => b.vehicleId),
-    );
-    return this.vehicleStore.vehicles().filter((v) => !occupied.has(v.id));
+    return vehiclesAvailableOn(this.vehicleStore.vehicles(), this.bookingStore.bookings(), day);
   });
 
   readonly priceForVehicle = (vehicle: Vehicle): number | null => {

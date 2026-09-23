@@ -270,6 +270,11 @@
                                 }}</span>
                                 {{ overdue ? t.dispatch.workList.overdue + ' ' + overdueDurationLabel(row) : t.dispatch.workList.onTime }}
                               </span>
+                            } @else if (row.booking.status === 'reserved') {
+                              <span class="ui-chip work-list-row__status-chip">
+                                <span class="material-symbols-rounded" aria-hidden="true">hourglass_empty</span>
+                                {{ t.dispatch.workList.notPickedUpYet }}
+                              </span>
                             }
                           </mat-panel-title>
                           <mat-panel-description class="work-list-row__time">{{

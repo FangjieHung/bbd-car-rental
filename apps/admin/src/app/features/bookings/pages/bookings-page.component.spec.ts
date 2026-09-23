@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { BookingsPageComponent } from './bookings-page.component';
 import {
   AUDIT_ENTRY_REPO,
@@ -150,6 +150,51 @@ describe('BookingsPageComponent filtering', () => {
     expect(component.filteredBookings().map((b) => b.id)).toEqual(['b2']);
   });
 
+  // 1.4：搜尋除姓名、車牌外也比對電話；比對前雙方都先去掉空白與連字號。
+  it('依電話搜尋（c1 電話為 0912000111）', () => {
+    component.searchQuery.set('0912000111');
+    expect(component.filteredBookings().map((b) => b.id)).toEqual(['b1']);
+  });
+
+  it('搜尋關鍵字帶連字號或空白時，去掉分隔符號後仍比對得到（查詢端正規化）', () => {
+    component.searchQuery.set('0912-000 111');
+    expect(component.filteredBookings().map((b) => b.id)).toEqual(['b1']);
+  });
+
+  it('會員電話本身帶連字號時，去掉分隔符號後仍比對得到（資料端正規化）', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        ...provideOrderDetailRepos(),
+        { provide: OrderDetailNavigation, useValue: { open: vi.fn(), edit: vi.fn() } },
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle({ id: 'v1' })]) },
+        {
+          provide: MEMBER_REPO,
+          useValue: createInMemoryRepo<Member>([
+            { id: 'c1', name: '王小明', phone: '0912-345-678', kind: 'local' },
+          ]),
+        },
+        {
+          provide: BOOKING_REPO,
+          useValue: createInMemoryRepo<RentalBooking>([makeBooking({ id: 'b1', memberId: 'c1' })]),
+        },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const hyphenatedComponent = TestBed.createComponent(BookingsPageComponent).componentInstance;
+
+    hyphenatedComponent.searchQuery.set('0912345678');
+
+    expect(hyphenatedComponent.filteredBookings().map((b) => b.id)).toEqual(['b1']);
+  });
+
+  it('依電話局部關鍵字搜尋（不必是開頭片段）', () => {
+    // '000111' 是 c1 電話 0912000111 中段的子字串，且不包含在 c2 的 0922000222 裡。
+    component.searchQuery.set('000111');
+    expect(component.filteredBookings().map((b) => b.id)).toEqual(['b1']);
+  });
+
   it('依訂單狀態篩選', () => {
     component.statusFilter.set('cancelled');
     expect(component.filteredBookings().map((b) => b.id)).toEqual(['b3']);
@@ -292,5 +337,51 @@ describe('BookingsPageComponent 急迫指標與排序', () => {
     expect(workspaceOpen).toHaveBeenCalledWith('overdue-return', 'handover');
 
     vi.useRealTimers();
+  });
+});
+
+/** 1.4：總覽的放大鏡送出後導到 /bookings?q=關鍵字，訂單列表要讀這個參數預填搜尋框。 */
+describe('BookingsPageComponent 從網址帶入 q 參數預填搜尋', () => {
+  function createFixture(q: string | null) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        ...provideOrderDetailRepos(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { queryParamMap: convertToParamMap(q ? { q } : {}) },
+          },
+        },
+        { provide: OrderDetailNavigation, useValue: { open: vi.fn(), edit: vi.fn() } },
+        {
+          provide: VEHICLE_REPO,
+          useValue: createInMemoryRepo<Vehicle>([makeVehicle({ id: 'v1', plateNumber: 'ABC-123' })]),
+        },
+        {
+          provide: MEMBER_REPO,
+          useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '林美惠', phone: '0900000000', kind: 'local' }]),
+        },
+        {
+          provide: BOOKING_REPO,
+          useValue: createInMemoryRepo<RentalBooking>([makeBooking({ id: 'b1', memberId: 'c1' })]),
+        },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    return TestBed.createComponent(BookingsPageComponent).componentInstance;
+  }
+
+  it('網址帶 ?q=林美惠 時，搜尋框預填該關鍵字並套用篩選', () => {
+    const component = createFixture('林美惠');
+
+    expect(component.searchQuery()).toBe('林美惠');
+    expect(component.filteredBookings().map((b) => b.id)).toEqual(['b1']);
+  });
+
+  it('網址沒有 q 參數時，搜尋框維持空白', () => {
+    const component = createFixture(null);
+
+    expect(component.searchQuery()).toBe('');
   });
 });

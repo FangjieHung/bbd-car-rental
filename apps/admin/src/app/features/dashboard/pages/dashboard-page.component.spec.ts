@@ -192,14 +192,15 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     const component = createFixture([
       mk({ id: 'in_progress', endTime: at(today, 9), status: 'in_progress' }),
       mk({ id: 'completed', endTime: at(today, 10), status: 'completed' }),
+      // 1.2：尚未取車的預訂到了還車日也列入當天還車統計（標「尚未取車」），不再排除。
       mk({ id: 'not_picked_up', endTime: at(today, 15), status: 'reserved' }),
       mk({ id: 'cancelled', endTime: at(today, 9), status: 'cancelled' }),
       mk({ id: 'tomorrow', endTime: at(tomorrow, 9), status: 'in_progress' }),
     ]);
 
-    expect(component.todayReturnTotal()).toBe(2);
+    expect(component.todayReturnTotal()).toBe(3);
     expect(component.todayReturnDone()).toBe(1);
-    expect(component.todayReturnPending()).toBe(1);
+    expect(component.todayReturnPending()).toBe(2);
     expect(component.todayPendingPrepCount()).toBe(1);
   });
 });
@@ -271,5 +272,14 @@ describe('DashboardPageComponent onQuickRange', () => {
 
     expect(component.bookingStore.bookings()).toHaveLength(0);
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  // 1.4：總覽頁首放大鏡送出後導到訂單列表，帶入關鍵字讓訂單列表預填搜尋。
+  it('onSearchSubmit 導向 /bookings，query params 帶入關鍵字', () => {
+    const { component, navigate } = createFixture();
+
+    component.onSearchSubmit('林美惠');
+
+    expect(navigate).toHaveBeenCalledWith(['/bookings'], { queryParams: { q: '林美惠' } });
   });
 });

@@ -76,6 +76,8 @@ export const ZH_TW = {
     backToList: '返回車輛清單',
     location: '所在據點',
     locationUnspecified: '未指定',
+    maintenanceOnlyFilter: '只看待保養',
+    removeMaintenanceOnlyFilter: '移除「只看待保養」篩選',
   },
   member: {
     name: '姓名',
@@ -671,6 +673,7 @@ export const ZH_TW = {
       estimatedLateFee: '預估逾時費',
       currentBalance: '目前待收餘額',
       returnedUnsettled: '已還車／應收未結',
+      notPickedUpYet: '尚未取車',
       pay: '收款',
       viewContract: '檢視合約',
       view: '檢視',
@@ -745,13 +748,11 @@ export const ZH_TW = {
     validFrom: '生效日',
     validTo: '到期日',
   },
+  // 總覽頁首按鈕（1.4：原本寫死在樣板裡的中文，改從這裡讀）。
   dashboard: {
-    todayPickups: '今日取車',
-    todayReturns: '今日還車',
-    tomorrowPickups: '明日取車',
-    tomorrowReturns: '明日還車',
-    statusCounts: '車輛狀態',
-    none: '無',
+    newOrder: '新增訂單',
+    maintenanceDue: '待保養',
+    pendingPrep: '待整備',
   },
   partner: {
     name: '民宿名稱',

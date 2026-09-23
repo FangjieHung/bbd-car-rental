@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -25,6 +25,11 @@ import {
 } from '../../../shared/filters/filter-select.component';
 import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
 import { OrderDetailSection } from '../../orders/navigation/order-detail-sections';
+
+/** 1.4：電話比對前先去掉空白與連字號，讓「0912-345-678」與「0912 345 678」都比對得到。 */
+function stripPhoneSeparators(value: string): string {
+  return value.replace(/[\s-]/g, '');
+}
 
 @Component({
   selector: 'app-bookings-page',
@@ -52,6 +57,7 @@ export class BookingsPageComponent {
   private orderDetail = inject(OrderDetailNavigation);
   private readonly paymentStore = inject(PaymentStore);
   private readonly operatorRecoveryStore = inject(OperatorRecoveryStore);
+  private readonly route = inject(ActivatedRoute);
   readonly fmt = fmtDateTime;
 
   readonly labels = { ...ADMIN_DATA_TABLE_LABELS, batchDelete: this.t.booking.cancelBooking };
@@ -85,7 +91,8 @@ export class BookingsPageComponent {
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
   }
 
-  readonly searchQuery = signal('');
+  // 1.4：總覽的放大鏡送出後導到 /bookings?q=關鍵字，這裡預填搜尋框。
+  readonly searchQuery = signal(this.route.snapshot.queryParamMap.get('q') ?? '');
   readonly statusFilter = signal<BookingStatus | null>(null);
   readonly selectedBookings = signal<readonly RentalBooking[]>([]);
 
@@ -97,13 +104,18 @@ export class BookingsPageComponent {
 
   readonly filteredBookings = computed(() => {
     const query = this.searchQuery().trim().toLowerCase();
+    // 1.4：搜尋除姓名、車牌外也比對電話；比對前雙方都先去掉空白與連字號，
+    // 「0912-345-678」「0912 345 678」「0912345678」都要比對得到。
+    const normalizedPhoneQuery = stripPhoneSeparators(query);
     const status = this.statusFilter();
     const filtered = this.store.bookings().filter((b) => {
       if (status && b.status !== status) return false;
       if (query) {
         const memberName = this.memberStore.nameOf(b.memberId).toLowerCase();
         const plate = this.plateOf(b.vehicleId).toLowerCase();
-        if (!memberName.includes(query) && !plate.includes(query)) return false;
+        const phone = stripPhoneSeparators(this.phoneOf(b.memberId).toLowerCase());
+        const matchesPhone = normalizedPhoneQuery.length > 0 && phone.includes(normalizedPhoneQuery);
+        if (!memberName.includes(query) && !plate.includes(query) && !matchesPhone) return false;
       }
       return true;
     });
@@ -118,6 +130,10 @@ export class BookingsPageComponent {
 
   plateOf(vehicleId: string): string {
     return this.vehicleStore.vehicles().find((v) => v.id === vehicleId)?.plateNumber ?? '—';
+  }
+
+  private phoneOf(memberId: string): string {
+    return this.memberStore.members().find((m) => m.id === memberId)?.phone ?? '';
   }
 
   statusKeyOf(b: RentalBooking): StatusKey {
