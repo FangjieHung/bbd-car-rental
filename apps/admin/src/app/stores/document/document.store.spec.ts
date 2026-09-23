@@ -101,4 +101,46 @@ describe('DocumentStore', () => {
     const stored = store.driverCredentialsFor('c1').find((d) => d.id === credential.id);
     expect(stored).toEqual(credential);
   });
+
+  it('同一位會員再上傳：接在前一版後面（version 遞增、supersededId 指回前一版），取最新時才拿得到新的那筆', async () => {
+    const base = {
+      memberId: 'c1',
+      documentNumber: 'TL-0001',
+      issuingCountry: 'TW',
+      originalVehicleClassText: '普通小型車',
+      standardizedVehicleClass: 'car' as const,
+    };
+    const first = await store.uploadDriverCredential({ ...base, type: 'taiwan_license' });
+    const second = await store.uploadDriverCredential({ ...base, type: 'foreign_license', documentNumber: 'X-1' });
+    const other = await store.uploadDriverCredential({ ...base, type: 'taiwan_license', memberId: 'c2' });
+    expect(first).toMatchObject({ version: 1 });
+    expect(first.supersededId).toBeUndefined();
+    // 駕駛資格整位會員一條版本線（取車時看最新的那一張，不分種類）
+    expect(second).toMatchObject({ version: 2, supersededId: first.id });
+    expect(other).toMatchObject({ version: 1 });
+
+    const id1 = await store.uploadIdentityDocument({ memberId: 'c1', type: 'taiwan_id', documentNumber: 'A1', issuingCountry: 'TW' });
+    const id2 = await store.uploadIdentityDocument({ memberId: 'c1', type: 'taiwan_id', documentNumber: 'A2', issuingCountry: 'TW' });
+    // 身分證明文件依種類各自一條版本線：改交居留證不算取代身分證
+    const permit = await store.uploadIdentityDocument({ memberId: 'c1', type: 'resident_permit', documentNumber: 'R1', issuingCountry: 'TW' });
+    expect(id2).toMatchObject({ version: 2, supersededId: id1.id });
+    expect(permit).toMatchObject({ version: 1 });
+    expect(permit.supersededId).toBeUndefined();
+  });
+
+  it('remove*：只供建立訂單失敗時補償清除這次新建的紀錄', async () => {
+    const doc = await store.uploadIdentityDocument({ memberId: 'c1', type: 'taiwan_id', documentNumber: 'A1', issuingCountry: 'TW' });
+    const credential = await store.uploadDriverCredential({
+      memberId: 'c1',
+      type: 'taiwan_license',
+      documentNumber: 'TL-1',
+      issuingCountry: 'TW',
+      originalVehicleClassText: '',
+      standardizedVehicleClass: 'car',
+    });
+    store.removeIdentityDocument(doc.id);
+    store.removeDriverCredential(credential.id);
+    expect(store.identityDocumentsFor('c1')).toEqual([]);
+    expect(store.driverCredentialsFor('c1')).toEqual([]);
+  });
 });

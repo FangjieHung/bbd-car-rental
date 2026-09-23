@@ -188,6 +188,11 @@ export const ZH_TW = {
     pickedResult: '已選車輛',
     clearPick: '清除選擇',
     openDetail: '訂單詳情',
+    // 4.1：訂單列表的「待補」欄與篩選（已取消、已完成的訂單不計）。
+    incomplete: '待補',
+    incompleteOnly: '只看有待補',
+    /** 待補徽章的無障礙名稱，`{count}` 代入項數。 */
+    incompleteCount: '待補 {count} 項',
   },
   // 2.3：建單第 1 步「先選租期，再列可租的車」的搜尋列與可租清單；可租清單元件在總覽「可用」分頁也會用。
   // 帶 {…} 的字串由使用處代入（同 common.selectedCount 的寫法）。
@@ -251,10 +256,13 @@ export const ZH_TW = {
       adjustment: '其他調整',
     } as Record<string, string>,
     internalNote: '內部備註',
+    // 待補項目（建立訂單摘要欄、訂單詳情、訂單列表共用同一套規則，見 features/orders/incomplete）。
     incomplete: {
       missingEmail: '承租人未提供 Email，還車提醒無法排程',
       depositNotCollected: '訂金尚未收款',
       contractNotSigned: '合約尚未簽署',
+      identityNotVerified: '證件未查核',
+      driverNotVerified: '駕駛資格未查核',
       balanceNotCollected: '租金尚未收足',
     },
   },
@@ -338,6 +346,14 @@ export const ZH_TW = {
       renterBaseline: '請填寫承租人姓名與電話',
       depositInvalid: '訂金金額無效',
       paymentDraftAmountInvalid: '本次收款有金額未填或不大於 0',
+      driverClassRequired: '填了駕照號碼，請一併選擇標準化車種',
+    },
+    // 4.2：第 2 步「駕駛資格」區塊；欄位名稱沿用會員視窗（member.license*）。
+    driver: {
+      optionalHint: '可以留空，建立後再到會員資料補上；留空時會列入待補「駕駛資格未查核」。',
+      prefilledHint: '已帶入這位會員既有的駕駛資格，有更新再修改。',
+      classMismatchPrefix: '標準化車種與本次車輛（',
+      classMismatchSuffix: '）不符，取車時會被擋下',
     },
     contract: {
       summaryTitle: '合約摘要',
@@ -432,6 +448,15 @@ export const ZH_TW = {
     netPaid: '已收',
     balanceDue: '待收',
     noQuote: '尚無報價快照',
+    // 4.1：總覽最上方的待補卡（已取消、已完成的訂單不顯示）；每一項可點到能處理它的地方。
+    incomplete: {
+      title: '待補',
+      actions: {
+        payments: '前往款項',
+        contract: '前往合約',
+        renter: '編輯承租人資料',
+      } as Record<string, string>,
+    },
     sections: {
       overview: '總覽',
       documents: '文件',

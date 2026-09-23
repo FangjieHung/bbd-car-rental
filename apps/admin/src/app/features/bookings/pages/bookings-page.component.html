@@ -12,6 +12,12 @@
         [options]="statusOptions"
         [(value)]="statusFilter"
       />
+      <app-filter-select
+        filters
+        [label]="t.booking.incomplete"
+        [options]="incompleteOptions"
+        [(value)]="incompleteFilter"
+      />
       <a actions mat-button routerLink="/bookings/members">
         <span class="material-symbols-rounded" aria-hidden="true">group</span>
         {{ t.booking.goMembers }}
@@ -83,6 +89,14 @@
                 </button>
               }
             </div>
+          </ng-template>
+          <ng-template dtCell="incomplete" let-b>
+            @if (incompleteOf(b).length > 0) {
+              <span class="ui-chip ui-chip--warning incomplete-badge" [matTooltip]="incompleteSummary(b)">
+                <span aria-hidden="true">{{ incompleteOf(b).length }}</span>
+                <span class="sr-only">{{ incompleteCountLabel(b) }}：{{ incompleteSummary(b) }}</span>
+              </span>
+            }
           </ng-template>
           <ng-template dtCell="actions" let-b>
             <span class="action-cell">

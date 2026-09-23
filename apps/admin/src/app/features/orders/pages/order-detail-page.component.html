@@ -99,6 +99,10 @@
               </div>
             </div>
           } @else {
+            <!-- 4.1：待補卡在總覽最上方；沒有待補（或已取消、已完成）時整張卡不出現 -->
+            @if (incompleteItems().length > 0) {
+              <app-order-incomplete-card [items]="incompleteItems()" (selectItem)="onIncompleteSelected($event)" />
+            }
             @if (canEdit()) {
               <div class="order-detail__toolbar">
                 <button mat-stroked-button type="button" class="order-detail__edit" (click)="startEdit()">

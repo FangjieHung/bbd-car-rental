@@ -25,12 +25,17 @@ import {
 } from '../../../shared/filters/filter-select.component';
 import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
 import { OrderDetailSection } from '../../orders/navigation/order-detail-sections';
+import { OrderIncompleteItem } from '../../orders/incomplete/order-incomplete';
+import { OrderIncompleteService } from '../../orders/incomplete/order-incomplete.service';
 import {
   hasRefundPending,
   hasUrgentOperatorRecovery,
   isOverdueReturn,
   isUrgent,
 } from '../booking-urgency';
+
+/** 4.1：「待補」篩選只有一個選項（只看有待補）；沒選＝全部。 */
+export type IncompleteFilter = 'has';
 
 /** 1.4：電話比對前先去掉空白與連字號，讓「0912-345-678」與「0912 345 678」都比對得到。 */
 function stripPhoneSeparators(value: string): string {
@@ -63,6 +68,7 @@ export class BookingsPageComponent {
   private orderDetail = inject(OrderDetailNavigation);
   private readonly paymentStore = inject(PaymentStore);
   private readonly operatorRecoveryStore = inject(OperatorRecoveryStore);
+  private readonly incomplete = inject(OrderIncompleteService);
   private readonly route = inject(ActivatedRoute);
   readonly fmt = fmtDateTime;
 
@@ -89,6 +95,8 @@ export class BookingsPageComponent {
       primary: true,
       exportValue: (b) => this.t.booking.statusLabels[b.status],
     },
+    // 4.1：待補項數（數字徽章，0 不顯示）；規則與訂單詳情的待補卡同一套。
+    { key: 'incomplete', label: this.t.booking.incomplete, exportValue: (b) => this.incompleteOf(b).length },
     { key: 'actions', label: this.t.common.actions, exportSkip: true },
   ];
 
@@ -100,13 +108,20 @@ export class BookingsPageComponent {
   // 1.4：總覽的放大鏡送出後導到 /bookings?q=關鍵字，這裡預填搜尋框。
   readonly searchQuery = signal(this.route.snapshot.queryParamMap.get('q') ?? '');
   readonly statusFilter = signal<BookingStatus | null>(null);
+  readonly incompleteFilter = signal<IncompleteFilter | null>(null);
   readonly selectedBookings = signal<readonly RentalBooking[]>([]);
 
   readonly statusOptions: FilterOption<BookingStatus>[] = (
     Object.entries(this.t.booking.statusLabels) as [BookingStatus, string][]
   ).map(([value, label]) => ({ value, label }));
+  readonly incompleteOptions: FilterOption<IncompleteFilter>[] = [{ value: 'has', label: this.t.booking.incompleteOnly }];
 
-  readonly activeFilterCount = computed(() => (this.statusFilter() ? 1 : 0));
+  readonly activeFilterCount = computed(() => [this.statusFilter(), this.incompleteFilter()].filter((f) => f !== null).length);
+
+  /** 每筆訂單的待補項目（已取消、已完成的訂單不計，為空陣列）。 */
+  private readonly incompleteByBooking = computed(
+    () => new Map(this.store.bookings().map((b) => [b.id, this.incomplete.itemsFor(b)] as const)),
+  );
 
   readonly filteredBookings = computed(() => {
     const query = this.searchQuery().trim().toLowerCase();
@@ -114,8 +129,10 @@ export class BookingsPageComponent {
     // 「0912-345-678」「0912 345 678」「0912345678」都要比對得到。
     const normalizedPhoneQuery = stripPhoneSeparators(query);
     const status = this.statusFilter();
+    const onlyIncomplete = this.incompleteFilter() === 'has';
     const filtered = this.store.bookings().filter((b) => {
       if (status && b.status !== status) return false;
+      if (onlyIncomplete && this.incompleteOf(b).length === 0) return false;
       if (query) {
         const memberName = this.memberStore.nameOf(b.memberId).toLowerCase();
         const plate = this.plateOf(b.vehicleId).toLowerCase();
@@ -132,6 +149,22 @@ export class BookingsPageComponent {
 
   clearFilters(): void {
     this.statusFilter.set(null);
+    this.incompleteFilter.set(null);
+  }
+
+  incompleteOf(b: RentalBooking): OrderIncompleteItem[] {
+    return this.incompleteByBooking().get(b.id) ?? [];
+  }
+
+  /** 待補徽章的提示：列出每一項（「、」隔開）。 */
+  incompleteSummary(b: RentalBooking): string {
+    return this.incompleteOf(b)
+      .map((item) => item.label)
+      .join('、');
+  }
+
+  incompleteCountLabel(b: RentalBooking): string {
+    return this.t.booking.incompleteCount.replace('{count}', String(this.incompleteOf(b).length));
   }
 
   plateOf(vehicleId: string): string {

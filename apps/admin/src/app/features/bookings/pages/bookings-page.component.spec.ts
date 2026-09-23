@@ -16,15 +16,23 @@ import {
   BOOKING_REPO,
   MEMBER_REPO,
   MAINTENANCE_REPO,
+  IDENTITY_DOCUMENT_REPO,
+  DRIVER_CREDENTIAL_REPO,
 } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
+import { OcrGateway } from '../../../core/services/ocr.gateway';
+import { MockOcrGateway } from '../../../core/services/mock-ocr.gateway';
+import { DriverEligibilityGateway } from '../../../core/services/driver-eligibility.gateway';
+import { MockDriverEligibilityGateway } from '../../../core/services/mock-driver-eligibility.gateway';
 import {
   AuditEntry,
   CancellationCase,
   ChargeAdjustment,
   ContractVersion,
   CustomerCreditLedgerEntry,
+  DriverCredential,
+  IdentityDocument,
   Vehicle,
   RentalBooking,
   Member,
@@ -35,6 +43,7 @@ import {
   ReminderStatus,
 } from '../../../core/models';
 import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
+import { ZH_TW } from '../../../core/i18n/zh-tw';
 
 function makeVehicle(partial: Partial<Vehicle>): Vehicle {
   return {
@@ -74,12 +83,23 @@ function makeBooking(partial: Partial<RentalBooking>): RentalBooking {
 function provideOrderDetailRepos(options: {
   refunds?: RefundRecord[];
   operatorRecoveryCases?: OperatorRecoveryCase[];
+  payments?: PaymentRecord[];
+  contracts?: ContractVersion[];
+  identityDocuments?: IdentityDocument[];
+  driverCredentials?: DriverCredential[];
 } = {}) {
   return [
-    { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
+    // 4.1：待補欄讀會員的證件紀錄（DocumentStore）。
+    { provide: IDENTITY_DOCUMENT_REPO, useValue: createInMemoryRepo<IdentityDocument>(options.identityDocuments ?? []) },
+    { provide: DRIVER_CREDENTIAL_REPO, useValue: createInMemoryRepo<DriverCredential>(options.driverCredentials ?? []) },
+    MockOcrGateway,
+    { provide: OcrGateway, useExisting: MockOcrGateway },
+    MockDriverEligibilityGateway,
+    { provide: DriverEligibilityGateway, useExisting: MockDriverEligibilityGateway },
+    { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>(options.payments ?? []) },
     { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>(options.refunds ?? []) },
     { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
-    { provide: CONTRACT_VERSION_REPO, useValue: createInMemoryRepo<ContractVersion>([]) },
+    { provide: CONTRACT_VERSION_REPO, useValue: createInMemoryRepo<ContractVersion>(options.contracts ?? []) },
     { provide: CANCELLATION_CASE_REPO, useValue: createInMemoryRepo<CancellationCase>([]) },
     { provide: CUSTOMER_CREDIT_LEDGER_REPO, useValue: createInMemoryRepo<CustomerCreditLedgerEntry>([]) },
     { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>([]) },
@@ -383,5 +403,99 @@ describe('BookingsPageComponent 從網址帶入 q 參數預填搜尋', () => {
     const component = createFixture(null);
 
     expect(component.searchQuery()).toBe('');
+  });
+});
+
+/** 4.1：訂單列表的「待補」欄（數字徽章）與「只看有待補」篩選；規則與訂單詳情的待補卡同一套。 */
+describe('BookingsPageComponent 待補欄與篩選', () => {
+  function setup() {
+    const complete: Member = { id: 'c1', name: '王小明', phone: '0912000111', kind: 'local', email: 'w@x.y' };
+    const incomplete: Member = { id: 'c2', name: '陳大文', phone: '0922000222', kind: 'local' };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        ...provideOrderDetailRepos({
+          contracts: [{ id: 'cv1', bookingId: 'done', version: 1, status: 'signed' } as ContractVersion],
+          identityDocuments: [
+            {
+              id: 'id1', memberId: 'c1', type: 'taiwan_id', documentNumber: 'A1', issuingCountry: 'TW',
+              verification: { state: 'verified' }, version: 1, createdAt: '', updatedAt: '',
+            },
+          ],
+          driverCredentials: [
+            {
+              id: 'dc1', memberId: 'c1', type: 'taiwan_license', documentNumber: 'TL-1', issuingCountry: 'TW',
+              originalVehicleClassText: '', standardizedVehicleClass: 'scooter', verification: { state: 'verified' },
+              reciprocityStatus: 'pending', version: 1, createdAt: '', updatedAt: '',
+            },
+          ],
+        }),
+        { provide: OrderDetailNavigation, useValue: { open: vi.fn(), edit: vi.fn() } },
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle({ id: 'v1', plateNumber: 'ABC-123' })]) },
+        { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([complete, incomplete]) },
+        {
+          provide: BOOKING_REPO,
+          useValue: createInMemoryRepo<RentalBooking>([
+            // done：Email、合約、證件、駕照都齊，訂金 0、沒有報價——沒有待補。
+            makeBooking({ id: 'done', memberId: 'c1', status: 'reserved' }),
+            // todo：陳大文沒有 Email、沒有合約與證件紀錄——4 項待補。
+            makeBooking({ id: 'todo', memberId: 'c2', status: 'reserved' }),
+            // 已取消／已完成的訂單不計待補。
+            makeBooking({ id: 'gone', memberId: 'c2', status: 'cancelled' }),
+            makeBooking({ id: 'past', memberId: 'c2', status: 'completed' }),
+          ]),
+        },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const fixture = TestBed.createComponent(BookingsPageComponent);
+    return { fixture, component: fixture.componentInstance };
+  }
+
+  function byId(component: BookingsPageComponent, id: string): RentalBooking {
+    const booking = component.store.bookings().find((b) => b.id === id);
+    if (!booking) throw new Error(`fixture: ${id}`);
+    return booking;
+  }
+
+  it('每筆訂單的待補項數；已取消、已完成的不計', () => {
+    const { component } = setup();
+    expect(component.incompleteOf(byId(component, 'done'))).toEqual([]);
+    expect(component.incompleteOf(byId(component, 'todo')).map((i) => i.kind)).toEqual([
+      'missingEmail',
+      'contractNotSigned',
+      'identityNotVerified',
+      'driverNotVerified',
+    ]);
+    expect(component.incompleteOf(byId(component, 'gone'))).toEqual([]);
+    expect(component.incompleteOf(byId(component, 'past'))).toEqual([]);
+  });
+
+  it('「只看有待補」：只留有待補的訂單，並與狀態篩選、搜尋同時作用；清除篩選會一起清掉', () => {
+    const { component } = setup();
+    component.incompleteFilter.set('has');
+    expect(component.filteredBookings().map((b) => b.id)).toEqual(['todo']);
+    expect(component.activeFilterCount()).toBe(1);
+
+    component.statusFilter.set('cancelled');
+    expect(component.filteredBookings()).toEqual([]);
+    component.statusFilter.set(null);
+    component.searchQuery.set('王小明');
+    expect(component.filteredBookings()).toEqual([]);
+
+    component.clearFilters();
+    expect(component.incompleteFilter()).toBeNull();
+    expect(component.filteredBookings().map((b) => b.id)).toEqual(['done']);
+  });
+
+  it('待補欄顯示數字徽章（0 不顯示），提示列出每一項', () => {
+    const { fixture, component } = setup();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const badges = Array.from(el.querySelectorAll('.incomplete-badge'));
+    expect(badges).toHaveLength(1);
+    expect(badges[0].querySelector('[aria-hidden="true"]')?.textContent?.trim()).toBe('4');
+    expect(badges[0].textContent).toContain(ZH_TW.booking.incompleteCount.replace('{count}', '4'));
+    expect(component.incompleteSummary(byId(component, 'todo'))).toContain(ZH_TW.bookingForm.incomplete.missingEmail);
   });
 });

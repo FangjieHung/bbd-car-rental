@@ -369,6 +369,33 @@ describe('OrderCreatePageComponent 訂單摘要欄（2.2）', () => {
   });
 });
 
+describe('OrderCreatePageComponent 第 2 步「承租人與駕駛資格」（4.2）', () => {
+  it('第 2 步有駕駛資格區塊；留空時「建立後待補」多一項「駕駛資格未查核」', () => {
+    const { fixture, component } = setup();
+    fillBaseline(component);
+    component.selectedIndex.set(1);
+    fixture.detectChanges();
+    expect(el(fixture).querySelector('app-order-renter-section')).toBeTruthy();
+    expect(el(fixture).querySelector('app-order-driver-section')?.textContent).toContain(ZH_TW.member.licenseNumber);
+    expect(component.incompleteItems()).toContain(ZH_TW.bookingForm.incomplete.driverNotVerified);
+
+    component.form.controls.driver.patchValue({ licenseNumber: 'TL-1', standardizedVehicleClass: 'car' });
+    fixture.detectChanges();
+    expect(component.incompleteItems()).not.toContain(ZH_TW.bookingForm.incomplete.driverNotVerified);
+  });
+
+  it('填了駕照號碼沒選車種：第 2 步亮錯誤，不送出', async () => {
+    const { fixture, component, create } = setup();
+    fillBaseline(component);
+    component.form.controls.driver.patchValue({ licenseNumber: 'TL-1' });
+    await component.submit();
+    fixture.detectChanges();
+    expect(create).not.toHaveBeenCalled();
+    expect(steps(fixture)[1].hasError).toBe(true);
+    expect(component.stepProblems().renter).toContain(ZH_TW.orderForm.problems.driverClassRequired);
+  });
+});
+
 describe('OrderCreatePageComponent 第 3 步「費用與付款」（2.4）', () => {
   it('不再列出唯讀的報價明細（已在摘要欄）；應收訂金與本次收款接在保險／配件之後', () => {
     const { fixture, component } = setup();

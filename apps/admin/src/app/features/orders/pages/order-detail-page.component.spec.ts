@@ -6,10 +6,20 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
-import { Member, OperatorRecoveryCase, PaymentRecord, RefundRecord, RentalBooking } from '../../../core/models';
+import {
+  ContractVersion,
+  DriverCredential,
+  IdentityDocument,
+  Member,
+  OperatorRecoveryCase,
+  PaymentRecord,
+  RefundRecord,
+  RentalBooking,
+} from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
+import { PaymentStore } from '../../../stores/payment/payment.store';
 import { ConfirmDialogComponent } from '../../../shared/dialogs/confirm-dialog.component';
 import { PaymentPanelComponent } from '../../bookings/components/payment-panel.component';
 import { ContractPanelComponent } from '../../bookings/components/contract-panel.component';
@@ -18,6 +28,7 @@ import { CancellationPanelComponent } from '../../bookings/components/cancellati
 import { CustomerCreditPanelComponent } from '../../bookings/components/customer-credit-panel.component';
 import { OperatorRecoveryPanelComponent } from '../../bookings/components/operator-recovery-panel.component';
 import { ActivityTimelineComponent } from '../../bookings/components/activity-timeline.component';
+import { MemberFormDialogComponent } from '../../bookings/dialogs/member-form-dialog.component';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
 import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
 import { createOrderForm, setPaymentDrafts } from '../order-form/order-form';
@@ -74,6 +85,9 @@ interface SetupOptions {
   payments?: PaymentRecord[];
   refunds?: RefundRecord[];
   operatorRecoveryCases?: OperatorRecoveryCase[];
+  contracts?: ContractVersion[];
+  identityDocuments?: IdentityDocument[];
+  driverCredentials?: DriverCredential[];
 }
 
 async function setup(url: string, options: SetupOptions = {}) {
@@ -83,6 +97,9 @@ async function setup(url: string, options: SetupOptions = {}) {
     bookings: options.bookings ?? [makeBooking()],
     refunds: options.refunds,
     operatorRecoveryCases: options.operatorRecoveryCases,
+    contracts: options.contracts,
+    identityDocuments: options.identityDocuments,
+    driverCredentials: options.driverCredentials,
   });
   if (options.payments) for (const p of options.payments) repos.paymentRepo.create(p);
   const update = vi.fn<OrderSubmitGateway['update']>(async (id: string) => id);
@@ -320,6 +337,113 @@ describe('OrderDetailPageComponent 總覽「費用」卡的已收／待收（與
     expect(text).toContain(ZH_TW.orderDetail.noQuote);
     expect(text).toContain(ZH_TW.orderDetail.netPaid);
     expect(text).toContain('700');
+  });
+});
+
+describe('OrderDetailPageComponent 總覽的待補卡（4.1：與建單摘要欄同一套規則）', () => {
+  const verifiedIdentity: IdentityDocument = {
+    id: 'id1', memberId: 'm1', type: 'taiwan_id', documentNumber: 'A1', issuingCountry: 'TW',
+    verification: { state: 'verified' }, version: 1, createdAt: '', updatedAt: '',
+  };
+  const verifiedLicense: DriverCredential = {
+    id: 'dc1', memberId: 'm1', type: 'taiwan_license', documentNumber: 'TL-1', issuingCountry: 'TW',
+    originalVehicleClassText: '普通小型車', standardizedVehicleClass: 'car',
+    verification: { state: 'verified' }, reciprocityStatus: 'pending', version: 1, createdAt: '', updatedAt: '',
+  };
+  const signedContract = { id: 'cv1', bookingId: 'b1', version: 1, status: 'signed' } as ContractVersion;
+  const depositPaid: PaymentRecord = {
+    id: 'p1', bookingId: 'b1', amount: 500, method: 'cash', purpose: 'deposit', status: 'confirmed',
+    receivedAt: '2026-01-01T00:00:00.000Z', handledBy: 'staff',
+  };
+
+  function card(harness: RouterTestingHarness): HTMLElement | null {
+    return el(harness).querySelector('app-order-incomplete-card');
+  }
+
+  function item(harness: RouterTestingHarness, kind: string): HTMLButtonElement {
+    return el(harness).querySelector(`.incomplete-card__item[data-kind="${kind}"]`) as HTMLButtonElement;
+  }
+
+  it('列出這筆訂單還缺的事，放在總覽最上方（在分組卡片之前）', async () => {
+    const { harness } = await setup('/orders/b1');
+    const cardEl = card(harness);
+    expect(cardEl).not.toBeNull();
+    const labels = Array.from(cardEl?.querySelectorAll('.incomplete-card__label') ?? []).map((l) => l.textContent?.trim());
+    // 會員有 Email、沒有報價快照（算不出租金是否收足）；訂金 500 未收、沒有合約、沒有證件紀錄。
+    expect(labels).toEqual([
+      ZH_TW.bookingForm.incomplete.depositNotCollected,
+      ZH_TW.bookingForm.incomplete.contractNotSigned,
+      ZH_TW.bookingForm.incomplete.identityNotVerified,
+      ZH_TW.bookingForm.incomplete.driverNotVerified,
+    ]);
+    const panel = el(harness).querySelector('.order-detail__panel') as HTMLElement;
+    expect(panel.firstElementChild?.tagName.toLowerCase()).toBe('app-order-incomplete-card');
+  });
+
+  it('點款項／合約類的項目：切到那個分頁', async () => {
+    const { harness, component, router } = await setup('/orders/b1');
+    item(harness, 'depositNotCollected').click();
+    await settle(harness);
+    expect(component.activeSection()).toBe('payments');
+    expect(router.url).toBe('/orders/b1?section=payments');
+
+    navButton(harness, 'overview').click();
+    await settle(harness);
+    item(harness, 'contractNotSigned').click();
+    await settle(harness);
+    expect(component.activeSection()).toBe('contract');
+  });
+
+  it('點證件／駕駛資格／Email 類的項目：開承租人的會員資料（這些存在會員層，沒有對應的分頁）', async () => {
+    const { harness, dialogOpen } = await setup('/orders/b1');
+    item(harness, 'driverNotVerified').click();
+    expect(dialogOpen).toHaveBeenCalledWith(MemberFormDialogComponent, expect.objectContaining({ data: member }));
+  });
+
+  it('都補齊了：整張卡不出現', async () => {
+    const { harness } = await setup('/orders/b1', {
+      payments: [depositPaid],
+      contracts: [signedContract],
+      identityDocuments: [verifiedIdentity],
+      driverCredentials: [verifiedLicense],
+    });
+    expect(card(harness)).toBeNull();
+  });
+
+  it('補齊後即時更新：收了訂金，「訂金尚未收款」就從卡片消失', async () => {
+    const { harness } = await setup('/orders/b1', {
+      contracts: [signedContract],
+      identityDocuments: [verifiedIdentity],
+      driverCredentials: [verifiedLicense],
+    });
+    expect(item(harness, 'depositNotCollected')).not.toBeNull();
+
+    TestBed.inject(PaymentStore).recordPayment({
+      bookingId: 'b1',
+      amount: 500,
+      method: 'cash',
+      purpose: 'deposit',
+      status: 'confirmed',
+      receivedAt: '2026-01-02T00:00:00.000Z',
+      handledBy: 'staff',
+    });
+    await settle(harness);
+    expect(card(harness)).toBeNull();
+  });
+
+  it('已取消、已完成的訂單不顯示待補', async () => {
+    for (const status of ['cancelled', 'completed'] as const) {
+      TestBed.resetTestingModule();
+      const { harness } = await setup('/orders/b1', { bookings: [makeBooking({ status })] });
+      expect(card(harness)).toBeNull();
+    }
+  });
+
+  it('編輯中不顯示（總覽換成表單）', async () => {
+    const { harness, component } = await setup('/orders/b1');
+    component.startEdit();
+    await settle(harness);
+    expect(card(harness)).toBeNull();
   });
 });
 

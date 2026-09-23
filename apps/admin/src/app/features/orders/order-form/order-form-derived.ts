@@ -108,7 +108,7 @@ interface OrderCheck {
 }
 
 function orderChecks(value: OrderFormValue, derived: OrderFormDerivedChecks): OrderCheck[] {
-  const { rental, renter, pricing } = value;
+  const { rental, renter, driver, pricing } = value;
   const periodFilled = !!rental.startLocal && !!rental.endLocal;
   const endBeforeStart =
     periodFilled && new Date(rental.endLocal).getTime() <= new Date(rental.startLocal).getTime();
@@ -137,6 +137,12 @@ function orderChecks(value: OrderFormValue, derived: OrderFormDerivedChecks): Or
       missing: true,
       message: p.renterBaseline,
       failed: !renter.name.trim() || !renter.phone.trim(),
+    },
+    // 駕駛資格整組可以留空（會列入待補）；但填了駕照號碼卻沒選車種，這筆紀錄存不進去，不能默默丟掉。
+    {
+      section: 'renter',
+      message: p.driverClassRequired,
+      failed: !!driver.licenseNumber.trim() && !driver.standardizedVehicleClass,
     },
     { section: 'pricing', message: p.depositInvalid, failed: depositInvalid },
     {
@@ -212,32 +218,8 @@ export function paymentDraftBalance(
   return { collected, due: quoteTotal === undefined ? undefined : quoteTotal - collected };
 }
 
-/** 合約簽署狀態（建立訂單前的預簽）。 */
-export type OrderContractSigning = 'unsigned' | 'signed' | 'needs_resign';
-
 /**
- * 待補項目：訂單可以成立、但尚未完成的事項（沿用舊建單 dialog 的規則）。
- * `contract` 是合約目前的簽署狀態；需重新簽署等同未簽署，但以專屬文字提示。
+ * 合約簽署狀態（建立訂單前的預簽）。
+ * 「建立後待補」的規則在 features/orders/incomplete/order-incomplete.ts，與訂單詳情、訂單列表共用。
  */
-export function orderIncompleteItems(
-  value: OrderFormValue,
-  quoteTotal: number,
-  contract: OrderContractSigning,
-): string[] {
-  const items: string[] = [];
-  if (!value.renter.email) items.push(t.bookingForm.incomplete.missingEmail);
-
-  const drafts = value.payments.drafts;
-  const deposit = value.pricing.depositRequired;
-  const depositCollected = drafts
-    .filter((p) => p.purpose === 'deposit')
-    .reduce((sum, p) => sum + (p.amount ?? 0), 0);
-  if (deposit > 0 && depositCollected < deposit) items.push(t.bookingForm.incomplete.depositNotCollected);
-
-  if (contract === 'unsigned') items.push(t.bookingForm.incomplete.contractNotSigned);
-  if (contract === 'needs_resign') items.push(t.orderForm.incomplete.contractNeedsResign);
-
-  const totalCollected = drafts.reduce((sum, p) => sum + (p.amount ?? 0), 0);
-  if (quoteTotal > 0 && totalCollected < quoteTotal) items.push(t.bookingForm.incomplete.balanceNotCollected);
-  return items;
-}
+export type OrderContractSigning = 'unsigned' | 'signed' | 'needs_resign';
