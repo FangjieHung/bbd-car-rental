@@ -185,8 +185,6 @@ export const ZH_TW = {
     endBeforeStart: '結束時間必須晚於開始時間',
     invalidTransition: '訂單狀態不允許此操作',
     goMembers: '會員管理',
-    pickVehicle: '選擇車輛',
-    noVehicleAvailable: '此租期沒有可租車輛',
     pickedResult: '已選車輛',
     clearPick: '清除選擇',
     openDetail: '訂單詳情',
@@ -747,7 +745,9 @@ export const ZH_TW = {
   },
   dispatch: {
     timeline: '時間軸',
-    calendar: '日曆',
+    calendar: '月曆',
+    /** 3.5：總覽月曆卡片「月曆｜時間軸」切換的無障礙名稱。 */
+    viewSwitch: '檢視方式',
     prevRange: '前 14 天',
     nextRange: '後 14 天',
     prevMonth: '上月',
@@ -758,6 +758,20 @@ export const ZH_TW = {
     available: '可用',
     maintenanceBlock: '保養中',
     weekdays: ['日', '一', '二', '三', '四', '五', '六'],
+    // 3.4：右側面板分頁標籤——大字「取車 2」＋細字「已完成 0」（還車另加「逾時 1」）；可用只有數字。
+    panelTabs: {
+      pickup: '取車',
+      return: '還車',
+      available: '可用',
+      done: '已完成 {count}',
+      overdue: '逾時 {count}',
+    },
+    // 3.2：右側「可用」分頁的查詢列；清單本身沿用 rentalSearch 的字串。
+    availablePanel: {
+      startsOn: '{date} 起租',
+      returnDate: '還車日',
+      pastDate: '無法查詢過去日期的可租車輛',
+    },
     workList: {
       payment: '付款',
       balanceDue: '待收餘額',
@@ -792,6 +806,8 @@ export const ZH_TW = {
       currentBalance: '目前待收餘額',
       returnedUnsettled: '已還車／應收未結',
       notPickedUpYet: '尚未取車',
+      /** 取車分頁裡已取車（出租中／已完成）的列，取代就緒判斷的 chip。 */
+      pickedUp: '已取車',
       pay: '收款',
       viewContract: '檢視合約',
       view: '檢視',
@@ -875,6 +891,7 @@ export const ZH_TW = {
     newOrder: '新增訂單',
     maintenanceDue: '待保養',
     pendingPrep: '待整備',
+    searchPlaceholder: '搜尋訂單：姓名、電話、車牌',
   },
   partner: {
     name: '民宿名稱',

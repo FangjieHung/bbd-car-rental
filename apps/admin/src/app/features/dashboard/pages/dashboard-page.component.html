@@ -1,9 +1,11 @@
 <div class="shell-container">
   <ng-template appHeaderToolbar>
-    <app-page-toolbar (searchSubmit)="onSearchSubmit($event)">
+    <app-page-toolbar [placeholder]="t.dashboard.searchPlaceholder" (searchSubmit)="onSearchSubmit($event)">
+      <!-- 待整備／待保養是工作佇列：安靜的外框按鈕＋徽章；「新增訂單」是頁面唯一的實心主按鈕。 -->
       <button
         actions
-        matButton="tonal"
+        matButton="outlined"
+        class="dashboard-queue"
         [matBadge]="todayPendingPrepCount()"
         [matBadgeHidden]="todayPendingPrepCount() === 0"
         matBadgeColor="warn"
@@ -13,7 +15,8 @@
       </button>
       <a
         actions
-        matButton="tonal"
+        matButton="outlined"
+        class="dashboard-queue"
         routerLink="/vehicles"
         [queryParams]="{ maintenance: 'due' }"
         [matBadge]="maintenanceStore.alerts().length"
@@ -23,16 +26,18 @@
         <span class="material-symbols-rounded" aria-hidden="true">car_repair</span>
         {{ t.dashboard.maintenanceDue }}
       </a>
-      <a actions matButton="tonal" routerLink="/orders/new">
+      <a actions matButton="filled" class="dashboard-new-order" routerLink="/orders/new">
         <span class="material-symbols-rounded" aria-hidden="true">add</span>
         {{ t.dashboard.newOrder }}
       </a>
     </app-page-toolbar>
   </ng-template>
 
-  <section class="ui-card px-5 pt-5 mb-4 min-h-fit xl:w-fit">
-    <app-date-step (dateRangeChange)="onQuickRange($event)" />
-  </section>
-
-  <app-calendar-view class="flex-auto" [targetDate]="targetDate()" (dateSelected)="selectCalendarDate($event)" />
+  <app-calendar-view
+    class="flex-auto"
+    [targetDate]="targetDate()"
+    (dateSelected)="selectCalendarDate($event)"
+    [view]="view()"
+    (viewChange)="onViewChange($event)"
+  />
 </div>
