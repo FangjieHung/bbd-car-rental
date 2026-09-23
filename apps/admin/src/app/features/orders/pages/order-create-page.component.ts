@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -23,6 +23,7 @@ import {
   createOrderFormDerived,
   orderFormProblems,
   orderIncompleteItems,
+  orderRequirements,
 } from '../order-form/order-form-derived';
 import { buildContractSnapshot, sameContractTerms } from '../order-form/contract-snapshot';
 import { ORDER_SUBMIT_GATEWAY, OrderSubmitInput } from '../order-form/order-submit-gateway';
@@ -31,17 +32,23 @@ import { OrderRenterSectionComponent } from '../sections/order-renter-section.co
 import { OrderPricingSectionComponent } from '../sections/order-pricing-section.component';
 import { OrderPaymentDraftsSectionComponent } from '../sections/order-payment-drafts-section.component';
 import { OrderContractSectionComponent } from '../sections/order-contract-section.component';
+import { OrderSummaryComponent } from '../order-summary/order-summary.component';
+import { buildOrderSummary } from '../order-summary/order-summary';
 import { LeaveConfirmable } from '../navigation/confirm-leave.guard';
 
-/** 5 個步驟：租期與車輛 → 承租人 → 費用與付款 → 合約 → 確認建立。 */
-export const ORDER_CREATE_STEPS = ['vehicle', 'renter', 'payment', 'contract', 'review'] as const;
+/**
+ * 4 個步驟：租期與車輛 → 承租人與駕駛資格 → 費用與付款 → 合約。
+ * 原本的第 5 步「確認建立」拿掉了（2.2）：它的待補清單移進左側的訂單摘要欄，每一步都看得到。
+ */
+export const ORDER_CREATE_STEPS = ['vehicle', 'renter', 'payment', 'contract'] as const;
 export type OrderCreateStep = (typeof ORDER_CREATE_STEPS)[number];
 
 /** 直接輸入網址進來、沒有站內上一頁時，取消回到這裡。 */
 const FALLBACK_RETURN_URL = '/bookings';
 /**
- * 步驟導覽改為直式的斷點。橫式需要約 650px 內容寬才放得下 5 個步驟標籤，
+ * 步驟導覽改為直式的斷點。橫式需要約 600px 內容寬才放得下 4 個步驟標籤，
  * 而 900px 以上側欄會常駐佔去約 330px，因此在 1024px 以下就改用直式。
+ * 與 layout/_fill-page.scss 的滿版條件是同一條寬度界線：直式時一律走自然排版。
  */
 const NARROW_QUERY = '(max-width: 1023.98px)';
 
@@ -73,9 +80,12 @@ export function orderInitialFromQuery(params: ParamMap, vehicles: Vehicle[]): Or
 }
 
 /**
- * `/orders/new` 建立訂單頁：非線性 mat-stepper 串起各表單區塊。
+ * `/orders/new` 建立訂單頁：非線性 mat-stepper 串起各表單區塊，左側（窄版為頂端）是每一步都在的訂單摘要。
  * 「建立訂單」在每一步都可以按；只有訂單底線與既有完整性規則會擋送出，其餘成為待補項目。
  * 步驟錯誤只在按下「建立訂單」之後才亮，之後隨修正即時消失。
+ *
+ * 版面（2.2）：路由標記為滿版頁（orders.routes.ts），卡片撐滿頁首與頁尾之間的高度，
+ * 步驟內容自己捲動、操作列釘在卡片底，換步驟時操作列不會跳動。
  */
 @Component({
   selector: 'app-order-create-page',
@@ -87,9 +97,10 @@ export function orderInitialFromQuery(params: ParamMap, vehicles: Vehicle[]): Or
     OrderPricingSectionComponent,
     OrderPaymentDraftsSectionComponent,
     OrderContractSectionComponent,
+    OrderSummaryComponent,
   ],
   templateUrl: './order-create-page.component.html',
-  styleUrls: ['../../../app.scss', './order-create-page.component.scss'],
+  styleUrl: './order-create-page.component.scss',
   host: { '(window:beforeunload)': 'onBeforeUnload($event)' },
 })
 export class OrderCreatePageComponent implements LeaveConfirmable {
@@ -101,6 +112,7 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** 來源頁：建構時導覽仍在進行中，取它的上一個導覽；沒有（直接輸入網址）就回訂單列表。 */
   private readonly returnUrl = (() => {
@@ -130,8 +142,17 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
   private readonly problems = computed(() => orderFormProblems(this.value(), this.derived));
   readonly stepProblems = computed<Record<OrderCreateStep, string[]>>(() => {
     const p = this.problems();
-    return { vehicle: p.rental, renter: p.renter, payment: p.pricing, contract: [], review: [] };
+    return { vehicle: p.rental, renter: p.renter, payment: p.pricing, contract: [] };
   });
+  /** 擋住建立的問題總數（「還有 N 項待修正」的 N）。 */
+  readonly problemCount = computed(() =>
+    this.steps.reduce((sum, step) => sum + this.stepProblems()[step].length, 0),
+  );
+  /** 第一個有問題的步驟；沒有問題時為 -1。 */
+  private readonly firstProblemStep = computed(() => this.steps.findIndex((s) => this.stepProblems()[s].length > 0));
+
+  /** 「建立訂單需要」：與擋送出的檢查同一套規則（order-form-derived.ts 的 orderRequirements）。 */
+  private readonly requirements = computed(() => orderRequirements(this.value(), this.derived));
 
   // ---- 合約預簽 ----
   private readonly pendingSignature = signal<PendingSignature | null>(null);
@@ -158,6 +179,24 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
     orderIncompleteItems(this.value(), this.derived.quote()?.total ?? 0, this.contractSigning()),
   );
 
+  /** 左側訂單摘要欄的內容。 */
+  readonly summary = computed(() =>
+    buildOrderSummary({
+      value: this.value(),
+      vehicle: this.derived.vehicle(),
+      quote: this.derived.quote(),
+      requirements: this.requirements(),
+      incompleteItems: this.incompleteItems(),
+    }),
+  );
+
+  /** 操作列的缺項提示「還缺：承租人」；「建立訂單需要」都齊了就是空字串（不顯示）。 */
+  readonly missingHint = computed(() => {
+    const s = this.t.orderSummary;
+    const missing = this.summary().missing.map((group) => s.requirementLabels[group]);
+    return missing.length > 0 ? `${s.missingPrefix}${missing.join(s.listSeparator)}` : '';
+  });
+
   constructor() {
     connectOrderFormBehaviors(this.form, this.data, { autoDeposit: true, destroyRef: inject(DestroyRef) });
     // 2.1：頁首麵包屑「訂單管理」（可點回列表）› 大標題「新增訂單」，取代頁內原本自己的標題。
@@ -175,10 +214,8 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
     return this.stepProblems()[step].join('；');
   }
 
-  protected readonly currentStepProblems = computed(() =>
-    this.submitAttempted() ? this.stepProblems()[this.steps[this.selectedIndex()]] : [],
-  );
-  protected readonly hasAnyStepError = computed(() => this.steps.some((s) => this.stepHasError(s)));
+  /** 按過「建立訂單」且仍有問題時，操作列顯示一行「還有 N 項待修正」（點了跳到第一個有問題的步驟）。 */
+  protected readonly showProblems = computed(() => this.submitAttempted() && this.problemCount() > 0);
 
   next(): void {
     this.selectedIndex.update((i) => Math.min(i + 1, this.steps.length - 1));
@@ -186,6 +223,20 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
 
   prev(): void {
     this.selectedIndex.update((i) => Math.max(i - 1, 0));
+  }
+
+  /** 「還有 N 項待修正」：跳到第一個有問題的步驟。 */
+  goToFirstProblem(): void {
+    const index = this.firstProblemStep();
+    if (index >= 0) this.selectedIndex.set(index);
+  }
+
+  /** 換步驟（點步驟標題、上一步／下一步、跳到有問題的步驟都會經過這裡）。 */
+  protected onStepChange(index: number): void {
+    this.selectedIndex.set(index);
+    // 滿版版面下，步驟內容由 mat-stepper 內部的容器自己捲動；換步驟時回到頂端，不沿用上一步的捲動位置。
+    const content = this.host.nativeElement.querySelector('.mat-horizontal-content-container');
+    if (content) content.scrollTop = 0;
   }
 
   /** 開啟共用簽署 dialog，讓客人檢視以目前表單內容組出的合約並簽名；確認後暫存簽名與當下快照。 */
@@ -206,9 +257,8 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
     this.error.set('');
     this.form.markAllAsTouched();
 
-    const firstErrorStep = this.steps.findIndex((s) => this.stepProblems()[s].length > 0);
-    if (firstErrorStep >= 0) {
-      this.selectedIndex.set(firstErrorStep);
+    if (this.firstProblemStep() >= 0) {
+      this.goToFirstProblem();
       return;
     }
 

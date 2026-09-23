@@ -1,12 +1,15 @@
-<div class="order-create">
-  <!-- 2.1：標題移到頁首（provideHeaderTitle，見 order-create-page.component.ts constructor）。 -->
-  <section class="ui-card order-create__card">
+<!-- 2.1：標題在頁首（provideHeaderTitle，見 order-create-page.component.ts constructor）。 -->
+<!-- 2.2：卡片撐滿主內容區；左側（< 1280px 為頂端）訂單摘要，右側步驟內容自己捲動，操作列釘在卡片底。 -->
+<section class="ui-card order-create">
+  <app-order-summary class="order-create__summary" [summary]="summary()" />
+
+  <div class="order-create__main">
     <mat-stepper
       class="order-create__stepper"
       [linear]="false"
       [orientation]="orientation()"
       [selectedIndex]="selectedIndex()"
-      (selectionChange)="selectedIndex.set($event.selectedIndex)"
+      (selectionChange)="onStepChange($event.selectedIndex)"
       [attr.aria-label]="t.orderForm.stepperLabel"
     >
       <!-- Material 預設用 mat-icon 的 Material Icons 字型畫錯誤圖示；admin 使用 Material Symbols，改用同一套字型 -->
@@ -29,7 +32,8 @@
                 <app-order-renter-section [form]="form" />
               }
               @case ('payment') {
-                <app-order-pricing-section [form]="form" />
+                <!-- 報價明細已在摘要欄，這裡不再列一次（訂單詳情的編輯沒有摘要欄，維持顯示） -->
+                <app-order-pricing-section [form]="form" [showQuote]="false" />
                 <app-order-payment-drafts-section [form]="form" />
               }
               @case ('contract') {
@@ -41,60 +45,49 @@
                   (signRequested)="openSigning()"
                 />
               }
-              @case ('review') {
-                <h2 class="order-create__subtitle">{{ t.bookingForm.reviewTitle }}</h2>
-                @if (incompleteItems().length === 0) {
-                  <p class="muted">{{ t.bookingForm.allComplete }}</p>
-                } @else {
-                  <ul class="order-create__incomplete">
-                    @for (item of incompleteItems(); track item) {
-                      <li>{{ item }}</li>
-                    }
-                  </ul>
-                }
-              }
             }
           </div>
         </mat-step>
       }
     </mat-stepper>
+  </div>
 
-    <div class="order-create__footer">
-      @if (hasAnyStepError()) {
-        <div class="order-create__errors" role="alert">
-          <p>{{ t.orderForm.stepErrorsNotice }}</p>
-          @if (currentStepProblems().length > 0) {
-            <ul>
-              @for (p of currentStepProblems(); track p) {
-                <li>{{ p }}</li>
-              }
-            </ul>
-          }
+  <div class="order-create__footer">
+    @if (error()) {
+      <p class="order-create__error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="order-create__actions">
+      <button mat-button type="button" class="order-create__cancel" (click)="cancel()">
+        {{ t.common.cancel }}
+      </button>
+      @if (showProblems()) {
+        <div class="order-create__problems" role="alert">
+          <button mat-button type="button" class="order-create__problems-link" (click)="goToFirstProblem()">
+            <span class="material-symbols-rounded" aria-hidden="true">error</span>
+            {{ t.orderSummary.problemsPrefix }}{{ problemCount() }}{{ t.orderSummary.problemsSuffix }}
+          </button>
         </div>
       }
-      @if (error()) {
-        <p class="error-message" role="alert">{{ error() }}</p>
-      }
 
-      <div class="order-create__actions">
-        <button mat-button type="button" class="order-create__cancel" (click)="cancel()">
-          {{ t.common.cancel }}
-        </button>
-        <button mat-button type="button" [disabled]="selectedIndex() === 0" (click)="prev()">
+      <span class="order-create__spacer"></span>
+
+      @if (missingHint()) {
+        <span class="order-create__missing" [attr.title]="missingHint()">{{ missingHint() }}</span>
+      }
+      @if (selectedIndex() > 0) {
+        <button mat-button type="button" class="order-create__prev" (click)="prev()">
           {{ t.bookingForm.prev }}
         </button>
-        <button
-          mat-stroked-button
-          type="button"
-          [disabled]="selectedIndex() === steps.length - 1"
-          (click)="next()"
-        >
+      }
+      @if (selectedIndex() < steps.length - 1) {
+        <button mat-stroked-button type="button" class="order-create__next" (click)="next()">
           {{ t.bookingForm.next }}
         </button>
-        <button mat-flat-button type="button" class="order-create__submit" [disabled]="submitting()" (click)="submit()">
-          {{ submitting() ? t.bookingForm.saving : t.bookingForm.submit }}
-        </button>
-      </div>
+      }
+      <button mat-flat-button type="button" class="order-create__submit" [disabled]="submitting()" (click)="submit()">
+        {{ submitting() ? t.bookingForm.saving : t.bookingForm.submit }}
+      </button>
     </div>
-  </section>
-</div>
+  </div>
+</section>

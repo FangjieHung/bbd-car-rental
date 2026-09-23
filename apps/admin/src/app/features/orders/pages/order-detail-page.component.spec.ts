@@ -346,6 +346,9 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
     expect(el(harness).querySelector('app-order-rental-section')).not.toBeNull();
     expect(el(harness).querySelector('app-order-renter-section')).not.toBeNull();
     expect(el(harness).querySelector('app-order-pricing-section')).not.toBeNull();
+    // 2.4：建單頁把報價明細移到摘要欄；詳情的編輯沒有摘要欄，費用區塊仍列出報價明細
+    const quoteList = el(harness).querySelector('app-order-pricing-section .order-section__dl');
+    expect(quoteList?.textContent).toContain(ZH_TW.bookingForm.quoteTotal);
     expect(el(harness).querySelector('app-order-payment-drafts-section')).toBeNull();
     const value = component.form().getRawValue();
     expect(value.rental.vehicleId).toBe('v1');

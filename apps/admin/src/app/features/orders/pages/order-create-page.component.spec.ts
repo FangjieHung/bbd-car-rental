@@ -9,6 +9,7 @@ import { ContractSigningDialogComponent } from '@car-rental/contract-signing';
 import { ConfirmDialogComponent } from '../../../shared/dialogs/confirm-dialog.component';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
 import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
+import { setPaymentDrafts } from '../order-form/order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { createOrderRepos, makeVehicle } from '../testing';
 import { ORDER_CREATE_STEPS, OrderCreatePageComponent } from './order-create-page.component';
@@ -16,6 +17,7 @@ import { ORDER_ROUTES } from '../orders.routes';
 import { confirmLeaveGuard } from '../navigation/confirm-leave.guard';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { HeaderTitleSlot } from '../../../layout/header/header-title';
+import { FILL_PAGE_DATA_KEY } from '../../../layout/fill-page';
 
 interface SetupOptions {
   query?: Record<string, string>;
@@ -62,6 +64,21 @@ function steps(fixture: ReturnType<typeof setup>['fixture']): MatStep[] {
   return stepper.steps.toArray();
 }
 
+function el(fixture: ReturnType<typeof setup>['fixture']): HTMLElement {
+  return fixture.nativeElement as HTMLElement;
+}
+
+function problemsLine(fixture: ReturnType<typeof setup>['fixture']): HTMLElement | null {
+  return el(fixture).querySelector('.order-create__problems');
+}
+
+/** 操作列目前看得到的按鈕（依畫面順序）。 */
+function actionButtons(fixture: ReturnType<typeof setup>['fixture']): string[] {
+  return Array.from(el(fixture).querySelectorAll('.order-create__actions > button')).map(
+    (b) => b.textContent?.trim() ?? '',
+  );
+}
+
 function fillBaseline(component: OrderCreatePageComponent): void {
   component.form.controls.rental.patchValue({
     vehicleId: 'v1',
@@ -72,15 +89,21 @@ function fillBaseline(component: OrderCreatePageComponent): void {
 }
 
 describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
-  it('五個步驟依序為租期與車輛→承租人→費用與付款→合約→確認建立', () => {
+  it('四個步驟依序為租期與車輛→承租人與駕駛資格→費用與付款→合約（2.2 拿掉第 5 步「確認建立」）', () => {
     const { fixture } = setup();
-    expect(ORDER_CREATE_STEPS).toEqual(['vehicle', 'renter', 'payment', 'contract', 'review']);
-    expect(steps(fixture)).toHaveLength(5);
+    expect(ORDER_CREATE_STEPS).toEqual(['vehicle', 'renter', 'payment', 'contract']);
+    expect(steps(fixture)).toHaveLength(4);
+    expect(steps(fixture).map((s) => s.label)).toEqual([
+      ZH_TW.bookingForm.steps['vehicle'],
+      ZH_TW.bookingForm.steps['renter'],
+      ZH_TW.bookingForm.steps['payment'],
+      ZH_TW.bookingForm.steps['contract'],
+    ]);
   });
 
   it('按下建立前，所有步驟 hasError 都是 false（保持中性）', () => {
     const { fixture } = setup();
-    expect(steps(fixture).map((s) => s.hasError)).toEqual([false, false, false, false, false]);
+    expect(steps(fixture).map((s) => s.hasError)).toEqual([false, false, false, false]);
   });
 
   it('每一步都看得到「建立訂單」按鈕', () => {
@@ -102,10 +125,33 @@ describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
     fixture.detectChanges();
 
     expect(create).not.toHaveBeenCalled();
-    expect(steps(fixture).map((s) => s.hasError)).toEqual([true, true, false, false, false]);
+    expect(steps(fixture).map((s) => s.hasError)).toEqual([true, true, false, false]);
     expect(component.selectedIndex()).toBe(0);
     expect(component.form.controls.renter.controls.name.touched).toBe(true);
-    expect(fixture.nativeElement.querySelector('.order-create__errors')).toBeTruthy();
+    // 底部紅框清單改成一行「還有 N 項待修正」：空白表單＝車輛與租期、據點、承租人三項
+    expect(problemsLine(fixture)?.textContent).toContain(`${ZH_TW.orderSummary.problemsPrefix}3${ZH_TW.orderSummary.problemsSuffix}`);
+    expect(fixture.nativeElement.querySelector('.order-create__errors')).toBeNull();
+  });
+
+  it('「還有 N 項待修正」只在按過建立之後出現；點了跳到第一個有問題的步驟；全部修好就消失', async () => {
+    const { fixture, component } = setup();
+    fillBaseline(component);
+    component.form.controls.renter.patchValue({ name: '' });
+    fixture.detectChanges();
+    expect(problemsLine(fixture)).toBeNull();
+
+    await component.submit();
+    component.selectedIndex.set(3);
+    fixture.detectChanges();
+    expect(problemsLine(fixture)?.textContent).toContain(`${ZH_TW.orderSummary.problemsPrefix}1${ZH_TW.orderSummary.problemsSuffix}`);
+
+    (problemsLine(fixture)?.querySelector('button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.selectedIndex()).toBe(1);
+
+    component.form.controls.renter.patchValue({ name: '新客人' });
+    fixture.detectChanges();
+    expect(problemsLine(fixture)).toBeNull();
   });
 
   it('只缺承租人時跳到第二步；補齊後該步錯誤即時消失', async () => {
@@ -120,7 +166,7 @@ describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
     fixture.detectChanges();
     expect(create).not.toHaveBeenCalled();
     expect(component.selectedIndex()).toBe(1);
-    expect(steps(fixture).map((s) => s.hasError)).toEqual([false, true, false, false, false]);
+    expect(steps(fixture).map((s) => s.hasError)).toEqual([false, true, false, false]);
 
     component.form.controls.renter.patchValue({ name: '新客人', phone: '0900000000' });
     fixture.detectChanges();
@@ -152,6 +198,172 @@ describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
 
     expect(component.error()).toBe('寫入失敗');
     expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('OrderCreatePageComponent 底部操作列（2.2）', () => {
+  const t = ZH_TW;
+
+  it('左「取消」；右依序「上一步」（第一步不顯示）、「下一步」（最後一步不顯示）、「建立訂單」', () => {
+    const { fixture, component } = setup();
+    const expected = [
+      [t.common.cancel, t.bookingForm.next, t.bookingForm.submit],
+      [t.common.cancel, t.bookingForm.prev, t.bookingForm.next, t.bookingForm.submit],
+      [t.common.cancel, t.bookingForm.prev, t.bookingForm.next, t.bookingForm.submit],
+      [t.common.cancel, t.bookingForm.prev, t.bookingForm.submit],
+    ];
+    for (let i = 0; i < ORDER_CREATE_STEPS.length; i++) {
+      component.selectedIndex.set(i);
+      fixture.detectChanges();
+      expect(actionButtons(fixture)).toEqual(expected[i]);
+    }
+  });
+
+  it('「建立訂單」是操作列唯一的實心主按鈕', () => {
+    const { fixture } = setup();
+    const flat = el(fixture).querySelectorAll('.order-create__actions .mat-mdc-unelevated-button');
+    expect(flat).toHaveLength(1);
+    expect(flat[0].classList.contains('order-create__submit')).toBe(true);
+  });
+
+  it('上一步／下一步切換步驟', () => {
+    const { fixture, component } = setup();
+    (el(fixture).querySelector('.order-create__next') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.selectedIndex()).toBe(1);
+    (el(fixture).querySelector('.order-create__prev') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.selectedIndex()).toBe(0);
+  });
+
+  it('缺項提示依「建立訂單需要」列出還沒填的項目，齊了就不顯示', () => {
+    const { fixture, component } = setup();
+    const missing = () => el(fixture).querySelector('.order-create__missing')?.textContent?.trim() ?? null;
+    const labels = t.orderSummary.requirementLabels;
+    expect(missing()).toBe(
+      `${t.orderSummary.missingPrefix}${[labels['vehicle'], labels['period'], labels['branches'], labels['renter']].join(t.orderSummary.listSeparator)}`,
+    );
+
+    // 選車後取／還車據點自動帶入車輛所在據點
+    component.form.controls.rental.patchValue({
+      vehicleId: 'v1',
+      startLocal: '2026-01-05T09:00',
+      endLocal: '2026-01-07T09:00',
+    });
+    fixture.detectChanges();
+    expect(missing()).toBe(`${t.orderSummary.missingPrefix}${labels['renter']}`);
+
+    component.form.controls.renter.patchValue({ name: '新客人', phone: '0900000000' });
+    fixture.detectChanges();
+    expect(missing()).toBeNull();
+  });
+});
+
+describe('OrderCreatePageComponent 訂單摘要欄（2.2）', () => {
+  const t = ZH_TW;
+  const summaryEl = (fixture: ReturnType<typeof setup>['fixture']) =>
+    el(fixture).querySelector('app-order-summary') as HTMLElement;
+
+  it('每一步都看得到訂單摘要', () => {
+    const { fixture, component } = setup();
+    for (let i = 0; i < ORDER_CREATE_STEPS.length; i++) {
+      component.selectedIndex.set(i);
+      fixture.detectChanges();
+      expect(summaryEl(fixture)?.textContent).toContain(t.orderSummary.title);
+    }
+  });
+
+  it('還沒選車：顯示「未選車輛」、未填的欄位顯示「未填」、金額為「—」', () => {
+    const { fixture } = setup();
+    const text = summaryEl(fixture).textContent ?? '';
+    expect(text).toContain(t.orderSummary.noVehicle);
+    expect(summaryEl(fixture).querySelector('.order-summary__fields .is-empty')?.textContent).toContain(
+      t.orderSummary.notFilled,
+    );
+    expect(summaryEl(fixture).querySelector('.order-summary__total')?.textContent?.trim()).toBe('—');
+  });
+
+  it('選了車與租期、填了承租人：車牌＋車款、取還車時間與天數、據點、承租人、報價合計都出現', () => {
+    const { fixture, component } = setup();
+    fillBaseline(component);
+    fixture.detectChanges();
+    const text = summaryEl(fixture).textContent ?? '';
+    expect(summaryEl(fixture).querySelector('.order-summary__plate')?.textContent).toContain('ABC-123');
+    expect(summaryEl(fixture).querySelector('.order-summary__model')?.textContent).toContain('Toyota Altis');
+    expect(text).toContain('01/05 09:00');
+    expect(text).toContain('01/07 09:00');
+    expect(text).toContain(`2${t.orderSummary.daysSuffix}`);
+    expect(text).toContain('馬公港櫃檯');
+    expect(text).toContain('新客人');
+    expect(text).toContain('0900000000');
+    expect(text).toContain(t.bookingForm.insuranceNone);
+    expect(summaryEl(fixture).querySelector('.order-summary__total')?.textContent).toContain('NT$2,000');
+    // 需要的都齊了：四項都打勾
+    expect(summaryEl(fixture).querySelectorAll('.order-summary__check.is-met')).toHaveLength(4);
+  });
+
+  it('取車據點不是車輛所在據點時，寫出需調度路線「需調度 {車輛所在據點}→{取車據點}」', () => {
+    const { fixture, component } = setup();
+    fillBaseline(component);
+    fixture.detectChanges();
+    expect(summaryEl(fixture).querySelector('.order-summary__dispatch')).toBeNull();
+
+    component.form.controls.rental.controls.pickupLocation.setValue('mzg-airport');
+    component.form.controls.rental.controls.pickupLocation.markAsDirty();
+    fixture.detectChanges();
+    expect(summaryEl(fixture).querySelector('.order-summary__dispatch')?.textContent?.trim()).toContain(
+      `${t.orderSummary.dispatchPrefix}馬公港櫃檯${t.orderSummary.dispatchArrow}馬公機場櫃檯`,
+    );
+  });
+
+  it('本次收款與建立後待收跟收款區塊同一套計算；溢收時改寫「溢收」並用警示樣式', () => {
+    const { fixture, component } = setup();
+    fillBaseline(component); // 報價合計 2000
+    setPaymentDrafts(component.form, [{ method: 'cash', purpose: 'deposit', amount: 500 }]);
+    fixture.detectChanges();
+    expect(summaryEl(fixture).querySelector('.order-summary__collected')?.textContent).toContain('NT$500');
+    expect(summaryEl(fixture).querySelector('.order-summary__due')?.textContent).toContain('NT$1,500');
+
+    setPaymentDrafts(component.form, [{ method: 'cash', purpose: 'deposit', amount: 2500 }]);
+    fixture.detectChanges();
+    const due = summaryEl(fixture).querySelector('.order-summary__due') as HTMLElement;
+    expect(due.textContent).toContain('NT$500');
+    expect(due.classList.contains('is-overpaid')).toBe(true);
+    expect(summaryEl(fixture).textContent).toContain(t.orderSummary.overpaid);
+  });
+
+  it('「建立後待補」列出原第 5 步的待補項目', () => {
+    const { fixture, component } = setup();
+    fillBaseline(component);
+    fixture.detectChanges();
+    const items = Array.from(summaryEl(fixture).querySelectorAll('.order-summary__incomplete li')).map((li) =>
+      li.textContent?.trim(),
+    );
+    expect(items).toEqual(component.incompleteItems());
+    expect(items).toContain(t.bookingForm.incomplete.contractNotSigned);
+  });
+
+  it('窄版摘要列預設收合，按一下展開完整內容', () => {
+    const { fixture } = setup();
+    const bar = summaryEl(fixture).querySelector('.order-summary__bar') as HTMLButtonElement;
+    expect(bar.getAttribute('aria-expanded')).toBe('false');
+    bar.click();
+    fixture.detectChanges();
+    expect(bar.getAttribute('aria-expanded')).toBe('true');
+    expect(summaryEl(fixture).querySelector('.order-summary')?.classList.contains('is-expanded')).toBe(true);
+  });
+});
+
+describe('OrderCreatePageComponent 第 3 步「費用與付款」（2.4）', () => {
+  it('不再列出唯讀的報價明細（已在摘要欄）；應收訂金與本次收款接在保險／配件之後', () => {
+    const { fixture, component } = setup();
+    fillBaseline(component);
+    component.selectedIndex.set(2);
+    fixture.detectChanges();
+    const pricing = el(fixture).querySelector('app-order-pricing-section') as HTMLElement;
+    expect(pricing).toBeTruthy();
+    expect(pricing.querySelector('.order-section__dl')).toBeNull();
+    expect(el(fixture).querySelector('app-order-payment-drafts-section')).toBeTruthy();
   });
 });
 
@@ -251,6 +463,12 @@ describe('OrderCreatePageComponent 離開確認（confirmLeaveGuard）', () => {
   it('路由有掛上離開確認', () => {
     const route = ORDER_ROUTES[0].children?.find((r) => r.path === 'new');
     expect(route?.canDeactivate).toContain(confirmLeaveGuard);
+  });
+
+  it('2.2：路由標記為滿版頁（外框讓卡片撐滿視窗、操作列釘在卡片底）；訂單詳情不是', () => {
+    const children = ORDER_ROUTES[0].children ?? [];
+    expect(children.find((r) => r.path === 'new')?.data?.[FILL_PAGE_DATA_KEY]).toBe(true);
+    expect(children.find((r) => r.path === ':id')?.data?.[FILL_PAGE_DATA_KEY]).toBeUndefined();
   });
 
   it('沒有改動時直接放行', () => {

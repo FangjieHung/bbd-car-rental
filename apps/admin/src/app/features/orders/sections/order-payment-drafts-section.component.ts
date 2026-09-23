@@ -10,6 +10,7 @@ import { PaymentMethod, PaymentPurpose } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { OrderForm, addPaymentDraft, computeOrderQuote, orderFormValue, removePaymentDraft } from '../order-form/order-form';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
+import { paymentDraftBalance } from '../order-form/order-form-derived';
 
 /**
  * 「本次收款」：列表就是紀錄。每一列都是可直接編輯的表單群組（FormArray of FormGroup），
@@ -46,15 +47,23 @@ export class OrderPaymentDraftsSectionComponent {
     return [...this.form().controls.payments.controls.drafts.controls];
   });
 
-  private readonly quoteTotal = computed(() => computeOrderQuote(this.value(), this.data)?.total ?? 0);
-  protected readonly collectedTotal = computed(() => this.drafts().reduce((sum, d) => sum + (d.amount ?? 0), 0));
-  protected readonly dueAfterCreate = computed(() => this.quoteTotal() - this.collectedTotal());
-  protected readonly isOverpaid = computed(() => this.dueAfterCreate() < 0);
+  /** 與訂單摘要欄共用同一個計算（paymentDraftBalance），兩邊的數字才會一致。 */
+  private readonly balance = computed(() =>
+    paymentDraftBalance(this.drafts(), computeOrderQuote(this.value(), this.data)?.total),
+  );
+  protected readonly collectedTotal = computed(() => this.balance().collected);
+  /** 建立後待收；還試算不出報價時為 undefined（顯示「—」，不假裝報價是 0 而誤報溢收）。 */
+  protected readonly dueAfterCreate = computed(() => this.balance().due);
+  protected readonly isOverpaid = computed(() => (this.dueAfterCreate() ?? 0) < 0);
   protected readonly footerText = computed(() => {
     const t = this.t.orderForm;
     const due = this.dueAfterCreate();
     const tail =
-      due < 0 ? `${t.overpaidPrefix}${formatTwd(-due)}` : `${t.balanceAfterCreatePrefix}${formatTwd(due)}`;
+      due === undefined
+        ? `${t.balanceAfterCreatePrefix}—`
+        : due < 0
+          ? `${t.overpaidPrefix}${formatTwd(-due)}`
+          : `${t.balanceAfterCreatePrefix}${formatTwd(due)}`;
     return `${t.paymentsCollectedPrefix}${formatTwd(this.collectedTotal())}${t.paymentsFooterSeparator}${tail}`;
   });
 

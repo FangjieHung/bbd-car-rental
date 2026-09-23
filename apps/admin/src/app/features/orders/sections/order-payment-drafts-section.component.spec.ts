@@ -148,6 +148,37 @@ describe('OrderPaymentDraftsSectionComponent（本次收款：列表就是紀錄
     expect(el.textContent).toContain(t.orderForm.paymentAmountInvalid);
   });
 
+  it('2.4 版面：「＋ 新增一筆收款」緊接在收款列表下方；「本次收款 · 建立後待收」在區塊最底', () => {
+    const { component, fixture, el } = setup(600);
+    component.addDraft();
+    fixture.detectChanges();
+    const order = Array.from(el.querySelector('.order-section')?.children ?? []).map((c) => c.className);
+    const list = order.findIndex((c) => c.includes('payment-drafts') && !c.includes('__'));
+    const add = order.findIndex((c) => c.includes('payment-drafts__add'));
+    const footer = order.findIndex((c) => c.includes('payment-drafts__footer'));
+    expect(list).toBeGreaterThanOrEqual(0);
+    expect(add).toBe(list + 1);
+    expect(footer).toBe(order.length - 1);
+  });
+
+  it('還試算不出報價（沒選車）時，建立後待收顯示「—」，不把收款誤報成溢收', () => {
+    const repos = createOrderRepos({ vehicles: [makeVehicle({ id: 'v1' })] });
+    TestBed.configureTestingModule({
+      providers: [...repos.providers, { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData }],
+    });
+    const form = createOrderForm();
+    const fixture = TestBed.createComponent(OrderPaymentDraftsSectionComponent);
+    fixture.componentRef.setInput('form', form);
+    fixture.componentInstance.addDraft();
+    form.controls.payments.controls.drafts.at(0)?.controls.amount.setValue(500);
+    fixture.detectChanges();
+
+    const footer = (fixture.nativeElement as HTMLElement).querySelector('.payment-drafts__footer') as HTMLElement;
+    expect(footer.textContent).toContain(`${t.orderForm.balanceAfterCreatePrefix}—`);
+    expect(footer.textContent).not.toContain(t.orderForm.overpaidPrefix.trim());
+    expect(footer.classList.contains('is-overpaid')).toBe(false);
+  });
+
   it('addDraft／removeDraft 都標記 payments 群組為 dirty', () => {
     const { component, form } = setup();
     expect(form.controls.payments.dirty).toBe(false);

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { provideAdminOrderForm } from './data/provide-admin-order-form';
 import { confirmLeaveGuard } from './navigation/confirm-leave.guard';
+import { FILL_PAGE_DATA_KEY } from '../../layout/fill-page';
 
 /**
  * `/orders/*`。訂單表單的參考資料與送出實作（ORDER_FORM_DATA／ORDER_SUBMIT_GATEWAY）在這一層提供，
@@ -15,6 +16,8 @@ export const ORDER_ROUTES: Routes = [
       {
         path: 'new',
         canDeactivate: [confirmLeaveGuard],
+        // 2.2：卡片撐滿視窗、內容區自己捲動、操作列釘在卡片底（見 layout/fill-page.ts）。
+        data: { [FILL_PAGE_DATA_KEY]: true },
         loadComponent: () =>
           import('./pages/order-create-page.component').then((m) => m.OrderCreatePageComponent),
       },

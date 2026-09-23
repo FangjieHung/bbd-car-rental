@@ -1,3 +1,5 @@
+@use './layout/fill-page' as fill;
+
 :host {
   display: block;
   min-width: 0;
@@ -68,6 +70,14 @@
   padding: 0 1.5rem 1.5rem;
   flex: 1 0 auto;
   min-height: 0;
+}
+
+// 滿版頁（路由 data 標記，見 layout/fill-page.ts）：主內容區剛好撐滿頁首與頁尾之間剩下的高度，
+// 不再隨內容長高；頁面元件自己用 flex: 1 撐滿它，並決定內部哪一塊捲動。條件不符時維持上面的自然排版。
+@media #{fill.$query} {
+  .page-shell--fill {
+    flex: 1 1 0;
+  }
 }
 
 app-dashboard-page {
