@@ -184,7 +184,6 @@ export const ZH_TW = {
     conflict: '時段衝突，與下列訂單重疊：',
     endBeforeStart: '結束時間必須晚於開始時間',
     invalidTransition: '訂單狀態不允許此操作',
-    goMembers: '會員管理',
     pickedResult: '已選車輛',
     clearPick: '清除選擇',
     openDetail: '訂單詳情',
@@ -193,6 +192,11 @@ export const ZH_TW = {
     incompleteOnly: '只看有待補',
     /** 待補徽章的無障礙名稱，`{count}` 代入項數。 */
     incompleteCount: '待補 {count} 項',
+    // 4.4：取車日期篩選（本週＝週日起算，與總覽月曆、時間軸同一個慣例）。
+    pickupDate: '取車日期',
+    pickupDateLabels: { today: '今天', week: '本週', custom: '自訂區間' } as Record<string, string>,
+    pickupRange: '取車日期區間',
+    pickupRangePlaceholder: '選擇取車日期',
   },
   // 2.3：建單第 1 步「先選租期，再列可租的車」的搜尋列與可租清單；可租清單元件在總覽「可用」分頁也會用。
   // 帶 {…} 的字串由使用處代入（同 common.selectedCount 的寫法）。

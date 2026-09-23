@@ -1,13 +1,22 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
+import {
+  DUAL_MONTH_RANGE_PICKER_LABELS,
+  DataTableCellDirective,
+  DataTableColumn,
+  DataTableComponent,
+  DualMonthRangePickerComponent,
+  DualMonthRangePickerLabels,
+  SelectedDateRange,
+} from '@car-rental/ui';
 import { BookingStatus, RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { fmtDateTime } from '../../../core/date-utils';
+import { addDays, fmtDateTime, startOfDay, startOfWeek } from '../../../core/date-utils';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
@@ -37,6 +46,43 @@ import {
 /** 4.1：「待補」篩選只有一個選項（只看有待補）；沒選＝全部。 */
 export type IncompleteFilter = 'has';
 
+/** 4.4：取車日期篩選。 */
+export const PICKUP_DATE_FILTERS = ['today', 'week', 'custom'] as const;
+export type PickupDateFilter = (typeof PICKUP_DATE_FILTERS)[number];
+
+/**
+ * 取車日期篩選對應的區間 [from, to)（本地時間）：今天；本週＝週日起算 7 天（與總覽月曆、時間軸同一個慣例）；
+ * 自訂區間＝起日 00:00 到迄日隔天 00:00（含迄日整天）。自訂區間還沒選日期時為 null（不篩）。
+ */
+export function pickupDateRange(
+  filter: PickupDateFilter | null,
+  custom: SelectedDateRange | null,
+  now: Date,
+): { from: Date; to: Date } | null {
+  switch (filter) {
+    case 'today': {
+      const from = startOfDay(now);
+      return { from, to: addDays(from, 1) };
+    }
+    case 'week': {
+      const from = startOfWeek(now);
+      return { from, to: addDays(from, 7) };
+    }
+    case 'custom':
+      return custom ? { from: startOfDay(custom.start), to: addDays(startOfDay(custom.end), 1) } : null;
+    default:
+      return null;
+  }
+}
+
+const RANGE_PICKER_LABELS: DualMonthRangePickerLabels = {
+  field: ZH_TW.booking.pickupRange,
+  placeholder: ZH_TW.booking.pickupRangePlaceholder,
+  prevMonth: ZH_TW.rentalSearch.prevMonth,
+  nextMonth: ZH_TW.rentalSearch.nextMonth,
+  monthTitle: ZH_TW.rentalSearch.monthTitle,
+};
+
 /** 1.4：電話比對前先去掉空白與連字號，讓「0912-345-678」與「0912 345 678」都比對得到。 */
 function stripPhoneSeparators(value: string): string {
   return value.replace(/[\s-]/g, '');
@@ -55,9 +101,15 @@ function stripPhoneSeparators(value: string): string {
     PageToolbarComponent,
     FilterSelectComponent,
     HeaderToolbarDirective,
+    DualMonthRangePickerComponent,
   ],
   templateUrl: './bookings-page.component.html',
-  styleUrls: ['../../../app.scss'],
+  styleUrls: ['../../../app.scss', './bookings-page.component.scss'],
+  providers: [
+    { provide: DUAL_MONTH_RANGE_PICKER_LABELS, useValue: RANGE_PICKER_LABELS },
+    // 篩選列在頁首：自訂區間的日期欄位與其他篩選一樣不保留錯誤訊息的空間（見 filter-select）。
+    { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { subscriptSizing: 'dynamic' } },
+  ],
 })
 export class BookingsPageComponent {
   protected readonly t = ZH_TW;
@@ -109,14 +161,23 @@ export class BookingsPageComponent {
   readonly searchQuery = signal(this.route.snapshot.queryParamMap.get('q') ?? '');
   readonly statusFilter = signal<BookingStatus | null>(null);
   readonly incompleteFilter = signal<IncompleteFilter | null>(null);
+  readonly pickupDateFilter = signal<PickupDateFilter | null>(null);
+  /** 「自訂區間」選的起訖日；選別的篩選時保留，切回自訂區間不用重選。 */
+  readonly pickupRange = signal<SelectedDateRange | null>(null);
   readonly selectedBookings = signal<readonly RentalBooking[]>([]);
 
   readonly statusOptions: FilterOption<BookingStatus>[] = (
     Object.entries(this.t.booking.statusLabels) as [BookingStatus, string][]
   ).map(([value, label]) => ({ value, label }));
   readonly incompleteOptions: FilterOption<IncompleteFilter>[] = [{ value: 'has', label: this.t.booking.incompleteOnly }];
+  readonly pickupDateOptions: FilterOption<PickupDateFilter>[] = PICKUP_DATE_FILTERS.map((value) => ({
+    value,
+    label: this.t.booking.pickupDateLabels[value],
+  }));
 
-  readonly activeFilterCount = computed(() => [this.statusFilter(), this.incompleteFilter()].filter((f) => f !== null).length);
+  readonly activeFilterCount = computed(
+    () => [this.statusFilter(), this.pickupDateFilter(), this.incompleteFilter()].filter((f) => f !== null).length,
+  );
 
   /** 每筆訂單的待補項目（已取消、已完成的訂單不計，為空陣列）。 */
   private readonly incompleteByBooking = computed(
@@ -130,8 +191,13 @@ export class BookingsPageComponent {
     const normalizedPhoneQuery = stripPhoneSeparators(query);
     const status = this.statusFilter();
     const onlyIncomplete = this.incompleteFilter() === 'has';
+    const pickupRange = pickupDateRange(this.pickupDateFilter(), this.pickupRange(), new Date());
     const filtered = this.store.bookings().filter((b) => {
       if (status && b.status !== status) return false;
+      if (pickupRange) {
+        const pickupAt = new Date(b.startTime).getTime();
+        if (pickupAt < pickupRange.from.getTime() || pickupAt >= pickupRange.to.getTime()) return false;
+      }
       if (onlyIncomplete && this.incompleteOf(b).length === 0) return false;
       if (query) {
         const memberName = this.memberStore.nameOf(b.memberId).toLowerCase();
@@ -149,6 +215,8 @@ export class BookingsPageComponent {
 
   clearFilters(): void {
     this.statusFilter.set(null);
+    this.pickupDateFilter.set(null);
+    this.pickupRange.set(null);
     this.incompleteFilter.set(null);
   }
 
@@ -218,6 +286,7 @@ export class BookingsPageComponent {
     void this.orderDetail.open(b.id, 'cancellation');
   }
 
+  /** 開訂單詳情：整列點擊（4.4）與列內的「訂單詳情」按鈕都走這裡。 */
   openDetail(booking: RentalBooking): void {
     void this.orderDetail.open(booking.id);
   }
