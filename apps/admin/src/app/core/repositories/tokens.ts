@@ -24,6 +24,7 @@ export {
   REMINDER_STATUS_REPO,
   OPERATOR_RECOVERY_CASE_REPO,
   AUDIT_ENTRY_REPO,
+  PREP_TASK_REPO,
 } from '@car-rental/domain';
 export const MAINTENANCE_REPO = new InjectionToken<Repository<MaintenanceRecord>>(
   'MAINTENANCE_REPO',

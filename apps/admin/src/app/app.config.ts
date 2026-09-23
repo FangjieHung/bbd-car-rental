@@ -32,6 +32,7 @@ import {
   REMINDER_STATUS_REPO,
   OPERATOR_RECOVERY_CASE_REPO,
   AUDIT_ENTRY_REPO,
+  PREP_TASK_REPO,
 } from './core/repositories/tokens';
 import { LocalStorageRepository } from './core/repositories/local-storage-repository';
 import {
@@ -57,6 +58,7 @@ import {
   seedReminderStatuses,
   seedOperatorRecoveryCases,
   seedAuditEntries,
+  seedPrepTasks,
 } from './core/repositories/seed-data';
 import { ZH_TW } from './core/i18n/zh-tw';
 import { ThemeService } from '@car-rental/theme-pack';
@@ -261,6 +263,16 @@ export const appConfig: ApplicationConfig = {
         new LocalStorageRepository(
           'cr.auditEntries',
           seedAuditEntries,
+          notifyStorageReset(inject(MatSnackBar)),
+        ),
+    },
+    // 4.3：整備待辦（還車後自動列入，「整備完成」結案；不影響車輛狀態與可用數）。
+    {
+      provide: PREP_TASK_REPO,
+      useFactory: () =>
+        new LocalStorageRepository(
+          'cr.prepTasks',
+          seedPrepTasks,
           notifyStorageReset(inject(MatSnackBar)),
         ),
     },

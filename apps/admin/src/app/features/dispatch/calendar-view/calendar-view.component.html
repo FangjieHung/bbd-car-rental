@@ -199,6 +199,13 @@
                               {{ dispatchRouteLabel(row) }}
                             </span>
                           }
+                          <!-- 4.3：提醒，不是阻擋——不影響上面的「可取車」判斷。 -->
+                          @if (needsPrep(row)) {
+                            <span class="ui-chip ui-chip--warning work-list-row__status-chip work-list-row__prep">
+                              <span class="material-symbols-rounded" aria-hidden="true">cleaning_services</span>
+                              {{ t.prep.notPrepped }}
+                            </span>
+                          }
                         </mat-panel-title>
                         <mat-panel-description class="work-list-row__time">{{
                           fmtTime(row.booking.startTime)

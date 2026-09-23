@@ -18,6 +18,7 @@ import {
   MEMBER_REPO,
   MAINTENANCE_REPO,
   PAYMENT_REPO,
+  PREP_TASK_REPO,
   REFUND_REPO,
   REMINDER_STATUS_REPO,
   VEHICLE_REPO,
@@ -35,6 +36,7 @@ import {
   Member,
   MaintenanceRecord,
   PaymentRecord,
+  PrepTask,
   PricingPlan,
   RefundRecord,
   RentalBooking,
@@ -50,6 +52,8 @@ import { DriverEligibilityGateway } from '../../../core/services/driver-eligibil
 import { MockDriverEligibilityGateway } from '../../../core/services/mock-driver-eligibility.gateway';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
 import { HeaderToolbarSlot } from '../../../layout/header/header-toolbar-slot';
+import { PrepQueueDialogComponent } from '../dialogs/prep-queue-dialog.component';
+import { PrepStore } from '../../../stores/prep/prep.store';
 
 // Dashboard 內嵌的 CalendarViewComponent 會用到 PricingStore。
 function providePricing() {
@@ -207,7 +211,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     expect(component.todayPickupPending()).toBe(1);
   });
 
-  it('依 endTime 是否為今天、狀態是否已還車，計算還車進度與待整備數', () => {
+  it('依 endTime 是否為今天、狀態是否已還車，計算還車進度', () => {
     const component = createFixture([
       mk({ id: 'in_progress', endTime: at(today, 9), status: 'in_progress' }),
       mk({ id: 'completed', endTime: at(today, 10), status: 'completed' }),
@@ -220,18 +224,18 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
     expect(component.todayReturnTotal()).toBe(3);
     expect(component.todayReturnDone()).toBe(1);
     expect(component.todayReturnPending()).toBe(2);
-    expect(component.todayPendingPrepCount()).toBe(1);
   });
 });
 
 
 /** 共用 providers：總覽內嵌的月曆／時間軸需要的 store 與 repo 全部備齊；路由由各測試自己給。 */
-function dashboardProviders(bookings: RentalBooking[] = []) {
+function dashboardProviders(bookings: RentalBooking[] = [], prepTasks: PrepTask[] = []) {
   return [
     ...providePricing(),
     ...provideOrderDetailRepos(),
     provideNativeDateAdapter(),
-    { provide: MatDialog, useValue: { open: () => undefined } },
+    { provide: MatDialog, useValue: { open: vi.fn() } },
+    { provide: PREP_TASK_REPO, useValue: createInMemoryRepo<PrepTask>(prepTasks) },
     { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
     { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
     { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
@@ -252,9 +256,18 @@ describe('DashboardPageComponent 頁首', () => {
   const today = new Date();
   const at = (hour: number) =>
     new Date(today.getFullYear(), today.getMonth(), today.getDate(), hour).toISOString();
+  const prepTask = (partial: Partial<PrepTask> = {}): PrepTask => ({
+    id: 'p1',
+    vehicleId: 'v1',
+    bookingId: 'b-returned',
+    returnedAt: at(10),
+    returnLocation: 'mzg-store',
+    ...partial,
+  });
+  const prepButton = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('.dashboard-queue--prep');
 
-  function renderToolbar(bookings: RentalBooking[] = []) {
-    TestBed.configureTestingModule({ providers: [...dashboardProviders(bookings), provideRouter([])] });
+  function renderToolbar(bookings: RentalBooking[] = [], prepTasks: PrepTask[] = []) {
+    TestBed.configureTestingModule({ providers: [...dashboardProviders(bookings, prepTasks), provideRouter([])] });
     const page = TestBed.createComponent(DashboardPageComponent);
     page.detectChanges();
     const host = TestBed.createComponent(HeaderToolbarHostComponent);
@@ -263,13 +276,8 @@ describe('DashboardPageComponent 頁首', () => {
   }
 
   it('「新增訂單」是唯一的實心主按鈕；待整備、待保養改成外框按鈕並保留徽章', () => {
-    // 今天有一筆已還車 → 待整備 1。
-    const { el } = renderToolbar([
-      {
-        id: 'returned', vehicleId: 'v1', memberId: 'c1', startTime: at(8), endTime: at(10),
-        pickupLocation: '', returnLocation: '', status: 'completed', depositRequired: 0,
-      },
-    ]);
+    // 有一筆還沒整備的待辦 → 待整備 1。
+    const { el } = renderToolbar([], [prepTask({ id: 'p1' })]);
 
     const filled = Array.from(el.querySelectorAll('.mat-mdc-unelevated-button'));
     expect(filled).toHaveLength(1);
@@ -286,6 +294,61 @@ describe('DashboardPageComponent 頁首', () => {
       expect(queue.classList).toContain('mat-mdc-outlined-button');
     }
     expect(queues[0].querySelector('.mat-badge-content')?.textContent?.trim()).toBe('1');
+  });
+
+  // 4.3：待整備數＝還沒按「整備完成」的整備待辦數；以前拿「今天已還車數」充數，按鈕點了也沒反應。
+  it('4.3：待整備徽章＝未完成的整備數（已完成、被取代的不算），與今天還了幾台車無關', () => {
+    const { el } = renderToolbar(
+      // 今天已還車 2 台：不再影響待整備數。
+      [
+        {
+          id: 'r1', vehicleId: 'v1', memberId: 'c1', startTime: at(8), endTime: at(10),
+          pickupLocation: '', returnLocation: '', status: 'completed', depositRequired: 0,
+        },
+        {
+          id: 'r2', vehicleId: 'v2', memberId: 'c1', startTime: at(8), endTime: at(11),
+          pickupLocation: '', returnLocation: '', status: 'completed', depositRequired: 0,
+        },
+      ],
+      [
+        prepTask({ id: 'open-1', vehicleId: 'v3', bookingId: 'old-1', returnedAt: at(-40) }),
+        prepTask({ id: 'open-2', vehicleId: 'v4', bookingId: 'old-2', returnedAt: at(-60) }),
+        prepTask({ id: 'open-3', vehicleId: 'v5', bookingId: 'old-3', returnedAt: at(-80) }),
+        prepTask({ id: 'done', vehicleId: 'v6', bookingId: 'old-4', completedAt: at(9), completedBy: '管理員' }),
+        prepTask({ id: 'replaced', vehicleId: 'v3', bookingId: 'old-5', supersededBy: 'open-1' }),
+      ],
+    );
+
+    expect(prepButton(el)?.querySelector('.mat-badge-content')?.textContent?.trim()).toBe('3');
+  });
+
+  it('4.3：沒有待整備時不顯示徽章', () => {
+    const { page, el } = renderToolbar();
+
+    expect(page.componentInstance.pendingPrepCount()).toBe(0);
+    expect(prepButton(el)?.classList).toContain('mat-badge-hidden');
+  });
+
+  it('4.3：點「待整備」打開待整備清單', () => {
+    const { el } = renderToolbar([], [prepTask()]);
+    const open = vi.mocked(TestBed.inject(MatDialog).open);
+
+    prepButton(el)?.click();
+
+    expect(open).toHaveBeenCalledWith(PrepQueueDialogComponent, expect.objectContaining({ width: '760px' }));
+    expect(prepButton(el)?.getAttribute('aria-haspopup')).toBe('dialog');
+  });
+
+  it('4.3：「整備完成」之後徽章數即時減少', () => {
+    const { page, el } = renderToolbar([], [prepTask({ id: 'p1' }), prepTask({ id: 'p2', vehicleId: 'v2', bookingId: 'b2' })]);
+    const badge = () => prepButton(el)?.querySelector('.mat-badge-content')?.textContent?.trim();
+    expect(badge()).toBe('2');
+
+    TestBed.inject(PrepStore).complete('p1', '管理員');
+    page.detectChanges();
+
+    expect(page.componentInstance.pendingPrepCount()).toBe(1);
+    expect(badge()).toBe('1');
   });
 
   it('搜尋框提示文字寫出能搜什麼：姓名、電話、車牌', () => {

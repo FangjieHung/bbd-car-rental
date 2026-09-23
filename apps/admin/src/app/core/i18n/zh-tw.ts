@@ -904,6 +904,27 @@ export const ZH_TW = {
     pendingPrep: '待整備',
     searchPlaceholder: '搜尋訂單：姓名、電話、車牌',
   },
+  // 4.3：待整備——還車之後、下一次交車之前的清潔與檢查（CONTEXT.md「整備」）。
+  // 只是待辦清單：不改車輛狀態、不影響可用數、不擋交車（docs/owner-questions.md 第 11 條，暫定）。
+  prep: {
+    title: '待整備',
+    hint: '還車後自動列入，按「整備完成」後移除；不影響車輛能否出租，也不擋交車。',
+    columns: {
+      plate: '車牌',
+      model: '車款',
+      returnedAt: '還車時間',
+      returnLocation: '還車據點',
+      nextPickupAt: '下次取車',
+    },
+    noNextPickup: '尚未排定',
+    complete: '整備完成',
+    // 每列按鈕的無障礙名稱要帶車牌，否則螢幕閱讀器只聽到一排「整備完成」。
+    completeAriaLabel: '{plate} 整備完成',
+    empty: '目前沒有待整備的車',
+    close: '關閉',
+    // 取車清單的提醒 chip：不是阻擋原因，不影響「可取車」。
+    notPrepped: '尚未整備',
+  },
   partner: {
     name: '民宿名稱',
     slug: '代訂連結代碼',
