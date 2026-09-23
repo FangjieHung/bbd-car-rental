@@ -12,7 +12,6 @@ import { contractSigningState } from '@car-rental/domain';
 import {
   branchName,
   IdentityDocumentType,
-  isVehicleAvailable,
   Member,
   MemberKind,
   needsDispatch as computeNeedsDispatch,
@@ -28,6 +27,7 @@ import {
   ReminderStatus,
   Vehicle,
   calculatePrice,
+  vehicleAvailability,
 } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, isSameDay, startOfDay } from '../../../core/date-utils';
@@ -120,19 +120,16 @@ interface WorkListRow {
 type PanelTab = 'pickup' | 'return' | 'available';
 const PANEL_TABS: PanelTab[] = ['pickup', 'return', 'available'];
 
-/** 1.3：某一天可租車輛清單——月曆「可用 N」與面板的可用清單共用同一個判斷（isVehicleAvailable，
- *  會扣掉保養中的車），不是月曆自己另外用「總車數－當天佔用」土法算一次。 */
+/** 1.3：某一天可租車輛清單——月曆「可用 N」與面板的可用清單共用同一個判斷（libs/domain 的
+ *  vehicleAvailability，會扣掉保養中的車），不是月曆自己另外用「總車數－當天佔用」土法算一次。
+ *  2.3：建單第 1 步的可租清單（整段期間）也是呼叫同一個函式，單日只是期間剛好是那一天。 */
 function vehiclesAvailableOn(vehicles: Vehicle[], bookings: RentalBooking[], day: Date): Vehicle[] {
   const dayStart = startOfDay(day);
-  const dayEnd = addDays(dayStart, 1);
-  return vehicles.filter((v) =>
-    isVehicleAvailable({
-      vehicle: v,
-      startTime: dayStart.toISOString(),
-      endTime: dayEnd.toISOString(),
-      bookings,
-    }),
-  );
+  return vehicleAvailability(vehicles, {
+    startTime: dayStart.toISOString(),
+    endTime: addDays(dayStart, 1).toISOString(),
+    bookings,
+  }).available;
 }
 
 /**

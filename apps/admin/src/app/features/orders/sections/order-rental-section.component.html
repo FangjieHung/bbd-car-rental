@@ -1,50 +1,80 @@
-<div class="order-section" [formGroup]="form().controls.rental">
-  <mat-form-field>
-    <mat-label>{{ t.booking.vehicle }}</mat-label>
-    <mat-select formControlName="vehicleId">
-      @for (v of data.vehicles(); track v.id) {
-        <mat-option [value]="v.id">{{ v.plateNumber }}（{{ v.model }}）</mat-option>
-      }
-    </mat-select>
-    <mat-error>{{ t.orderForm.required }}</mat-error>
-  </mat-form-field>
+<div class="order-section rental-search" [formGroup]="form().controls.rental">
+  <div class="rental-search__bar">
+    <div class="rental-search__row rental-search__row--period">
+      <mat-form-field>
+        <mat-label>{{ t.rentalSearch.category }}</mat-label>
+        <mat-select class="rental-search__category" [value]="category()" (valueChange)="category.set($event)">
+          <mat-option value="">{{ t.rentalSearch.allCategories }}</mat-option>
+          @for (option of categoryOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <lib-dual-month-range-picker
+        class="rental-search__range"
+        [start]="rangeStart()"
+        [end]="rangeEnd()"
+        (rangeSelected)="onRangeSelected($event)"
+      />
+    </div>
 
-  <div class="order-section__grid">
-    <mat-form-field>
-      <mat-label>{{ t.booking.startTime }}</mat-label>
-      <input matInput type="datetime-local" formControlName="startLocal" />
-      <mat-error>{{ t.orderForm.required }}</mat-error>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{ t.booking.endTime }}</mat-label>
-      <input matInput type="datetime-local" formControlName="endLocal" />
-      <mat-error>{{ t.orderForm.required }}</mat-error>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{ t.booking.pickupLocation }}</mat-label>
-      <mat-select formControlName="pickupLocation">
-        @for (b of branches; track b.id) {
-          <mat-option [value]="b.id">{{ b.name }}</mat-option>
-        }
-      </mat-select>
-      <mat-error>{{ t.orderForm.required }}</mat-error>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>{{ t.booking.returnLocation }}</mat-label>
-      <mat-select formControlName="returnLocation">
-        @for (b of branches; track b.id) {
-          <mat-option [value]="b.id">{{ b.name }}</mat-option>
-        }
-      </mat-select>
-      <mat-error>{{ t.orderForm.required }}</mat-error>
-    </mat-form-field>
+    <div class="rental-search__row rental-search__row--details">
+      <mat-form-field>
+        <mat-label>{{ t.rentalSearch.startTime }}</mat-label>
+        <mat-select class="rental-search__start-time" [value]="startTime()" (valueChange)="onStartTimeChange($event)">
+          @for (slot of startTimeOptions(); track slot) {
+            <mat-option [value]="slot">{{ slot }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ t.rentalSearch.endTime }}</mat-label>
+        <mat-select class="rental-search__end-time" [value]="endTime()" (valueChange)="onEndTimeChange($event)">
+          @for (slot of endTimeOptions(); track slot) {
+            <mat-option [value]="slot">{{ slot }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ t.rentalSearch.pickupLocation }}</mat-label>
+        <mat-select formControlName="pickupLocation">
+          @for (b of branches; track b.id) {
+            <mat-option [value]="b.id">{{ b.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-error>{{ t.orderForm.required }}</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ t.rentalSearch.returnLocation }}</mat-label>
+        <mat-select formControlName="returnLocation">
+          @for (b of branches; track b.id) {
+            <mat-option [value]="b.id">{{ b.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-error>{{ t.orderForm.required }}</mat-error>
+      </mat-form-field>
+    </div>
   </div>
 
-  @if (derived.conflicts().length > 0) {
+  @if (setAsideVehicle()) {
+    <p class="order-section__notice rental-search__set-aside" role="alert">{{ setAsideText() }}</p>
+  } @else if (derived.conflicts().length > 0) {
     <p class="order-section__notice" role="alert">
       {{ t.bookingForm.vehicleConflict }}（{{ derived.conflicts().length }}）
     </p>
   }
+
+  <app-available-vehicle-list
+    [start]="startLocal()"
+    [end]="endLocal()"
+    [category]="category()"
+    [pickupLocation]="pickupLocation()"
+    [selectable]="true"
+    [selectedVehicleId]="vehicleId()"
+    [excludeBookingId]="editingBookingId()"
+    (vehicleSelected)="pickVehicle($event)"
+  />
+
   @if (derived.quoteUnavailable()) {
     <p class="order-section__notice" role="alert">{{ t.bookingForm.quoteUnavailable }}</p>
   }

@@ -1,13 +1,15 @@
-import { Vehicle, RentalBooking, BookingStatus } from '../models';
-import { rangesOverlap } from './ranges-overlap';
-const OCCUPYING: BookingStatus[] = ['reserved', 'in_progress'];
+import { Vehicle, RentalBooking } from '../models';
+import { vehicleUnavailableReasons } from './vehicle-availability';
+
+/** 單一台車這段期間可不可以租；與 vehicleAvailability 是同一個判斷（沒有任何不能租的原因＝可以租）。 */
 export function isVehicleAvailable(input: {
   vehicle: Vehicle; startTime: string; endTime: string; bookings: RentalBooking[];
 }): boolean {
-  if (input.vehicle.status === 'maintenance') return false;
-  return !input.bookings.some(
-    (b) => b.vehicleId === input.vehicle.id &&
-      OCCUPYING.includes(b.status) &&
-      rangesOverlap(input.startTime, input.endTime, b.startTime, b.endTime),
+  return (
+    vehicleUnavailableReasons(input.vehicle, {
+      startTime: input.startTime,
+      endTime: input.endTime,
+      bookings: input.bookings,
+    }).length === 0
   );
 }

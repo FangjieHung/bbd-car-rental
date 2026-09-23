@@ -1,11 +1,15 @@
-import { Component, EventEmitter, Input, Output, OnChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { injectBookingFlowLabels } from '../booking-flow-labels';
+import {
+  DUAL_MONTH_RANGE_PICKER_LABELS,
+  DualMonthRangePickerComponent,
+  SelectedDateRange,
+} from '@car-rental/ui';
+import { BOOKING_FLOW_LABELS, injectBookingFlowLabels } from '../booking-flow-labels';
 import { DateRange, VehicleGroup } from '../date-range';
-import { DualMonthRangePickerComponent, SelectedDateRange } from './dual-month-range-picker.component';
 
 const defaultTime = (hour: number): Date => {
   const date = new Date();
@@ -18,6 +22,9 @@ const defaultTime = (hour: number): Date => {
   imports: [FormsModule, MatFormFieldModule, MatSelectModule, MatButtonModule, DualMonthRangePickerComponent],
   templateUrl: './date-step.component.html',
   styleUrl: './date-step.component.scss',
+  providers: [
+    { provide: DUAL_MONTH_RANGE_PICKER_LABELS, useFactory: () => inject(BOOKING_FLOW_LABELS).dateRangePicker },
+  ],
 })
 export class DateStepComponent implements OnChanges {
   private readonly labels = injectBookingFlowLabels();

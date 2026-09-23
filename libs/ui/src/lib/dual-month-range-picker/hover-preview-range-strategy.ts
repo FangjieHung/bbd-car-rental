@@ -19,7 +19,10 @@ export class HoverPreviewRangeStrategy extends DefaultMatCalendarRangeStrategy<D
   onHover: ((date: Date | null) => void) | null = null;
 
   constructor() {
-    super(inject<DateAdapter<Date>>(DateAdapter));
+    // Only the calendars — created when the panel opens — need a DateAdapter, and they still demand one
+    // themselves. Optional here so a closed picker can be created where none is provided (e.g. tests
+    // that render a whole form without ever opening the panel). `createPreview` never reads it.
+    super(inject<DateAdapter<Date>>(DateAdapter, { optional: true }) as DateAdapter<Date>);
   }
 
   override createPreview(activeDate: Date | null, currentRange: DateRange<Date>): DateRange<Date> {
