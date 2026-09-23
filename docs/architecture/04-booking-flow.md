@@ -26,11 +26,11 @@
 param**——兩個地點都已改成資料庫查得到的據點 id（見 `RENTAL_BRANCHES`，`02-libs.md`），
 不再是使用者手動輸入、適合放進網址的機場／港口／店舖三選一：
 
-- **取車據點不讓使用者選**，直接吃選定那台車的 `vehicle.location`（`order-page.component.ts`
-  的 `pickupLocation`）。這是刻意的產品決定，不是漏做欄位——車輛所在據點就是它能被取走的
+- **取車據點不讓使用者選**，直接吃選定那台車的 `vehicle.branchId`（`order-page.component.ts`
+  的 `pickupBranchId`）。這是刻意的產品決定，不是漏做欄位——車輛所在據點就是它能被取走的
   地方，讓使用者另外選一個不同的取車據點在這個 prototype 沒有意義。
 - **還車據點**在下單頁的 `confirm-step` 表單裡選（`RentalBranch` 下拉），送出訂單時寫進
-  `returnLocation`，同樣不經過網址。
+  `returnBranchId`，同樣不經過網址。
 
 **兩個頁面對缺參數的寬鬆度刻意不同**：
 
@@ -79,9 +79,9 @@ libs/booking-flow/src/lib/
 |---|---|---|
 | 取還日期、車輛類型（機車/汽車） | query params | 保留 |
 | 選定車輛 | route param | 保留 |
-| 取車地點 | 衍生值，不單獨存（`vehicle.location`） | 保留（隨選定車輛而定） |
+| 取車地點 | 衍生值，不單獨存（`vehicle.branchId`） | 保留（隨選定車輛而定） |
 | 還車地點、配件數量、優惠碼 | 下單頁元件內 signal | 遺失 |
-| 訂單 | `BOOKING_REPO`（localStorage） | 保留 |
+| 訂單 | `ORDER_REPO`（localStorage） | 保留 |
 
 配件與優惠碼刻意不放網址：那一頁不是拿來分享的，重填的成本低於把整個購物車塞進網址的複雜度。
 
@@ -123,7 +123,7 @@ interface BookingContext {
      → markBookingPaid() 在付款分類帳追加一筆 confirmed 的 balance PaymentRecord → 導向 /done/:id
 ```
 
-**`BookingStatus` 不再有 `pending_payment`／`confirmed` 這兩個值**（見
+**`OrderStatus` 不再有 `pending_payment`／`confirmed` 這兩個值**（見
 `libs/domain/src/lib/models/enums.ts`）。履約狀態只剩 `reserved`／`in_progress`／
 `completed`／`cancelled`，只描述車輛交接進度；付款是否完成改由 Task 7 建立的付款分類帳
 （`PaymentRecord` 系列，`libs/domain/src/lib/models/payment-record.ts`）獨立追蹤，`PaymentRecordStatus`
@@ -133,8 +133,8 @@ interface BookingContext {
 `PaymentStore.summaryFor` 之後靠掃這本分類帳算出已付金額，而不是看訂單狀態欄位。
 
 舊資料裡真正還在用 `pending_payment`／`confirmed` 這兩個 legacy booking status 值的，
-由 `libs/domain/src/lib/repositories/normalize-rental-booking.ts` 在讀取時統一遷移為
-`reserved`（`normalize-rental-booking.spec.ts` 有遷移測試），不會在應用程式邏輯裡出現。
+由 `libs/domain/src/lib/repositories/normalize-rental-order.ts` 在讀取時統一遷移為
+`reserved`（`normalize-rental-order.spec.ts` 有遷移測試），不會在應用程式邏輯裡出現。
 `markBookingPaid` 的冪等性怎麼做，見下方「接金流時實際要改什麼」。
 
 ## 動它之前要知道的事
@@ -169,7 +169,7 @@ interface BookingContext {
 3. **`apps/affiliate/src/app/app.routes.ts`** — 同一條回調路由要在 `p/:slug` 的
    children 底下再加一次，否則夥伴客人付完款會掉回首頁。
 4. **`CatalogStore.markBookingPaid()`** — 目前只收 `bookingId`。真實金流需要記錄
-   交易編號、實付金額等，簽章很可能要擴充，`RentalBooking` 可能要加欄位。
+   交易編號、實付金額等，簽章很可能要擴充，`RentalOrder` 可能要加欄位。
 
 `markBookingPaid` 目前的冪等性只靠「該訂單是否已有 confirmed 的 balance 付款紀錄」判斷，
 不再檢查 `booking.status`（因為履約狀態已經不代表付款進度）。真實金流回調會遲到、重送、

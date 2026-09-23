@@ -16,7 +16,7 @@ import { VehicleStepComponent } from '../steps/vehicle-step.component';
  * 取車地點不在這裡選——選車時直接吃該車的所屬據點；還車地點留到下單頁的 confirm-step 再選。
  */
 @Component({
-  selector: 'app-search-page',
+  selector: 'lib-search-page',
   imports: [DateStepComponent, VehicleStepComponent],
   templateUrl: './search-page.component.html',
   styleUrl: './search-page.component.scss',

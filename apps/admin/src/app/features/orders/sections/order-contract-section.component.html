@@ -5,19 +5,19 @@
     <dl class="order-section__dl">
       <dt>{{ t.member.name }}</dt>
       <dd>{{ s.renter.name || '—' }}</dd>
-      <dt>{{ t.booking.vehicle }}</dt>
+      <dt>{{ t.order.vehicle }}</dt>
       <dd>{{ s.vehicle.plateNumber }}（{{ s.vehicle.model }}）</dd>
-      <dt>{{ t.booking.startTime }}</dt>
+      <dt>{{ t.order.startTime }}</dt>
       <dd>{{ fmt(s.rentalStartTime) }}</dd>
-      <dt>{{ t.booking.endTime }}</dt>
+      <dt>{{ t.order.endTime }}</dt>
       <dd>{{ fmt(s.rentalEndTime) }}</dd>
-      <dt>{{ t.booking.pickupLocation }}</dt>
-      <dd>{{ s.pickupLocation || '—' }}</dd>
-      <dt>{{ t.booking.returnLocation }}</dt>
-      <dd>{{ s.returnLocation || '—' }}</dd>
-      <dt>{{ t.bookingForm.quoteTotal }}</dt>
+      <dt>{{ t.order.pickupBranch }}</dt>
+      <dd>{{ s.pickupBranchId || '—' }}</dd>
+      <dt>{{ t.order.returnBranch }}</dt>
+      <dd>{{ s.returnBranchId || '—' }}</dd>
+      <dt>{{ t.orderForm.quoteTotal }}</dt>
       <dd>{{ s.pricing.total }}</dd>
-      <dt>{{ t.bookingForm.deposit }}</dt>
+      <dt>{{ t.orderForm.deposit }}</dt>
       <dd>{{ s.depositRequired }}</dd>
     </dl>
 
@@ -58,7 +58,7 @@
 
   <div [formGroup]="form().controls.contract" class="contract-note">
     <mat-form-field>
-      <mat-label>{{ t.bookingForm.internalNote }}</mat-label>
+      <mat-label>{{ t.orderForm.internalNote }}</mat-label>
       <textarea matInput rows="3" formControlName="internalNote"></textarea>
     </mat-form-field>
   </div>

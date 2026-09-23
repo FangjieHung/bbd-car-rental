@@ -54,8 +54,8 @@ export interface ContractSnapshot {
   vehicle: ContractVehicleSnapshot;
   rentalStartTime: string; // ISO
   rentalEndTime: string; // ISO
-  pickupLocation: string;
-  returnLocation: string;
+  pickupBranchId: string;
+  returnBranchId: string;
   depositRequired: number;
   /** 建立當下鎖定的報價明細（租金、加購、保險、優惠券等）。 */
   pricing: PriceBreakdown;

@@ -20,8 +20,8 @@ function sampleSnapshot(overrides: Partial<ContractSnapshot> = {}): ContractSnap
     },
     rentalStartTime: '2026-07-20T09:00:00.000Z',
     rentalEndTime: '2026-07-22T18:00:00.000Z',
-    pickupLocation: '馬公門市',
-    returnLocation: '機場櫃檯',
+    pickupBranchId: '馬公門市',
+    returnBranchId: '機場櫃檯',
     depositRequired: 1000,
     pricing: {
       dailyLines: [],

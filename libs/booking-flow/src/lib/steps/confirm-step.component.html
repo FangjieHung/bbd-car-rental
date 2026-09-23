@@ -7,7 +7,7 @@
     <h3 class="ui-text-caption confirm-step__group-title">還車地點</h3>
     <mat-form-field appearance="outline">
       <mat-label>還車地點</mat-label>
-      <mat-select [ngModel]="form.returnLocation" (ngModelChange)="onReturnLocationChange($event)" name="returnLocation">
+      <mat-select [ngModel]="form.returnBranchId" (ngModelChange)="onReturnLocationChange($event)" name="returnBranchId">
         @for (loc of locations; track loc.id) {
           <mat-option [value]="loc.id">{{ loc.name }}</mat-option>
         }

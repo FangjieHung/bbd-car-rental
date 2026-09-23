@@ -7,7 +7,7 @@ import { DashboardPageComponent } from './dashboard-page.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
 import {
   AUDIT_ENTRY_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   CHARGE_ADJUSTMENT_REPO,
   CONTRACT_VERSION_REPO,
   DRIVER_CREDENTIAL_REPO,
@@ -35,7 +35,7 @@ import {
   PaymentRecord,
   PricingPlan,
   RefundRecord,
-  RentalBooking,
+  RentalOrder,
   ReminderStatus,
   SeasonCalendar,
   Vehicle,
@@ -47,7 +47,7 @@ import { MockOcrGateway } from '../../../core/services/mock-ocr.gateway';
 import { DriverEligibilityGateway } from '../../../core/services/driver-eligibility.gateway';
 import { MockDriverEligibilityGateway } from '../../../core/services/mock-driver-eligibility.gateway';
 import { ReminderGateway } from '../../../core/services/reminder.gateway';
-import { VehiclePickerDialogComponent } from '../../bookings/dialogs/vehicle-picker-dialog.component';
+import { VehiclePickerDialogComponent } from '../../orders/dialogs/vehicle-picker-dialog.component';
 
 // Dashboard 內嵌的 CalendarViewComponent 會用到 PricingStore。
 function providePricing() {
@@ -89,7 +89,7 @@ function provideOrderDetailRepos() {
 }
 
 describe('DashboardPageComponent child date contract', () => {
-  function createFixture(bookings: RentalBooking[] = []) {
+  function createFixture(orders: RentalOrder[] = []) {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
@@ -98,7 +98,7 @@ describe('DashboardPageComponent child date contract', () => {
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
@@ -144,20 +144,20 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
   const at = (day: Date, hour: number) =>
     new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour).toISOString();
 
-  const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
+  const mk = (partial: Partial<RentalOrder>): RentalOrder => ({
     id: 'b',
     vehicleId: 'v1',
     memberId: 'c1',
     startTime: at(today, 9),
     endTime: at(tomorrow, 9),
-    pickupLocation: '',
-    returnLocation: '',
+    pickupBranchId: '',
+    returnBranchId: '',
     status: 'reserved',
     depositRequired: 0,
     ...partial,
   });
 
-  function createFixture(bookings: RentalBooking[]) {
+  function createFixture(orders: RentalOrder[]) {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
@@ -166,7 +166,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
@@ -233,7 +233,7 @@ describe('DashboardPageComponent onQuickRange', () => {
         provideRouter([]),
         { provide: MatDialog, useValue: { open: dialogOpen } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '0912000111', kind: 'local' }]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
@@ -269,7 +269,7 @@ describe('DashboardPageComponent onQuickRange', () => {
       endDateTime: '2026-08-21T10:00:00',
     });
 
-    expect(component.bookingStore.bookings()).toHaveLength(0);
+    expect(component.orderStore.orders()).toHaveLength(0);
     expect(navigate).not.toHaveBeenCalled();
   });
 });

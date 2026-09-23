@@ -6,18 +6,18 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
-import { Member, RentalBooking } from '../../../core/models';
+import { Member, RentalOrder } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { ContractStore } from '../../../stores/contract/contract.store';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { ConfirmDialogComponent } from '../../../shared/dialogs/confirm-dialog.component';
-import { PaymentPanelComponent } from '../../bookings/components/payment-panel.component';
-import { ContractPanelComponent } from '../../bookings/components/contract-panel.component';
-import { HandoverPanelComponent } from '../../bookings/components/handover-panel.component';
-import { CancellationPanelComponent } from '../../bookings/components/cancellation-panel.component';
-import { CustomerCreditPanelComponent } from '../../bookings/components/customer-credit-panel.component';
-import { OperatorRecoveryPanelComponent } from '../../bookings/components/operator-recovery-panel.component';
-import { ActivityTimelineComponent } from '../../bookings/components/activity-timeline.component';
+import { PaymentPanelComponent } from '../components/payment-panel.component';
+import { ContractPanelComponent } from '../components/contract-panel.component';
+import { HandoverPanelComponent } from '../components/handover-panel.component';
+import { CancellationPanelComponent } from '../components/cancellation-panel.component';
+import { CustomerCreditPanelComponent } from '../components/customer-credit-panel.component';
+import { OperatorRecoveryPanelComponent } from '../components/operator-recovery-panel.component';
+import { ActivityTimelineComponent } from '../components/activity-timeline.component';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
 import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
 import { createOrderForm } from '../order-form/order-form';
@@ -49,15 +49,15 @@ class BlankComponent {}
 
 const member: Member = { id: 'm1', name: '王小明', phone: '0912345678', kind: 'local', email: 'wang@example.com' };
 
-function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+function makeOrder(partial: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'm1',
     startTime: new Date('2026-01-05T09:00').toISOString(),
     endTime: new Date('2026-01-07T09:00').toISOString(),
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
     status: 'reserved',
     depositRequired: 500,
     ...partial,
@@ -65,7 +65,7 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
 }
 
 interface SetupOptions {
-  bookings?: RentalBooking[];
+  orders?: RentalOrder[];
   /** 'real'：用 admin 的送出實作（寫入 in-memory repo）；預設為 spy。 */
   gateway?: 'real' | 'spy';
   confirmResult?: boolean;
@@ -73,9 +73,9 @@ interface SetupOptions {
 
 async function setup(url: string, options: SetupOptions = {}) {
   const repos = createOrderRepos({
-    vehicles: [makeVehicle({ id: 'v1', location: 'mzg-airport' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999', location: 'mzg-port' })],
+    vehicles: [makeVehicle({ id: 'v1', branchId: 'mzg-airport' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999', branchId: 'mzg-port' })],
     members: [member],
-    bookings: options.bookings ?? [makeBooking()],
+    orders: options.orders ?? [makeOrder()],
   });
   const update = vi.fn<OrderSubmitGateway['update']>(async (id: string) => id);
   const spyGateway: OrderSubmitGateway = { create: vi.fn(async () => 'x'), update };
@@ -88,7 +88,7 @@ async function setup(url: string, options: SetupOptions = {}) {
       ...repos.providers,
       provideRouter([
         { path: 'orders/:id', component: OrderDetailPageComponent, canDeactivate: [confirmLeaveGuard] },
-        { path: 'bookings', component: BlankComponent },
+        { path: 'orders', component: BlankComponent },
       ]),
       { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData },
       options.gateway === 'real'
@@ -151,7 +151,7 @@ describe('OrderDetailPageComponent 分頁與網址', () => {
     const header = el(harness).querySelector('.order-detail__header')?.textContent ?? '';
     expect(header).toContain('王小明');
     expect(header).toContain('ABC-123');
-    expect(header).toContain(ZH_TW.booking.statusLabels['reserved']);
+    expect(header).toContain(ZH_TW.order.statusLabels['reserved']);
     expect(el(harness).querySelector('.order-detail__eyebrow')?.textContent?.trim()).toBe(ZH_TW.orderDetail.title);
   });
 
@@ -250,7 +250,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 
     expect(component.editing()).toBe(false);
     expect(update).not.toHaveBeenCalled();
-    expect(TestBed.inject(BookingStore).bookings()[0].endTime).toBe(makeBooking().endTime);
+    expect(TestBed.inject(OrderStore).orders()[0].endTime).toBe(makeOrder().endTime);
     component.startEdit();
     expect(component.form().getRawValue().rental.endLocal).toBe(original);
   });
@@ -304,7 +304,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 
   it('不可編輯（已取車）的訂單不顯示「編輯」，?edit=1 也不會進入編輯', async () => {
     const { harness, component, router } = await setup('/orders/b1?edit=1', {
-      bookings: [makeBooking({ status: 'in_progress' })],
+      orders: [makeOrder({ status: 'in_progress' })],
     });
     expect(component.editing()).toBe(false);
     expect(el(harness).querySelector('.order-detail__edit')).toBeNull();
@@ -313,7 +313,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 
   it('需調度（取車據點與車輛所在據點不同、尚未取車）時在取車據點旁標示', async () => {
     const { harness } = await setup('/orders/b1', {
-      bookings: [makeBooking({ vehicleId: 'v2', pickupLocation: 'mzg-airport' })],
+      orders: [makeOrder({ vehicleId: 'v2', pickupBranchId: 'mzg-airport' })],
     });
     const chip = el(harness).querySelector('.order-detail__branch .ui-chip');
     expect(chip?.textContent).toContain(ZH_TW.dispatch.workList.needsDispatch);
@@ -324,7 +324,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 describe('OrderDetailPageComponent 合約需重新簽署提醒', () => {
   it('已簽署訂單改租期並儲存：產生新合約版本、snackbar 提醒需重新簽署，動作前往合約分頁', async () => {
     const { component, harness, router, snackOpen, snackAction } = await setup('/orders/b1', {
-      bookings: [],
+      orders: [],
       gateway: 'real',
     });
     // 以真正的送出實作建立一筆訂單並簽署第 1 版合約。
@@ -333,8 +333,8 @@ describe('OrderDetailPageComponent 合約需重新簽署提醒', () => {
       vehicleId: 'v1',
       startTime: new Date('2026-01-05T09:00').toISOString(),
       endTime: new Date('2026-01-07T09:00').toISOString(),
-      pickupLocation: 'mzg-airport',
-      returnLocation: 'mzg-airport',
+      pickupBranchId: 'mzg-airport',
+      returnBranchId: 'mzg-airport',
       member,
     });
     const id = await gateway.create({ value: form.getRawValue() });
@@ -360,15 +360,15 @@ describe('OrderDetailPageComponent 合約需重新簽署提醒', () => {
   });
 
   it('沒有產生新合約版本時只顯示一般的儲存成功', async () => {
-    const { component, harness, snackOpen } = await setup('/orders/b1', { bookings: [], gateway: 'real' });
+    const { component, harness, snackOpen } = await setup('/orders/b1', { orders: [], gateway: 'real' });
     const gateway = TestBed.inject(ORDER_SUBMIT_GATEWAY);
     const id = await gateway.create({
       value: createOrderForm({
         vehicleId: 'v1',
         startTime: new Date('2026-01-05T09:00').toISOString(),
         endTime: new Date('2026-01-07T09:00').toISOString(),
-        pickupLocation: 'mzg-airport',
-        returnLocation: 'mzg-airport',
+        pickupBranchId: 'mzg-airport',
+        returnBranchId: 'mzg-airport',
         member,
       }).getRawValue(),
     });
@@ -389,7 +389,7 @@ describe('OrderDetailPageComponent 離開確認（confirmLeaveGuard）', () => {
   it('編輯中但沒有改動：直接放行，不跳確認', async () => {
     const { component, router, dialogOpen } = await setup('/orders/b1');
     component.startEdit();
-    expect(await router.navigateByUrl('/bookings')).toBe(true);
+    expect(await router.navigateByUrl('/orders')).toBe(true);
     expect(dialogOpen).not.toHaveBeenCalled();
   });
 
@@ -398,7 +398,7 @@ describe('OrderDetailPageComponent 離開確認（confirmLeaveGuard）', () => {
     component.startEdit();
     component.form().controls.rental.controls.endLocal.markAsDirty();
 
-    expect(await router.navigateByUrl('/bookings')).toBe(false);
+    expect(await router.navigateByUrl('/orders')).toBe(false);
     expect(dialogOpen).toHaveBeenCalledWith(ConfirmDialogComponent, expect.objectContaining({
       data: ZH_TW.orderDetail.discardChangesConfirm,
     }));
@@ -410,6 +410,6 @@ describe('OrderDetailPageComponent 離開確認（confirmLeaveGuard）', () => {
     const { component, router } = await setup('/orders/b1', { confirmResult: true });
     component.startEdit();
     component.form().controls.rental.controls.endLocal.markAsDirty();
-    expect(await router.navigateByUrl('/bookings')).toBe(true);
+    expect(await router.navigateByUrl('/orders')).toBe(true);
   });
 });

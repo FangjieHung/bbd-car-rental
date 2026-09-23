@@ -4,7 +4,7 @@ import {
   AuditEntry,
   HandoverRecord,
   PickupReadinessInput,
-  RentalBooking,
+  RentalOrder,
   ReminderStatus,
   Repository,
   ReturnChargeInput,
@@ -12,7 +12,7 @@ import {
 } from '@car-rental/domain';
 import {
   AUDIT_ENTRY_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   CHARGE_ADJUSTMENT_REPO,
   HANDOVER_RECORD_REPO,
   MAINTENANCE_REPO,
@@ -30,12 +30,12 @@ import {
   PickupOverrideNotAllowedError,
   SupervisorOverrideInvalidError,
 } from './handover.store';
-import { BookingStore } from '../booking/booking.store';
+import { OrderStore } from '../order/order.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { PaymentStore } from '../payment/payment.store';
 import { ReminderStore } from '../reminder/reminder.store';
 
-/** 可觀測的 fake gateway：讓迴歸測試能斷言 suppressForBooking() 真的透過 cancel() 取消了排程。 */
+/** 可觀測的 fake gateway：讓迴歸測試能斷言 suppressForOrder() 真的透過 cancel() 取消了排程。 */
 class FakeReminderGateway implements ReminderGateway {
   readonly cancelCalls: Array<{ bookingId: string; offset: ScheduleReminderInput['offset'] }> = [];
 
@@ -71,15 +71,15 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
   };
 }
 
-function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+function makeOrder(partial: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'm1',
     startTime: T_PICKUP_DUE,
     endTime: T_RETURN_DUE,
-    pickupLocation: '馬公',
-    returnLocation: '馬公',
+    pickupBranchId: '馬公',
+    returnBranchId: '馬公',
     status: 'reserved',
     depositRequired: 0,
     ...partial,
@@ -132,7 +132,7 @@ function createFailingCreateRepo<T extends { id: string }>(): Repository<T> {
 
 describe('HandoverStore', () => {
   let handoverStore: HandoverStore;
-  let bookingStore: BookingStore;
+  let orderStore: OrderStore;
   let vehicleStore: VehicleStore;
   let paymentStore: PaymentStore;
   let reminderStore: ReminderStore;
@@ -142,7 +142,7 @@ describe('HandoverStore', () => {
 
   function configure(options: {
     vehicle?: Partial<Vehicle>;
-    booking?: Partial<RentalBooking>;
+    order?: Partial<RentalOrder>;
     handoverRepo?: Repository<HandoverRecord>;
     reminderStatuses?: ReminderStatus[];
   } = {}) {
@@ -153,7 +153,7 @@ describe('HandoverStore', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle(options.vehicle)]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([makeBooking(options.booking)]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([makeOrder(options.order)]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo() },
         { provide: PAYMENT_REPO, useValue: createInMemoryRepo() },
         { provide: REFUND_REPO, useValue: createInMemoryRepo() },
@@ -168,7 +168,7 @@ describe('HandoverStore', () => {
       ],
     });
     handoverStore = TestBed.inject(HandoverStore);
-    bookingStore = TestBed.inject(BookingStore);
+    orderStore = TestBed.inject(OrderStore);
     vehicleStore = TestBed.inject(VehicleStore);
     paymentStore = TestBed.inject(PaymentStore);
     reminderStore = TestBed.inject(ReminderStore);
@@ -233,7 +233,7 @@ describe('HandoverStore', () => {
       ).toThrow(PickupBlockedError);
       expect(handoverStore.pickupFor('b1')).toBeUndefined();
       expect(vehicleStore.vehicles()[0].status).toBe('available');
-      expect(bookingStore.bookings()[0].status).toBe('reserved');
+      expect(orderStore.orders()[0].status).toBe('reserved');
     });
 
     it('最新合約未簽署：一般取車被擋', () => {
@@ -344,7 +344,7 @@ describe('HandoverStore', () => {
       expect(result.readiness.warnings.some((w) => w.type === 'missing_email')).toBe(true);
       expect(handoverStore.pickupFor('b1')?.id).toBe(result.record.id);
       expect(vehicleStore.vehicles()[0].status).toBe('rented');
-      expect(bookingStore.bookings()[0].status).toBe('in_progress');
+      expect(orderStore.orders()[0].status).toBe('in_progress');
     });
 
     it('主管覆核缺操作人或理由：擲出 SupervisorOverrideInvalidError，不放行', () => {
@@ -383,7 +383,7 @@ describe('HandoverStore', () => {
       expect(result.readiness.ready).toBe(false);
       expect(handoverStore.pickupFor('b1')?.id).toBe(result.record.id);
       expect(vehicleStore.vehicles()[0].status).toBe('rented');
-      expect(bookingStore.bookings()[0].status).toBe('in_progress');
+      expect(orderStore.orders()[0].status).toBe('in_progress');
 
       const entries = auditRepo.getAll();
       expect(entries).toHaveLength(1);
@@ -410,7 +410,7 @@ describe('HandoverStore', () => {
 
       expect(handoverStore.pickupFor('b1')?.id).toBe(result.record.id);
       expect(vehicleStore.vehicles()[0].status).toBe('rented');
-      expect(bookingStore.bookings()[0].status).toBe('in_progress');
+      expect(orderStore.orders()[0].status).toBe('in_progress');
 
       const entries = auditRepo.getAll();
       expect(entries).toHaveLength(1);
@@ -444,7 +444,7 @@ describe('HandoverStore', () => {
       expect(err.completedSteps).toEqual([]);
       expect(err.failedStep).toBe('save_record');
       expect(vehicleStore.vehicles()[0].status).toBe('available');
-      expect(bookingStore.bookings()[0].status).toBe('reserved');
+      expect(orderStore.orders()[0].status).toBe('reserved');
     });
 
     it('車輛轉換這一步失敗（例如車輛已被其他訂單佔用）：紀錄已存但轉換未完成，回報已完成的步驟供重試判斷', () => {
@@ -469,7 +469,7 @@ describe('HandoverStore', () => {
       expect(err.completedSteps).toEqual(['save_record']);
       expect(err.failedStep).toBe('vehicle_transition');
       expect(handoverStore.pickupFor('b1')).toBeDefined(); // 紀錄已寫入，不會憑空消失
-      expect(bookingStore.bookings()[0].status).toBe('reserved');
+      expect(orderStore.orders()[0].status).toBe('reserved');
     });
   });
 
@@ -546,7 +546,7 @@ describe('HandoverStore', () => {
       expect(paymentStore.adjustments()).toHaveLength(2);
 
       expect(vehicleStore.vehicles()[0].status).toBe('available');
-      expect(bookingStore.bookings()[0].status).toBe('completed');
+      expect(orderStore.orders()[0].status).toBe('completed');
 
       // 沒有任何付款紀錄，餘額應為正值（應收），但流程仍視為完成，不因此擋下。
       const summary = paymentStore.summaryFor('b1');
@@ -590,13 +590,13 @@ describe('HandoverStore', () => {
       });
 
       expect(result.adjustments).toHaveLength(0);
-      expect(bookingStore.bookings()[0].status).toBe('completed');
+      expect(orderStore.orders()[0].status).toBe('completed');
     });
 
     it('save_record 這一步失敗：擲出 partial failure 錯誤，車輛與訂單維持 in_progress／rented', () => {
       pickUpFirst();
-      configure({ booking: { status: 'in_progress' }, vehicle: { status: 'rented' }, handoverRepo: createFailingCreateRepo<HandoverRecord>() });
-      // configure() 重建了全新的 TestBed，這裡改用新的 handoverStore/bookingStore/vehicleStore 執行 performReturn。
+      configure({ order: { status: 'in_progress' }, vehicle: { status: 'rented' }, handoverRepo: createFailingCreateRepo<HandoverRecord>() });
+      // configure() 重建了全新的 TestBed，這裡改用新的 handoverStore/orderStore/vehicleStore 執行 performReturn。
 
       const charges = handoverStore.calculateCharges(chargeInput());
 
@@ -618,12 +618,12 @@ describe('HandoverStore', () => {
       expect(err.completedSteps).toEqual([]);
       expect(err.failedStep).toBe('save_record');
       expect(vehicleStore.vehicles()[0].status).toBe('rented');
-      expect(bookingStore.bookings()[0].status).toBe('in_progress');
+      expect(orderStore.orders()[0].status).toBe('in_progress');
     });
 
-    it('（Task 17 迴歸測試）完成還車會透過真正的協調流程抑制這筆訂單尚未寄出的提醒——不是只有 ReminderStore.suppressForBooking() 自己的單元測試才驗證這條規則', async () => {
+    it('（Task 17 迴歸測試）完成還車會透過真正的協調流程抑制這筆訂單尚未寄出的提醒——不是只有 ReminderStore.suppressForOrder() 自己的單元測試才驗證這條規則', async () => {
       configure({
-        booking: { status: 'in_progress' },
+        order: { status: 'in_progress' },
         vehicle: { status: 'rented' },
         reminderStatuses: [
           {
@@ -655,13 +655,13 @@ describe('HandoverStore', () => {
         actor: { actorId: 'staff1', actorName: '櫃檯人員' },
       });
 
-      expect(bookingStore.bookings()[0].status).toBe('completed');
+      expect(orderStore.orders()[0].status).toBe('completed');
       // performReturn() 本身仍是同步方法；抑制提醒是 fire-and-forget，要等微任務跑完才看得到結果。
       await flushMicrotasks();
 
       const remaining = reminderStore.statusesFor('b1');
       expect(remaining.every((s) => s.state !== 'scheduled')).toBe(true);
-      // suppressForBooking() 的實作是直接移除尚未 sent 的紀錄（見 ReminderStore 類別註解），
+      // suppressForOrder() 的實作是直接移除尚未 sent 的紀錄（見 ReminderStore 類別註解），
       // 兩筆都還沒 sent，這裡應該完全被清空。
       expect(remaining).toHaveLength(0);
       expect(reminderGateway.cancelCalls.map((c) => c.offset).sort()).toEqual(

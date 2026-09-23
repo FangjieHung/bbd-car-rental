@@ -4,14 +4,14 @@ import { branchName } from '@car-rental/domain';
 
 /** 下單頁頂端的租期摘要，取還地點來自搜尋頁選擇並經 URL 帶入（皆為據點 id）。 */
 @Component({
-  selector: 'app-search-criteria-bar',
+  selector: 'lib-search-criteria-bar',
   imports: [MatButtonModule],
   templateUrl: './search-criteria-bar.component.html',
   styleUrl: './search-criteria-bar.component.scss',
 })
 export class SearchCriteriaBarComponent {
-  @Input() pickupLocation = '';
-  @Input() returnLocation = '';
+  @Input() pickupBranchId = '';
+  @Input() returnBranchId = '';
   @Input() startDate = '';
   @Input() endDate = '';
   @Input() days = 0;
@@ -19,10 +19,10 @@ export class SearchCriteriaBarComponent {
 
   /** 兩地相同只顯示一次；不同才分別標示取車／還車 */
   protected get location(): string {
-    if (!this.pickupLocation) return '';
-    if (!this.returnLocation || this.returnLocation === this.pickupLocation) {
-      return branchName(this.pickupLocation);
+    if (!this.pickupBranchId) return '';
+    if (!this.returnBranchId || this.returnBranchId === this.pickupBranchId) {
+      return branchName(this.pickupBranchId);
     }
-    return `取車 ${branchName(this.pickupLocation)} ・ 還車 ${branchName(this.returnLocation)}`;
+    return `取車 ${branchName(this.pickupBranchId)} ・ 還車 ${branchName(this.returnBranchId)}`;
   }
 }

@@ -19,8 +19,8 @@
           <div class="trip-timeline__body">
             <span class="ui-text-caption">取車</span>
             <span class="trip-timeline__date">{{ startDate }}</span>
-            @if (vehicle.location) {
-              <a class="ui-text-caption" [href]="mapUrl(vehicle.location)" target="_blank" rel="noopener">{{ branchName(vehicle.location) }}</a>
+            @if (vehicle.branchId) {
+              <a class="ui-text-caption" [href]="mapUrl(vehicle.branchId)" target="_blank" rel="noopener">{{ branchName(vehicle.branchId) }}</a>
             }
           </div>
         </li>
@@ -29,8 +29,8 @@
           <div class="trip-timeline__body">
             <span class="ui-text-caption">還車</span>
             <span class="trip-timeline__date">{{ endDate }}</span>
-            @if (returnLocation) {
-              <a class="ui-text-caption" [href]="mapUrl(returnLocation)" target="_blank" rel="noopener">{{ branchName(returnLocation) }}</a>
+            @if (returnBranchId) {
+              <a class="ui-text-caption" [href]="mapUrl(returnBranchId)" target="_blank" rel="noopener">{{ branchName(returnBranchId) }}</a>
             }
           </div>
         </li>

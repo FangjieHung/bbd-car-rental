@@ -191,10 +191,10 @@
                 {{ transmissionLabel(vehicle) }}
               </li>
             }
-            @if (vehicle.location) {
+            @if (vehicle.branchId) {
               <li>
                 <span class="material-symbols-rounded" aria-hidden="true">location_on</span>
-                {{ branchName(vehicle.location) }}
+                {{ branchName(vehicle.branchId) }}
               </li>
             }
           </ul>

@@ -2,11 +2,11 @@ import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
-import { BOOKING_REPO } from '@car-rental/domain';
+import { ORDER_REPO } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 
 @Component({
-  selector: 'app-booking-done',
+  selector: 'lib-booking-done',
   imports: [RouterLink],
   templateUrl: './done.component.html',
   styleUrl: './done.component.scss',
@@ -14,14 +14,14 @@ import { BOOKING_CONTEXT } from '../booking-context';
 export class DoneComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly context = inject(BOOKING_CONTEXT);
-  private readonly bookingRepo = inject(BOOKING_REPO);
+  private readonly orderRepo = inject(ORDER_REPO);
 
   readonly bookingId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('id') ?? '')),
     { initialValue: '' },
   );
 
-  private readonly booking = computed(() => this.bookingRepo.getById(this.bookingId()) ?? null);
+  private readonly booking = computed(() => this.orderRepo.getById(this.bookingId()) ?? null);
 
   /**
    * 訂單的履約狀態（reserved）不代表付款是否完成 —— 在 Task 7 接上真正的付款分類帳、

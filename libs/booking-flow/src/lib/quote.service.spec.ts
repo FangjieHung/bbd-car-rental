@@ -6,11 +6,11 @@ import {
   Member,
   PaymentRecord,
   PricingPlan,
-  RentalBooking,
+  RentalOrder,
   SeasonCalendar,
   Vehicle,
   VEHICLE_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   MEMBER_REPO,
   PAYMENT_REPO,
   PRICING_PLAN_REPO,
@@ -65,7 +65,7 @@ function setup(): QuoteService {
   TestBed.configureTestingModule({
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
       { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
       { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([plan]) },

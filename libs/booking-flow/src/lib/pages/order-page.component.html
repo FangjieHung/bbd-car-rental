@@ -4,35 +4,35 @@
   }
   <h1 class="order-page__title ui-text-title">填寫訂單</h1>
 
-  <app-search-criteria-bar
-    [pickupLocation]="pickupLocation()"
+  <lib-search-criteria-bar
+    [pickupBranchId]="pickupBranchId()"
     [startDate]="startDate()"
     [endDate]="endDate()"
     [days]="days()"
     (edit)="goToSearch()"
-  ></app-search-criteria-bar>
+  ></lib-search-criteria-bar>
 
   <div class="checkout-layout">
     <div class="checkout-main">
       <section class="checkout-section">
-        <app-addon-step
+        <lib-addon-step
           [addOns]="addOns()"
           [addOnQty]="addOnQty()"
           (addOnQtyChange)="onAddOnQtyChange($event.addOnId, $event.qty)"
-        ></app-addon-step>
+        ></lib-addon-step>
       </section>
 
       <section class="checkout-section">
-        <app-coupon-step
+        <lib-coupon-step
           [couponCode]="couponCode()"
           [couponResult]="couponResult()"
           [priceBreakdown]="priceBreakdown()"
           (couponCodeChange)="onCouponCodeChange($event)"
-        ></app-coupon-step>
+        ></lib-coupon-step>
       </section>
 
       <section class="checkout-section">
-        <app-confirm-step
+        <lib-confirm-step
           [vehicle]="vehicle()"
           [startDate]="startDate()"
           [endDate]="endDate()"
@@ -41,18 +41,18 @@
           [submitting]="submitting()"
           [submitError]="submitError()"
           (confirm)="onConfirmSubmit($event)"
-        ></app-confirm-step>
+        ></lib-confirm-step>
       </section>
     </div>
 
     <aside class="checkout-aside">
-      <app-order-summary-card
+      <lib-order-summary-card
         [vehicle]="vehicle()"
         [startDate]="startDate()"
         [endDate]="endDate()"
         [selectedAddOnLines]="selectedAddOnLines()"
         [priceBreakdown]="priceBreakdown()"
-      ></app-order-summary-card>
+      ></lib-order-summary-card>
     </aside>
   </div>
 </div>

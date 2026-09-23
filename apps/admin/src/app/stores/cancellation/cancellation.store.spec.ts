@@ -8,13 +8,13 @@ import {
   Member,
   PaymentRecord,
   RefundRecord,
-  RentalBooking,
+  RentalOrder,
   ReminderStatus,
   Vehicle,
 } from '@car-rental/domain';
 import {
   AUDIT_ENTRY_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   CANCELLATION_CASE_REPO,
   CHARGE_ADJUSTMENT_REPO,
   CUSTOMER_CREDIT_LEDGER_REPO,
@@ -27,7 +27,7 @@ import {
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import { ReminderDispatchResult, ReminderGateway, ScheduleReminderInput } from '../../core/services/reminder.gateway';
-import { BookingStore } from '../booking/booking.store';
+import { OrderStore } from '../order/order.store';
 import { PaymentStore } from '../payment/payment.store';
 import { CreditStore } from '../credit/credit.store';
 import { ReminderStore } from '../reminder/reminder.store';
@@ -43,7 +43,7 @@ import {
 } from './cancellation.store';
 import { CancellationStore } from './cancellation.store';
 
-/** 可觀測的 fake gateway：讓迴歸測試能斷言 suppressForBooking() 真的透過 cancel() 取消了排程。 */
+/** 可觀測的 fake gateway：讓迴歸測試能斷言 suppressForOrder() 真的透過 cancel() 取消了排程。 */
 class FakeReminderGateway implements ReminderGateway {
   readonly cancelCalls: Array<{ bookingId: string; offset: ScheduleReminderInput['offset'] }> = [];
 
@@ -79,15 +79,15 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
   };
 }
 
-function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+function makeOrder(partial: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'm1',
     startTime: T_START,
     endTime: T_END,
-    pickupLocation: '馬公',
-    returnLocation: '馬公',
+    pickupBranchId: '馬公',
+    returnBranchId: '馬公',
     status: 'reserved',
     depositRequired: 1000,
     ...partial,
@@ -101,12 +101,12 @@ function makeMember(partial: Partial<Member> = {}): Member {
 function createFixture(
   options: {
     vehicle?: Partial<Vehicle>;
-    booking?: Partial<RentalBooking>;
+    order?: Partial<RentalOrder>;
     reminderStatuses?: ReminderStatus[];
   } = {},
 ) {
   // 允許在同一個 it() 內（外層 beforeEach 已建立一次 TestBed 之後）重新配置一份帶自訂
-  // booking／vehicle 的 fixture——resetTestingModule() 先清空，避免「TestBed 已實例化」錯誤。
+  // order／vehicle 的 fixture——resetTestingModule() 先清空，避免「TestBed 已實例化」錯誤。
   TestBed.resetTestingModule();
   const reminderGateway = new FakeReminderGateway();
   const reminderStatusRepo = createInMemoryRepo<ReminderStatus>(options.reminderStatuses ?? []);
@@ -114,7 +114,7 @@ function createFixture(
     providers: [
       { provide: CANCELLATION_CASE_REPO, useValue: createInMemoryRepo<CancellationCase>() },
       { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>() },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([makeBooking(options.booking)]) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([makeOrder(options.order)]) },
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle(options.vehicle)]) },
       { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([makeMember()]) },
       { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<{ id: string }>([]) },
@@ -129,12 +129,12 @@ function createFixture(
 
   return {
     store: TestBed.inject(CancellationStore),
-    bookingStore: TestBed.inject(BookingStore),
+    orderStore: TestBed.inject(OrderStore),
     paymentStore: TestBed.inject(PaymentStore),
     creditStore: TestBed.inject(CreditStore),
     reminderStore: TestBed.inject(ReminderStore),
     auditRepo: TestBed.inject(AUDIT_ENTRY_REPO),
-    bookingRepo: TestBed.inject(BOOKING_REPO),
+    orderRepo: TestBed.inject(ORDER_REPO),
     reminderGateway,
     reminderStatusRepo,
   };
@@ -336,7 +336,7 @@ describe('CancellationStore', () => {
     }
 
     it('全額原方式退款：建立待退款紀錄（pending），訂單轉為 cancelled，保留付款歷史', () => {
-      const { store: s, bookingStore, paymentStore } = createFixture();
+      const { store: s, orderStore, paymentStore } = createFixture();
       paymentStore.recordPayment({
         bookingId: 'b1',
         amount: 1000,
@@ -361,13 +361,13 @@ describe('CancellationStore', () => {
       expect(result.refund?.amount).toBe(500);
       expect(result.case.status).toBe('settled');
       expect(result.case.disposition).toBe('refund');
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('cancelled');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.status).toBe('cancelled');
       // 付款歷史從未被刪除，仍看得到原始訂金收款紀錄
       expect(paymentStore.paymentsFor('b1')).toHaveLength(1);
     });
 
-    it('（Task 17 迴歸測試）撥付完成、訂單轉為 cancelled 後，會透過真正的協調流程抑制這筆訂單尚未寄出的提醒——不是只有 ReminderStore.suppressForBooking() 自己的單元測試才驗證這條規則', async () => {
-      const { store: s, bookingStore, reminderStore, reminderGateway } = createFixture({
+    it('（Task 17 迴歸測試）撥付完成、訂單轉為 cancelled 後，會透過真正的協調流程抑制這筆訂單尚未寄出的提醒——不是只有 ReminderStore.suppressForOrder() 自己的單元測試才驗證這條規則', async () => {
+      const { store: s, orderStore, reminderStore, reminderGateway } = createFixture({
         reminderStatuses: [
           {
             id: 'rem-24h',
@@ -398,7 +398,7 @@ describe('CancellationStore', () => {
         occurredAt: '2026-07-10T10:30:00.000Z',
       });
 
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('cancelled');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.status).toBe('cancelled');
       // disposeCase() 本身仍是同步方法；抑制提醒是 fire-and-forget，要等微任務跑完才看得到結果。
       await flushMicrotasks();
 
@@ -411,7 +411,7 @@ describe('CancellationStore', () => {
     });
 
     it('全部轉保留金但未取得顧客同意時丟錯，不寫入任何撥付紀錄', () => {
-      const { store: s, creditStore, bookingStore } = createFixture();
+      const { store: s, creditStore, orderStore } = createFixture();
       const kase = buildQuotedCase(s);
 
       expect(() =>
@@ -425,7 +425,7 @@ describe('CancellationStore', () => {
         }),
       ).toThrow(CreditConsentRequiredError);
       expect(creditStore.entriesFor('m1')).toHaveLength(0);
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('reserved');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.status).toBe('reserved');
     });
 
     it('全部轉保留金，取得同意後核發保留金並預設 12 個月效期', () => {
@@ -520,7 +520,7 @@ describe('CancellationStore', () => {
     });
 
     it('不可抗力案件未經主管核准前無法撥付；核准後可正常撥付', () => {
-      const { store: s, bookingStore } = createFixture();
+      const { store: s, orderStore } = createFixture();
       const quote = s.quote({
         contractKind: 'passenger_car',
         responsibility: 'force_majeure',
@@ -563,11 +563,11 @@ describe('CancellationStore', () => {
         occurredAt: '2026-07-10T10:30:00.000Z',
       });
       expect(result.case.status).toBe('settled');
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('cancelled');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.status).toBe('cancelled');
     });
 
     it('訂單已非 reserved 時撥付於訂單轉換步驟失敗，回報已完成步驟且不遺失已建立的退款紀錄', () => {
-      const { store: s, bookingStore, paymentStore } = createFixture({ booking: { status: 'in_progress' } });
+      const { store: s, orderStore, paymentStore } = createFixture({ order: { status: 'in_progress' } });
       const kase = buildQuotedCase(s);
 
       expect(() =>
@@ -584,7 +584,7 @@ describe('CancellationStore', () => {
       // 訂單轉換失敗，但退款紀錄已經建立（並未遺失、也沒有被撤銷）——呼叫端必須依錯誤內容
       // 判斷實際狀態，不能假設整個流程都沒有發生。
       expect(paymentStore.refundsFor('b1')).toHaveLength(1);
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('in_progress');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.status).toBe('in_progress');
     });
 
     it('保留金轉換記錄顧客同意，但不能被寫成主管覆核的 approve 稽核動作', () => {
@@ -607,8 +607,8 @@ describe('CancellationStore', () => {
     });
 
     it('Critical #2 回歸：訂單轉換步驟重複失敗時，重試不會建立第二筆退款／保留金紀錄；訂單恢復 reserved 後重試可順利完成且仍只有一筆', () => {
-      const { store: s, bookingStore, paymentStore, creditStore, bookingRepo } = createFixture({
-        booking: { status: 'in_progress' },
+      const { store: s, orderStore, paymentStore, creditStore, orderRepo } = createFixture({
+        order: { status: 'in_progress' },
       });
       const kase = buildQuotedCase(s); // 應退總額 500（8 天前取消，7-9 日級距 50% ×1000）
 
@@ -635,11 +635,11 @@ describe('CancellationStore', () => {
 
       // 修正根本問題（訂單恢復 reserved，模擬「取車流程被撤銷／原本就是誤判」）後重試：
       // 應該直接重用先前已建立的退款／保留金紀錄，成功完成訂單轉換與結案，且紀錄數量仍是各一筆。
-      bookingRepo.update('b1', { status: 'reserved' });
+      orderRepo.update('b1', { status: 'reserved' });
       const result = s.disposeCase(disposeInput);
 
       expect(result.case.status).toBe('settled');
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('cancelled');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.status).toBe('cancelled');
       expect(paymentStore.refundsFor('b1')).toHaveLength(1);
       expect(creditStore.entriesFor('m1')).toHaveLength(1);
       expect(result.refund?.amount).toBe(300);
@@ -647,8 +647,8 @@ describe('CancellationStore', () => {
     });
 
     it('Important 回歸：重試時金額與既有紀錄不同會被拒絕，不會沿用舊紀錄卻寫入新金額的假案件歷程', () => {
-      const { store: s, bookingStore, paymentStore, creditStore } = createFixture({
-        booking: { status: 'in_progress' },
+      const { store: s, orderStore, paymentStore, creditStore } = createFixture({
+        order: { status: 'in_progress' },
       });
       const kase = buildQuotedCase(s); // 應退總額 500
 
@@ -686,7 +686,7 @@ describe('CancellationStore', () => {
       // 拒絕後不應該有任何新紀錄被建立，案件也還沒被誤標記成 settled。
       expect(paymentStore.refundsFor('b1')).toHaveLength(1);
       expect(creditStore.entriesFor('m1')).toHaveLength(1);
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.status).toBe('in_progress');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.status).toBe('in_progress');
 
       // 用原本一致的金額（300/200）重試仍然可以正常運作（冪等重用，不受這個防護擋下）。
       const consistentRetryError = (() => {

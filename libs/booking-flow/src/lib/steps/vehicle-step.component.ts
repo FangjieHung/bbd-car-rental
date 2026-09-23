@@ -23,7 +23,7 @@ interface TypeOption {
 }
 
 @Component({
-  selector: 'app-vehicle-step',
+  selector: 'lib-vehicle-step',
   imports: [
     DecimalPipe,
     FormsModule,
@@ -115,7 +115,7 @@ export class VehicleStepComponent {
 
     let list = this._vehicles().filter((vehicle) => {
       if (type && this.classLabel(vehicle) !== type) return false;
-      if (location && vehicle.location !== location) return false;
+      if (location && vehicle.branchId !== location) return false;
       if (seatBucket && this.seatBucketOf(vehicle) !== seatBucket) return false;
       const price = this.totalPrice(vehicle);
       if (price !== null && (price < lo || price > hi)) return false;
@@ -191,7 +191,7 @@ export class VehicleStepComponent {
     return vehicle.transmission === 'manual' ? 'M' : 'A';
   }
 
-  /** 車輛所在據點顯示名稱（vehicle.location 存的是據點 id）。 */
+  /** 車輛所在據點顯示名稱（vehicle.branchId 存的是據點 id）。 */
   protected branchName(locationId: string | null | undefined): string {
     return branchName(locationId);
   }

@@ -43,7 +43,7 @@ function sameDay(a: Date | null, b: Date | null): boolean {
 }
 
 @Component({
-  selector: 'app-dual-month-range-picker',
+  selector: 'lib-dual-month-range-picker',
   imports: [OverlayModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDatepickerModule],
   templateUrl: './dual-month-range-picker.component.html',
   styleUrl: './dual-month-range-picker.component.scss',

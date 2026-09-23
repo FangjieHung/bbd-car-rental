@@ -3,12 +3,12 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import {
-  BOOKING_REPO,
+  ORDER_REPO,
   MonthlyPayout,
   PARTNER_REPO,
   PAYOUT_REPO,
   Partner,
-  RentalBooking,
+  RentalOrder,
   createInMemoryRepo,
 } from '@car-rental/domain';
 import { PartnerAccountComponent } from './partner-account.component';
@@ -21,15 +21,15 @@ const partner: Partner = {
   commission: { type: 'percent', value: 10 },
 };
 
-function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+function makeOrder(partial: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'c1',
     startTime: '2026-07-05T09:00:00',
     endTime: '2026-07-07T09:00:00',
-    pickupLocation: '馬公',
-    returnLocation: '馬公',
+    pickupBranchId: '馬公',
+    returnBranchId: '馬公',
     status: 'reserved',
     depositRequired: 0,
     priceBreakdown: {
@@ -51,7 +51,7 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
   };
 }
 
-function setup(slug: string, bookings: RentalBooking[] = [], payouts: MonthlyPayout[] = []) {
+function setup(slug: string, bookings: RentalOrder[] = [], payouts: MonthlyPayout[] = []) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [PartnerAccountComponent],
@@ -59,7 +59,7 @@ function setup(slug: string, bookings: RentalBooking[] = [], payouts: MonthlyPay
       provideRouter([]),
       { provide: ActivatedRoute, useValue: { paramMap: of(new Map([['slug', slug]])) } },
       { provide: PARTNER_REPO, useValue: createInMemoryRepo<Partner>([partner]) },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(bookings) },
       { provide: PAYOUT_REPO, useValue: createInMemoryRepo<MonthlyPayout>(payouts) },
     ],
   });
@@ -76,14 +76,14 @@ describe('PartnerAccountComponent', () => {
   });
 
   it('顯示退佣明細與累計合計', () => {
-    const fixture = setup('seaview', [makeBooking({ id: 'b1' }), makeBooking({ id: 'b2' })]);
+    const fixture = setup('seaview', [makeOrder({ id: 'b1' }), makeOrder({ id: 'b2' })]);
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('海景民宿');
     expect(text).toContain('累計佣金合計：200');
   });
 
   it('顯示各月撥款進度，無記錄視為待撥款', () => {
-    const fixture = setup('seaview', [makeBooking({ id: 'b1' })]);
+    const fixture = setup('seaview', [makeOrder({ id: 'b1' })]);
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('2026-07：待撥款');
   });
@@ -91,7 +91,7 @@ describe('PartnerAccountComponent', () => {
   it('有撥款紀錄時顯示已撥款', () => {
     const fixture = setup(
       'seaview',
-      [makeBooking({ id: 'b1' })],
+      [makeOrder({ id: 'b1' })],
       [{ id: 'po1', partnerId: 'pt1', month: '2026-07', status: 'paid' }],
     );
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';

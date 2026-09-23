@@ -131,14 +131,14 @@
       </div>
 
       <aside class="plan-aside">
-        <app-order-summary-card
+        <lib-order-summary-card
           [vehicle]="v"
           [startDate]="startDate()"
           [endDate]="endDate()"
-          [returnLocation]="v.location ?? ''"
+          [returnBranchId]="v.branchId ?? ''"
           [showVehicleHeader]="false"
           [priceBreakdown]="priceBreakdown()"
-        ></app-order-summary-card>
+        ></lib-order-summary-card>
 
         <button type="button" mat-flat-button color="primary" class="plan-page__next" (click)="onNext()">下一步</button>
       </aside>

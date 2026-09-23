@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { signal } from '@angular/core';
-import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalBooking, Vehicle, calculatePrice } from '../../../core/models';
+import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalOrder, Vehicle, calculatePrice } from '../../../core/models';
 import {
   NO_INSURANCE_VALUE,
   createOrderForm,
   lockRenterToMember,
-  orderFormInitialFromBooking,
+  orderFormInitialFromOrder,
   unlockRenter,
 } from './order-form';
 import { OrderFormData } from './order-form-data';
@@ -53,7 +53,7 @@ function quoteFor(days: number, insuranceSubtotal = 0, addOnLines: PriceBreakdow
 }
 
 /** 最小的參考資料假實作：報價固定用 1000/日的方案真實試算。 */
-function fakeData(vehicles: Vehicle[], conflicts: RentalBooking[] = [], addOns: AddOn[] = []): OrderFormData {
+function fakeData(vehicles: Vehicle[], conflicts: RentalOrder[] = [], addOns: AddOn[] = []): OrderFormData {
   return {
     vehicles: signal(vehicles),
     addOns: signal(addOns),
@@ -84,8 +84,8 @@ function filledForm() {
     vehicleId: 'v1',
     startTime: new Date('2026-01-05T09:00').toISOString(),
     endTime: new Date('2026-01-07T09:00').toISOString(),
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
   });
   form.controls.renter.patchValue({ name: '新客人', phone: '0900000000' });
   return form;
@@ -117,28 +117,28 @@ describe('createOrderForm', () => {
   });
 });
 
-describe('orderFormInitialFromBooking（編輯訂單的 hydration）', () => {
-  const booking: RentalBooking = {
+describe('orderFormInitialFromOrder（編輯訂單的 hydration）', () => {
+  const order: RentalOrder = {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'm1',
     startTime: '2026-01-05T01:00:00.000Z',
     endTime: '2026-01-07T01:00:00.000Z',
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-port',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-port',
     status: 'reserved',
     depositRequired: 600,
   };
 
   it('帶入車輛、租期、據點、訂金與會員；加購數量從 addOnLines 精確回填', () => {
-    const initial = orderFormInitialFromBooking(
-      { ...booking, priceBreakdown: quoteFor(2, 0, [{ addOnId: 'a1', name: '座椅', qty: 2, amount: 400 }]) },
+    const initial = orderFormInitialFromOrder(
+      { ...order, priceBreakdown: quoteFor(2, 0, [{ addOnId: 'a1', name: '座椅', qty: 2, amount: 400 }]) },
       { member },
     );
     expect(initial).toMatchObject({
       vehicleId: 'v1',
-      pickupLocation: 'mzg-airport',
-      returnLocation: 'mzg-port',
+      pickupBranchId: 'mzg-airport',
+      returnBranchId: 'mzg-port',
       depositRequired: 600,
       addOnQty: { a1: 2 },
     });
@@ -147,11 +147,11 @@ describe('orderFormInitialFromBooking（編輯訂單的 hydration）', () => {
 
   it('保險方案以「天數 × 每日價」反推；反推不出且車輛有方案時設為空字串（還沒解決）', () => {
     const vehicle = makeVehicle({ insurancePlans: [insurance] });
-    expect(orderFormInitialFromBooking({ ...booking, priceBreakdown: quoteFor(2, 600) }, { vehicle }).insurancePlanId).toBe('ins1');
-    expect(orderFormInitialFromBooking({ ...booking, priceBreakdown: quoteFor(2, 999) }, { vehicle }).insurancePlanId).toBe('');
+    expect(orderFormInitialFromOrder({ ...order, priceBreakdown: quoteFor(2, 600) }, { vehicle }).insurancePlanId).toBe('ins1');
+    expect(orderFormInitialFromOrder({ ...order, priceBreakdown: quoteFor(2, 999) }, { vehicle }).insurancePlanId).toBe('');
     // 車輛已沒有任何保險方案：維持預設（不加保），不擋送出
     expect(
-      orderFormInitialFromBooking({ ...booking, priceBreakdown: quoteFor(2, 999) }, { vehicle: makeVehicle() }).insurancePlanId,
+      orderFormInitialFromOrder({ ...order, priceBreakdown: quoteFor(2, 999) }, { vehicle: makeVehicle() }).insurancePlanId,
     ).toBeUndefined();
   });
 });
@@ -166,7 +166,7 @@ describe('buildContractSnapshot / sameContractTerms', () => {
     form.controls.contract.controls.internalNote.setValue('VIP');
     const final = buildContractSnapshot(vehicle, quote, 'member-new', form.getRawValue());
     expect(final.internalNote).toBe('VIP');
-    expect(final.pickupLocation).not.toBe('mzg-airport'); // 快照存據點名稱，不是 id
+    expect(final.pickupBranchId).not.toBe('mzg-airport'); // 快照存據點名稱，不是 id
     expect(sameContractTerms(preview, final)).toBe(true);
   });
 
@@ -209,12 +209,12 @@ describe('orderFormProblems（送出前檢查）', () => {
     form.controls.rental.controls.endLocal.setValue('2026-01-04T09:00');
     expect(problemsOf(form).rental).toContain(t.orderForm.problems.endBeforeStart);
 
-    const conflicted = problemsOf(filledForm(), fakeData([makeVehicle()], [{ id: 'x' } as RentalBooking]));
-    expect(conflicted.rental).toContain(t.bookingForm.vehicleConflict);
+    const conflicted = problemsOf(filledForm(), fakeData([makeVehicle()], [{ id: 'x' } as RentalOrder]));
+    expect(conflicted.rental).toContain(t.orderForm.vehicleConflict);
 
     const rich = filledForm();
     rich.controls.pricing.controls.depositRequired.setValue(999_999);
-    expect(problemsOf(rich).pricing[0]).toContain(t.bookingForm.depositExceedsCap);
+    expect(problemsOf(rich).pricing[0]).toContain(t.orderForm.depositExceedsCap);
   });
 });
 
@@ -223,10 +223,10 @@ describe('orderIncompleteItems（待補項目）', () => {
     const v = filledForm().getRawValue();
     v.pricing.depositRequired = 600;
     expect(orderIncompleteItems(v, 2000, 'unsigned')).toEqual([
-      t.bookingForm.incomplete.missingEmail,
-      t.bookingForm.incomplete.depositNotCollected,
-      t.bookingForm.incomplete.contractNotSigned,
-      t.bookingForm.incomplete.balanceNotCollected,
+      t.orderForm.incomplete.missingEmail,
+      t.orderForm.incomplete.depositNotCollected,
+      t.orderForm.incomplete.contractNotSigned,
+      t.orderForm.incomplete.balanceNotCollected,
     ]);
     expect(orderIncompleteItems(v, 2000, 'needs_resign')).toContain(t.orderForm.incomplete.contractNeedsResign);
 

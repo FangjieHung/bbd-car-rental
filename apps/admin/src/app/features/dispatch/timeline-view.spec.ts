@@ -1,8 +1,8 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { computeBlocks, TimelineViewComponent } from './timeline-view/timeline-view.component';
-import { RentalBooking, Vehicle } from '../../core/models';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { RentalOrder, Vehicle } from '../../core/models';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import { OrderDetailNavigation } from '../orders/navigation/order-detail-navigation';
 
@@ -20,14 +20,14 @@ const mkVehicle = (partial: Partial<Vehicle>): Vehicle => ({
 });
 
 const rangeStart = new Date(2026, 6, 20); // 2026-07-20 local
-const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
+const mk = (partial: Partial<RentalOrder>): RentalOrder => ({
   id: 'b1',
   vehicleId: 'v1',
   memberId: 'c1',
   startTime: new Date(2026, 6, 21, 9).toISOString(),
   endTime: new Date(2026, 6, 23, 18).toISOString(),
-  pickupLocation: '',
-  returnLocation: '',
+  pickupBranchId: '',
+  returnBranchId: '',
   status: 'reserved',
   depositRequired: 0,
   ...partial,
@@ -81,7 +81,7 @@ describe('TimelineViewComponent supplied date', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
         { provide: OrderDetailNavigation, useValue: { open: () => undefined } },
       ],
@@ -117,7 +117,7 @@ describe('TimelineViewComponent vehicles input', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo(storeVehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
         { provide: OrderDetailNavigation, useValue: { open: () => undefined } },
       ],
@@ -142,12 +142,12 @@ describe('TimelineViewComponent vehicles input', () => {
 });
 
 describe('TimelineViewComponent openDetail', () => {
-  it('點擊區塊前往訂單詳情，不再開簡化版的 booking-detail dialog', () => {
+  it('點擊區塊前往訂單詳情，不再開簡化版的 order-detail dialog', () => {
     const workspaceOpen = vi.fn();
     TestBed.configureTestingModule({
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo([mkVehicle({ id: 'v1' })]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo([mk({ id: 'b1' })]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo([mk({ id: 'b1' })]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
         { provide: OrderDetailNavigation, useValue: { open: workspaceOpen } },
       ],

@@ -34,8 +34,8 @@ export function evaluateContractChange(
   compare('vehicle', previous.vehicle, next.vehicle);
   compare('rentalStartTime', previous.rentalStartTime, next.rentalStartTime);
   compare('rentalEndTime', previous.rentalEndTime, next.rentalEndTime);
-  compare('pickupLocation', previous.pickupLocation, next.pickupLocation);
-  compare('returnLocation', previous.returnLocation, next.returnLocation);
+  compare('pickupBranchId', previous.pickupBranchId, next.pickupBranchId);
+  compare('returnBranchId', previous.returnBranchId, next.returnBranchId);
   compare('depositRequired', previous.depositRequired, next.depositRequired);
   compare('pricing', previous.pricing, next.pricing);
   compare('disclosedRules', previous.disclosedRules, next.disclosedRules);

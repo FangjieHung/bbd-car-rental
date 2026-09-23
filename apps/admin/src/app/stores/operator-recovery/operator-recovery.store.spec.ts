@@ -10,13 +10,13 @@ import {
   OperatorRecoveryCase,
   PaymentRecord,
   RefundRecord,
-  RentalBooking,
+  RentalOrder,
   ReminderStatus,
   Vehicle,
 } from '@car-rental/domain';
 import {
   AUDIT_ENTRY_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   CANCELLATION_CASE_REPO,
   CHARGE_ADJUSTMENT_REPO,
   CONTRACT_VERSION_REPO,
@@ -31,7 +31,7 @@ import {
 } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import { ReminderGateway } from '../../core/services/reminder.gateway';
-import { BookingStore } from '../booking/booking.store';
+import { OrderStore } from '../order/order.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { ContractStore } from '../contract/contract.store';
 import { CancellationStore, CreditConsentRequiredError } from '../cancellation/cancellation.store';
@@ -66,15 +66,15 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
   };
 }
 
-function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+function makeOrder(partial: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'm1',
     startTime: T_START,
     endTime: T_END,
-    pickupLocation: '馬公',
-    returnLocation: '馬公',
+    pickupBranchId: '馬公',
+    returnBranchId: '馬公',
     status: 'reserved',
     depositRequired: 1000,
     ...partial,
@@ -103,8 +103,8 @@ function makeContractVersion(partial: Partial<ContractVersion> = {}): ContractVe
       },
       rentalStartTime: T_START,
       rentalEndTime: T_END,
-      pickupLocation: '馬公',
-      returnLocation: '馬公',
+      pickupBranchId: '馬公',
+      returnBranchId: '馬公',
       depositRequired: 1000,
       pricing: {
         dailyLines: [],
@@ -131,7 +131,7 @@ function makeContractVersion(partial: Partial<ContractVersion> = {}): ContractVe
 function createFixture(
   options: {
     vehicles?: Vehicle[];
-    booking?: Partial<RentalBooking>;
+    order?: Partial<RentalOrder>;
     contracts?: ContractVersion[];
   } = {},
 ) {
@@ -141,7 +141,7 @@ function createFixture(
       { provide: OPERATOR_RECOVERY_CASE_REPO, useValue: createInMemoryRepo<OperatorRecoveryCase>() },
       { provide: CANCELLATION_CASE_REPO, useValue: createInMemoryRepo<CancellationCase>() },
       { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>() },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([makeBooking(options.booking)]) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([makeOrder(options.order)]) },
       {
         provide: VEHICLE_REPO,
         useValue: createInMemoryRepo<Vehicle>(options.vehicles ?? [makeVehicle()]),
@@ -163,7 +163,7 @@ function createFixture(
 
   return {
     store: TestBed.inject(OperatorRecoveryStore),
-    bookingStore: TestBed.inject(BookingStore),
+    orderStore: TestBed.inject(OrderStore),
     vehicleStore: TestBed.inject(VehicleStore),
     contractStore: TestBed.inject(ContractStore),
     cancellationStore: TestBed.inject(CancellationStore),
@@ -285,7 +285,7 @@ describe('OperatorRecoveryStore', () => {
 
   describe('同級調車 / 免費升等：接受時更新車輛並觸發新合約版本', () => {
     it('同級調車被接受：訂單車輛更新、合約產生新版本、案件狀態為 resolved', () => {
-      const { store, bookingStore, contractStore } = createFixture({
+      const { store, orderStore, contractStore } = createFixture({
         vehicles: [makeVehicle(), makeVehicle({ id: 'v2', plateNumber: 'A-2', status: 'available' })],
         contracts: [makeContractVersion()],
       });
@@ -310,7 +310,7 @@ describe('OperatorRecoveryStore', () => {
 
       expect(updated.status).toBe('resolved');
       expect(updated.resolvedRemedyType).toBe('same_class_replacement');
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.vehicleId).toBe('v2');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.vehicleId).toBe('v2');
 
       const versions = contractStore.versionsFor('b1');
       expect(versions).toHaveLength(2);
@@ -320,7 +320,7 @@ describe('OperatorRecoveryStore', () => {
     });
 
     it('免費升等被接受：顧客價格（訂單本身）不變動，價差記為業者吸收', () => {
-      const { store, bookingStore } = createFixture({
+      const { store, orderStore } = createFixture({
         vehicles: [
           makeVehicle(),
           makeVehicle({
@@ -338,7 +338,7 @@ describe('OperatorRecoveryStore', () => {
       });
       store.attemptRemedy({ caseId: kase.id, type: 'same_class_replacement', attemptedAt: T_START, outcome: 'unavailable', notedBy: '櫃檯甲' });
 
-      const before = bookingStore.bookings().find((b) => b.id === 'b1');
+      const before = orderStore.orders().find((b) => b.id === 'b1');
       const updated = store.attemptRemedy({
         caseId: kase.id,
         type: 'free_upgrade',
@@ -351,7 +351,7 @@ describe('OperatorRecoveryStore', () => {
         notedBy: '櫃檯甲',
       });
 
-      const after = bookingStore.bookings().find((b) => b.id === 'b1');
+      const after = orderStore.orders().find((b) => b.id === 'b1');
       expect(after?.priceBreakdown).toEqual(before?.priceBreakdown);
       expect(after?.depositRequired).toBe(before?.depositRequired);
       expect(updated.remedyAttempts[1].absorbedDifference).toBe(500);
@@ -406,7 +406,7 @@ describe('OperatorRecoveryStore', () => {
     });
 
     it('重新檢查可用性：替代車輛非 available 狀態時丟錯，不更新訂單', () => {
-      const { store, bookingStore } = createFixture({
+      const { store, orderStore } = createFixture({
         vehicles: [makeVehicle(), makeVehicle({ id: 'v2', status: 'rented' })],
       });
       const kase = store.createCase({
@@ -429,11 +429,11 @@ describe('OperatorRecoveryStore', () => {
           notedBy: '櫃檯甲',
         }),
       ).toThrow(RemedyVehicleUnavailableError);
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
     });
 
     it('跨車種替代即使可用也會被拒絕，不能把訂單換成不相容車種', () => {
-      const { store, bookingStore } = createFixture({
+      const { store, orderStore } = createFixture({
         vehicles: [
           makeVehicle(),
           makeVehicle({
@@ -452,7 +452,7 @@ describe('OperatorRecoveryStore', () => {
           replacementVehicleId: 'v2', customerConsent: true, approvedBy: '店長乙', notedBy: '櫃檯甲',
         }),
       ).toThrow('不符合此補救方案的車種／載客能力門檻');
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
     });
 
     it('案件已解決後不可再嘗試補救方案', () => {
@@ -491,7 +491,7 @@ describe('OperatorRecoveryStore', () => {
 
   describe('合作同業轉單', () => {
     it('轉單被接受：記錄合作業者、外部報價、差額與顧客同意，不影響本社車輛／合約', () => {
-      const { store, bookingStore, contractStore } = createFixture({
+      const { store, orderStore, contractStore } = createFixture({
         vehicles: [makeVehicle()],
         contracts: [makeContractVersion()],
       });
@@ -526,7 +526,7 @@ describe('OperatorRecoveryStore', () => {
       expect(attempt.externalQuoteAmount).toBe(2500);
       expect(attempt.absorbedDifference).toBe(500);
       // 合作同業轉單不是本社車輛，不觸發車輛更新或合約新版本
-      expect(bookingStore.bookings().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
+      expect(orderStore.orders().find((b) => b.id === 'b1')?.vehicleId).toBe('v1');
       expect(contractStore.versionsFor('b1')).toHaveLength(1);
     });
 

@@ -6,7 +6,7 @@
   <div class="ui-card overflow-x-auto !p-0">
     <div class="timeline-view__canvas min-w-[900px]">
       <div class="grid" [style.grid-template-columns]="gridCols">
-        <div class="text-xs font-bold p-2">{{ t.booking.vehicle }}</div>
+        <div class="text-xs font-bold p-2">{{ t.order.vehicle }}</div>
         @for (d of days(); track $index) {
           <div class="timeline-view__cell-header text-xs text-center p-2">{{ fmtDate(d) }}</div>
         }
@@ -36,7 +36,7 @@
                 [style.grid-column]="block.startCol + 1 + ' / span ' + block.span"
                 [style.grid-row]="1"
                 (click)="openDetail(block.bookingId)"
-              >{{ t.booking.statusLabels[block.kind] }}</button>
+              >{{ t.order.statusLabels[block.kind] }}</button>
             }
           </div>
         </div>

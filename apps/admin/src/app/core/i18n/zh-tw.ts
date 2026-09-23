@@ -6,7 +6,7 @@ export const ZH_TW = {
     dashboard: '總覽',
     productGroup: '商品管理',
     vehicles: '車輛清單',
-    bookings: '訂單管理',
+    orders: '訂單管理',
     maintenance: '保養管理',
     pricingGroup: '定價管理',
     pricing: '定價規則',
@@ -74,7 +74,7 @@ export const ZH_TW = {
     tableView: '表格',
     timelineView: '時間軸',
     backToList: '返回車輛清單',
-    location: '所在據點',
+    branch: '所在據點',
     locationUnspecified: '未指定',
   },
   member: {
@@ -153,13 +153,13 @@ export const ZH_TW = {
     note: '說明',
     needsIssuingCountry: '請先填寫發照國家／地區才能查核',
   },
-  booking: {
+  order: {
     vehicle: '車輛',
     member: '會員',
     startTime: '開始時間',
     endTime: '結束時間',
-    pickupLocation: '取車地點',
-    returnLocation: '還車地點',
+    pickupBranch: '取車地點',
+    returnBranch: '還車地點',
     status: '狀態',
     statusLabels: {
       reserved: '已預訂',
@@ -169,7 +169,7 @@ export const ZH_TW = {
     } as Record<string, string>,
     pickUp: '取車',
     complete: '還車',
-    cancelBooking: '取消訂單',
+    cancelOrder: '取消訂單',
     conflict: '時段衝突，與下列訂單重疊：',
     endBeforeStart: '結束時間必須晚於開始時間',
     invalidTransition: '訂單狀態不允許此操作',
@@ -180,7 +180,8 @@ export const ZH_TW = {
     clearPick: '清除選擇',
     openDetail: '訂單詳情',
   },
-  bookingForm: {
+  // /orders/new 建立訂單頁、訂單詳情與可重用的訂單表單區塊。
+  orderForm: {
     title: '新增訂單',
     steps: {
       vehicle: '租期與車輛',
@@ -218,15 +219,6 @@ export const ZH_TW = {
     internalNote: '內部備註',
     reviewTitle: '確認建立前檢查',
     allComplete: '目前沒有待辦事項',
-    incomplete: {
-      missingEmail: '會員未提供 Email，還車提醒無法排程',
-      depositNotCollected: '訂金尚未收款',
-      contractNotSigned: '合約尚未簽署',
-      balanceNotCollected: '租金尚未收足',
-    },
-  },
-  // /orders/new 建立訂單頁與可重用的訂單表單區塊；步驟名稱、報價與待補項目等字串沿用 bookingForm。
-  orderForm: {
     stepErrorsNotice: '尚有項目需要修正，已標示在步驟上',
     required: '必填',
     problems: {
@@ -245,6 +237,10 @@ export const ZH_TW = {
       signatureAlt: '客人簽名',
     },
     incomplete: {
+      missingEmail: '會員未提供 Email，還車提醒無法排程',
+      depositNotCollected: '訂金尚未收款',
+      contractNotSigned: '合約尚未簽署',
+      balanceNotCollected: '租金尚未收足',
       contractNeedsResign: '合約條款已變更，需重新簽署',
     },
     quotePending: '選好車輛與租期後會顯示報價',

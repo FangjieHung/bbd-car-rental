@@ -29,8 +29,8 @@ function baseSnapshot(): ContractSnapshot {
     },
     rentalStartTime: '2026-10-15T09:00:00+08:00',
     rentalEndTime: '2026-10-18T09:00:00+08:00',
-    pickupLocation: '馬公門市',
-    returnLocation: '馬公門市',
+    pickupBranchId: '馬公門市',
+    returnBranchId: '馬公門市',
     depositRequired: 3_000,
     pricing: {
       dailyLines: [],
@@ -103,12 +103,12 @@ describe('evaluateContractChange', () => {
   it('取還車地點變動會使已簽署版本失效', () => {
     const previous = baseSnapshot();
     const next = baseSnapshot();
-    next.returnLocation = '馬公機場';
+    next.returnBranchId = '馬公機場';
 
     const result = evaluateContractChange(previous, next);
 
     expect(result.supersedes).toBe(true);
-    expect(result.changedFields).toContain('returnLocation');
+    expect(result.changedFields).toContain('returnBranchId');
   });
 
   it('租金（含計價明細）變動會使已簽署版本失效', () => {

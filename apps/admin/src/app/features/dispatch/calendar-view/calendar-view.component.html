@@ -135,7 +135,7 @@
                           }
                         </mat-panel-title>
                         <mat-panel-description class="work-list-row__time">{{
-                          fmtTime(row.booking.startTime)
+                          fmtTime(row.order.startTime)
                         }}</mat-panel-description>
                       </mat-expansion-panel-header>
                       <dl class="work-list-detail">
@@ -143,12 +143,12 @@
                           <dt>客人</dt>
                           <dd class="work-list-detail__member">
                             <span>{{ memberName(row) }}</span>
-                            @if (phoneHref(row.booking); as href) {
+                            @if (phoneHref(row.order); as href) {
                               <a
                                 class="work-list-detail__phone-link underline"
                                 [href]="href"
                                 [attr.aria-label]="
-                                  memberName(row) + '，撥打電話 ' + phoneLabel(row.booking)
+                                  memberName(row) + '，撥打電話 ' + phoneLabel(row.order)
                                 "
                               >
                                 <span class="material-symbols-rounded" aria-hidden="true"
@@ -209,7 +209,7 @@
                           <span class="material-symbols-rounded" aria-hidden="true">payments</span>
                           {{ t.dispatch.workList.pay }}
                         </button>
-                        @if (row.booking.status === 'reserved') {
+                        @if (row.order.status === 'reserved') {
                           <button matButton="tonal" (click)="editAction(row)">
                             <span class="material-symbols-rounded" aria-hidden="true">edit</span>
                             {{ t.common.edit }}
@@ -219,14 +219,14 @@
                           <span class="material-symbols-rounded" aria-hidden="true">description</span>
                           {{ t.dispatch.workList.viewContract }}
                         </button>
-                        @if (row.booking.status === 'reserved') {
+                        @if (row.order.status === 'reserved') {
                           <button matButton="tonal" (click)="cancelAction(row)">
                             <span class="material-symbols-rounded" aria-hidden="true">cancel</span>
                             {{ t.common.cancel }}
                           </button>
                           <button matButton="filled" (click)="pickupAction(row)">
                             <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
-                            {{ t.booking.pickUp }}
+                            {{ t.order.pickUp }}
                           </button>
                         }
                       </div>
@@ -259,7 +259,7 @@
                                 <span class="material-symbols-rounded" aria-hidden="true">receipt_long</span>
                                 {{ t.dispatch.workList.returnedUnsettled }}
                               </span>
-                            } @else if (row.booking.status === 'in_progress') {
+                            } @else if (row.order.status === 'in_progress') {
                               <span
                                 class="ui-chip work-list-row__status-chip"
                                 [class.ui-chip--warning]="overdue"
@@ -273,7 +273,7 @@
                             }
                           </mat-panel-title>
                           <mat-panel-description class="work-list-row__time">{{
-                            fmtTime(row.booking.endTime)
+                            fmtTime(row.order.endTime)
                           }}</mat-panel-description>
                         </mat-expansion-panel-header>
                         <dl class="work-list-detail">
@@ -281,12 +281,12 @@
                             <dt>客人</dt>
                             <dd class="work-list-detail__member">
                               <span>{{ memberName(row) }}</span>
-                              @if (phoneHref(row.booking); as href) {
+                              @if (phoneHref(row.order); as href) {
                                 <a
                                   class="work-list-detail__phone-link underline"
                                   [href]="href"
                                   [attr.aria-label]="
-                                    memberName(row) + '，撥打電話 ' + phoneLabel(row.booking)
+                                    memberName(row) + '，撥打電話 ' + phoneLabel(row.order)
                                   "
                                 >
                                   <span class="material-symbols-rounded" aria-hidden="true"
@@ -319,16 +319,16 @@
                             <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
                             {{ t.dispatch.workList.view }}
                           </button>
-                          @if (phoneHref(row.booking); as href) {
+                          @if (phoneHref(row.order); as href) {
                             <a matButton="tonal" [href]="href">
                               <span class="material-symbols-rounded" aria-hidden="true">call</span>
                               {{ t.dispatch.workList.contact }}
                             </a>
                           }
-                          @if (row.booking.status === 'in_progress') {
+                          @if (row.order.status === 'in_progress') {
                             <button matButton="filled" (click)="returnAction(row)">
                               <span class="material-symbols-rounded" aria-hidden="true">assignment_turned_in</span>
-                              {{ t.booking.complete }}
+                              {{ t.order.complete }}
                             </button>
                           }
                         </div>
@@ -343,7 +343,7 @@
             <mat-tab [label]="'可用 ' + availableVehicles().length + ' 筆'">
               <ng-template matTabContent>
                 @if (availableVehicles().length > 0) {
-                  <app-vehicle-step
+                  <lib-vehicle-step
                     class="calendar-view__vehicle-step"
                     [vehicles]="availableVehicles()"
                     [priceForVehicle]="priceForVehicle"

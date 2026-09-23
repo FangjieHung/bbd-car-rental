@@ -14,7 +14,7 @@ const defaultTime = (hour: number): Date => {
 };
 
 @Component({
-  selector: 'app-date-step',
+  selector: 'lib-date-step',
   imports: [FormsModule, MatFormFieldModule, MatSelectModule, MatButtonModule, DualMonthRangePickerComponent],
   templateUrl: './date-step.component.html',
   styleUrl: './date-step.component.scss',

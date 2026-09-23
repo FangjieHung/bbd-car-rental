@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { CommissionStore } from './commission.store';
-import { BOOKING_REPO, PARTNER_REPO, PAYOUT_REPO, VEHICLE_REPO } from '../../core/repositories/tokens';
+import { ORDER_REPO, PARTNER_REPO, PAYOUT_REPO, VEHICLE_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { Partner, RentalBooking, Vehicle, MonthlyPayout } from '../../core/models';
+import { Partner, RentalOrder, Vehicle, MonthlyPayout } from '../../core/models';
 
 const partner: Partner = {
   id: 'pt1',
@@ -25,14 +25,14 @@ const vehicle: Vehicle = {
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 
-const bookingInMonth: RentalBooking = {
+const orderInMonth: RentalOrder = {
   id: 'b1',
   vehicleId: 'v1',
   memberId: 'c1',
   startTime: '2026-07-05T09:00:00.000Z',
   endTime: '2026-07-08T09:00:00.000Z',
-  pickupLocation: '馬公門市',
-  returnLocation: '馬公門市',
+  pickupBranchId: '馬公門市',
+  returnBranchId: '馬公門市',
   status: 'completed',
   depositRequired: 0,
   sourcePartnerId: 'pt1',
@@ -56,21 +56,21 @@ const bookingInMonth: RentalBooking = {
   },
 };
 
-const bookingOtherMonth: RentalBooking = {
-  ...bookingInMonth,
+const orderOtherMonth: RentalOrder = {
+  ...orderInMonth,
   id: 'b2',
   startTime: '2026-08-05T09:00:00.000Z',
   endTime: '2026-08-08T09:00:00.000Z',
 };
 
-const bookingOtherPartner: RentalBooking = {
-  ...bookingInMonth,
+const orderOtherPartner: RentalOrder = {
+  ...orderInMonth,
   id: 'b3',
   sourcePartnerId: 'pt2',
 };
 
-const bookingNoSource: RentalBooking = {
-  ...bookingInMonth,
+const orderNoSource: RentalOrder = {
+  ...orderInMonth,
   id: 'b4',
   sourcePartnerId: undefined,
 };
@@ -81,12 +81,12 @@ describe('CommissionStore', () => {
     TestBed.configureTestingModule({
       providers: [
         {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([
-            bookingInMonth,
-            bookingOtherMonth,
-            bookingOtherPartner,
-            bookingNoSource,
+          provide: ORDER_REPO,
+          useValue: createInMemoryRepo<RentalOrder>([
+            orderInMonth,
+            orderOtherMonth,
+            orderOtherPartner,
+            orderNoSource,
           ]),
         },
         { provide: PARTNER_REPO, useValue: createInMemoryRepo<Partner>([partner]) },

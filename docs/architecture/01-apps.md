@@ -16,8 +16,8 @@
 | `/dashboard` | 儀表板 | 總覽 + 調度行事曆（`app-calendar-view`，取車清單標示「需調度」） |
 | `/vehicles` | 車籍管理 | 車輛 CRUD、狀態機（available/rented/maintenance/reserved）；「時間軸」檢視模式是一列一台車的調度時間軸（`features/dispatch/timeline-view/`） |
 | `/vehicles/:id` | 車輛詳情 | 車輛資料、保養紀錄（`MaintenanceRecord`，經對話框新增） |
-| `/bookings` | 訂單列表 | 列表、篩選、匯出；「建立訂單」導到 `/orders/new`，點列導到 `/orders/:id` |
-| `/bookings/members` | 會員管理 | `Member` 清單 |
+| `/orders` | 訂單列表 | 列表、篩選、匯出；「建立訂單」導到 `/orders/new`，點列導到 `/orders/:id`（舊網址 `/bookings` 會轉址過來） |
+| `/members` | 會員管理 | `Member` 清單；側欄歸在「訂單管理」下（舊網址 `/bookings/members` 會轉址過來） |
 | `/orders/new` | 建立訂單 | 見下方「訂單頁面化」 |
 | `/orders/:id` | 訂單詳情 | 見下方「訂單頁面化」 |
 | `/pricing` | 定價方案 | `PricingPlan` CRUD（車型定價、日型費率、天數累折級距） |

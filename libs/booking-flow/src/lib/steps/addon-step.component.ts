@@ -6,7 +6,7 @@ import { AddOn } from '@car-rental/domain';
 import { BOOKING_FLOW_LABELS } from '../booking-flow-labels';
 
 @Component({
-  selector: 'app-addon-step',
+  selector: 'lib-addon-step',
   imports: [FormsModule, MatFormFieldModule, MatInputModule],
   templateUrl: './addon-step.component.html',
   styleUrl: './addon-step.component.scss',

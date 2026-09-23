@@ -84,8 +84,8 @@ describe('VehicleStepComponent 篩選', () => {
   });
 
   it('取車地點篩選只留下該據點的車', () => {
-    const airport = makeVehicle({ id: 'v1', location: '機場' });
-    const store = makeVehicle({ id: 'v2', location: '店舖' });
+    const airport = makeVehicle({ id: 'v1', branchId: '機場' });
+    const store = makeVehicle({ id: 'v2', branchId: '店舖' });
     const component = setup([airport, store], { v1: 1, v2: 1 });
 
     component['selectedLocation'].set('店舖');

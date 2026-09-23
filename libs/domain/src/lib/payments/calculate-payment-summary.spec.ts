@@ -110,7 +110,7 @@ describe('calculatePaymentSummary', () => {
     });
   });
 
-  it('becomes additional_payment_due when a confirmed adjustment reopens a settled booking', () => {
+  it('becomes additional_payment_due when a confirmed adjustment reopens a settled order', () => {
     const summary = calculatePaymentSummary({
       baseTotal: 3_000,
       depositRequired: 900,

@@ -1,5 +1,5 @@
 import { Signal, computed } from '@angular/core';
-import { PriceBreakdown, RentalBooking, Vehicle } from '../../../core/models';
+import { PriceBreakdown, RentalOrder, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import type { OrderFormData } from './order-form-data';
 import {
@@ -24,7 +24,7 @@ export interface OrderFormDerived {
   quote: Signal<PriceBreakdown | undefined>;
   /** 車輛與租期都填了，卻試算不出報價（該車型沒有定價方案等）。 */
   quoteUnavailable: Signal<boolean>;
-  conflicts: Signal<RentalBooking[]>;
+  conflicts: Signal<RentalOrder[]>;
   depositCap: Signal<number>;
   depositExceedsCap: Signal<boolean>;
   insuranceUnreconciled: Signal<boolean>;
@@ -84,20 +84,20 @@ export function orderFormProblems(
   } else if (new Date(rental.endLocal).getTime() <= new Date(rental.startLocal).getTime()) {
     problems.rental.push(t.orderForm.problems.endBeforeStart);
   }
-  if (!rental.pickupLocation || !rental.returnLocation) {
+  if (!rental.pickupBranchId || !rental.returnBranchId) {
     problems.rental.push(t.orderForm.problems.branchesRequired);
   }
-  if (derived.conflicts().length > 0) problems.rental.push(t.bookingForm.vehicleConflict);
-  if (derived.quoteUnavailable()) problems.rental.push(t.bookingForm.quoteUnavailable);
+  if (derived.conflicts().length > 0) problems.rental.push(t.orderForm.vehicleConflict);
+  if (derived.quoteUnavailable()) problems.rental.push(t.orderForm.quoteUnavailable);
 
   if (!renter.name.trim() || !renter.phone.trim()) problems.renter.push(t.orderForm.problems.renterBaseline);
 
   if (pricing.depositRequired == null || !Number.isFinite(pricing.depositRequired) || pricing.depositRequired < 0) {
     problems.pricing.push(t.orderForm.problems.depositInvalid);
   } else if (derived.depositExceedsCap()) {
-    problems.pricing.push(`${t.bookingForm.depositExceedsCap}（${derived.depositCap()}）`);
+    problems.pricing.push(`${t.orderForm.depositExceedsCap}（${derived.depositCap()}）`);
   }
-  if (derived.insuranceUnreconciled()) problems.pricing.push(t.bookingForm.insuranceUnreconciled);
+  if (derived.insuranceUnreconciled()) problems.pricing.push(t.orderForm.insuranceUnreconciled);
 
   return problems;
 }
@@ -115,17 +115,17 @@ export function orderIncompleteItems(
   contract: OrderContractSigning,
 ): string[] {
   const items: string[] = [];
-  if (!value.renter.email) items.push(t.bookingForm.incomplete.missingEmail);
+  if (!value.renter.email) items.push(t.orderForm.incomplete.missingEmail);
 
   const drafts = value.payments.drafts;
   const deposit = value.pricing.depositRequired;
   const depositCollected = drafts.filter((p) => p.purpose === 'deposit').reduce((sum, p) => sum + p.amount, 0);
-  if (deposit > 0 && depositCollected < deposit) items.push(t.bookingForm.incomplete.depositNotCollected);
+  if (deposit > 0 && depositCollected < deposit) items.push(t.orderForm.incomplete.depositNotCollected);
 
-  if (contract === 'unsigned') items.push(t.bookingForm.incomplete.contractNotSigned);
+  if (contract === 'unsigned') items.push(t.orderForm.incomplete.contractNotSigned);
   if (contract === 'needs_resign') items.push(t.orderForm.incomplete.contractNeedsResign);
 
   const totalCollected = drafts.reduce((sum, p) => sum + p.amount, 0);
-  if (quoteTotal > 0 && totalCollected < quoteTotal) items.push(t.bookingForm.incomplete.balanceNotCollected);
+  if (quoteTotal > 0 && totalCollected < quoteTotal) items.push(t.orderForm.incomplete.balanceNotCollected);
   return items;
 }

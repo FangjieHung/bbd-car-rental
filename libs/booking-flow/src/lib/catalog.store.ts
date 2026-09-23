@@ -9,9 +9,9 @@ import {
   PaymentRecord,
   PriceBreakdown,
   PricingPlan,
-  RentalBooking,
+  RentalOrder,
   VEHICLE_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   MEMBER_REPO,
   PAYMENT_REPO,
   PRICING_PLAN_REPO,
@@ -40,7 +40,7 @@ const PAYMENT_METHOD_FOR_PREFERENCE: Record<PaymentPreference, PaymentMethod> = 
 @Injectable({ providedIn: 'root' })
 export class CatalogStore {
   private readonly vehicleRepo = inject(VEHICLE_REPO);
-  private readonly bookingRepo = inject(BOOKING_REPO);
+  private readonly orderRepo = inject(ORDER_REPO);
   private readonly memberRepo = inject(MEMBER_REPO);
   private readonly paymentRepo = inject(PAYMENT_REPO);
   private readonly planRepo = inject(PRICING_PLAN_REPO);
@@ -49,10 +49,10 @@ export class CatalogStore {
   private readonly couponRepo = inject(COUPON_REPO);
 
   availableVehicles(startTime: string, endTime: string): Vehicle[] {
-    const bookings = this.bookingRepo.getAll();
+    const bookings = this.orderRepo.getAll();
     return this.vehicleRepo
       .getAll()
-      .filter((v) => isVehicleAvailable({ vehicle: v, startTime, endTime, bookings }));
+      .filter((v) => isVehicleAvailable({ vehicle: v, startTime, endTime, orders: bookings }));
   }
 
   planForCategory(cat: VehicleCategory): PricingPlan | undefined {
@@ -92,8 +92,8 @@ export class CatalogStore {
     vehicleId: string;
     startTime: string;
     endTime: string;
-    pickupLocation: string;
-    returnLocation: string;
+    pickupBranchId: string;
+    returnBranchId: string;
     member: { name: string; phone: string; email: string };
     category: VehicleCategory;
     startDate: string;
@@ -104,7 +104,7 @@ export class CatalogStore {
     partnerDiscountPercent?: number;
     sourcePartnerId?: string;
     insurancePlanId?: string;
-  }): RentalBooking {
+  }): RentalOrder {
     const vehicle = this.vehicleRepo.getById(input.vehicleId);
     if (!vehicle) throw new Error('查無車輛');
     if (
@@ -112,7 +112,7 @@ export class CatalogStore {
         vehicle,
         startTime: input.startTime,
         endTime: input.endTime,
-        bookings: this.bookingRepo.getAll(),
+        orders: this.orderRepo.getAll(),
       })
     )
       throw new Error('車輛已被預約');
@@ -141,14 +141,14 @@ export class CatalogStore {
       kind: 'local',
     };
     this.memberRepo.create(member);
-    const booking: RentalBooking = {
+    const booking: RentalOrder = {
       id: crypto.randomUUID(),
       vehicleId: input.vehicleId,
       memberId: member.id,
       startTime: input.startTime,
       endTime: input.endTime,
-      pickupLocation: input.pickupLocation,
-      returnLocation: input.returnLocation,
+      pickupBranchId: input.pickupBranchId,
+      returnBranchId: input.returnBranchId,
       status: 'reserved',
       addOns: input.addOns.filter((a) => a.qty > 0).map((a) => ({ addOnId: a.addOn.id, qty: a.qty })),
       couponCode: priceBreakdown.couponCode,
@@ -158,7 +158,7 @@ export class CatalogStore {
       ...(input.sourcePartnerId ? { sourcePartnerId: input.sourcePartnerId } : {}),
       ...(input.insurancePlanId ? { insurancePlanId: input.insurancePlanId } : {}),
     };
-    this.bookingRepo.create(booking);
+    this.orderRepo.create(booking);
     return booking;
   }
 
@@ -173,8 +173,8 @@ export class CatalogStore {
    * 或未來真金流回調重試，就多記一筆重複的已確認付款。呼叫前先查是否已有該訂單的
    * confirmed balance 付款紀錄，有的話直接視為已完成、不再新增。
    */
-  markBookingPaid(bookingId: string): RentalBooking {
-    const booking = this.bookingRepo.getById(bookingId);
+  markBookingPaid(bookingId: string): RentalOrder {
+    const booking = this.orderRepo.getById(bookingId);
     if (!booking) throw new Error('查無訂單');
 
     const alreadyPaid = this.paymentRepo

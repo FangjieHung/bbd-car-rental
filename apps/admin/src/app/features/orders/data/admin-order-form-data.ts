@@ -2,14 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import {
   Member,
   PriceBreakdown,
-  RentalBooking,
+  RentalOrder,
   Vehicle,
   calculatePrice,
   defaultDepositForCategory,
 } from '../../../core/models';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 import { AddOnStore } from '../../../stores/addon/addon.store';
 import { OrderFormData, OrderQuoteInput } from '../order-form/order-form-data';
@@ -19,7 +19,7 @@ import { OrderFormData, OrderQuoteInput } from '../order-form/order-form-data';
 export class AdminOrderFormData implements OrderFormData {
   private readonly vehicleStore = inject(VehicleStore);
   private readonly memberStore = inject(MemberStore);
-  private readonly bookingStore = inject(BookingStore);
+  private readonly orderStore = inject(OrderStore);
   private readonly pricingStore = inject(PricingStore);
   private readonly addOnStore = inject(AddOnStore);
 
@@ -57,10 +57,10 @@ export class AdminOrderFormData implements OrderFormData {
     }
   }
 
-  findConflicts(vehicleId: string, startIso: string, endIso: string, excludeBookingId?: string): RentalBooking[] {
-    // BookingStore.findConflicts 直接讀 repository；先讀一次 bookings signal，讓 computed 在訂單異動時也會重算。
-    this.bookingStore.bookings();
-    return this.bookingStore.findConflicts(vehicleId, startIso, endIso, excludeBookingId);
+  findConflicts(vehicleId: string, startIso: string, endIso: string, excludeBookingId?: string): RentalOrder[] {
+    // OrderStore.findConflicts 直接讀 repository；先讀一次 orders signal，讓 computed 在訂單異動時也會重算。
+    this.orderStore.orders();
+    return this.orderStore.findConflicts(vehicleId, startIso, endIso, excludeBookingId);
   }
 
   depositCap(vehicle: Vehicle | undefined, quoteTotal: number): number {

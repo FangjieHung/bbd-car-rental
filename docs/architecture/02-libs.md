@@ -13,16 +13,16 @@
 
 | Model | 檔案 | 說明 |
 |---|---|---|
-| `Vehicle` | `vehicle.ts` | 車輛；`category` 是 `car\|scooter\|ev`，`status` 是狀態機（見下）、`location` 存所在據點 id |
+| `Vehicle` | `vehicle.ts` | 車輛；`category` 是 `car\|scooter\|ev`，`status` 是狀態機（見下）、`branchId` 存所在據點 id |
 | `Member` | `member.ts` | 承租人基本資料；`kind` 分本國人／外國旅客／持居留證者。刻意不存證件圖檔或驗證狀態，那是 `IdentityDocument`/`DriverCredential` 的責任（可跨訂單重用，經 `memberId` 反參照） |
-| `RentalBooking` | `rental-booking.ts` | 訂單；`status` 是狀態機、`pickupLocation`/`returnLocation` 存據點 id、`sourcePartnerId` 標記來源民宿（模組二新增） |
+| `RentalOrder` | `rental-order.ts` | 訂單；`status` 是狀態機、`pickupBranchId`/`returnBranchId` 存據點 id、`sourcePartnerId` 標記來源民宿（模組二新增） |
 | `RentalBranch` / `BranchType` | `branch.ts` | 具體據點（機場櫃檯、馬公中正門市…），車輛所在據點、取車據點、還車據點共用同一份清單；`BranchType` 只是分類，不能當地址 |
 | `PricingPlan` / `SeasonCalendar` | `pricing-plan.ts` | 定價方案（依車型、依日型費率、天數累折級距）與假日/旺季日曆 |
 | `AddOn` | `add-on.ts` | 配件（單價 + 計價單位 `per_rental`/`per_day`） |
 | `Coupon` | `coupon.ts` | 優惠券（`percent`/`amount`，可限車型/最少天數/有效期） |
 | `InsurancePlan` | `insurance-plan.ts` | 保險方案（每日起價、保障項目），計入 `PriceBreakdown.insuranceSubtotal` |
 | `PriceBreakdown` | `price-breakdown.ts` | `calculatePrice()` 的輸出，見 `03-pricing-and-commission.md` |
-| `PaymentRecord` | `payment-record.ts` | 付款分類帳的單筆紀錄（`purpose: deposit\|balance\|adjustment`、`status` 有 `pending\|confirmed\|failed\|voided`）；訂單目前已付多少一律靠掃這本帳算，不看 `BookingStatus` |
+| `PaymentRecord` | `payment-record.ts` | 付款分類帳的單筆紀錄（`purpose: deposit\|balance\|adjustment`、`status` 有 `pending\|confirmed\|failed\|voided`）；訂單目前已付多少一律靠掃這本帳算，不看 `OrderStatus` |
 | `ContractVersion` | `contract-version.ts` | 某一時點訂單條款的不可變快照（承租人、車輛、租期、費用皆存文字快照，不怕後續資料異動回頭改到舊合約） |
 | `HandoverRecord` | `handover-record.ts` | 取車或還車的完整紀錄：時間、里程、能源讀數、照片、證件核對、雙方簽署確認 |
 | `CancellationCase` | `cancellation-case.ts` | 取消案件：責任歸屬（顧客／不可抗力／業者過失／業者故意）、退費試算、最終了結方式 |
@@ -41,11 +41,11 @@
 訂單詳情頁的收款／合約／交車／取消／稽核等分頁（見 `01-apps.md`「訂單頁面化」）。
 
 **車輛狀態機**（`VehicleStatus`）：`available` → `rented` → `available`；隨時可轉 `maintenance`。
-**訂單狀態機**（`BookingStatus`）：只有 `reserved`／`in_progress`／`completed`／`cancelled`
+**訂單狀態機**（`OrderStatus`）：只有 `reserved`／`in_progress`／`completed`／`cancelled`
 四個值，只描述車輛交接進度，**不代表付款是否完成**——付款狀態改由 `PaymentRecord` 分類帳獨立
 追蹤（見上表）。只有 `reserved`/`in_progress` 會佔用車輛時段（見下方 `isVehicleAvailable`）。
 舊資料裡的 `pending_payment`/`confirmed` 是已淘汰的 legacy 值，讀取時由
-`normalize-rental-booking.ts` 統一遷移為 `reserved`，不會出現在應用程式邏輯裡；完整設計脈絡見
+`normalize-rental-order.ts` 統一遷移為 `reserved`，不會出現在應用程式邏輯裡；完整設計脈絡見
 `04-booking-flow.md`。
 
 `MaintenanceRecord`（保養紀錄）**不在這裡**，只有 admin 內部需要，定義在

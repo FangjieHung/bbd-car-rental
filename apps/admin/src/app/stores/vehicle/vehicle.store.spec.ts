@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { VehicleStore } from './vehicle.store';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord } from '../../core/models';
+import { Vehicle, RentalOrder, MaintenanceRecord } from '../../core/models';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
 function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
@@ -23,16 +23,16 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
 
 describe('VehicleStore', () => {
   let store: VehicleStore;
-  let bookings: RentalBooking[];
+  let orders: RentalOrder[];
   let records: MaintenanceRecord[];
 
   beforeEach(() => {
-    bookings = [];
+    orders = [];
     records = [];
     TestBed.configureTestingModule({
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
-        { provide: BOOKING_REPO, useFactory: () => createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useFactory: () => createInMemoryRepo<RentalOrder>(orders) },
         {
           provide: MAINTENANCE_REPO,
           useFactory: () => createInMemoryRepo<MaintenanceRecord>(records),
@@ -81,16 +81,16 @@ describe('VehicleStore', () => {
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
         {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([
+          provide: ORDER_REPO,
+          useValue: createInMemoryRepo<RentalOrder>([
             {
               id: 'b1',
               vehicleId: 'v1',
               memberId: 'c1',
               startTime: '2026-07-11T09:00:00Z',
               endTime: '2026-07-12T09:00:00Z',
-              pickupLocation: '',
-              returnLocation: '',
+              pickupBranchId: '',
+              returnBranchId: '',
               status: 'reserved',
               depositRequired: 0,
             },
@@ -109,16 +109,16 @@ describe('VehicleStore', () => {
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
         {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([
+          provide: ORDER_REPO,
+          useValue: createInMemoryRepo<RentalOrder>([
             {
               id: 'b1',
               vehicleId: 'v1',
               memberId: 'c1',
               startTime: '2026-07-11T09:00:00Z',
               endTime: '2026-07-12T09:00:00Z',
-              pickupLocation: '',
-              returnLocation: '',
+              pickupBranchId: '',
+              returnBranchId: '',
               status: 'in_progress',
               depositRequired: 0,
             },

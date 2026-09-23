@@ -5,14 +5,14 @@
   <h1 class="ui-text-title">租車預約</h1>
 
   <section class="date-section">
-    <app-date-step
+    <lib-date-step
       [dateRange]="dateRange()"
       (dateRangeChange)="onDateRangeChange($event)"
-    ></app-date-step>
+    ></lib-date-step>
   </section>
 
   <section class="vehicle-section">
-    <app-vehicle-step
+    <lib-vehicle-step
       [vehicles]="availableVehicles()"
       [selectedVehicle]="selectedVehicle()"
       [priceForVehicle]="priceForVehicle"
@@ -21,6 +21,6 @@
       [endTime]="endTime()"
       (vehicleSelect)="onVehicleSelect($event)"
       (timeChange)="onTimeChange($event)"
-    ></app-vehicle-step>
+    ></lib-vehicle-step>
   </section>
 </div>

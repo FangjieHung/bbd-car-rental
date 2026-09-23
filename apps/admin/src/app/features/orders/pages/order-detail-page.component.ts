@@ -7,24 +7,24 @@ import { Subscription, distinctUntilChanged, map, skip } from 'rxjs';
 import { branchName, contractSigningState, needsDispatch } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
-import { BOOKING_STATUS_KEY } from '../../../shared/chips/booking-status-key';
-import { PaymentPanelComponent } from '../../bookings/components/payment-panel.component';
-import { ContractPanelComponent } from '../../bookings/components/contract-panel.component';
-import { HandoverPanelComponent } from '../../bookings/components/handover-panel.component';
-import { CancellationPanelComponent } from '../../bookings/components/cancellation-panel.component';
-import { CustomerCreditPanelComponent } from '../../bookings/components/customer-credit-panel.component';
-import { OperatorRecoveryPanelComponent } from '../../bookings/components/operator-recovery-panel.component';
-import { ActivityTimelineComponent } from '../../bookings/components/activity-timeline.component';
+import { ORDER_STATUS_KEY } from '../../../shared/chips/order-status-key';
+import { PaymentPanelComponent } from '../components/payment-panel.component';
+import { ContractPanelComponent } from '../components/contract-panel.component';
+import { HandoverPanelComponent } from '../components/handover-panel.component';
+import { CancellationPanelComponent } from '../components/cancellation-panel.component';
+import { CustomerCreditPanelComponent } from '../components/customer-credit-panel.component';
+import { OperatorRecoveryPanelComponent } from '../components/operator-recovery-panel.component';
+import { ActivityTimelineComponent } from '../components/activity-timeline.component';
 import {
   OrderForm,
   connectOrderFormBehaviors,
   createOrderForm,
-  orderFormInitialFromBooking,
+  orderFormInitialFromOrder,
   orderFormValue,
 } from '../order-form/order-form';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
@@ -43,7 +43,7 @@ import {
 import { ORDER_DETAIL_EDIT_PARAM, ORDER_DETAIL_SECTION_PARAM } from '../navigation/order-detail-navigation';
 
 /** 直接輸入網址進來、或上一頁是建立訂單頁時，返回回到這裡。 */
-const FALLBACK_RETURN_URL = '/bookings';
+const FALLBACK_RETURN_URL = '/orders';
 
 /**
  * `/orders/:id` 訂單詳情：頁首是訂單識別資訊，下方七個分頁，目前分頁以 `?section=` 表示（可分享、重新整理後回到同一分頁）。
@@ -81,7 +81,7 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly bookingStore = inject(BookingStore);
+  private readonly orderStore = inject(OrderStore);
   private readonly vehicleStore = inject(VehicleStore);
   private readonly memberStore = inject(MemberStore);
   private readonly contractStore = inject(ContractStore);
@@ -89,11 +89,11 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   private readonly gateway = inject(ORDER_SUBMIT_GATEWAY);
   private readonly snackBar = inject(MatSnackBar);
 
-  /** 來源頁：建構時導覽仍在進行中，取它的上一個導覽；沒有、或來自訂單頁本身時回訂單列表。 */
+  /** 來源頁：建構時導覽仍在進行中，取它的上一個導覽；沒有、或來自另一個訂單詳情／建立訂單頁時回訂單列表。 */
   protected readonly returnUrl = (() => {
     const previous = this.router.currentNavigation()?.previousNavigation?.finalUrl;
     const url = previous ? this.router.serializeUrl(previous) : '';
-    return url && !url.startsWith('/orders') ? url : FALLBACK_RETURN_URL;
+    return url && !url.startsWith('/orders/') ? url : FALLBACK_RETURN_URL;
   })();
 
   readonly bookingId = toSignal(this.route.paramMap.pipe(map((p) => p.get('id') ?? '')), {
@@ -112,31 +112,31 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
     this.editing() ? DEFAULT_ORDER_DETAIL_SECTION : this.urlSection(),
   );
 
-  readonly booking = computed(() => this.bookingStore.bookings().find((b) => b.id === this.bookingId()));
+  readonly order = computed(() => this.orderStore.orders().find((b) => b.id === this.bookingId()));
   protected readonly vehicle = computed(() => {
-    const b = this.booking();
+    const b = this.order();
     return b ? this.vehicleStore.vehicles().find((v) => v.id === b.vehicleId) : undefined;
   });
   protected readonly member = computed(() => {
-    const b = this.booking();
+    const b = this.order();
     return b ? this.memberStore.members().find((m) => m.id === b.memberId) : undefined;
   });
   protected readonly statusKey = computed(() => {
-    const b = this.booking();
-    return b ? BOOKING_STATUS_KEY[b.status] : 'archived';
+    const b = this.order();
+    return b ? ORDER_STATUS_KEY[b.status] : 'archived';
   });
   /** 沿用既有編輯入口的條件：只有尚未取車（已預訂）的訂單可以編輯。 */
-  readonly canEdit = computed(() => this.booking()?.status === 'reserved');
+  readonly canEdit = computed(() => this.order()?.status === 'reserved');
   /** 需調度：取車據點與車輛所在據點不同；只有尚未取車的訂單才有意義（與行事曆一致）。 */
   protected readonly needsDispatch = computed(() => {
-    const b = this.booking();
-    return b?.status === 'reserved' && needsDispatch(this.vehicle()?.location, b.pickupLocation);
+    const b = this.order();
+    return b?.status === 'reserved' && needsDispatch(this.vehicle()?.branchId, b.pickupBranchId);
   });
   protected readonly dispatchNote = computed(() => {
-    const b = this.booking();
+    const b = this.order();
     if (!b) return '';
     const w = this.t.dispatch.workList;
-    return `${w.dispatchNeededPrefix}${branchName(this.vehicle()?.location)}${w.dispatchNeededMiddle}${branchName(b.pickupLocation)}`;
+    return `${w.dispatchNeededPrefix}${branchName(this.vehicle()?.branchId)}${w.dispatchNeededMiddle}${branchName(b.pickupBranchId)}`;
   });
 
   // ---- 編輯訂單 ----
@@ -145,7 +145,7 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   private readonly formValue = orderFormValue(this.form);
   protected readonly editContext = computed<OrderFormContext>(() => ({
     editingBookingId: this.bookingId(),
-    originalPriceBreakdown: this.booking()?.priceBreakdown,
+    originalPriceBreakdown: this.order()?.priceBreakdown,
   }));
   protected readonly derived = createOrderFormDerived(this.formValue, this.data, () => this.editContext());
   readonly saving = signal(false);
@@ -196,10 +196,10 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   }
 
   startEdit(): void {
-    const booking = this.booking();
-    if (!booking || !this.canEdit() || this.editing()) return;
+    const order = this.order();
+    if (!order || !this.canEdit() || this.editing()) return;
     const form = createOrderForm(
-      orderFormInitialFromBooking(booking, { vehicle: this.vehicle(), member: this.member() }),
+      orderFormInitialFromOrder(order, { vehicle: this.vehicle(), member: this.member() }),
     );
     this.behaviors?.unsubscribe();
     // 編輯既有訂單：訂金維持原值，不跟著車型上限自動改。
@@ -237,8 +237,8 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   }
 
   async save(): Promise<void> {
-    const booking = this.booking();
-    if (!booking || !this.editing() || this.saving()) return;
+    const order = this.order();
+    if (!order || !this.editing() || this.saving()) return;
     this.form().markAllAsTouched();
     this.error.set('');
 
@@ -248,21 +248,21 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
       return;
     }
 
-    const latestBefore = this.contractStore.latestFor(booking.id)?.id;
+    const latestBefore = this.contractStore.latestFor(order.id)?.id;
     // 編輯訂單不登記款項（收款在款項分頁）：送出的款項草稿一律為空。
     const value = this.form().getRawValue();
     const input = { value: { ...value, payments: { ...value.payments, drafts: [] } } };
 
     this.saving.set(true);
     try {
-      await this.gateway.update(booking.id, input);
+      await this.gateway.update(order.id, input);
     } catch (e) {
       this.error.set((e as Error).message);
       this.saving.set(false);
       return;
     }
 
-    const versions = this.contractStore.versionsFor(booking.id);
+    const versions = this.contractStore.versionsFor(order.id);
     const latestAfter = versions.at(-1)?.id;
     const needsResign = latestAfter !== latestBefore && contractSigningState(versions) === 'needs_resign';
     this.exitEdit();

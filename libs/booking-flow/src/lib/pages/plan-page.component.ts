@@ -21,7 +21,7 @@ import { OrderSummaryCardComponent } from '../components/order-summary-card.comp
  * 只做「選保險方案」這一件事，不動 order-page 現有的單頁式 checkout。
  */
 @Component({
-  selector: 'app-plan-page',
+  selector: 'lib-plan-page',
   imports: [DecimalPipe, MatButtonModule, OrderSummaryCardComponent],
   templateUrl: './plan-page.component.html',
   styleUrl: './plan-page.component.scss',

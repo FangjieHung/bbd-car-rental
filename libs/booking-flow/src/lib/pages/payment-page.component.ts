@@ -4,10 +4,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import {
-  BOOKING_REPO,
+  ORDER_REPO,
   optionLabelMap,
   PAYMENT_PREFERENCE_OPTIONS,
-  RentalBooking,
+  RentalOrder,
 } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
@@ -20,7 +20,7 @@ const PAYMENT_PREFERENCE_LABEL = optionLabelMap(PAYMENT_PREFERENCE_OPTIONS);
  * 並新增回調路由 pay/:bookingId/result —— 流程結構不必再動。
  */
 @Component({
-  selector: 'app-payment-page',
+  selector: 'lib-payment-page',
   imports: [MatButtonModule],
   templateUrl: './payment-page.component.html',
   styleUrl: './payment-page.component.scss',
@@ -30,15 +30,15 @@ export class PaymentPageComponent {
   private readonly router = inject(Router);
   private readonly catalog = inject(CatalogStore);
   private readonly context = inject(BOOKING_CONTEXT);
-  private readonly bookingRepo = inject(BOOKING_REPO);
+  private readonly orderRepo = inject(ORDER_REPO);
 
   readonly bookingId = toSignal(
     this.route.paramMap.pipe(map((p) => p.get('bookingId') ?? '')),
     { initialValue: '' },
   );
 
-  readonly booking = computed<RentalBooking | null>(
-    () => this.bookingRepo.getById(this.bookingId()) ?? null,
+  readonly booking = computed<RentalOrder | null>(
+    () => this.orderRepo.getById(this.bookingId()) ?? null,
   );
 
   readonly amount = computed(() => this.booking()?.priceBreakdown?.total ?? 0);

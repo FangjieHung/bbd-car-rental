@@ -22,7 +22,7 @@ export class PartnerStore {
       .some((p) => p.id !== excludeId && p.slug.toLowerCase() === norm);
   }
 
-  bookingLink(partner: Partner): string {
+  orderLink(partner: Partner): string {
     return `${AFFILIATE_ORIGIN}/p/${partner.slug}`;
   }
 

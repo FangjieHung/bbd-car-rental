@@ -5,7 +5,7 @@ import { MaintenanceRecord } from '../models';
 export {
   VEHICLE_REPO,
   MEMBER_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   PRICING_PLAN_REPO,
   SEASON_CALENDAR_REPO,
   ADDON_REPO,

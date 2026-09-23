@@ -5,7 +5,7 @@ import { MatInputModule } from '@angular/material/input';
 import { Coupon, PriceBreakdown } from '@car-rental/domain';
 
 @Component({
-  selector: 'app-coupon-step',
+  selector: 'lib-coupon-step',
   imports: [FormsModule, MatFormFieldModule, MatInputModule],
   templateUrl: './coupon-step.component.html',
   styleUrl: './coupon-step.component.scss',
