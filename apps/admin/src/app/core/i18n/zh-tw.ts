@@ -8,9 +8,13 @@ export const ZH_TW = {
   },
   nav: {
     dashboard: '總覽',
-    productGroup: '商品管理',
+    // 4.5：「商品管理」是電商用語，改叫它實際管的東西。
+    productGroup: '車輛與配件',
     vehicles: '車輛清單',
+    // 4.5：「訂單管理」改成側欄群組（訂單列表、會員）；新增訂單、訂單詳情、會員頁的麵包屑也用這個字。
     bookings: '訂單管理',
+    orderList: '訂單列表',
+    members: '會員',
     maintenance: '保養管理',
     pricingGroup: '定價管理',
     pricing: '定價規則',

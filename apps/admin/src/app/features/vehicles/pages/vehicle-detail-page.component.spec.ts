@@ -89,7 +89,7 @@ describe('VehicleDetailPageComponent', () => {
     return TestBed.createComponent(VehicleDetailPageComponent);
   }
 
-  it('2.1：頁首標題（HeaderTitleSlot）是車牌，麵包屑是商品管理 › 車輛清單；頁面自己不再渲染 h1', () => {
+  it('2.1／4.5：頁首標題（HeaderTitleSlot）是車牌，麵包屑是車輛與配件 › 車輛清單；頁面自己不再渲染 h1', () => {
     const fixture = createFixture('v1', [
       makeVehicle({ id: 'v1', model: 'Gogoro 2', plateNumber: 'AAA-111' }),
     ]);
@@ -100,6 +100,11 @@ describe('VehicleDetailPageComponent', () => {
       title: 'AAA-111',
       breadcrumbs: [{ label: ZH_TW.nav.productGroup }, { label: ZH_TW.nav.vehicles, route: '/vehicles' }],
     });
+    // 4.5：群組改名後，麵包屑的字面也跟著變（群組沒有自己的頁面，不可點；車輛清單可點回列表）。
+    expect(slot.entry()?.value.breadcrumbs).toEqual([
+      { label: '車輛與配件' },
+      { label: '車輛清單', route: '/vehicles' },
+    ]);
     expect((fixture.nativeElement as HTMLElement).querySelectorAll('h1')).toHaveLength(0);
   });
 

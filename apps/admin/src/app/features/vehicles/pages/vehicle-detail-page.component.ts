@@ -48,7 +48,7 @@ export class VehicleDetailPageComponent {
   );
 
   constructor() {
-    // 2.1：頁首麵包屑「商品管理 › 車輛清單」（車輛清單可點回列表）› 大標題＝車牌。
+    // 2.1／4.5：頁首麵包屑「車輛與配件 › 車輛清單」（車輛清單可點回列表）› 大標題＝車牌。
     // 「← 返回車輛清單」併入麵包屑（跟麵包屑同一個目的地，不需要另外的 backTo）。
     provideHeaderTitle(() => ({
       title: this.vehicle()?.plateNumber ?? '—',
