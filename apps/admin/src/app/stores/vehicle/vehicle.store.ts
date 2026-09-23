@@ -45,6 +45,7 @@ export class VehicleStore {
     mileage: number;
     nextServiceMileage?: number;
     insuranceExpiry?: string;
+    location?: string;
   }): Vehicle {
     this.assertPlateUnique(input.plateNumber);
     const vehicle: Vehicle = {
@@ -69,6 +70,7 @@ export class VehicleStore {
       mileage?: number;
       nextServiceMileage?: number;
       insuranceExpiry?: string;
+      location?: string;
     },
   ): void {
     const current = this.repo.getById(id);

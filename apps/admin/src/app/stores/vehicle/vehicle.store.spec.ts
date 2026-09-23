@@ -140,4 +140,51 @@ describe('VehicleStore', () => {
     expect(store.statusCounts()['available']).toBe(1);
     expect(store.statusCounts()['rented']).toBe(0);
   });
+
+  // 1.5：已有據點的車改成「未指定」存檔後讀回沒有據點——VehicleFormDialogComponent 清空欄位
+  // 時會明確帶出 location: undefined（key 仍存在，只是值是 undefined），update 的型別要能
+  // 收下這個 key，repository 的淺合併才會真的把欄位蓋掉，而不是保留舊值。
+  it('清空所在據點（改回未指定）存檔後讀回沒有據點', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: VEHICLE_REPO,
+          useValue: createInMemoryRepo<Vehicle>([makeVehicle({ location: 'mzg-airport' })]),
+        },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const s = TestBed.inject(VehicleStore);
+    expect(s.vehicles()[0].location).toBe('mzg-airport');
+
+    s.update('v1', { location: undefined });
+
+    expect(s.vehicles()[0].location).toBeUndefined();
+  });
+
+  it('建立車輛時可以直接帶入所在據點', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const s = TestBed.inject(VehicleStore);
+
+    s.create({
+      plateNumber: 'NEW-001',
+      category: 'car',
+      model: 'X',
+      brand: 'Toyota',
+      year: 2023,
+      mileage: 0,
+      location: 'mzg-port',
+    });
+
+    expect(s.vehicles()[0].location).toBe('mzg-port');
+  });
 });

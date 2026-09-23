@@ -61,6 +61,10 @@ export class VehicleFormDialogComponent {
       // 沒改動就原樣保留既有值（可能是完整 ISO 時間），不因輸入框格式轉換而改寫資料。
       const insuranceExpiry =
         raw.insuranceExpiry === this.initialInsuranceExpiry ? this.data?.insuranceExpiry : raw.insuranceExpiry;
+      // 1.5：四個選填欄位一律明確帶出目前值或 undefined，不能像先前那樣清空時用條件展開
+      // 整個省略 key。VehicleStore.update → repository 是淺合併（{...current, ...patch}），
+      // key 被省略等於沒改這個欄位，舊值會原封不動留著；key 存在但值是 undefined 才會真的
+      // 把欄位蓋掉——這正是「清空存不進去」的成因，不是淺合併本身的問題。
       const result: VehicleFormResult = {
         plateNumber: raw.plateNumber,
         category: raw.category,
@@ -68,10 +72,10 @@ export class VehicleFormDialogComponent {
         brand: raw.brand,
         year: raw.year,
         mileage: raw.mileage,
-        ...(raw.displacement != null ? { displacement: raw.displacement } : {}),
-        ...(raw.nextServiceMileage != null ? { nextServiceMileage: raw.nextServiceMileage } : {}),
-        ...(insuranceExpiry ? { insuranceExpiry } : {}),
-        ...(raw.location ? { location: raw.location } : {}),
+        displacement: raw.displacement ?? undefined,
+        nextServiceMileage: raw.nextServiceMileage ?? undefined,
+        insuranceExpiry: insuranceExpiry || undefined,
+        location: raw.location || undefined,
       };
       this.ref.close(result);
     }
