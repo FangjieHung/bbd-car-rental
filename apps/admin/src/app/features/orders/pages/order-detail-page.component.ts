@@ -11,8 +11,15 @@ import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
+import { PaymentStore } from '../../../stores/payment/payment.store';
+import { OperatorRecoveryStore } from '../../../stores/operator-recovery/operator-recovery.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { BOOKING_STATUS_KEY } from '../../../shared/chips/booking-status-key';
+import {
+  hasRefundPending,
+  hasUrgentOperatorRecovery,
+  isOverdueReturn,
+} from '../../bookings/booking-urgency';
 import { PaymentPanelComponent } from '../../bookings/components/payment-panel.component';
 import { ContractPanelComponent } from '../../bookings/components/contract-panel.component';
 import { HandoverPanelComponent } from '../../bookings/components/handover-panel.component';
@@ -85,6 +92,8 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   private readonly vehicleStore = inject(VehicleStore);
   private readonly memberStore = inject(MemberStore);
   private readonly contractStore = inject(ContractStore);
+  private readonly paymentStore = inject(PaymentStore);
+  private readonly operatorRecoveryStore = inject(OperatorRecoveryStore);
   private readonly data = inject(ORDER_FORM_DATA);
   private readonly gateway = inject(ORDER_SUBMIT_GATEWAY);
   private readonly snackBar = inject(MatSnackBar);
@@ -124,6 +133,24 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   protected readonly statusKey = computed(() => {
     const b = this.booking();
     return b ? BOOKING_STATUS_KEY[b.status] : 'archived';
+  });
+  // 急迫狀態：與訂單列表同一套判斷（booking-urgency.ts），標題旁顯示、點了跳到對應分頁。
+  protected readonly isOverdueReturn = computed(() => {
+    const b = this.booking();
+    return !!b && isOverdueReturn(b);
+  });
+  protected readonly hasRefundPending = computed(() => {
+    const b = this.booking();
+    return !!b && hasRefundPending(b, this.paymentStore);
+  });
+  protected readonly hasUrgentOperatorRecovery = computed(() => {
+    const b = this.booking();
+    return !!b && hasUrgentOperatorRecovery(b, this.operatorRecoveryStore);
+  });
+  /** 費用卡「已收」「待收」：與款項分頁同一套計算（PaymentStore.summaryFor）；沒有報價快照時仍算得出已收。 */
+  protected readonly paymentSummary = computed(() => {
+    const b = this.booking();
+    return b ? this.paymentStore.summaryFor(b.id) : undefined;
   });
   /** 沿用既有編輯入口的條件：只有尚未取車（已預訂）的訂單可以編輯。 */
   readonly canEdit = computed(() => this.booking()?.status === 'reserved');

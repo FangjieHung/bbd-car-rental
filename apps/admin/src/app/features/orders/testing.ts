@@ -2,11 +2,15 @@
 import { Provider } from '@angular/core';
 import {
   ADDON_REPO,
+  AUDIT_ENTRY_REPO,
   BOOKING_REPO,
+  CANCELLATION_CASE_REPO,
   CHARGE_ADJUSTMENT_REPO,
   CONTRACT_VERSION_REPO,
+  CUSTOMER_CREDIT_LEDGER_REPO,
   MAINTENANCE_REPO,
   MEMBER_REPO,
+  OPERATOR_RECOVERY_CASE_REPO,
   PAYMENT_REPO,
   PRICING_PLAN_REPO,
   REFUND_REPO,
@@ -17,10 +21,14 @@ import {
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import {
   AddOn,
+  AuditEntry,
+  CancellationCase,
   ChargeAdjustment,
   ContractVersion,
+  CustomerCreditLedgerEntry,
   MaintenanceRecord,
   Member,
+  OperatorRecoveryCase,
   PaymentRecord,
   PricingPlan,
   RefundRecord,
@@ -64,6 +72,10 @@ export interface OrderRepoOptions {
   bookings?: RentalBooking[];
   addOns?: AddOn[];
   contracts?: ContractVersion[];
+  /** 訂單詳情標題旁的急迫狀態：退款待處理。 */
+  refunds?: RefundRecord[];
+  /** 訂單詳情標題旁的急迫狀態：業者復原處理中。 */
+  operatorRecoveryCases?: OperatorRecoveryCase[];
 }
 
 export function createOrderRepos(options: OrderRepoOptions = {}) {
@@ -72,8 +84,10 @@ export function createOrderRepos(options: OrderRepoOptions = {}) {
     memberRepo: createInMemoryRepo<Member>(options.members ?? []),
     bookingRepo: createInMemoryRepo<RentalBooking>(options.bookings ?? []),
     paymentRepo: createInMemoryRepo<PaymentRecord>([]),
+    refundRepo: createInMemoryRepo<RefundRecord>(options.refunds ?? []),
     contractRepo: createInMemoryRepo<ContractVersion>(options.contracts ?? []),
     reminderStatusRepo: createInMemoryRepo<ReminderStatus>([]),
+    operatorRecoveryCaseRepo: createInMemoryRepo<OperatorRecoveryCase>(options.operatorRecoveryCases ?? []),
     reminderGateway: {
       schedule: async () => ({ state: 'scheduled' as const }),
       cancel: async () => undefined,
@@ -91,11 +105,18 @@ export function createOrderRepos(options: OrderRepoOptions = {}) {
     },
     { provide: ADDON_REPO, useValue: createInMemoryRepo<AddOn>(options.addOns ?? []) },
     { provide: PAYMENT_REPO, useValue: repos.paymentRepo },
-    { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
+    { provide: REFUND_REPO, useValue: repos.refundRepo },
     { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
     { provide: CONTRACT_VERSION_REPO, useValue: repos.contractRepo },
     { provide: REMINDER_STATUS_REPO, useValue: repos.reminderStatusRepo },
     { provide: ReminderGateway, useValue: repos.reminderGateway },
+    // 訂單詳情標題旁的急迫狀態會注入 OperatorRecoveryStore，牽出 CancellationStore／CreditStore
+    // 整串 DI 圖；即使測試不呼叫相關方法，元件建構時仍會整串解析，缺一個 provider 就整個炸掉
+    // （沿用 bookings-page.component.spec.ts 的 provideOrderDetailRepos 教訓）。
+    { provide: CANCELLATION_CASE_REPO, useValue: createInMemoryRepo<CancellationCase>([]) },
+    { provide: CUSTOMER_CREDIT_LEDGER_REPO, useValue: createInMemoryRepo<CustomerCreditLedgerEntry>([]) },
+    { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>([]) },
+    { provide: OPERATOR_RECOVERY_CASE_REPO, useValue: repos.operatorRecoveryCaseRepo },
   ];
   return { ...repos, providers };
 }

@@ -6,7 +6,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
-import { Member, RentalBooking } from '../../../core/models';
+import { Member, OperatorRecoveryCase, PaymentRecord, RefundRecord, RentalBooking } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
@@ -20,7 +20,7 @@ import { OperatorRecoveryPanelComponent } from '../../bookings/components/operat
 import { ActivityTimelineComponent } from '../../bookings/components/activity-timeline.component';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
 import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
-import { createOrderForm } from '../order-form/order-form';
+import { createOrderForm, setPaymentDrafts } from '../order-form/order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { AdminOrderSubmitGateway } from '../data/admin-order-submit.gateway';
 import { confirmLeaveGuard } from '../navigation/confirm-leave.guard';
@@ -69,6 +69,9 @@ interface SetupOptions {
   /** 'real'：用 admin 的送出實作（寫入 in-memory repo）；預設為 spy。 */
   gateway?: 'real' | 'spy';
   confirmResult?: boolean;
+  payments?: PaymentRecord[];
+  refunds?: RefundRecord[];
+  operatorRecoveryCases?: OperatorRecoveryCase[];
 }
 
 async function setup(url: string, options: SetupOptions = {}) {
@@ -76,7 +79,10 @@ async function setup(url: string, options: SetupOptions = {}) {
     vehicles: [makeVehicle({ id: 'v1', location: 'mzg-airport' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999', location: 'mzg-port' })],
     members: [member],
     bookings: options.bookings ?? [makeBooking()],
+    refunds: options.refunds,
+    operatorRecoveryCases: options.operatorRecoveryCases,
   });
+  if (options.payments) for (const p of options.payments) repos.paymentRepo.create(p);
   const update = vi.fn<OrderSubmitGateway['update']>(async (id: string) => id);
   const spyGateway: OrderSubmitGateway = { create: vi.fn(async () => 'x'), update };
   const dialogOpen = vi.fn(() => ({ afterClosed: () => of(options.confirmResult ?? false) }));
@@ -184,6 +190,105 @@ describe('OrderDetailPageComponent 分頁與網址', () => {
   });
 });
 
+describe('OrderDetailPageComponent 標題旁的急迫狀態（與訂單列表同一套判斷）', () => {
+  it('逾時未還：出租中且還車時間已過，顯示急迫徽章；點擊跳到交還車分頁', async () => {
+    // makeBooking() 預設 endTime 是 2026-01-07（相對「現在」已過去），只要狀態是出租中就成立。
+    const { component, harness } = await setup('/orders/b1', { bookings: [makeBooking({ status: 'in_progress' })] });
+    const header = el(harness).querySelector('.order-detail__header') as HTMLElement;
+    expect(header.textContent).toContain(ZH_TW.dispatch.workList.urgentOverdueReturn);
+
+    (header.querySelector('.urgent-indicator') as HTMLButtonElement).click();
+    await settle(harness);
+    expect(component.activeSection()).toBe('handover');
+  });
+
+  it('退款待處理：顯示急迫徽章；點擊跳到取消/退款分頁', async () => {
+    const { component, harness } = await setup('/orders/b1', {
+      bookings: [makeBooking({ status: 'cancelled' })],
+      refunds: [{ id: 'r1', bookingId: 'b1', amount: 500, method: 'cash', status: 'pending', handledBy: '' }],
+    });
+    const header = el(harness).querySelector('.order-detail__header') as HTMLElement;
+    expect(header.textContent).toContain(ZH_TW.dispatch.workList.urgentRefundPending);
+
+    (header.querySelector('.urgent-indicator') as HTMLButtonElement).click();
+    await settle(harness);
+    expect(component.activeSection()).toBe('cancellation');
+  });
+
+  it('業者復原處理中：顯示急迫徽章；點擊跳到取消/退款分頁', async () => {
+    const { harness } = await setup('/orders/b1', {
+      operatorRecoveryCases: [
+        {
+          id: 'orc1',
+          bookingId: 'b1',
+          reason: 'vehicle_breakdown',
+          discoveredAt: '',
+          notifiedAt: '',
+          status: 'in_progress',
+          remedyAttempts: [],
+          taxiReimbursements: [],
+          goodwillCompensations: [],
+          createdBy: '',
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+    });
+    const header = el(harness).querySelector('.order-detail__header') as HTMLElement;
+    expect(header.textContent).toContain(ZH_TW.dispatch.workList.urgentOperatorRecovery);
+  });
+
+  it('一般訂單（無急迫狀態）不顯示任何急迫徽章', async () => {
+    const { harness } = await setup('/orders/b1');
+    expect(el(harness).querySelector('.urgent-indicator')).toBeNull();
+  });
+});
+
+describe('OrderDetailPageComponent 總覽「費用」卡的已收／待收（與款項分頁同一套計算）', () => {
+  it('有報價快照：已收＝已確認付款總額，待收＝報價合計−已收', async () => {
+    const priceBreakdown = {
+      dailyLines: [{ date: '2026-01-05', dayType: 'weekday' as const, price: 1000 }],
+      rentalRaw: 1000,
+      tierDiscountPercent: 0,
+      tierDiscountAmount: 0,
+      rentalSubtotal: 1000,
+      partnerDiscountPercent: 0,
+      partnerDiscount: 0,
+      addOnLines: [],
+      addOnSubtotal: 0,
+      insuranceSubtotal: 0,
+      couponDiscount: 0,
+      total: 1000,
+    };
+    const { harness } = await setup('/orders/b1', {
+      bookings: [makeBooking({ priceBreakdown })],
+      payments: [{ id: 'p1', bookingId: 'b1', amount: 700, method: 'cash', purpose: 'deposit', status: 'confirmed', receivedAt: '2026-01-01T00:00:00.000Z', handledBy: 'staff' }],
+    });
+    const pricingCard = Array.from(el(harness).querySelectorAll('.order-detail__group')).find((g) =>
+      g.querySelector('.order-detail__group-title')?.textContent?.includes(ZH_TW.orderDetail.groups.pricing),
+    ) as HTMLElement;
+    const text = pricingCard.textContent ?? '';
+    expect(text).toContain(ZH_TW.orderDetail.netPaid);
+    expect(text).toContain('700');
+    expect(text).toContain(ZH_TW.orderDetail.balanceDue);
+  });
+
+  it('沒有報價快照時仍顯示已收（種子訂單 b9 情境：出租中＋逾時未還、已收 700）', async () => {
+    const b9 = makeBooking({ id: 'b1', status: 'in_progress', priceBreakdown: undefined });
+    const { harness } = await setup('/orders/b1', {
+      bookings: [b9],
+      payments: [{ id: 'p1', bookingId: 'b1', amount: 700, method: 'line_pay', purpose: 'balance', status: 'confirmed', receivedAt: '2026-01-01T00:00:00.000Z', handledBy: 'staff' }],
+    });
+    const pricingCard = Array.from(el(harness).querySelectorAll('.order-detail__group')).find((g) =>
+      g.querySelector('.order-detail__group-title')?.textContent?.includes(ZH_TW.orderDetail.groups.pricing),
+    ) as HTMLElement;
+    const text = pricingCard.textContent ?? '';
+    expect(text).toContain(ZH_TW.orderDetail.noQuote);
+    expect(text).toContain(ZH_TW.orderDetail.netPaid);
+    expect(text).toContain('700');
+  });
+});
+
 describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
   it('預設唯讀：顯示分組資訊與「編輯」，不渲染表單', async () => {
     const { harness, component } = await setup('/orders/b1');
@@ -259,7 +364,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
     const { harness, component, update, snackOpen } = await setup('/orders/b1');
     component.startEdit();
     component.form().controls.rental.controls.endLocal.setValue('2026-01-08T09:00');
-    component.form().controls.payments.controls.drafts.setValue([{ method: 'cash', amount: 100, purpose: 'deposit' }]);
+    setPaymentDrafts(component.form(), [{ method: 'cash', amount: 100, purpose: 'deposit' }]);
     await settle(harness);
 
     await component.save();
