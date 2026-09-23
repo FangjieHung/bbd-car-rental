@@ -252,7 +252,7 @@ export const ZH_TW = {
     } as Record<string, string>,
     internalNote: '內部備註',
     incomplete: {
-      missingEmail: '會員未提供 Email，還車提醒無法排程',
+      missingEmail: '承租人未提供 Email，還車提醒無法排程',
       depositNotCollected: '訂金尚未收款',
       contractNotSigned: '合約尚未簽署',
       balanceNotCollected: '租金尚未收足',
@@ -299,6 +299,8 @@ export const ZH_TW = {
     requirementMet: '已完成',
     requirementUnmet: '未完成',
     incompleteTitle: '建立後待補',
+    // 「建立訂單需要」還沒全部打勾前，待補清單還沒有意義（車、租期、承租人都還沒定，補 Email／簽約都言之過早）。
+    incompleteNotReady: '完成建立條件後，這裡會列出建立後還要補的事',
     noIncomplete: '沒有待補項目',
     // 底部操作列
     missingPrefix: '還缺：',
