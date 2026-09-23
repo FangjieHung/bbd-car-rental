@@ -26,6 +26,7 @@
 - 欄位：`pickupLocation` / `returnLocation` / `Vehicle.location` 現在存的是據點 id，改名為 `pickupBranchId` / `returnBranchId` / `branchId` 才名副其實。**localStorage 已有舊欄位名的資料，改名要附遷移**（照 `libs/domain/src/lib/repositories/normalize-rental-booking.ts` 的模式）。
 - `zh-tw.ts` 內 `booking`、`bookingForm` 等 key
 - 側欄選單目前用 `matchPrefixes: ['/orders/']` 讓 `/orders/*` 亮「訂單管理」，更名後可拿掉
+- **順便處理剩下的 14 個 lint error**：`libs/booking-flow` 13 個、`libs/theme-pack` 1 個，都是 `@angular-eslint/component-selector` 要求 lib 的元件 selector 以 `lib-` 開頭（實際是 `app-`）。要改就是十幾個元件連同所有使用處一起改名，跟這次更名是同一種動作，一起做才不會製造兩輪雜訊。（若判斷這些 lib 的元件其實不該用 `lib-` 前綴，那要改的是規則設定而不是程式碼。）
 
 建議獨立一個分支做，純機械改名，不夾帶行為變更。
 
@@ -50,9 +51,10 @@
 
 ## 3. 官網接上合約簽署
 
-前提：**待業主 #3**（官網訂單的合約何時產生）。決定之前做了也無東西可簽。
+**已有暫定決定（2026-09-23，待業主會議確認）：客人付款完成之後產生合約草稿。** 也就是在 `CatalogStore.markBookingPaid()` 成功之後建立第一版 `ContractVersion`，客人才有東西可簽。
 
-決定後要做：
+要做：
+- 付款成功後建立合約草稿（上述時機）
 - `apps/booking/src/app/app.config.ts` 補上 `CONTRACT_VERSION_REPO` 與 `SIGNATURE_ASSET_STORE` 的 provider（目前只注入 8 個 repo）
 - 官網目前**沒有載入 `libs/theme-pack` 樣式**，但簽署 lib 用到 `--app-warning-*` 等 token，要先補上主題樣式，否則「需重新簽署」提示會沒有顏色
 - 簽署元件在手機上已是全螢幕，但未在官網實機驗證過
@@ -80,11 +82,12 @@
 
 ## 6. 調度相關
 
+- **還車完成時更新車輛所在據點**：業主問題 #1 的暫定決定是「車子改算還車據點的車」，目前**尚未實作**——還車手續完成後 `Vehicle.location` 不會變。實作時注意這會連動需調度的判定（下一筆訂單從新據點算起）。
+
 - **甘特圖的資訊架構**：真正「一列一台車」的時間軸（`features/dispatch/timeline-view/`）躲在車輛管理頁的「時間軸」檢視裡，而調度人員看的卻是儀表板月曆。考慮把時間軸移到調度相關的位置，並在上面也標示需調度。
 - 月曆格子只顯示「取 N／還 N／可用 N」，沒有「需調度 N」。要加得改 `dayStats()` 的簽名（被儀表板與 spec 直接引用）。
 - 車輛列表表格沒有「所在據點」欄。
-- 還車後的車輛歸屬：**待業主 #1**。
-- 調度負責人與時限：**待業主 #2**。
+- 調度負責人與時限：業主問題 #2 的暫定決定是維持現狀（只標示、不指派、不計時、不收費）。
 
 ## 7. 這次發現、沒處理的小問題
 
@@ -96,7 +99,7 @@
 - **內部備註建立後無法修改**：它只存在合約快照裡、不是訂單欄位，所以訂單詳情的「編輯」沒有放它（放了會變成改了卻存不進去）。若需要可事後修改，得先決定它屬於訂單還是合約。
 - **未簽署的合約草稿會被就地更新**：改訂單時，若目前版本還是草稿就直接覆寫、不產生新版本（`apps/admin/src/app/stores/contract/contract.store.ts` 的 `reviseIfChanged`）。這符合「只有已簽署版本不可覆寫」的規則，但活動紀錄看不出草稿被改過幾次。
 - **交車阻擋訊息**：`libs/domain/src/lib/handover/evaluate-pickup-readiness.ts` 擋下取車時一律顯示「最新版本合約尚未簽署」，未區分「需重新簽署」。
-- **lint 只剩元件前綴這一類**（booking-flow 13、theme-pack 1 個 error）：規則要求 lib 的元件 selector 以 `lib-` 開頭，實際是 `app-`。要改就是十幾個元件連同所有使用處一起改名，**建議併入第 1 節的更名任務**；或先確認這些 lib 的元件到底該不該用 `lib-`，若不該，要改的是規則設定而非程式碼。其餘 error（依賴宣告、無障礙、空介面）已於 2026-09-22 修掉，測試也已全綠。
+- **lint 只剩元件前綴這一類**（booking-flow 13、theme-pack 1 個 error），已決定併入第 1 節的更名任務一起做。其餘 error（依賴宣告、無障礙、空介面）已於 2026-09-22 修掉，測試也已全綠。
 
 ## 8. 過時的文件（2026-09-23 已處理）
 
