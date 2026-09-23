@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -29,6 +29,19 @@ export class OrderPricingSectionComponent {
 
   private readonly value = orderFormValue(this.form);
   protected readonly derived = createOrderFormDerived(this.value, this.data, () => this.context());
+
+  /**
+   * 「應收訂金」欄位的說明：寫出上限與由來（依 libs/domain 的 deposit-cap 規則）。
+   * 小客車是報價合計的固定比例；機車／電動車（或尚未選車）目前沒有這條規則，上限固定為 0——
+   * 這種情況不能說成「報價合計的 0%」（那會誤導成有比例規則只是算出 0），要明講「沒有規則」。
+   */
+  protected readonly depositCapHint = computed(() => {
+    const t = this.t.orderForm;
+    const cap = this.derived.depositCap();
+    return this.derived.vehicle()?.category === 'car'
+      ? `${t.depositCapPrefix}${cap}${t.depositCapCarSuffix}`
+      : `${t.depositCapNoRulePrefix}${cap}`;
+  });
 
   protected addOnQtyFor(id: string): number {
     return this.value().pricing.addOnQty[id] ?? 0;

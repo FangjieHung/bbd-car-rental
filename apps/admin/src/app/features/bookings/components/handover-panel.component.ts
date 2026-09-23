@@ -1,7 +1,6 @@
-import { Component, computed, inject, signal, input } from '@angular/core';
+import { Component, computed, effect, inject, signal, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { SlicePipe } from '@angular/common';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,6 +17,7 @@ import {
   deriveEnergyTypeFallback,
 } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
 import { DocumentAssetGateway } from '../../../core/services/document-asset.gateway';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -82,13 +82,15 @@ function fromDatetimeLocalValue(value: string): string {
  */
 @Component({
   selector: 'app-handover-panel',
-  imports: [ReactiveFormsModule, SlicePipe, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatInputModule],
+  imports: [ReactiveFormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatInputModule],
   templateUrl: './handover-panel.component.html',
   styleUrl: './handover-panel.component.scss',
 })
 export class HandoverPanelComponent {
   protected readonly t = ZH_TW;
   protected readonly nonOverridableBlockerTypes = NON_OVERRIDABLE_PICKUP_BLOCKER_TYPES;
+  /** 所有時間一律用共用格式化（本地時區）顯示，不可再露出 ISO 字串——那其實是 UTC，本地會差 8 小時。 */
+  protected readonly fmt = fmtDateTime;
 
   private readonly handoverStore = inject(HandoverStore);
   private readonly reminderStore = inject(ReminderStore);
@@ -353,9 +355,30 @@ export class HandoverPanelComponent {
   protected readonly returnPartialFailure = signal<HandoverOrchestrationPartialFailureError | undefined>(undefined);
   protected readonly returnChargesPreview = signal<ReturnChargeResult | undefined>(undefined);
 
+  /**
+   * 還車里程不可小於取車里程。用一般驗證函式（讀 this.pickupRecord() 的即時值）而不是
+   * Validators.min(固定數字)：後者只能在表單建構當下讀一次取車紀錄，可能還沒就緒；
+   * 這裡改成每次驗證時才讀，永遠反映目前真正的取車里程。
+   *
+   * `returnForm` 是欄位初始化式（field initializer），會在 `bookingId` 這個 required input
+   * 被 Angular 賦值「之前」就先建構並跑一次驗證（TestBed.createComponent() 先建元件、
+   * 再呼叫 setInput()，正式環境下 Angular 內部時序亦同）——這時讀 this.pickupRecord()
+   * 會連鎖讀到還沒賦值的 bookingId()，丟出 NG0950。此處用 try/catch 接住，視同「還沒有
+   * 取車紀錄」不擋；bookingId 就緒後 pickupRecord() 改走正常的 computed 重新求值。
+   */
+  private readonly mileageNotBelowPickup = (control: AbstractControl<number>): ValidationErrors | null => {
+    let pickupMileage: number | undefined;
+    try {
+      pickupMileage = this.pickupRecord()?.mileage;
+    } catch {
+      return null;
+    }
+    return pickupMileage == null || control.value >= pickupMileage ? null : { belowPickupMileage: true };
+  };
+
   protected readonly returnForm = this.fb.group({
     actualAt: [toDatetimeLocalValue(new Date().toISOString()), Validators.required],
-    mileage: [0, [Validators.required, Validators.min(0)]],
+    mileage: [0, [Validators.required, Validators.min(0), this.mileageNotBelowPickup]],
     energyLevel: [0, [Validators.required, Validators.min(0)]],
     originalDocumentChecked: [false],
     operatorConfirmedBy: [this.t.layout.adminUser, Validators.required],
@@ -369,6 +392,15 @@ export class HandoverPanelComponent {
     // 還車金額輸入（時間、能源讀數、人工調整）改變後，先前的試算結果就已經過時，
     // 必須清掉逼使用者重新按「試算費用」，不能讓「確認還車」用一份舊試算蒙混過去。
     this.returnForm.valueChanges.subscribe(() => this.returnChargesPreview.set(undefined));
+
+    // mileageNotBelowPickup 這條驗證器在 returnForm 剛建構時（bookingId 這個 required input
+    // 還沒被賦值）一定拿不到取車紀錄，當下只能先判定為合法。取車紀錄就緒或改變時，
+    // 這裡補一次 updateValueAndValidity()，讓「還車里程不可小於取車里程」確實生效，
+    // 不會因為使用者從頭到尾沒去動過里程欄位（維持預設 0）就矇混過關。
+    effect(() => {
+      this.pickupRecord();
+      this.returnForm.controls.mileage.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   protected async onReturnPhotosSelected(event: Event): Promise<void> {

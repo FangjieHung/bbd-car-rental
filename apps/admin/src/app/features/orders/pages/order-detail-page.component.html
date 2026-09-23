@@ -10,6 +10,24 @@
         <p class="order-detail__eyebrow">{{ t.orderDetail.title }}</p>
         <h1 class="ui-text-title order-detail__title">{{ member()?.name ?? '—' }}</h1>
         <app-status-chip [label]="t.booking.statusLabels[b.status]" [status]="statusKey()" />
+        @if (isOverdueReturn()) {
+          <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('handover')">
+            <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
+            {{ t.dispatch.workList.urgentOverdueReturn }}
+          </button>
+        }
+        @if (hasRefundPending()) {
+          <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('cancellation')">
+            <span class="material-symbols-rounded" aria-hidden="true">currency_exchange</span>
+            {{ t.dispatch.workList.urgentRefundPending }}
+          </button>
+        }
+        @if (hasUrgentOperatorRecovery()) {
+          <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('cancellation')">
+            <span class="material-symbols-rounded" aria-hidden="true">build</span>
+            {{ t.dispatch.workList.urgentOperatorRecovery }}
+          </button>
+        }
       </div>
       <dl class="order-detail__meta">
         <div>
@@ -156,12 +174,20 @@
                     <dd class="is-total">{{ q.total }}</dd>
                     <dt>{{ t.orderDetail.depositRequired }}</dt>
                     <dd>{{ b.depositRequired }}</dd>
+                    <dt>{{ t.orderDetail.netPaid }}</dt>
+                    <dd>{{ paymentSummary()?.netPaid ?? 0 }}</dd>
+                    <dt>{{ t.orderDetail.balanceDue }}</dt>
+                    <dd>{{ paymentSummary()?.balanceDue ?? 0 }}</dd>
                   </dl>
                 } @else {
                   <p class="muted">{{ t.orderDetail.noQuote }}</p>
                   <dl class="order-detail__fields order-detail__fields--amounts">
                     <dt>{{ t.orderDetail.depositRequired }}</dt>
                     <dd>{{ b.depositRequired }}</dd>
+                    <dt>{{ t.orderDetail.netPaid }}</dt>
+                    <dd>{{ paymentSummary()?.netPaid ?? 0 }}</dd>
+                    <dt>{{ t.orderDetail.balanceDue }}</dt>
+                    <dd>{{ paymentSummary()?.balanceDue ?? 0 }}</dd>
                   </dl>
                 }
               </section>

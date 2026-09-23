@@ -25,6 +25,12 @@ import {
 } from '../../../shared/filters/filter-select.component';
 import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
 import { OrderDetailSection } from '../../orders/navigation/order-detail-sections';
+import {
+  hasRefundPending,
+  hasUrgentOperatorRecovery,
+  isOverdueReturn,
+  isUrgent,
+} from '../booking-urgency';
 
 @Component({
   selector: 'app-bookings-page',
@@ -127,22 +133,23 @@ export class BookingsPageComponent {
   // ---------------------------------------------------------------------
   // 急迫指標：逾時未還、退款待處理、業者復原處理中——每一項在畫面上都要有 icon + 文字 +
   // 動作（不能只靠顏色），點擊一律導向同一個訂單詳情的對應分頁，不在清單裡另做判斷邏輯。
+  // 判斷邏輯本身抽到 booking-urgency.ts，與訂單詳情標題旁的急迫狀態共用、不重寫。
   // ---------------------------------------------------------------------
 
   isOverdueReturn(b: RentalBooking): boolean {
-    return b.status === 'in_progress' && new Date(b.endTime).getTime() < Date.now();
+    return isOverdueReturn(b);
   }
 
   hasRefundPending(b: RentalBooking): boolean {
-    return this.paymentStore.refundsFor(b.id).some((r) => r.status === 'pending');
+    return hasRefundPending(b, this.paymentStore);
   }
 
   hasUrgentOperatorRecovery(b: RentalBooking): boolean {
-    return this.operatorRecoveryStore.casesFor(b.id).some((c) => c.status === 'in_progress');
+    return hasUrgentOperatorRecovery(b, this.operatorRecoveryStore);
   }
 
   isUrgent(b: RentalBooking): boolean {
-    return this.isOverdueReturn(b) || this.hasRefundPending(b) || this.hasUrgentOperatorRecovery(b);
+    return isUrgent(b, this.paymentStore, this.operatorRecoveryStore);
   }
 
   goUrgent(b: RentalBooking, section: OrderDetailSection): void {
