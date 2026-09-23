@@ -5,7 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
-import { Vehicle, VehicleStatus, VehicleCategory } from '../../../core/models';
+import { RENTAL_BRANCHES, Vehicle, VehicleStatus, VehicleCategory, branchName } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
 import { MileagePipe } from '../../../shared/pipes/mileage.pipe';
@@ -29,8 +29,10 @@ import {
   MaintenanceRecordDialogComponent,
   RecordFormResult,
 } from '../../maintenance/dialogs/maintenance-record-dialog.component';
-import { TimelineViewComponent } from '../../dispatch/timeline-view/timeline-view.component';
 import { firstValueFrom } from 'rxjs';
+
+/** 3.6：車輛清單「據點」篩選裡「未設定」那個選項的 sentinel 值——不是真實的據點 id。 */
+export const LOCATION_FILTER_UNSET = '__unset__';
 
 const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
   available: 'active',
@@ -50,7 +52,6 @@ const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
     PageToolbarComponent,
     FilterSelectComponent,
     HeaderToolbarDirective,
-    TimelineViewComponent,
     MileagePipe,
   ],
   templateUrl: './vehicles-page.component.html',
@@ -66,6 +67,7 @@ export class VehiclesPageComponent {
   private route = inject(ActivatedRoute);
   readonly labels = ADMIN_DATA_TABLE_LABELS;
   readonly fmt = fmtDateTime;
+  readonly branchName = branchName;
 
   readonly columns: DataTableColumn<Vehicle>[] = [
     { key: 'plateNumber', label: this.t.vehicle.plateNumber, primary: true },
@@ -75,6 +77,11 @@ export class VehiclesPageComponent {
       exportValue: (v) => this.t.vehicle.typeLabels[v.category],
     },
     { key: 'model', label: this.t.vehicle.model },
+    {
+      key: 'location',
+      label: this.t.vehicle.location,
+      exportValue: (v) => branchName(v.location),
+    },
     {
       key: 'status',
       label: this.t.vehicle.status,
@@ -88,8 +95,8 @@ export class VehiclesPageComponent {
   readonly searchQuery = signal('');
   readonly typeFilter = signal<VehicleCategory | null>(null);
   readonly statusFilter = signal<VehicleStatus | null>(null);
+  readonly locationFilter = signal<string | null>(null);
   readonly selectedVehicles = signal<readonly Vehicle[]>([]);
-  readonly viewMode = signal<'table' | 'timeline'>('table');
   // 1.4：總覽「待保養 N」帶 ?maintenance=due 進來，只顯示有保養警示（逾期或即將到期）的車。
   readonly maintenanceOnlyFilter = signal(this.route.snapshot.queryParamMap.get('maintenance') === 'due');
 
@@ -101,18 +108,29 @@ export class VehiclesPageComponent {
     Object.entries(this.t.vehicle.statusLabels) as [VehicleStatus, string][]
   ).map(([value, label]) => ({ value, label }));
 
+  // 3.6：「據點」篩選＝全部（FilterSelectComponent 內建）／各據點／未設定（LOCATION_FILTER_UNSET）。
+  readonly locationOptions: FilterOption<string>[] = [
+    ...RENTAL_BRANCHES.map((b) => ({ value: b.id, label: b.name })),
+    { value: LOCATION_FILTER_UNSET, label: this.t.vehicle.locationFilterUnset },
+  ];
+
   readonly activeFilterCount = computed(() => {
-    return (this.typeFilter() ? 1 : 0) + (this.statusFilter() ? 1 : 0);
+    return (
+      (this.typeFilter() ? 1 : 0) + (this.statusFilter() ? 1 : 0) + (this.locationFilter() ? 1 : 0)
+    );
   });
 
   readonly filteredVehicles = computed(() => {
     const query = this.searchQuery().trim().toLowerCase();
     const type = this.typeFilter();
     const status = this.statusFilter();
+    const location = this.locationFilter();
     const maintenanceOnly = this.maintenanceOnlyFilter();
     return this.store.vehicles().filter((v) => {
       if (type && v.category !== type) return false;
       if (status && v.status !== status) return false;
+      if (location === LOCATION_FILTER_UNSET && v.location) return false;
+      if (location && location !== LOCATION_FILTER_UNSET && v.location !== location) return false;
       if (maintenanceOnly && !this.hasOverdueAlert(v) && !this.hasUpcomingAlert(v)) return false;
       if (
         query &&
@@ -153,6 +171,7 @@ export class VehiclesPageComponent {
   clearFilters(): void {
     this.typeFilter.set(null);
     this.statusFilter.set(null);
+    this.locationFilter.set(null);
   }
 
   /** 移除「只看待保養」篩選標籤；同時把網址上的 maintenance 參數清掉，避免重新整理又跳回來。 */
