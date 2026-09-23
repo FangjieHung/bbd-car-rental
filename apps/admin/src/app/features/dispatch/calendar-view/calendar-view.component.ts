@@ -45,6 +45,7 @@ import { PaymentStore } from '../../../stores/payment/payment.store';
 import { DocumentStore } from '../../../stores/document/document.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { HandoverStore } from '../../../stores/handover/handover.store';
+import { PrepStore } from '../../../stores/prep/prep.store';
 import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
 import { OrderDetailSection } from '../../orders/navigation/order-detail-sections';
 import { AvailableVehicleListComponent } from '../available-vehicle-list/available-vehicle-list.component';
@@ -263,6 +264,7 @@ export class CalendarViewComponent {
   private readonly documentStore = inject(DocumentStore);
   private readonly contractStore = inject(ContractStore);
   private readonly handoverStore = inject(HandoverStore);
+  private readonly prepStore = inject(PrepStore);
   private readonly reminderRepo = inject(REMINDER_STATUS_REPO);
   private readonly reminderStatuses = signal<ReminderStatus[]>(this.reminderRepo.getAll());
 
@@ -627,6 +629,15 @@ export class CalendarViewComponent {
   /** 需調度：與月曆格「需調度 N」同一個判斷（bookingNeedsDispatch）。 */
   needsDispatch(row: WorkListRow): boolean {
     return bookingNeedsDispatch(row.booking, this.vehicleOf(row));
+  }
+
+  /**
+   * 4.3：這一列要交出去的車還有沒整備的待辦 → 取車列顯示「尚未整備」提醒。只是提醒：
+   * 不列入阻擋原因、不影響 readiness()／isPickupReady()（就緒判斷的輸入裡沒有整備這一項），
+   * 也不動車輛狀態與可用數。只看尚未取車的列——已取車、已完成的列，車早就交出去了。
+   */
+  needsPrep(row: WorkListRow): boolean {
+    return row.booking.status === 'reserved' && this.prepStore.hasOpenTaskFor(row.booking.vehicleId);
   }
 
   /** 3.4：需調度 chip 寫出路線「需調度 {所在據點}→{取車據點}」（與可租清單同一個字串）。 */

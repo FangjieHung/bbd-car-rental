@@ -20,6 +20,7 @@ export {
   seedReminderStatuses,
   seedOperatorRecoveryCases,
   seedAuditEntries,
+  seedPrepTasks,
 } from '@car-rental/domain';
 
 import { MaintenanceRecord } from '../models';

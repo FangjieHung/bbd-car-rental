@@ -26,8 +26,8 @@
         <a
           class="nav-link"
           [routerLink]="item.route"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [class.active]="isActive(item)"
+          [attr.aria-current]="isActive(item) ? 'page' : null"
           [matTooltip]="collapsed() ? item.label : ''"
           matTooltipPosition="right"
           (click)="navClick.emit()"
@@ -71,8 +71,8 @@
               <a
                 class="nav-sublink"
                 [routerLink]="child.route"
-                routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: true }"
+                [class.active]="isActive(child)"
+                [attr.aria-current]="isActive(child) ? 'page' : null"
                 (click)="navClick.emit()"
               >
                 <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ child.icon }}</span>
@@ -98,8 +98,8 @@
                 <a
                   class="nav-flyout-item"
                   [routerLink]="child.route"
-                  routerLinkActive="active"
-                  [routerLinkActiveOptions]="{ exact: true }"
+                  [class.active]="isActive(child)"
+                  [attr.aria-current]="isActive(child) ? 'page' : null"
                   (click)="navClick.emit()"
                 >
                   <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ child.icon }}</span>

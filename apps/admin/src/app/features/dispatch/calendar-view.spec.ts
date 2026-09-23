@@ -22,6 +22,7 @@ import {
   Member,
   MaintenanceRecord,
   PaymentRecord,
+  PrepTask,
   PricingPlan,
   RefundRecord,
   RentalBooking,
@@ -40,6 +41,7 @@ import {
   MEMBER_REPO,
   MAINTENANCE_REPO,
   PAYMENT_REPO,
+  PREP_TASK_REPO,
   PRICING_PLAN_REPO,
   REFUND_REPO,
   REMINDER_STATUS_REPO,
@@ -910,6 +912,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     contract?: ContractVersion | null;
     deposit?: number;
     workspaceOpen?: ReturnType<typeof vi.fn>;
+    prepTasks?: PrepTask[];
   } = {}) {
     const workspaceOpen = options.workspaceOpen ?? vi.fn();
     const workspaceEdit = vi.fn();
@@ -952,6 +955,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
           provide: CONTRACT_VERSION_REPO,
           useValue: createInMemoryRepo<ContractVersion>(contract ? [contract] : []),
         },
+        { provide: PREP_TASK_REPO, useValue: createInMemoryRepo<PrepTask>(options.prepTasks ?? []) },
       ],
     });
     const fixture = TestBed.createComponent(CalendarViewComponent);
@@ -1020,6 +1024,74 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
       expect(item.querySelector('.work-list-severity__text')?.textContent?.trim()).not.toBe('');
       expect(item.querySelector('button')).not.toBeNull();
     }
+  });
+
+  // 4.3：該車還有沒整備的待辦 → 取車列顯示「尚未整備」提醒；不列入阻擋、不影響可取車與可用數。
+  const openPrep = (partial: Partial<PrepTask> = {}): PrepTask => ({
+    id: 'prep-1',
+    vehicleId: 'v1',
+    bookingId: 'b-prev',
+    returnedAt: new Date(2026, 7, 3, 18).toISOString(),
+    returnLocation: '機場',
+    ...partial,
+  });
+  const prepChip = (fixture: { nativeElement: HTMLElement }) =>
+    fixture.nativeElement.querySelector('.work-list-row__prep') as HTMLElement | null;
+
+  it('4.3：車還沒整備 → 取車列顯示「尚未整備」提醒，但仍是「可取車」，也沒有多出阻擋原因', () => {
+    const { fixture, component, row } = setup({ prepTasks: [openPrep()] });
+
+    expect(component.needsPrep(row)).toBe(true);
+    expect(prepChip(fixture)?.textContent).toContain('尚未整備');
+    expect(prepChip(fixture)?.classList).toContain('ui-chip--warning');
+    // 不是阻擋：就緒判斷、阻擋與提醒清單都和沒有整備待辦時一模一樣。
+    expect(component.isPickupReady(row)).toBe(true);
+    expect(component.readinessLabel(row)).toBe('可取車');
+    expect(component.blockersOf(row)).toEqual([]);
+    expect(component.warningsOf(row)).toEqual([]);
+  });
+
+  it('4.3：阻擋原因不含整備——有阻擋時照舊，整備只多一個提醒', () => {
+    const withPrep = setup({ deposit: 0, prepTasks: [openPrep()] });
+    const blockersWithPrep = withPrep.component.blockersOf(withPrep.row).map((b) => b.type);
+    const labelWithPrep = withPrep.component.readinessLabel(withPrep.row);
+    expect(withPrep.component.needsPrep(withPrep.row)).toBe(true);
+    TestBed.resetTestingModule();
+    const withoutPrep = setup({ deposit: 0 });
+
+    expect(blockersWithPrep).toEqual(withoutPrep.component.blockersOf(withoutPrep.row).map((b) => b.type));
+    expect(blockersWithPrep).toEqual(['deposit_below_threshold']);
+    expect(labelWithPrep).toBe(withoutPrep.component.readinessLabel(withoutPrep.row));
+  });
+
+  it('4.3：已整備完成（或沒有整備待辦）就不提醒', () => {
+    const { fixture, component, row } = setup({
+      prepTasks: [openPrep({ completedAt: new Date(2026, 7, 4, 8).toISOString(), completedBy: '管理員' })],
+    });
+
+    expect(component.needsPrep(row)).toBe(false);
+    expect(prepChip(fixture)).toBeNull();
+  });
+
+  it('4.3：已取車的列不提醒（車已經交出去了）', () => {
+    const { fixture, component, row } = setup({ booking: { status: 'in_progress' }, prepTasks: [openPrep()] });
+
+    expect(component.needsPrep(row)).toBe(false);
+    expect(prepChip(fixture)).toBeNull();
+  });
+
+  it('4.3：待整備不影響月曆可用數與可用分頁——沒有訂單的那天，這台車照樣算可用', () => {
+    const { fixture, component } = setup({ prepTasks: [openPrep()] });
+    const freeDay = new Date(2026, 7, 10);
+
+    expect(component.statsOf(freeDay).available).toBe(1);
+
+    // 可用分頁只查今天以後的日子：挑一個沒有訂單的未來日子。
+    const future = new Date();
+    future.setFullYear(future.getFullYear() + 1);
+    fixture.componentRef.setInput('targetDate', future);
+    fixture.detectChanges();
+    expect(component.availableCount()).toBe(1);
   });
 
   it('pay/edit/cancel/view-contract/pickup 快捷操作都開同一個訂單詳情，不另做第二套表單', () => {

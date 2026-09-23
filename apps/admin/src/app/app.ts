@@ -37,11 +37,20 @@ export class App implements OnInit {
         { route: '/add-ons', label: this.t.nav.addOns, icon: 'extension' },
       ],
     },
+    // 4.5：「訂單管理」改成群組，會員不再藏在訂單列表的工具列裡。建單（/orders/new）與
+    // 訂單詳情（/orders/:id）歸在「訂單列表」底下：側欄亮它、頁首預設標題也算它。
     {
-      route: '/bookings',
       label: this.t.nav.bookings,
       icon: 'calendar_month',
-      matchPrefixes: ['/orders/'],
+      children: [
+        {
+          route: '/bookings',
+          label: this.t.nav.orderList,
+          icon: 'calendar_month',
+          matchPrefixes: ['/orders/'],
+        },
+        { route: '/bookings/members', label: this.t.nav.members, icon: 'group' },
+      ],
     },
     {
       label: this.t.nav.pricingGroup,
@@ -75,6 +84,11 @@ export class App implements OnInit {
   protected currentGroupLabel: string | null = null;
   protected openGroupLabel: string | null = null;
   protected collapsed = false;
+  /**
+   * 目前頁面對應的選單項目（含 matchPrefixes 的歸屬，例如 /orders/new → 訂單列表）。
+   * 側欄用它標示目前位置——單靠 routerLinkActive 的完全比對，建單與訂單詳情時側欄不會亮任何一項。
+   */
+  protected readonly activeRoute = signal<string | null>(null);
   /** 目前頁面是「滿版頁」（路由 data 標記，見 layout/fill-page.ts）：主內容區撐滿頁首與頁尾之間的高度。 */
   protected readonly fillPage = signal(false);
 
@@ -117,6 +131,7 @@ export class App implements OnInit {
             )
           : undefined;
         this.currentGroupLabel = activeGroup?.label ?? null;
+        this.activeRoute.set(active?.route ?? null);
 
         if (activeGroup) {
           this.openGroupLabel = activeGroup.label;

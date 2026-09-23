@@ -79,6 +79,34 @@ describe('SideNavComponent', () => {
     expect(trigger?.classList.contains('active')).toBe(true);
   });
 
+  it('4.5：activeRoute 對到的選單項目亮起並標 aria-current="page"——含群組內的子項目；其他項目不亮', () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('openGroupLabel', '商品管理');
+    fixture.componentRef.setInput('activeRoute', '/vehicles');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    const sublink = el.querySelector('.nav-sublink');
+    expect(sublink?.classList.contains('active')).toBe(true);
+    expect(sublink?.getAttribute('aria-current')).toBe('page');
+    const dashboard = el.querySelector('a.nav-link');
+    expect(dashboard?.classList.contains('active')).toBe(false);
+    expect(dashboard?.hasAttribute('aria-current')).toBe(false);
+
+    fixture.componentRef.setInput('activeRoute', '/dashboard');
+    fixture.detectChanges();
+    expect(el.querySelector('a.nav-link')?.classList.contains('active')).toBe(true);
+    expect(el.querySelector('.nav-sublink')?.classList.contains('active')).toBe(false);
+  });
+
+  it('4.5：沒有對應的選單項目（例如設定頁）時一項都不亮', () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('openGroupLabel', '商品管理');
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.active')).toHaveLength(0);
+  });
+
   it('使用者選單顯示設定與登出', () => {
     const fixture = setup();
     fixture.detectChanges();

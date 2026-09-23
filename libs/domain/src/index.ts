@@ -8,5 +8,6 @@ export * from './lib/commission';
 export * from './lib/payments';
 export * from './lib/cancellation';
 export * from './lib/handover';
+export * from './lib/prep';
 export * from './lib/contracts';
 export * from './lib/formatting';
