@@ -48,8 +48,19 @@ export class CommissionPageComponent {
       // 匯出保留原始 ISO 字串（機器可讀），畫面顯示才用共用格式（dtCell 負責）。
       exportValue: (r) => `${r.startTime} ~ ${r.endTime}`,
     },
-    { key: 'rentalSubtotal', label: this.t.commission.rentalSubtotal, align: 'end' },
-    { key: 'commission', label: this.t.commission.commissionAmount, align: 'end' },
+    // 沒有報價快照的訂單（null）匯出寫「未報價」，不寫成 0。
+    {
+      key: 'rentalSubtotal',
+      label: this.t.commission.rentalSubtotal,
+      align: 'end',
+      exportValue: (r) => r.rentalSubtotal ?? this.t.commission.unquoted,
+    },
+    {
+      key: 'commission',
+      label: this.t.commission.commissionAmount,
+      align: 'end',
+      exportValue: (r) => r.commission ?? this.t.commission.unquoted,
+    },
   ];
 
   /** CommissionReportRow 無 id 欄位，DataTable 預設 rowId 會丟錯，改用 bookingId 當識別欄位。 */
@@ -72,6 +83,12 @@ export class CommissionPageComponent {
     this.payoutVersion();
     if (!partnerId || !month) return null;
     return this.commissionStore.getPayoutStatus(partnerId, month);
+  });
+
+  /** 報表上方的提示：「N 筆訂單沒有報價紀錄，未計入退佣」；全部都有報價時為空字串（不顯示）。 */
+  readonly unquotedNotice = computed(() => {
+    const count = this.report()?.unquotedCount ?? 0;
+    return count > 0 ? this.t.commission.unquotedNotice.replace('{count}', String(count)) : '';
   });
 
   /** 依目前選定的合作夥伴與月份組出匯出檔名，否則多筆匯出只會拿到 commission-20260805 (1).xlsx 這種無法分辨的檔名。 */

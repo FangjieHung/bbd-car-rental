@@ -161,8 +161,11 @@
 
               <section class="ui-card order-detail__group">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.pricing }}</h2>
-                @if (b.priceBreakdown; as q) {
-                  <dl class="order-detail__fields order-detail__fields--amounts">
+                @if (!b.priceBreakdown) {
+                  <p class="muted">{{ t.orderDetail.noQuote }}</p>
+                }
+                <dl class="order-detail__fields order-detail__fields--amounts">
+                  @if (b.priceBreakdown; as q) {
                     <dt>{{ t.bookingForm.rentalSubtotal }}</dt>
                     <dd>{{ q.rentalSubtotal | twd }}</dd>
                     <dt>{{ t.bookingForm.insuranceSubtotal }}</dt>
@@ -175,24 +178,31 @@
                     }
                     <dt class="is-total">{{ t.bookingForm.quoteTotal }}</dt>
                     <dd class="is-total">{{ q.total | twd }}</dd>
-                    <dt>{{ t.orderDetail.depositRequired }}</dt>
-                    <dd>{{ b.depositRequired | twd }}</dd>
-                    <dt>{{ t.orderDetail.netPaid }}</dt>
-                    <dd>{{ (paymentSummary()?.netPaid ?? 0) | twd }}</dd>
-                    <dt>{{ t.orderDetail.balanceDue }}</dt>
-                    <dd>{{ (paymentSummary()?.balanceDue ?? 0) | twd }}</dd>
-                  </dl>
-                } @else {
-                  <p class="muted">{{ t.orderDetail.noQuote }}</p>
-                  <dl class="order-detail__fields order-detail__fields--amounts">
-                    <dt>{{ t.orderDetail.depositRequired }}</dt>
-                    <dd>{{ b.depositRequired | twd }}</dd>
-                    <dt>{{ t.orderDetail.netPaid }}</dt>
-                    <dd>{{ (paymentSummary()?.netPaid ?? 0) | twd }}</dd>
-                    <dt>{{ t.orderDetail.balanceDue }}</dt>
-                    <dd>{{ (paymentSummary()?.balanceDue ?? 0) | twd }}</dd>
-                  </dl>
-                }
+                  }
+                  <dt>{{ t.orderDetail.depositRequired }}</dt>
+                  <dd>{{ b.depositRequired | twd }}</dd>
+                  <dt>{{ t.orderDetail.netPaid }}</dt>
+                  <dd>{{ (paymentSummary()?.netPaid ?? 0) | twd }}</dd>
+                  @if (balance(); as bal) {
+                    @switch (bal.kind) {
+                      @case ('overpaid') {
+                        <dt class="is-overpaid">{{ t.orderDetail.overpaid }}</dt>
+                        <dd class="is-overpaid order-detail__balance">{{ bal.amount | twd }}</dd>
+                      }
+                      @case ('unquoted') {
+                        <dt>{{ t.orderDetail.balanceDue }}</dt>
+                        <dd class="order-detail__balance">
+                          —
+                          <span class="order-detail__balance-note">{{ t.orderDetail.noQuoteBalance }}</span>
+                        </dd>
+                      }
+                      @default {
+                        <dt>{{ t.orderDetail.balanceDue }}</dt>
+                        <dd class="order-detail__balance">{{ bal.amount | twd }}</dd>
+                      }
+                    }
+                  }
+                </dl>
               </section>
             </div>
           }

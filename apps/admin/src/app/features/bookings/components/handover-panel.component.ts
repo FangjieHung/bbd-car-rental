@@ -149,6 +149,19 @@ export class HandoverPanelComponent {
   // signal 變動都會讓這兩個 computed 重新算一次，畫面因此永遠反映「現在」的狀態。
   // ---------------------------------------------------------------------
 
+  /**
+   * 這台車目前在誰手上：同一台車另一筆出租中（含逾時未還）的訂單＝前一位客人還沒還車。
+   * 與總覽取車清單（calendar-view 的 previousRentalOf）同一個判斷：以訂單資料為準、不看車輛狀態欄位，
+   * 才寫得出那筆訂單預定何時還、逾時多久。只有尚未取車的訂單需要（取車區塊只在已預訂時出現）。
+   */
+  protected readonly previousRental = computed<RentalBooking | undefined>(() => {
+    const booking = this.booking();
+    if (!booking || booking.status !== 'reserved') return undefined;
+    return this.bookingStore
+      .bookings()
+      .find((b) => b.vehicleId === booking.vehicleId && b.id !== booking.id && b.status === 'in_progress');
+  });
+
   protected readonly readinessInput = computed<PickupReadinessInput | undefined>(() => {
     const booking = this.booking();
     const vehicle = this.vehicle();
@@ -167,6 +180,7 @@ export class HandoverPanelComponent {
     const hasSchedulingConflict =
       this.bookingStore.findConflicts(vehicle.id, booking.startTime, booking.endTime, booking.id).length > 0;
     const isForeignVisitor = member?.kind === 'foreign_visitor';
+    const previousRental = this.previousRental();
 
     return {
       evaluatedAt: new Date().toISOString(),
@@ -206,7 +220,13 @@ export class HandoverPanelComponent {
             reciprocityStatus: 'not_applicable',
           },
       originalDocumentCheckedThisVisit: this.originalDocumentCheckedSignal(),
-      vehicle: { status: vehicle.status, hasSchedulingConflict },
+      vehicle: {
+        status: vehicle.status,
+        hasSchedulingConflict,
+        // 與總覽取車清單同一個說法：車還在前一位客人手上時，第一個阻擋寫「前一位客人尚未還車（逾時 …）」，
+        // 取代「車輛目前在租」這種通用說法（見 evaluatePickupReadiness 的 previousRental）。
+        ...(previousRental ? { previousRental: { scheduledReturnAt: previousRental.endTime } } : {}),
+      },
       ...(member?.email ? { memberEmail: member.email } : {}),
     };
   });

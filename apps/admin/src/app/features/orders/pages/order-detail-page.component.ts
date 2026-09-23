@@ -163,6 +163,21 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
     return b ? this.paymentStore.summaryFor(b.id) : undefined;
   });
   /**
+   * 費用卡的「待收」：
+   * - 沒有報價快照（舊訂單，例如種子 b9）：應收算不出來，顯示「—」加說明——summaryFor 會把應收當 0，
+   *   已收 700 就變成「待收 −NT$700」，看起來像溢收，其實只是沒有報價。
+   * - 待收為負：改寫「溢收 NT$X」並用警示色（與建單頁收款區塊、摘要欄同一種說法）。
+   */
+  protected readonly balance = computed<{ kind: 'due' | 'overpaid' | 'unquoted'; amount: number } | undefined>(() => {
+    const b = this.booking();
+    const summary = this.paymentSummary();
+    if (!b || !summary) return undefined;
+    if (!b.priceBreakdown) return { kind: 'unquoted', amount: 0 };
+    return summary.balanceDue < 0
+      ? { kind: 'overpaid', amount: -summary.balanceDue }
+      : { kind: 'due', amount: summary.balanceDue };
+  });
+  /**
    * 4.1：總覽最上方的待補卡——與建立訂單摘要欄的「建立後待補」同一套規則，改吃這筆訂單的實際紀錄
    * （款項、合約版本、承租人的證件）。已取消、已完成的訂單沒有待補（空陣列，卡片不出現）。
    */

@@ -234,6 +234,8 @@ describe('HandoverPanelComponent', () => {
     disclosedRules?: Partial<ContractDisclosedRules>;
     pricingPlan?: Partial<PricingPlan>;
     reminderStatuses?: ReminderStatus[];
+    /** 同一台車的其他訂單（例如還在前一位客人手上的那一筆）。 */
+    otherBookings?: RentalBooking[];
   } = {}) {
     assetGateway = new FakeDocumentAssetGateway();
     TestBed.resetTestingModule();
@@ -244,6 +246,7 @@ describe('HandoverPanelComponent', () => {
           provide: BOOKING_REPO,
           useValue: createInMemoryRepo<RentalBooking>([
             makeBooking({ depositRequired: options.depositRequired ?? 0, ...options.booking }),
+            ...(options.otherBookings ?? []),
           ]),
         },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo() },
@@ -331,6 +334,29 @@ describe('HandoverPanelComponent', () => {
     const bookingStore = TestBed.inject(BookingStore);
     expect(bookingStore.bookings()[0].status).toBe('in_progress');
     expect(fixture.componentInstance['pickupError']()).toBeUndefined();
+  });
+
+  it('車還在前一位客人手上：阻擋寫「前一位客人尚未還車（逾時 …）」，與總覽取車清單同一個說法，不再是「車輛目前在租」', () => {
+    const previousEnd = new Date(Date.now() - (3 * 60 + 5) * 60_000).toISOString(); // 逾時 3 小時 5 分
+    configure({
+      vehicle: { status: 'rented' },
+      otherBookings: [makeBooking({ id: 'b0', status: 'in_progress', startTime: T_START, endTime: previousEnd })],
+    });
+    const fixture = createFixture();
+    const blockers = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.handover-panel__blockers li'),
+    ).map((li) => li.textContent?.trim());
+
+    expect(blockers[0]).toMatch(/^前一位客人尚未還車（逾時 3 小時 [5-6] 分）。$/);
+    expect(blockers.join()).not.toContain('車輛目前在租');
+  });
+
+  it('同一台車沒有出租中的其他訂單：沿用一般的車輛狀態說法', () => {
+    configure({ vehicle: { status: 'rented' } });
+    const fixture = createFixture();
+    const text = (fixture.nativeElement as HTMLElement).querySelector('.handover-panel__blockers')?.textContent ?? '';
+    expect(text).toContain('車輛目前在租');
+    expect(text).not.toContain('前一位客人');
   });
 
   it('車輛維修中（車輛安全類別）：顯示無法覆核提示，不出現主管覆核欄位，送出按鈕停用', () => {

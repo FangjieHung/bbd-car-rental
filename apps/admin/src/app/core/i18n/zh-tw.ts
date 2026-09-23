@@ -451,7 +451,11 @@ export const ZH_TW = {
     depositRequired: '應收訂金',
     netPaid: '已收',
     balanceDue: '待收',
+    // 待收為負＝收超過應收：改寫「溢收」並用警示色（與建單頁收款區塊、摘要欄同一種說法）。
+    overpaid: '溢收',
     noQuote: '尚無報價快照',
+    // 沒有報價快照的舊訂單算不出應收，待收顯示「—」加這行小字，不假裝應收是 0（否則已收多少就「溢收」多少）。
+    noQuoteBalance: '尚無報價，無法計算待收',
     // 4.1：總覽最上方的待補卡（已取消、已完成的訂單不顯示）；每一項可點到能處理它的地方。
     incomplete: {
       title: '待補',
@@ -972,6 +976,9 @@ export const ZH_TW = {
     payoutStatusLabels: { pending: '待撥款', paid: '已撥款' } as Record<string, string>,
     markPaid: '標記已撥款',
     selectPartnerFirst: '請先選擇民宿與月份',
+    // 沒有報價快照的訂單算不出租金小計，不能當成 NT$0（看起來像「這個月退佣是 0」）：標「未報價」、不計入合計。
+    unquoted: '未報價',
+    unquotedNotice: '{count} 筆訂單沒有報價紀錄，未計入退佣',
   },
   layout: {
     subtitle: '管理中心',

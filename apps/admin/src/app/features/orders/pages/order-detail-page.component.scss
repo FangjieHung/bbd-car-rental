@@ -154,6 +154,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+// 溢收：與建單頁收款區塊、摘要欄同一個警示色
+.order-detail__fields .is-overpaid {
+  font-weight: 600;
+  color: var(--mat-sys-error);
+}
+
+// 沒有報價快照時，待收「—」下方的說明小字
+.order-detail__balance-note {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .order-detail__branch {
   display: inline-flex;
   flex-wrap: wrap;

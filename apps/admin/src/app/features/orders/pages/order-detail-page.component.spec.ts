@@ -338,6 +338,70 @@ describe('OrderDetailPageComponent 總覽「費用」卡的已收／待收（與
   });
 });
 
+describe('OrderDetailPageComponent 費用卡的溢收與沒有報價（前批驗收發現的顯示問題）', () => {
+  const quote1000 = {
+    dailyLines: [{ date: '2026-01-05', dayType: 'weekday' as const, price: 1000 }],
+    rentalRaw: 1000,
+    tierDiscountPercent: 0,
+    tierDiscountAmount: 0,
+    rentalSubtotal: 1000,
+    partnerDiscountPercent: 0,
+    partnerDiscount: 0,
+    addOnLines: [],
+    addOnSubtotal: 0,
+    insuranceSubtotal: 0,
+    couponDiscount: 0,
+    total: 1000,
+  };
+  const paid = (amount: number): PaymentRecord => ({
+    id: `p${amount}`, bookingId: 'b1', amount, method: 'cash', purpose: 'balance', status: 'confirmed',
+    receivedAt: '2026-01-01T00:00:00.000Z', handledBy: 'staff',
+  });
+
+  function pricingCard(harness: RouterTestingHarness): HTMLElement {
+    return Array.from(el(harness).querySelectorAll('.order-detail__group')).find((g) =>
+      g.querySelector('.order-detail__group-title')?.textContent?.includes(ZH_TW.orderDetail.groups.pricing),
+    ) as HTMLElement;
+  }
+
+  it('待收為負：改寫「溢收 NT$X」並用警示色，不顯示「−NT$」', async () => {
+    const { harness } = await setup('/orders/b1', {
+      bookings: [makeBooking({ priceBreakdown: quote1000 })],
+      payments: [paid(1200)],
+    });
+    const card = pricingCard(harness);
+    const balance = card.querySelector('.order-detail__balance') as HTMLElement;
+    expect(balance.textContent?.trim()).toBe('NT$200');
+    expect(balance.classList).toContain('is-overpaid');
+    expect(balance.previousElementSibling?.textContent?.trim()).toBe(ZH_TW.orderDetail.overpaid);
+    expect(card.textContent).not.toContain('−NT$');
+  });
+
+  it('待收為正：照舊顯示「待收」', async () => {
+    const { harness } = await setup('/orders/b1', {
+      bookings: [makeBooking({ priceBreakdown: quote1000 })],
+      payments: [paid(300)],
+    });
+    const balance = pricingCard(harness).querySelector('.order-detail__balance') as HTMLElement;
+    expect(balance.textContent?.trim()).toBe('NT$700');
+    expect(balance.classList).not.toContain('is-overpaid');
+    expect(balance.previousElementSibling?.textContent?.trim()).toBe(ZH_TW.orderDetail.balanceDue);
+  });
+
+  it('沒有報價快照（種子 b9：已收 700）：待收顯示「—」加說明，不再是「−NT$700」', async () => {
+    const { harness } = await setup('/orders/b1', {
+      bookings: [makeBooking({ status: 'in_progress', priceBreakdown: undefined })],
+      payments: [paid(700)],
+    });
+    const card = pricingCard(harness);
+    const balance = card.querySelector('.order-detail__balance') as HTMLElement;
+    expect(balance.textContent).toContain('—');
+    expect(balance.querySelector('.order-detail__balance-note')?.textContent?.trim()).toBe(ZH_TW.orderDetail.noQuoteBalance);
+    expect(card.textContent).not.toContain('−NT$700');
+    expect(card.textContent).not.toContain(ZH_TW.orderDetail.overpaid);
+  });
+});
+
 describe('OrderDetailPageComponent 總覽的待補卡（4.1：與建單摘要欄同一套規則）', () => {
   const verifiedIdentity: IdentityDocument = {
     id: 'id1', memberId: 'm1', type: 'taiwan_id', documentNumber: 'A1', issuingCountry: 'TW',
