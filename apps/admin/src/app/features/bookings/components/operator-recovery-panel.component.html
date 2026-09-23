@@ -63,9 +63,9 @@
             <dt>{{ t.common.actions }}</dt>
             <dd>{{ t.operatorRecoveryPanel.statusLabels[kase.status] }}</dd>
             <dt>{{ t.operatorRecoveryPanel.discoveredAt }}</dt>
-            <dd>{{ kase.discoveredAt }}</dd>
+            <dd>{{ fmt(kase.discoveredAt) }}</dd>
             <dt>{{ t.operatorRecoveryPanel.notifiedAt }}</dt>
-            <dd>{{ kase.notifiedAt }}</dd>
+            <dd>{{ fmt(kase.notifiedAt) }}</dd>
           </dl>
 
           @if (kase.remedyAttempts.length > 0) {
@@ -75,7 +75,7 @@
                   <strong>{{ t.operatorRecoveryPanel.remedyTypeLabels[attempt.type] }}</strong>
                   — {{ t.operatorRecoveryPanel.outcomeLabels[attempt.outcome] }}
                   @if (attempt.absorbedDifference > 0) {
-                    （{{ t.operatorRecoveryPanel.absorbedDifference }}：{{ attempt.absorbedDifference }}）
+                    （{{ t.operatorRecoveryPanel.absorbedDifference }}：{{ attempt.absorbedDifference | twd }}）
                   }
                   @if (attempt.contractVersionId) {
                     <span class="operator-recovery-panel__contract-notice">已產生新合約版本</span>
@@ -199,8 +199,8 @@
                 </mat-form-field>
 
                 <p class="operator-recovery-panel__hint">
-                  {{ t.operatorRecoveryPanel.depositPaid }}：{{ depositPaid() }}／
-                  {{ t.operatorRecoveryPanel.otherPrepayment }}：{{ otherPrepayment() }}
+                  {{ t.operatorRecoveryPanel.depositPaid }}：{{ depositPaid() | twd }}／
+                  {{ t.operatorRecoveryPanel.otherPrepayment }}：{{ otherPrepayment() | twd }}
                 </p>
 
                 <mat-form-field>
@@ -248,7 +248,7 @@
             @if (kase.taxiReimbursements.length > 0) {
               <ul>
                 @for (r of kase.taxiReimbursements; track r.id) {
-                  <li>{{ r.amount }}（{{ t.operatorRecoveryPanel.approvedBy }}：{{ r.approvedBy }}）</li>
+                  <li>{{ r.amount | twd }}（{{ t.operatorRecoveryPanel.approvedBy }}：{{ r.approvedBy }}）</li>
                 }
               </ul>
             }
@@ -282,7 +282,7 @@
               <ul>
                 @for (g of kase.goodwillCompensations; track g.id) {
                   <li>
-                    {{ t.operatorRecoveryPanel.goodwillTypeLabels[g.type] }}：{{ g.amount }}
+                    {{ t.operatorRecoveryPanel.goodwillTypeLabels[g.type] }}：{{ g.amount | twd }}
                     （{{ t.operatorRecoveryPanel.approvedBy }}：{{ g.approvedBy }}）
                   </li>
                 }

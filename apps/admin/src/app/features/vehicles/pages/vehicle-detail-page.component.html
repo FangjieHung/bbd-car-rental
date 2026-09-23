@@ -11,7 +11,7 @@
       <p>{{ t.vehicle.brand }}：{{ vehicle()!.brand }}</p>
       <p>{{ t.vehicle.year }}：{{ vehicle()!.year }}</p>
       <p>{{ t.vehicle.status }}：{{ t.vehicle.statusLabels[vehicle()!.status] }}</p>
-      <p>{{ t.vehicle.mileage }}：{{ vehicle()!.mileage }}</p>
+      <p>{{ t.vehicle.mileage }}：{{ vehicle()!.mileage | mileage }}</p>
       <p>{{ t.vehicle.location }}：{{ branchName(vehicle()!.location) }}</p>
     </section>
 
@@ -34,10 +34,12 @@
           >
             <ng-template dtCell="type" let-r>{{ t.maintenance.typeLabels[r.type] }}</ng-template>
             <ng-template dtCell="performedAt" let-r>{{ fmt(r.performedAt) }}</ng-template>
-            <ng-template dtCell="nextDueMileage" let-r>{{ r.nextDueMileage ?? '—' }}</ng-template>
+            <ng-template dtCell="mileageAtService" let-r>{{ r.mileageAtService | mileage }}</ng-template>
+            <ng-template dtCell="nextDueMileage" let-r>{{ r.nextDueMileage | mileage }}</ng-template>
             <ng-template dtCell="nextDueDate" let-r>{{
               r.nextDueDate ? fmt(r.nextDueDate) : '—'
             }}</ng-template>
+            <ng-template dtCell="cost" let-r>{{ r.cost | twd }}</ng-template>
           </lib-data-table>
         </div>
       }

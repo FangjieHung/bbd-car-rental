@@ -3,6 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { DriverCredentialType, ReciprocityStatus } from '@car-rental/domain';
 import { DriverEligibilityGateway, DriverEligibilityResult } from '../../../core/services/driver-eligibility.gateway';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtIsoDate } from '../../../core/date-utils';
 
 /**
  * 外國旅客駕照互惠資格查核面板。設計文件第 5/7 節：
@@ -18,6 +19,8 @@ import { ZH_TW } from '../../../core/i18n/zh-tw';
 })
 export class DriverEligibilityPanelComponent {
   protected readonly t = ZH_TW;
+  /** 合法使用截止日是純日期（無時間意義），用 fmtIsoDate 而非 fmtDateTime。 */
+  protected readonly fmtIsoDate = fmtIsoDate;
   private readonly gateway = inject(DriverEligibilityGateway);
 
   readonly issuingCountry = input<string>('');

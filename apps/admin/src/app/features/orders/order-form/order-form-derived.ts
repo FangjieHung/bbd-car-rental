@@ -1,4 +1,5 @@
 import { Signal, computed } from '@angular/core';
+import { formatTwd } from '@car-rental/domain';
 import { PriceBreakdown, RentalBooking, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import type { OrderFormData } from './order-form-data';
@@ -95,7 +96,7 @@ export function orderFormProblems(
   if (pricing.depositRequired == null || !Number.isFinite(pricing.depositRequired) || pricing.depositRequired < 0) {
     problems.pricing.push(t.orderForm.problems.depositInvalid);
   } else if (derived.depositExceedsCap()) {
-    problems.pricing.push(`${t.bookingForm.depositExceedsCap}（${derived.depositCap()}）`);
+    problems.pricing.push(`${t.bookingForm.depositExceedsCap}（${formatTwd(derived.depositCap())}）`);
   }
   if (derived.insuranceUnreconciled()) problems.pricing.push(t.bookingForm.insuranceUnreconciled);
 

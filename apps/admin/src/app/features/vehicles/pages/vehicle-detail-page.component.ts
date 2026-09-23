@@ -10,6 +10,8 @@ import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@ca
 import { branchName, MaintenanceRecord } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
+import { MileagePipe } from '../../../shared/pipes/mileage.pipe';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
 import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
@@ -20,7 +22,7 @@ import {
 
 @Component({
   selector: 'app-vehicle-detail-page',
-  imports: [DataTableComponent, DataTableCellDirective, MatButtonModule, RouterLink],
+  imports: [DataTableComponent, DataTableCellDirective, MatButtonModule, RouterLink, TwdPipe, MileagePipe],
   templateUrl: './vehicle-detail-page.component.html',
   styleUrls: ['../../../app.scss', './vehicle-detail-page.component.scss'],
 })

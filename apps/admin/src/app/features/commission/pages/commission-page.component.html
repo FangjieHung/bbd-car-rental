@@ -46,10 +46,12 @@
           [exportName]="exportName()"
           (exportFailed)="onExportFailed($event)"
         >
-          <ng-template dtCell="period" let-r>{{ r.startTime }} ~ {{ r.endTime }}</ng-template>
+          <ng-template dtCell="period" let-r>{{ fmt(r.startTime) }} ~ {{ fmt(r.endTime) }}</ng-template>
+          <ng-template dtCell="rentalSubtotal" let-r>{{ r.rentalSubtotal | twd }}</ng-template>
+          <ng-template dtCell="commission" let-r>{{ r.commission | twd }}</ng-template>
         </lib-data-table>
       </div>
-      <p class="ui-text-title">{{ t.commission.total }}：{{ report()!.total }}</p>
+      <p class="ui-text-title">{{ t.commission.total }}：{{ report()!.total | twd }}</p>
     }
   }
 </div>

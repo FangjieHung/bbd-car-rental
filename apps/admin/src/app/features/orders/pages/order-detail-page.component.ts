@@ -15,6 +15,7 @@ import { PaymentStore } from '../../../stores/payment/payment.store';
 import { OperatorRecoveryStore } from '../../../stores/operator-recovery/operator-recovery.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { BOOKING_STATUS_KEY } from '../../../shared/chips/booking-status-key';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import {
   hasRefundPending,
   hasUrgentOperatorRecovery,
@@ -75,6 +76,7 @@ const FALLBACK_RETURN_URL = '/bookings';
     CustomerCreditPanelComponent,
     OperatorRecoveryPanelComponent,
     ActivityTimelineComponent,
+    TwdPipe,
   ],
   templateUrl: './order-detail-page.component.html',
   styleUrls: ['../../../app.scss', './order-detail-page.component.scss'],

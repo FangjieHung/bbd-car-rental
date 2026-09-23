@@ -17,7 +17,7 @@
           </mat-select>
         </mat-form-field>
 
-        <p>{{ t.customerCreditPanel.disposableAmount }}：{{ selectedCaseTotal() }}</p>
+        <p>{{ t.customerCreditPanel.disposableAmount }}：{{ selectedCaseTotal() | twd }}</p>
 
         <mat-form-field>
           <mat-label>{{ t.customerCreditPanel.disposition }}</mat-label>
@@ -80,7 +80,7 @@
   @if (member(); as m) {
     <section>
       <h3>{{ t.customerCreditPanel.creditBalanceTitle }}</h3>
-      <p>{{ t.customerCreditPanel.balance }}：{{ balance() }}</p>
+      <p>{{ t.customerCreditPanel.balance }}：{{ balance() | twd }}</p>
 
       @if (expiringReminders().length > 0) {
         <p role="status">{{ t.customerCreditPanel.reminderNotice }}</p>
@@ -93,9 +93,9 @@
         <ul>
           @for (entry of ledger(); track entry.id) {
             <li>
-              {{ t.customerCreditPanel.typeLabels[entry.type] }}：{{ entry.amount }}
+              {{ t.customerCreditPanel.typeLabels[entry.type] }}：{{ entry.amount | twd }}
               @if (entry.expiresAt) {
-                （{{ t.customerCreditPanel.expiresAt }}：{{ entry.expiresAt | slice: 0 : 10 }}）
+                （{{ t.customerCreditPanel.expiresAt }}：{{ fmt(entry.expiresAt) }}）
               }
               @if (entry.reason) {
                 — {{ entry.reason }}

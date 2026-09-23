@@ -86,17 +86,17 @@
                 <dd>{{ quote.depositRefundRate * 100 }}%</dd>
               }
               <dt>{{ t.cancellationPanel.depositRefund }}</dt>
-              <dd>{{ quote.depositRefund }}</dd>
+              <dd>{{ quote.depositRefund | twd }}</dd>
               <dt>{{ t.cancellationPanel.otherPrepaymentRefund }}</dt>
-              <dd>{{ quote.otherPrepaymentRefund }}</dd>
+              <dd>{{ quote.otherPrepaymentRefund | twd }}</dd>
               <dt>{{ t.cancellationPanel.statutoryCompensation }}</dt>
-              <dd>{{ quote.statutoryCompensation }}</dd>
+              <dd>{{ quote.statutoryCompensation | twd }}</dd>
               <dt>{{ t.cancellationPanel.goodwillCompensation }}</dt>
-              <dd>{{ quote.goodwillCompensation }}</dd>
+              <dd>{{ quote.goodwillCompensation | twd }}</dd>
               <dt>{{ t.cancellationPanel.transferFee }}</dt>
-              <dd>{{ quote.transferFee }}</dd>
+              <dd>{{ quote.transferFee | twd }}</dd>
               <dt>{{ t.cancellationPanel.totalCashDue }}</dt>
-              <dd>{{ quote.totalCashDue }}</dd>
+              <dd>{{ quote.totalCashDue | twd }}</dd>
             </dl>
 
             @if (quote.status === 'manual_review') {
@@ -134,7 +134,7 @@
                 <dt>{{ t.cancellationPanel.responsibility }}</dt>
                 <dd>{{ t.cancellationPanel.responsibilityLabels[kase.responsibility] }}</dd>
                 <dt>{{ t.cancellationPanel.totalCashDue }}</dt>
-                <dd>{{ caseTotal(kase) }}</dd>
+                <dd>{{ caseTotal(kase) | twd }}</dd>
               </dl>
 
               @if (kase.status === 'quoted' || kase.status === 'approved') {

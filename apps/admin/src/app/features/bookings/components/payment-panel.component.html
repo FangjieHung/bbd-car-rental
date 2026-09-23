@@ -2,22 +2,22 @@
   <section class="payment-panel__summary">
     <dl class="payment-panel__summary-grid">
       <dt>{{ t.paymentPanel.baseQuote }}</dt>
-      <dd>{{ baseTotal() }}</dd>
+      <dd>{{ baseTotal() | twd }}</dd>
 
       <dt>{{ t.paymentPanel.confirmedAdjustments }}</dt>
-      <dd>{{ confirmedAdjustmentsTotal() }}</dd>
+      <dd>{{ confirmedAdjustmentsTotal() | twd }}</dd>
 
       <dt>{{ t.paymentPanel.requiredTotal }}</dt>
-      <dd>{{ summary().requiredTotal }}</dd>
+      <dd>{{ summary().requiredTotal | twd }}</dd>
 
       <dt>{{ t.paymentPanel.netPaid }}</dt>
-      <dd>{{ summary().netPaid }}</dd>
+      <dd>{{ summary().netPaid | twd }}</dd>
 
       <dt>{{ t.paymentPanel.balanceDue }}</dt>
-      <dd>{{ summary().balanceDue }}</dd>
+      <dd>{{ summary().balanceDue | twd }}</dd>
 
       <dt>{{ t.paymentPanel.depositRequired }}</dt>
-      <dd>{{ depositRequired() }}</dd>
+      <dd>{{ depositRequired() | twd }}</dd>
 
       <dt>{{ t.paymentPanel.paymentMethodSummary }}</dt>
       <dd>{{ methodSummaryLabel() }}</dd>
@@ -42,7 +42,7 @@
           <li class="payment-panel__row" [class.is-voided]="payment.status === 'voided'">
             <span class="payment-panel__row-purpose">{{ t.bookingForm.paymentPurposeLabels[payment.purpose] }}</span>
             <span class="payment-panel__row-method">{{ t.bookingForm.paymentMethodLabels[payment.method] }}</span>
-            <span class="payment-panel__row-amount">{{ payment.amount }}</span>
+            <span class="payment-panel__row-amount">{{ payment.amount | twd }}</span>
             <span class="payment-panel__row-status">{{ t.paymentPanel.recordStatusLabels[payment.status] }}</span>
             @if (payment.bankLastFive) {
               <span class="payment-panel__row-bank">{{ t.paymentPanel.bankLastFive }}：{{ payment.bankLastFive }}</span>
@@ -50,7 +50,7 @@
             @if (payment.note) {
               <span class="payment-panel__row-note">{{ payment.note }}</span>
             }
-            <span class="payment-panel__row-meta">{{ payment.receivedAt | slice: 0 : 10 }} · {{ payment.handledBy }}</span>
+            <span class="payment-panel__row-meta">{{ fmt(payment.receivedAt) }} · {{ payment.handledBy }}</span>
             @if (payment.status === 'confirmed') {
               <button mat-button type="button" (click)="voidPayment(payment.id)">
                 {{ t.paymentPanel.voidAction }}

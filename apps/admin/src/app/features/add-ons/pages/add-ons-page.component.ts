@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { AddOn } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { AddOnStore } from '../../../stores/addon/addon.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
@@ -23,6 +24,7 @@ import { AddOnDialogComponent, AddOnFormResult } from '../dialogs/add-on-dialog.
     MatTooltipModule,
     PageToolbarComponent,
     HeaderToolbarDirective,
+    TwdPipe,
   ],
   templateUrl: './add-ons-page.component.html',
   styleUrls: ['../../../app.scss'],

@@ -16,9 +16,9 @@
       <dt>{{ t.booking.returnLocation }}</dt>
       <dd>{{ s.returnLocation || '—' }}</dd>
       <dt>{{ t.bookingForm.quoteTotal }}</dt>
-      <dd>{{ s.pricing.total }}</dd>
+      <dd>{{ s.pricing.total | twd }}</dd>
       <dt>{{ t.bookingForm.deposit }}</dt>
-      <dd>{{ s.depositRequired }}</dd>
+      <dd>{{ s.depositRequired | twd }}</dd>
     </dl>
 
     <div class="contract-sign" [class.is-signed]="signing() === 'signed'" [class.is-stale]="signing() === 'needs_resign'">

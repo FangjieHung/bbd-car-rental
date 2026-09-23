@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { SlicePipe } from '@angular/common';
 import { map } from 'rxjs';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { CancellationDisposition, PaymentMethod } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { CreditStore } from '../../../stores/credit/credit.store';
@@ -41,7 +42,7 @@ const REFUND_METHODS: Exclude<PaymentMethod, 'customer_credit'>[] = [
   selector: 'app-customer-credit-panel',
   imports: [
     ReactiveFormsModule,
-    SlicePipe,
+    TwdPipe,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,
@@ -53,6 +54,8 @@ const REFUND_METHODS: Exclude<PaymentMethod, 'customer_credit'>[] = [
 export class CustomerCreditPanelComponent {
   protected readonly t = ZH_TW;
   protected readonly dispositions = DISPOSITIONS;
+  /** 購物金到期日一律用共用日期時間格式，不可再用 slice pipe 切 ISO 字串。 */
+  protected readonly fmt = fmtDateTime;
   protected readonly refundMethods = REFUND_METHODS;
 
   private readonly cancellationStore = inject(CancellationStore);

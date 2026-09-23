@@ -14,7 +14,7 @@
     }
     @if (r.legalUseThroughDate) {
       <p class="driver-eligibility__legal-date">
-        {{ t.driverEligibility.legalUseThroughDate }}：{{ r.legalUseThroughDate }}
+        {{ t.driverEligibility.legalUseThroughDate }}：{{ fmtIsoDate(r.legalUseThroughDate) }}
       </p>
     }
   }

@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { formatTwd } from '@car-rental/domain';
 import { PaymentMethod, PaymentPurpose } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { OrderForm, addPaymentDraft, computeOrderQuote, orderFormValue, removePaymentDraft } from '../order-form/order-form';
@@ -52,8 +53,9 @@ export class OrderPaymentDraftsSectionComponent {
   protected readonly footerText = computed(() => {
     const t = this.t.orderForm;
     const due = this.dueAfterCreate();
-    const tail = due < 0 ? `${t.overpaidPrefix}${-due}` : `${t.balanceAfterCreatePrefix}${due}`;
-    return `${t.paymentsCollectedPrefix}${this.collectedTotal()}${t.paymentsFooterSeparator}${tail}`;
+    const tail =
+      due < 0 ? `${t.overpaidPrefix}${formatTwd(-due)}` : `${t.balanceAfterCreatePrefix}${formatTwd(due)}`;
+    return `${t.paymentsCollectedPrefix}${formatTwd(this.collectedTotal())}${t.paymentsFooterSeparator}${tail}`;
   });
 
   /**

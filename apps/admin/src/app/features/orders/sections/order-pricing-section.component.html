@@ -2,13 +2,13 @@
   @if (derived.quote(); as q) {
     <dl class="order-section__dl">
       <dt>{{ t.bookingForm.rentalSubtotal }}</dt>
-      <dd>{{ q.rentalSubtotal }}</dd>
+      <dd>{{ q.rentalSubtotal | twd }}</dd>
       <dt>{{ t.bookingForm.insuranceSubtotal }}</dt>
-      <dd>{{ q.insuranceSubtotal }}</dd>
+      <dd>{{ q.insuranceSubtotal | twd }}</dd>
       <dt>{{ t.bookingForm.addOnSubtotal }}</dt>
-      <dd>{{ q.addOnSubtotal }}</dd>
+      <dd>{{ q.addOnSubtotal | twd }}</dd>
       <dt class="is-total">{{ t.bookingForm.quoteTotal }}</dt>
-      <dd class="is-total">{{ q.total }}</dd>
+      <dd class="is-total">{{ q.total | twd }}</dd>
     </dl>
   } @else {
     <p class="order-section__hint">{{ t.orderForm.quotePending }}</p>
@@ -39,7 +39,7 @@
   </div>
   @if (derived.depositExceedsCap()) {
     <p class="order-section__notice" role="alert">
-      {{ t.bookingForm.depositExceedsCap }}（{{ derived.depositCap() }}）
+      {{ t.bookingForm.depositExceedsCap }}（{{ derived.depositCap() | twd }}）
     </p>
   }
 

@@ -3,7 +3,9 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { formatTwd } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { NO_INSURANCE_VALUE, OrderForm, orderFormValue } from '../order-form/order-form';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
 import { OrderFormContext, createOrderFormDerived } from '../order-form/order-form-derived';
@@ -14,7 +16,7 @@ import { OrderFormContext, createOrderFormDerived } from '../order-form/order-fo
  */
 @Component({
   selector: 'app-order-pricing-section',
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, TwdPipe],
   templateUrl: './order-pricing-section.component.html',
   styleUrl: './order-section.scss',
 })
@@ -37,7 +39,7 @@ export class OrderPricingSectionComponent {
    */
   protected readonly depositCapHint = computed(() => {
     const t = this.t.orderForm;
-    const cap = this.derived.depositCap();
+    const cap = formatTwd(this.derived.depositCap());
     return this.derived.vehicle()?.category === 'car'
       ? `${t.depositCapPrefix}${cap}${t.depositCapCarSuffix}`
       : `${t.depositCapNoRulePrefix}${cap}`;

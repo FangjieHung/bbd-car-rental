@@ -147,7 +147,7 @@
                 <dt>{{ t.handoverPanel.actualAt }}</dt>
                 <dd>{{ fmt(pickup.actualAt) }}</dd>
                 <dt>{{ t.handoverPanel.mileage }}</dt>
-                <dd>{{ pickup.mileage }}</dd>
+                <dd>{{ pickup.mileage | mileage }}</dd>
                 <dt>{{ t.handoverPanel.energyLevel }}</dt>
                 <dd>{{ pickup.energyLevel }}</dd>
               </dl>
@@ -189,7 +189,7 @@
               <mat-label>{{ t.handoverPanel.mileage }}</mat-label>
               <input matInput type="number" formControlName="mileage" />
               @if (pickupRecord(); as pickup) {
-                <mat-hint>{{ t.handoverPanel.pickupMileageHintPrefix }}{{ pickup.mileage }}{{ t.handoverPanel.pickupMileageHintSuffix }}</mat-hint>
+                <mat-hint>{{ t.handoverPanel.pickupMileageHintPrefix }}{{ pickup.mileage | mileage }}{{ t.handoverPanel.pickupMileageHintSuffix }}</mat-hint>
               }
               @if (returnForm.controls.mileage.hasError('belowPickupMileage')) {
                 <mat-error>{{ t.handoverPanel.mileageBelowPickup }}</mat-error>
@@ -262,15 +262,15 @@
                 <h4>{{ t.handoverPanel.chargesPreviewTitle }}</h4>
                 <dl>
                   <dt>{{ t.handoverPanel.quotedLateFee }}</dt>
-                  <dd>{{ charges.quote.lateFee }}</dd>
+                  <dd>{{ charges.quote.lateFee | twd }}</dd>
                   <dt>{{ t.handoverPanel.quotedEnergyFee }}</dt>
-                  <dd>{{ charges.quote.energyFee }}</dd>
+                  <dd>{{ charges.quote.energyFee | twd }}</dd>
                   <dt>{{ t.handoverPanel.finalLateFee }}</dt>
-                  <dd>{{ charges.finalLateFee }}</dd>
+                  <dd>{{ charges.finalLateFee | twd }}</dd>
                   <dt>{{ t.handoverPanel.finalEnergyFee }}</dt>
-                  <dd>{{ charges.finalEnergyFee }}</dd>
+                  <dd>{{ charges.finalEnergyFee | twd }}</dd>
                   <dt>{{ t.handoverPanel.totalCharge }}</dt>
-                  <dd>{{ charges.finalTotalCharge }}</dd>
+                  <dd>{{ charges.finalTotalCharge | twd }}</dd>
                 </dl>
                 @if (charges.finalTotalCharge > 0) {
                   <p class="handover-panel__hint">{{ t.handoverPanel.balanceDueNotice }}</p>
@@ -322,7 +322,7 @@
                 <dt>{{ t.handoverPanel.actualAt }}</dt>
                 <dd>{{ fmt(pickup.actualAt) }}</dd>
                 <dt>{{ t.handoverPanel.mileage }}</dt>
-                <dd>{{ pickup.mileage }}</dd>
+                <dd>{{ pickup.mileage | mileage }}</dd>
                 <dt>{{ t.handoverPanel.energyLevel }}</dt>
                 <dd>{{ pickup.energyLevel }}</dd>
               </dl>
@@ -336,7 +336,7 @@
                 <dt>{{ t.handoverPanel.actualAt }}</dt>
                 <dd>{{ fmt(ret.actualAt) }}</dd>
                 <dt>{{ t.handoverPanel.mileage }}</dt>
-                <dd>{{ ret.mileage }}</dd>
+                <dd>{{ ret.mileage | mileage }}</dd>
                 <dt>{{ t.handoverPanel.energyLevel }}</dt>
                 <dd>{{ ret.energyLevel }}</dd>
               </dl>

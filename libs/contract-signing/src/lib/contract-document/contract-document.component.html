@@ -81,22 +81,22 @@
     <h3>{{ l.pricingSection }}</h3>
     <dl class="contract-document__grid">
       <dt>{{ l.rentalSubtotal }}</dt>
-      <dd>{{ s.pricing.rentalSubtotal }}</dd>
+      <dd>{{ twd(s.pricing.rentalSubtotal) }}</dd>
       <dt>{{ l.addOnSubtotal }}</dt>
-      <dd>{{ s.pricing.addOnSubtotal }}</dd>
+      <dd>{{ twd(s.pricing.addOnSubtotal) }}</dd>
       <dt>{{ l.insuranceSubtotal }}</dt>
-      <dd>{{ s.pricing.insuranceSubtotal }}</dd>
+      <dd>{{ twd(s.pricing.insuranceSubtotal) }}</dd>
       <dt>{{ l.total }}</dt>
-      <dd>{{ s.pricing.total }}</dd>
+      <dd>{{ twd(s.pricing.total) }}</dd>
       <dt>{{ l.deposit }}</dt>
-      <dd>{{ s.depositRequired }}</dd>
+      <dd>{{ twd(s.depositRequired) }}</dd>
     </dl>
 
     @if (s.pricing.addOnLines.length > 0) {
       <h4>{{ l.addOnsSection }}</h4>
       <ul class="contract-document__add-on-list">
         @for (line of s.pricing.addOnLines; track line.addOnId) {
-          <li>{{ line.name }} × {{ line.qty }}（{{ line.amount }}）</li>
+          <li>{{ line.name }} × {{ line.qty }}（{{ twd(line.amount) }}）</li>
         }
       </ul>
     }
@@ -120,9 +120,9 @@
         <dt>{{ l.unitMinutes }}</dt>
         <dd>{{ late.unitMinutes }}</dd>
         <dt>{{ l.feePerUnit }}</dt>
-        <dd>{{ late.feePerUnit }}</dd>
+        <dd>{{ twd(late.feePerUnit) }}</dd>
         <dt>{{ l.dailyCap }}</dt>
-        <dd>{{ late.dailyCap }}</dd>
+        <dd>{{ twd(late.dailyCap) }}</dd>
       </dl>
     }
 
@@ -130,9 +130,9 @@
       <h4>{{ l.energyReturnPolicy }}</h4>
       <dl class="contract-document__grid">
         <dt>{{ l.energyMeasureLabels[energy.measure] }}</dt>
-        <dd>{{ energy.feePerUnit }}</dd>
+        <dd>{{ twd(energy.feePerUnit) }}</dd>
         <dt>{{ l.serviceFee }}</dt>
-        <dd>{{ energy.serviceFee }}</dd>
+        <dd>{{ twd(energy.serviceFee) }}</dd>
       </dl>
     }
 

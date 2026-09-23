@@ -61,7 +61,7 @@ describe('DriverEligibilityPanelComponent', () => {
     expect(gateway.calls).toEqual([{ issuingCountry: 'JP', credentialType: 'foreign_license' }]);
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('符合互惠資格');
-    expect(el.textContent).toContain('2026-12-31');
+    expect(el.textContent).toContain('2026/12/31');
     expect(el.querySelector('.driver-eligibility__status--eligible')).toBeTruthy();
   });
 

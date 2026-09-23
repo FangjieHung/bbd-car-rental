@@ -18,6 +18,8 @@ import {
 } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
+import { MileagePipe } from '../../../shared/pipes/mileage.pipe';
 import { DocumentAssetGateway } from '../../../core/services/document-asset.gateway';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -82,7 +84,15 @@ function fromDatetimeLocalValue(value: string): string {
  */
 @Component({
   selector: 'app-handover-panel',
-  imports: [ReactiveFormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatInputModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatInputModule,
+    TwdPipe,
+    MileagePipe,
+  ],
   templateUrl: './handover-panel.component.html',
   styleUrl: './handover-panel.component.scss',
 })

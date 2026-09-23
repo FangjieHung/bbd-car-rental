@@ -12,6 +12,7 @@ import {
   CustomerCreditLedgerEntry,
   PaymentMethod,
   RefundRecord,
+  formatTwd,
   quoteCancellation,
 } from '@car-rental/domain';
 import { AUDIT_ENTRY_REPO, CANCELLATION_CASE_REPO } from '../../core/repositories/tokens';
@@ -123,7 +124,9 @@ export class DispositionRetryMismatchError extends Error {
     readonly requestedAmount: number,
   ) {
     super(
-      `此案件已以不同金額處理過（${recordType === 'refund' ? '退款' : '保留金'}：已建立 ${existingAmount} 元，本次請求 ${requestedAmount} 元），請確認實際狀態後再處理，不可直接以新金額重試。`,
+      // 這則訊息會透過 customer-credit-panel 的通用 catch (e.message) 分支直接顯示給使用者，
+      // 金額一律走全站格式（1.8）。
+      `此案件已以不同金額處理過（${recordType === 'refund' ? '退款' : '保留金'}：已建立 ${formatTwd(existingAmount)}，本次請求 ${formatTwd(requestedAmount)}），請確認實際狀態後再處理，不可直接以新金額重試。`,
     );
     this.name = 'DispositionRetryMismatchError';
   }
@@ -249,7 +252,9 @@ export class CancellationStore {
         actorId: input.transferFeeApprovedBy as string,
         actorName: input.transferFeeApprovedBy as string,
         reason: input.transferFeeReason,
-        afterSummary: `退款手續費 ${input.quote.transferFee} 元，主管確認`,
+        // afterSummary 會透過活動時間軸（activity-timeline）的 supervisorOverrideEvents 顯示給使用者，
+        // 金額一律走全站格式（1.8），不可再印裸數字＋「元」。
+        afterSummary: `退款手續費 ${formatTwd(input.quote.transferFee)}，主管確認`,
       });
     }
 

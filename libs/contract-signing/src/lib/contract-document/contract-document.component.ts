@@ -1,5 +1,5 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { ContractSnapshot, ContractVersion } from '@car-rental/domain';
+import { ContractSnapshot, ContractVersion, formatTwd } from '@car-rental/domain';
 import { CONTRACT_SIGNING_LABELS } from '../contract-signing-labels';
 import { TaipeiDateTimePipe } from './taipei-date-time.pipe';
 
@@ -26,6 +26,8 @@ export type ContractVersionInfo = Pick<ContractVersion, 'version' | 'createdAt'>
 })
 export class ContractDocumentComponent {
   protected readonly l = inject(CONTRACT_SIGNING_LABELS).document;
+  /** 全站金額格式（1.8）：合約文件上的租金、保險、配件、訂金、逾時／能源費率一律用這份格式。 */
+  protected readonly twd = formatTwd;
 
   readonly snapshot = input.required<ContractSnapshot>();
   readonly version = input<ContractVersionInfo | undefined>(undefined);

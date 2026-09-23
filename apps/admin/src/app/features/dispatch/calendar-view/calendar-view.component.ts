@@ -31,6 +31,7 @@ import {
 } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, isSameDay, startOfDay } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { REMINDER_STATUS_REPO } from '../../../core/repositories/tokens';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -190,6 +191,7 @@ export function returnProgress(bookings: RentalBooking[], day: Date): DayProgres
     MatTabsModule,
     ResponsivePanelComponent,
     VehicleStepComponent,
+    TwdPipe,
   ],
   templateUrl: './calendar-view.component.html',
   styleUrls: ['./calendar-view.component.scss', '../../../app.scss'],

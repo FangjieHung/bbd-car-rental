@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { CancellationCase, CancellationQuote, CancellationQuoteInput, CancellationResponsibility } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { DocumentAssetGateway } from '../../../core/services/document-asset.gateway';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -61,6 +62,7 @@ function fromDatetimeLocalValue(value: string): string {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    TwdPipe,
   ],
   templateUrl: './cancellation-panel.component.html',
   styleUrl: './cancellation-panel.component.scss',

@@ -56,10 +56,11 @@ export const ZH_TW = {
     brand: '廠牌',
     year: '年分',
     displacement: '排氣量',
-    nextServiceMileage: '定保里程',
+    nextServiceMileage: '定保里程（km）',
     insuranceExpiry: '保險到期',
     status: '狀態',
-    mileage: '里程 (km)',
+    // 1.8：單位寫在欄名，不重複印在每一列的值上（全形括號，與站內其他單位標示一致）。
+    mileage: '里程（km）',
     typeLabels: { scooter: '機車', car: '汽車', ev: '電動車' } as Record<string, string>,
     statusLabels: {
       available: '可租借',
@@ -369,7 +370,7 @@ export const ZH_TW = {
     overrideActorName: '主管姓名',
     overrideReason: '覆核理由',
     actualAt: '實際時間',
-    mileage: '里程',
+    mileage: '里程（km）',
     energyLevel: '能源讀數',
     pickupMileageHintPrefix: '取車時 ',
     pickupMileageHintSuffix: ' km',
@@ -713,8 +714,8 @@ export const ZH_TW = {
       other: '其他',
     } as Record<string, string>,
     performedAt: '保養日期',
-    mileageAtService: '保養時里程',
-    nextDueMileage: '下次保養里程',
+    mileageAtService: '保養時里程（km）',
+    nextDueMileage: '下次保養里程（km）',
     nextDueDate: '下次保養日期',
     cost: '費用',
     notes: '備註',
@@ -778,6 +779,8 @@ export const ZH_TW = {
       string
     >,
     commissionValue: '退佣值',
+    // 1.8：「退佣方式」欄補單位——百分比寫「10%」、固定額寫「每車每日 NT$100」，不能只顯示裸數字。
+    commissionPerVehicleDayPrefix: '每車每日 ',
     copyLink: '複製代訂連結',
     linkCopied: '已複製代訂連結',
     slugDuplicate: '此連結代碼已被使用',

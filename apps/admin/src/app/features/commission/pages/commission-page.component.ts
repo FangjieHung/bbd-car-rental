@@ -8,6 +8,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
 import { PayoutStatus } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { PartnerStore } from '../../../stores/partner/partner.store';
 import { CommissionReportRow, CommissionStore } from '../../../stores/commission/commission.store';
 import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
@@ -22,6 +24,7 @@ import { ADMIN_DATA_TABLE_LABELS } from '../../../shared/ui/data-table-labels';
     MatSelectModule,
     DataTableComponent,
     DataTableCellDirective,
+    TwdPipe,
   ],
   templateUrl: './commission-page.component.html',
   styleUrls: ['../../../app.scss'],
@@ -31,6 +34,8 @@ export class CommissionPageComponent {
   readonly partnerStore = inject(PartnerStore);
   private commissionStore = inject(CommissionStore);
   private snackBar = inject(MatSnackBar);
+  /** 租期起訖顯示一律用共用日期時間格式，不可再直接印出 ISO 字串。 */
+  protected readonly fmt = fmtDateTime;
 
   readonly labels = ADMIN_DATA_TABLE_LABELS;
 
@@ -40,6 +45,7 @@ export class CommissionPageComponent {
     {
       key: 'period',
       label: this.t.commission.period,
+      // 匯出保留原始 ISO 字串（機器可讀），畫面顯示才用共用格式（dtCell 負責）。
       exportValue: (r) => `${r.startTime} ~ ${r.endTime}`,
     },
     { key: 'rentalSubtotal', label: this.t.commission.rentalSubtotal, align: 'end' },

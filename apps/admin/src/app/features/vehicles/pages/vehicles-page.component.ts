@@ -8,6 +8,7 @@ import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@ca
 import { Vehicle, VehicleStatus, VehicleCategory } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
+import { MileagePipe } from '../../../shared/pipes/mileage.pipe';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
@@ -50,6 +51,7 @@ const STATUS_KEY: Record<VehicleStatus, StatusKey> = {
     FilterSelectComponent,
     HeaderToolbarDirective,
     TimelineViewComponent,
+    MileagePipe,
   ],
   templateUrl: './vehicles-page.component.html',
   styleUrls: ['../../../app.scss'],

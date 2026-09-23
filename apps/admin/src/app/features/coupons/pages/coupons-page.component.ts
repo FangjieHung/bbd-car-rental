@@ -5,8 +5,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
+import { formatTwd } from '@car-rental/domain';
 import { Coupon } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtIsoDate } from '../../../core/date-utils';
 import { CouponStore } from '../../../stores/coupon/coupon.store';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
 import { PageToolbarComponent } from '../../../shared/ui/page-toolbar.component';
@@ -32,6 +34,13 @@ export class CouponsPageComponent {
   readonly store = inject(CouponStore);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  /** 生效／到期日是純日期，用 fmtIsoDate（不印無意義的時間）。 */
+  protected readonly fmtIsoDate = fmtIsoDate;
+
+  /** 1.8：固定金額類型的優惠券補上 NT$ 格式；百分比類型維持「10%」。 */
+  protected couponValueLabel(c: Coupon): string {
+    return c.type === 'percent' ? `${c.value}%` : formatTwd(c.value);
+  }
 
   readonly labels = ADMIN_DATA_TABLE_LABELS;
 

@@ -171,7 +171,7 @@
                         }
                         <div>
                           <dt>{{ t.dispatch.workList.payment }}</dt>
-                          <dd>{{ paymentStatusLabel(row) }}・{{ t.dispatch.workList.balanceDue }} {{ balanceDue(row) }}</dd>
+                          <dd>{{ paymentStatusLabel(row) }}・{{ t.dispatch.workList.balanceDue }} {{ balanceDue(row) | twd }}</dd>
                         </div>
                         <div>
                           <dt>{{ t.dispatch.workList.documentCheck }}</dt>
@@ -312,11 +312,11 @@
                           </div>
                           <div>
                             <dt>{{ t.dispatch.workList.estimatedLateFee }}</dt>
-                            <dd>{{ estimatedLateFee(row) }}</dd>
+                            <dd>{{ estimatedLateFee(row) | twd }}</dd>
                           </div>
                           <div>
                             <dt>{{ t.dispatch.workList.currentBalance }}</dt>
-                            <dd>{{ balanceDue(row) }}</dd>
+                            <dd>{{ balanceDue(row) | twd }}</dd>
                           </div>
                         </dl>
                         <div class="work-list-actions">

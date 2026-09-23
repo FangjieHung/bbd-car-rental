@@ -84,6 +84,7 @@
           (rowClick)="onRowClick($event)"
         >
           <ng-template dtCell="category" let-v>{{ t.vehicle.typeLabels[v.category] }}</ng-template>
+          <ng-template dtCell="mileage" let-v>{{ v.mileage | mileage }}</ng-template>
           <ng-template dtCell="status" let-v>
             <app-status-chip [label]="t.vehicle.statusLabels[v.status]" [status]="statusKeyOf(v)" />
             @if (hasOverdueAlert(v)) {

@@ -476,7 +476,7 @@ describe('HandoverPanelComponent', () => {
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
 
-      expect(el.textContent).toContain('取車時 1000 km');
+      expect(el.textContent).toContain('取車時 1,000 km');
       expect(el.textContent).toContain('取車時讀數 6');
 
       const value = fixture.componentInstance['returnForm'].getRawValue();
