@@ -1,5 +1,20 @@
-:host {
-  display: block;
+// 總覽把這個元件當成 .shell-container（flex column、滿版高）裡唯一會長高的區塊。
+// :host 只有 display: block 時，外層給的高度到 .calendar-view 就斷了——卡片只長到內容高度，
+// 時間軸這種內容短的檢視底下會空一大塊。這裡讓高度一路傳到 .ui-card：
+// host → .calendar-view → .calendar-view__layout 三層都是 flex column 並各自 flex: 1 1 auto。
+// 用 :host(app-calendar-view)（0-1-1）而不是 :host（0-1-0）：這個元件的 styleUrls 第二個檔是
+// app.scss，裡面的 `:host { display: block }` 排在後面、同特異度會贏；加上標籤名才蓋得過。
+// app.scss 自己的 :host(app-root)／:host(app-dashboard-page) 也是同一個寫法。
+:host(app-calendar-view) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.calendar-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
 }
 
@@ -7,6 +22,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
 
@@ -27,9 +43,6 @@
   }
 }
 
-.calendar-view {
-  min-height: 0;
-}
 
 .calendar-view__sticky-top {
   position: sticky;
