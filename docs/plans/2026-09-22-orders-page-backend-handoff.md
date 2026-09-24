@@ -121,7 +121,7 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 
 - 訂單狀態只有四個：`reserved`、`in_progress`、`completed`、`cancelled`。**沒有草稿狀態**，這是刻意的決定（新增狀態會牽動可用性計算：草稿到底佔不佔車？）。
 - 付款狀態由款項紀錄獨立追蹤，不是訂單狀態的一部分。
-- 「待補項目」（未收訂金、合約未簽、證件未查核等）是**由其他紀錄衍生**的清單，不是訂單上的欄位。前端邏輯在 `features/orders/order-form/order-form-derived.ts` 的 `orderIncompleteItems`。
+- 「待補項目」（未收訂金、合約未簽、證件未查核等）是**由其他紀錄衍生**的清單，不是訂單上的欄位。前端邏輯已搬到 `features/orders/incomplete/order-incomplete.ts` 的 `orderIncompleteItems()`（2026-09-24 更正：原本在 `order-form/order-form-derived.ts` 的同名函式已搬走；那個檔案現在只剩 `orderFormProblems()`／`orderRequirements()` 這類「建立訂單需要」的表單驗證，是另一套清單，別搞混）。詳見第 9.3 節。
 - 注意：`docs/architecture/02-libs.md` 描述的舊狀態機（`pending_payment` → `confirmed` → …）已過時，以 `libs/domain/src/lib/models/enums.ts` 為準。
 
 ## 6. 付款方式的兩套列舉
@@ -189,3 +189,36 @@ POST /prep-tasks/{id}/complete       → 記錄 completedAt（伺服器時間）
 3. 同一台車未整備就再次還車：舊的一筆標記為被取代（不是完成），未完成清單中這台車只剩新的一筆。
 4. 未完成清單依下一次取車時間排序，取車時間已過但未取車的預訂排在最前，沒有下一筆的排最後。
 5. 有未完成整備的車仍可正常取車，取車就緒判斷不出現與整備有關的阻擋。
+
+## 9. 建單時一併寫入的證件與駕駛資格（2026-09-24 追加，後台流程審查 4.1、4.2）
+
+批次 4.2 把駕駛資格（駕照號碼、效期、准駕類別、外國旅客互惠查核）從會員視窗搬進建立訂單頁第 2 步，建立訂單時會與承租人證件一起寫入，不再只能靠事後開會員視窗補。後端把「建立訂單」做成一個交易或 saga（見第 1.3 節）時，這兩筆證件寫入要跟會員、訂單、款項、合約算在同一個原子操作裡。
+
+### 9.1 承租人證件與駕駛資格何時寫入
+
+前端實作在 `apps/admin/src/app/features/orders/data/admin-order-submit.gateway.ts` 的 `recordDocuments()`（送出序列第 6 步，介於「合約」與「排程還車提醒」之間）：
+
+- **身分證明文件**：只有「這次新建的承租人」（既有會員的證件欄位鎖定、不重新核對）且填了證件號碼，才建立一筆 `IdentityDocument`，型別依 `requiredIdentityDocumentType(kind)`（本國人→`taiwan_id`、外國旅客→`passport`、持居留證者→`resident_permit`），建立後立即以目前登入的後台使用者標記為 `verified`（現場人員當場核對）。
+- **駕駛資格**：填了駕照號碼才建立 `DriverCredential`；標準化車種（`standardizedVehicleClass`）必填，缺漏會被表單驗證擋在送出前，gateway 端也再擋一次（寧可整筆送出失敗）。若與這位會員「目前最新一版」內容相同（`sameDriverCredential()`），沿用既有那筆、不重複建立，查核狀態也一併沿用。外國旅客的駕駛資格建立後立即觸發互惠資格查核（`checkDriverEligibility()`）；查核本身失敗不擋建立訂單，只會留下「駕駛資格未查核」的待補項目（見第 9.3 節、第 9.4 節）。
+- 編輯既有訂單（`update()`）不會呼叫 `recordDocuments()`——第 2 步的駕駛資格區塊只在建立訂單頁出現，編輯表單沒有這兩個欄位群，既有會員的證件只能經會員視窗另外改。
+- 建立失敗時的補償範圍包含這次新建的證件／駕駛資格紀錄；沿用既有版本的舊紀錄不會被補償刪除。
+
+### 9.2 證件版本規則：新版本追加，不覆寫
+
+`IdentityDocument`／`DriverCredential`（`libs/domain/src/lib/models/identity-document.ts`）都以「新版本追加」的方式更新，不覆寫舊版：新版本 `version = 前一版.version + 1`（沒有前一版就是 1），並寫 `supersededId` 指回前一版的 id（第一版沒有這個欄位）。實作在 `apps/admin/src/app/stores/document/document.store.ts` 的 `uploadIdentityDocument()`／`uploadDriverCredential()`。
+
+這是這批順手修的一個既有 bug：改之前每次上傳都固定寫 `version: 1`，交車檢查「取最新版本」的邏輯因此一直拿到最舊那筆，客人換了新駕照、上傳更新版本後，取車當場的檢查仍看到舊駕照。後端儲存這兩種證件時請比照：更新一律插入新版本、`supersededId` 指回前一版；「目前有效版本」＝同一 `memberId`＋同一種類（`type`）裡 `version` 最大的那筆，不要用 `updatedAt` 排序或直接覆寫既有列來實作。
+
+### 9.3 待補項目規則的現在位置（更正第 5 節的舊路徑）
+
+第 5 節原本寫的 `orderIncompleteItems` 位置已過時，現況：整套「待補項目」規則收在 `apps/admin/src/app/features/orders/incomplete/order-incomplete.ts`，建立訂單頁摘要欄、訂單詳情、訂單列表三處共用同一份判斷：
+
+- 兩種資料來源先各自整理成同一份 `OrderIncompleteFacts`：`incompleteFactsFromForm()`（建單頁，吃表單目前的值）、`incompleteFactsFromOrder()`（訂單詳情／列表，吃已成立訂單的實際紀錄——款項、合約版本、承租人的證件與駕駛資格）。
+- 兩者都交給同一個 `orderIncompleteKinds(facts)` 判斷本體，保證同樣的情況在建單頁與訂單詳情、列表一定列出同樣的項目；`orderIncompleteItems(facts)` 是外層再包成畫面用的清單（含文字與可點的分頁／對象）。
+- 批次 4.1/4.2 新增兩個項目：`證件未查核`（承租人身分別要求的證件缺席，或有紀錄但還沒核對完成）與`駕駛資格未查核`（駕照缺席、未核對，或外國旅客的互惠查核結果不是「符合」）。
+
+後端若要在伺服器端提供同一份「待補項目」資訊（例如給前端直接讀、取代前端自己算），請照 `order-incomplete.ts` 這套規則實作，不要另外定義一套判斷——`駕駛資格未查核` 用的「目前有效版本」概念與交車前檢查（第 2.2 節）是同一件事，兩處標準不一致會出現「待補清單說沒問題、交車卻被擋」的落差。
+
+### 9.4 外國旅客互惠查核目前是開發用模擬
+
+`checkDriverEligibility()` 呼叫的 `DriverEligibilityGateway`（`apps/admin/src/app/core/services/driver-eligibility.gateway.ts`）目前只有一個假實作 `MockDriverEligibilityGateway`：沒有串接任何真正的外國駕照互惠清單，除非測試／展示明確呼叫 `setFixture()` 掛規則，一律回傳 `reciprocityStatus: 'manual_review'`（需人工審查）。後端接手時這裡需要真正的資料源（互惠國家清單、駕照類型對應規則），介面可沿用 `checkReciprocity({ issuingCountry, credentialType })` 這個形狀，回傳 `reciprocityStatus`（與可能的 `legalUseThroughDate`）。
