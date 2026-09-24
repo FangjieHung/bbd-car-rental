@@ -404,6 +404,8 @@ export const ZH_TW = {
     paymentMethodSummary: '付款方式',
     mixedPayment: '混合付款',
     noPaymentsYet: '尚無付款紀錄',
+    // 沒有報價快照的舊訂單：與訂單總覽費用卡的「尚無報價，無法計算待收」同一種說法
+    noQuoteStatus: '尚無報價，無法判斷收款狀態',
     statusLabels: {
       deposit_due: '待收訂金',
       deposit_paid: '訂金已收，尾款待收',

@@ -59,6 +59,11 @@ export class PaymentPanelComponent {
   protected readonly booking = computed(() =>
     this.bookingStore.bookings().find((b) => b.id === this.bookingId()),
   );
+  /**
+   * 沒有報價快照（種子資料的舊訂單 b9 就是）時，應付總額無從算起：`summaryFor` 會把報價當 0，
+   * 已收的錢就被算成「待收為負＝溢收」。這種訂單改顯示「—」與「尚無報價」，說法與總覽費用卡一致。
+   */
+  protected readonly hasQuote = computed(() => !!this.booking()?.priceBreakdown);
   protected readonly baseTotal = computed(() => this.booking()?.priceBreakdown?.total ?? 0);
   protected readonly depositRequired = computed(() => this.booking()?.depositRequired ?? 0);
 

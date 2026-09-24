@@ -4,8 +4,10 @@
   <app-order-summary class="order-create__summary" [summary]="summary()" />
 
   <div class="order-create__main">
+    <!-- 捲動陰影：步驟內容區自己捲動，陰影畫在內容之上（class 由 appScrollShadow 切換，樣式見 scss） -->
     <mat-stepper
       class="order-create__stepper"
+      appScrollShadow=".mat-horizontal-content-container"
       [linear]="false"
       [orientation]="orientation()"
       [selectedIndex]="selectedIndex()"

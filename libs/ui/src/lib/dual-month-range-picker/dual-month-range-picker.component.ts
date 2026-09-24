@@ -72,6 +72,7 @@ export class DualMonthRangePickerComponent implements OnChanges, AfterViewChecke
   @ViewChild('leftCal') private leftCal?: MatCalendar<Date>;
   @ViewChild('rightCal') private rightCal?: MatCalendar<Date>;
   @ViewChild('triggerInput') private triggerInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('panel') private panel?: ElementRef<HTMLElement>;
 
   protected isOpen = false;
   protected leftMonth = startOfMonth(new Date());
@@ -195,6 +196,15 @@ export class DualMonthRangePickerComponent implements OnChanges, AfterViewChecke
     this.syncSelectedRange();
 
     if (this.pendingStart && this.pendingEnd) {
+      // Closing detaches the panel; if focus is on a calendar cell (keyboard Enter, or a Chrome mouse
+      // click, which focuses the cell button) it would fall to <body> and a keyboard user would have
+      // to Tab from the top of the page again. Hand it back to the field first — only when focus is
+      // actually inside the panel, so a selection finished some other way leaves focus where it is.
+      // Backdrop-click closing goes through `close()` and is deliberately untouched.
+      const active = this.panel?.nativeElement.ownerDocument.activeElement;
+      if (active && this.panel?.nativeElement.contains(active)) {
+        this.triggerInput?.nativeElement.focus();
+      }
       this.rangeSelected.emit({ start: this.pendingStart, end: this.pendingEnd });
       this.isOpen = false;
     }

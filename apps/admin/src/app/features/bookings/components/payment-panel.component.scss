@@ -58,6 +58,10 @@
   color: var(--app-danger-fg);
 }
 
+.payment-panel__status--unquoted {
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .payment-panel__section-title {
   margin: 0 0 0.5rem;
   font-size: 0.9375rem;

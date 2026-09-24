@@ -11,6 +11,7 @@ import { ContractSnapshot, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { provideHeaderTitle } from '../../../layout/header/header-title';
 import { confirm } from '../../../shared/dialogs/confirm-dialog.component';
+import { ScrollShadowDirective } from '../../../shared/ui/scroll-shadow.directive';
 import {
   OrderFormInitial,
   connectOrderFormBehaviors,
@@ -93,6 +94,7 @@ export function orderInitialFromQuery(params: ParamMap, vehicles: Vehicle[]): Or
   imports: [
     MatButtonModule,
     MatStepperModule,
+    ScrollShadowDirective,
     OrderRentalSectionComponent,
     OrderRenterSectionComponent,
     OrderDriverSectionComponent,

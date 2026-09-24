@@ -324,3 +324,40 @@ describe('PaymentPanelComponent 新增收款表單', () => {
     expect(component['submitError']()).toBeFalsy();
   });
 });
+
+describe('PaymentPanelComponent 沒有報價快照的舊訂單', () => {
+  function summaryText(fixture: { nativeElement: HTMLElement }) {
+    const el = fixture.nativeElement as HTMLElement;
+    const dts = [...el.querySelectorAll('.payment-panel__summary-grid dt')].map((d) => d.textContent?.trim());
+    const dds = [...el.querySelectorAll('.payment-panel__summary-grid dd')].map((d) => d.textContent?.trim());
+    const value = (label: string) => dds[dts.indexOf(label)];
+    const status = el.querySelector('.payment-panel__status');
+    return { value, status };
+  }
+
+  it('原訂單報價／最新應付總額／待收餘額顯示「—」，狀態說明無法判斷，不出現溢收', () => {
+    const { fixture, paymentStore } = createFixture({ booking: makeBooking({ priceBreakdown: undefined }) });
+    paymentStore.recordPayment({
+      bookingId: 'b1', amount: 700, method: 'cash', purpose: 'deposit',
+      status: 'confirmed', receivedAt: new Date().toISOString(), handledBy: 'tester',
+    });
+    fixture.detectChanges();
+
+    const { value, status } = summaryText(fixture);
+    expect(value('原訂單報價')).toBe('—');
+    expect(value('最新應付總額')).toBe('—');
+    expect(value('待收餘額')).toBe('—');
+    expect(value('淨實收')).toBe('NT$700');
+    expect(status?.textContent?.trim()).toBe('尚無報價，無法判斷收款狀態');
+    expect(status?.classList.contains('payment-panel__status--overpaid')).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('溢收');
+  });
+
+  it('有報價的訂單照舊顯示金額與推導狀態', () => {
+    const { fixture } = createFixture();
+    const { value, status } = summaryText(fixture);
+    expect(value('原訂單報價')).toBe('NT$1,000');
+    expect(value('待收餘額')).toBe('NT$1,000');
+    expect(status?.textContent?.trim()).toBe('待收訂金');
+  });
+});
