@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 0 8px;
 
-  app-dual-month-range-picker,
+  lib-dual-month-range-picker,
   mat-form-field {
     @apply flex-auto;
   }

@@ -22,7 +22,7 @@
       >
         <ng-template dtCell="discountPercent" let-p>{{ p.discountPercent }}%</ng-template>
         <ng-template dtCell="commission" let-p>
-          {{ t.partner.commissionTypeLabels[p.commission.type] }}（{{ p.commission.value }}）
+          {{ t.partner.commissionTypeLabels[p.commission.type] }}（{{ commissionValueLabel(p) }}）
         </ng-template>
         <ng-template dtCell="actions" let-p>
           <span class="action-cell">

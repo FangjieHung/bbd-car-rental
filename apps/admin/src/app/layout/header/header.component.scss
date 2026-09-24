@@ -11,6 +11,13 @@
   padding: 1rem 1.75rem;
 }
 
+.topbar-lead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
 /* 各頁面透過 appHeaderToolbar 投影進來的 toolbar。
    用 display: contents 讓 page-toolbar 的 search / filters / actions 直接成為
    .topbar 的 flex item，才能各自決定要跟標題同列還是換到下一列（排版規則寫在
@@ -19,7 +26,66 @@
   display: contents;
 }
 
-.topbar-title h2 {
+// 麵包屑＋大標題：語意上是同一個 nav（可點的上層路徑 + 不可點的目前頁 h1）。
+.topbar-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  min-width: 0;
+}
+
+.topbar-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  margin-top: 2px;
+  border-radius: 999px;
+  color: var(--mat-sys-on-surface-variant);
+
+  .material-symbols-rounded {
+    font-size: 1.25rem;
+  }
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+}
+
+.breadcrumb-link,
+.breadcrumb-text {
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.breadcrumb-link {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.breadcrumb-sep {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// flex-basis: 100% 讓大標題換到麵包屑下一行（沒有麵包屑時就直接是唯一一行）。
+.topbar-heading {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.topbar-heading h1 {
+  margin: 0;
   font-size: 1.5rem;
   font-weight: 500;
   color: var(--mat-sys-on-surface);
@@ -27,21 +93,6 @@
   @variant min-[768px] {
     font-size: 2rem;
   }
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin: 4px 0 0;
-  color: var(--mat-sys-on-surface-variant);
-  font-size: 0.8rem;
-}
-
-.breadcrumb-sep {
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
 }
 
 .menu-toggle {

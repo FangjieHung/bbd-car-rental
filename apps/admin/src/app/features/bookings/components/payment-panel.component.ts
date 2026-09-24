@@ -1,5 +1,4 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { SlicePipe } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -7,6 +6,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { PAYMENT_METHOD_OPTIONS, PaymentMethod, PaymentPurpose } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { PaymentStore } from '../../../stores/payment/payment.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
 
@@ -38,7 +39,7 @@ const BANK_LAST_FIVE_VALIDATORS = [Validators.required, Validators.pattern(/^\d{
  */
 @Component({
   selector: 'app-payment-panel',
-  imports: [ReactiveFormsModule, SlicePipe, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [ReactiveFormsModule, TwdPipe, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './payment-panel.component.html',
   styleUrl: './payment-panel.component.scss',
 })
@@ -46,6 +47,8 @@ export class PaymentPanelComponent {
   protected readonly t = ZH_TW;
   protected readonly methods = PAYMENT_METHODS;
   protected readonly purposes = PAYMENT_PURPOSES;
+  /** 交易列的「收款時間」一律用共用格式化（本地時區），不可再用 slice pipe 切 ISO 字串。 */
+  protected readonly fmt = fmtDateTime;
 
   private readonly paymentStore = inject(PaymentStore);
   private readonly bookingStore = inject(BookingStore);
@@ -56,6 +59,11 @@ export class PaymentPanelComponent {
   protected readonly booking = computed(() =>
     this.bookingStore.bookings().find((b) => b.id === this.bookingId()),
   );
+  /**
+   * 沒有報價快照（種子資料的舊訂單 b9 就是）時，應付總額無從算起：`summaryFor` 會把報價當 0，
+   * 已收的錢就被算成「待收為負＝溢收」。這種訂單改顯示「—」與「尚無報價」，說法與總覽費用卡一致。
+   */
+  protected readonly hasQuote = computed(() => !!this.booking()?.priceBreakdown);
   protected readonly baseTotal = computed(() => this.booking()?.priceBreakdown?.total ?? 0);
   protected readonly depositRequired = computed(() => this.booking()?.depositRequired ?? 0);
 

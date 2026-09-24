@@ -1,6 +1,8 @@
 import { OverlayModule } from '@angular/cdk/overlay';
 import {
+  AfterViewChecked,
   Component,
+  ElementRef,
   EventEmitter,
   Input,
   OnChanges,
@@ -19,6 +21,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { HoverPreviewRangeStrategy } from './hover-preview-range-strategy';
+import { DUAL_MONTH_RANGE_PICKER_LABELS } from './dual-month-range-picker-labels';
 
 export interface SelectedDateRange {
   start: Date;
@@ -42,8 +45,13 @@ function sameDay(a: Date | null, b: Date | null): boolean {
   );
 }
 
+/**
+ * 雙月日期區間選擇器：點欄位開出並排的兩個月曆，點起日、再點迄日後送出 `rangeSelected`。
+ * 原本在 libs/booking-flow（官網搜尋頁、admin 總覽搜尋卡），admin 建單第 1 步也要用，搬到 libs/ui 共用；
+ * 畫面文字由 DUAL_MONTH_RANGE_PICKER_LABELS 提供。
+ */
 @Component({
-  selector: 'app-dual-month-range-picker',
+  selector: 'lib-dual-month-range-picker',
   imports: [OverlayModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDatepickerModule],
   templateUrl: './dual-month-range-picker.component.html',
   styleUrl: './dual-month-range-picker.component.scss',
@@ -54,14 +62,17 @@ function sameDay(a: Date | null, b: Date | null): boolean {
     { provide: MAT_DATE_RANGE_SELECTION_STRATEGY, useExisting: HoverPreviewRangeStrategy },
   ],
 })
-export class DualMonthRangePickerComponent implements OnChanges {
+export class DualMonthRangePickerComponent implements OnChanges, AfterViewChecked {
   @Input() start: Date | null = null;
   @Input() end: Date | null = null;
-  @Input() placeholder = '選擇日期範圍';
   @Output() rangeSelected = new EventEmitter<SelectedDateRange>();
+
+  protected readonly labels = inject(DUAL_MONTH_RANGE_PICKER_LABELS);
 
   @ViewChild('leftCal') private leftCal?: MatCalendar<Date>;
   @ViewChild('rightCal') private rightCal?: MatCalendar<Date>;
+  @ViewChild('triggerInput') private triggerInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('panel') private panel?: ElementRef<HTMLElement>;
 
   protected isOpen = false;
   protected leftMonth = startOfMonth(new Date());
@@ -73,8 +84,24 @@ export class DualMonthRangePickerComponent implements OnChanges {
   private pendingEnd: Date | null = null;
   private hoverDate: Date | null = null;
 
+  /**
+   * Set by {@link onPanelAttached}, consumed here. `(attach)` fires as soon as the overlay content
+   * exists, which can race this component's own `@ViewChild('leftCal')` query for that
+   * just-created calendar — calling `focusActiveCell()` straight from the `(attach)` handler risks
+   * `leftCal` still being `undefined`. Deferring to `ngAfterViewChecked` guarantees the query has
+   * resolved first. Mirrors `MatCalendar`'s own `_moveFocusOnNextTick` pattern for the same problem.
+   */
+  private focusCalendarOnNextCheck = false;
+
   constructor() {
     this.hoverStrategy.onHover = (date) => this.onHover(date);
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.focusCalendarOnNextCheck) {
+      this.focusCalendarOnNextCheck = false;
+      this.leftCal?.focusActiveCell();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -99,7 +126,9 @@ export class DualMonthRangePickerComponent implements OnChanges {
   }
 
   protected monthLabel(month: Date): string {
-    return `${month.getFullYear()}年${month.getMonth() + 1}月`;
+    return this.labels.monthTitle
+      .replace('{year}', String(month.getFullYear()))
+      .replace('{month}', String(month.getMonth() + 1));
   }
 
   protected open(): void {
@@ -111,6 +140,38 @@ export class DualMonthRangePickerComponent implements OnChanges {
     this.hoverDate = null;
     this.syncSelectedRange();
     this.isOpen = false;
+  }
+
+  /**
+   * Bound to the trigger input's `(keydown.enter)` / `(keydown.space)` / `(keydown.alt.arrowdown)` —
+   * the WCAG combobox/datepicker convention for opening a popup from a closed, focused field.
+   * `preventDefault` guards Space's default (inserting a character — moot since the field is
+   * `readonly`, but explicit is cheap) without touching the existing mouse-driven `(click)="open()"`.
+   */
+  protected openViaKeyboard(event: Event): void {
+    event.preventDefault();
+    this.open();
+  }
+
+  /**
+   * Bound to `(attach)` on the overlay template: content just got attached, so it's the right moment
+   * to move focus into the panel (requirement: focus must land inside, not stay on the trigger or
+   * disappear). Actually calling `focusActiveCell()` is deferred — see {@link focusCalendarOnNextCheck}.
+   */
+  protected onPanelAttached(): void {
+    this.focusCalendarOnNextCheck = true;
+  }
+
+  /**
+   * Bound to `(keydown.escape)` on the panel. `cdkConnectedOverlayDisableClose` on the template
+   * disables CDK's own Escape-closes-overlay default, so this is the only Escape path — it closes
+   * and returns focus to the trigger field. Deliberately not folded into `close()`: that method is
+   * also called on backdrop click and on finishing a selection, and moving focus there would be an
+   * unrequested behaviour change on those (mouse-driven) paths.
+   */
+  protected onPanelEscape(): void {
+    this.close();
+    this.triggerInput?.nativeElement.focus();
   }
 
   protected goPrev(): void {
@@ -135,6 +196,15 @@ export class DualMonthRangePickerComponent implements OnChanges {
     this.syncSelectedRange();
 
     if (this.pendingStart && this.pendingEnd) {
+      // Closing detaches the panel; if focus is on a calendar cell (keyboard Enter, or a Chrome mouse
+      // click, which focuses the cell button) it would fall to <body> and a keyboard user would have
+      // to Tab from the top of the page again. Hand it back to the field first — only when focus is
+      // actually inside the panel, so a selection finished some other way leaves focus where it is.
+      // Backdrop-click closing goes through `close()` and is deliberately untouched.
+      const active = this.panel?.nativeElement.ownerDocument.activeElement;
+      if (active && this.panel?.nativeElement.contains(active)) {
+        this.triggerInput?.nativeElement.focus();
+      }
       this.rangeSelected.emit({ start: this.pendingStart, end: this.pendingEnd });
       this.isOpen = false;
     }

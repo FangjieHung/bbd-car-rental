@@ -3,7 +3,8 @@
     <div class="brand-mark">P</div>
     @if (!collapsed()) {
       <div class="brand-copy">
-        <h1>{{ t.app.title }}</h1>
+        <!-- 2.1：側欄品牌不再是 h1——頁面唯一的 h1 是頁首的大標題（app-header）。 -->
+        <p class="brand-name">{{ t.app.title }}</p>
         <p>{{ t.layout.subtitle }}</p>
       </div>
     }
@@ -25,8 +26,8 @@
         <a
           class="nav-link"
           [routerLink]="item.route"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [class.active]="isActive(item)"
+          [attr.aria-current]="isActive(item) ? 'page' : null"
           [matTooltip]="collapsed() ? item.label : ''"
           matTooltipPosition="right"
           (click)="navClick.emit()"
@@ -70,8 +71,8 @@
               <a
                 class="nav-sublink"
                 [routerLink]="child.route"
-                routerLinkActive="active"
-                [routerLinkActiveOptions]="{ exact: true }"
+                [class.active]="isActive(child)"
+                [attr.aria-current]="isActive(child) ? 'page' : null"
                 (click)="navClick.emit()"
               >
                 <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ child.icon }}</span>
@@ -97,8 +98,8 @@
                 <a
                   class="nav-flyout-item"
                   [routerLink]="child.route"
-                  routerLinkActive="active"
-                  [routerLinkActiveOptions]="{ exact: true }"
+                  [class.active]="isActive(child)"
+                  [attr.aria-current]="isActive(child) ? 'page' : null"
                   (click)="navClick.emit()"
                 >
                   <span class="material-symbols-rounded nav-icon" aria-hidden="true">{{ child.icon }}</span>

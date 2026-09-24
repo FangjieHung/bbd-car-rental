@@ -1,5 +1,14 @@
 import { InjectionToken, Signal } from '@angular/core';
-import { AddOn, InsurancePlan, Member, PriceBreakdown, RentalBooking, Vehicle } from '../../../core/models';
+import {
+  AddOn,
+  DriverCredential,
+  IdentityDocument,
+  InsurancePlan,
+  Member,
+  PriceBreakdown,
+  RentalBooking,
+  Vehicle,
+} from '../../../core/models';
 
 /** 報價試算輸入：日期為 YYYY-MM-DD；`addOnQty` 的 key 為 AddOn id，未列出的項目數量視為 0。 */
 export interface OrderQuoteInput {
@@ -29,6 +38,10 @@ export interface OrderFormData {
   findConflicts(vehicleId: string, startIso: string, endIso: string, excludeBookingId?: string): RentalBooking[];
   /** 訂金上限（亦為新增訂單的預設訂金）。 */
   depositCap(vehicle: Vehicle | undefined, quoteTotal: number): number;
+  /** 會員已存的身分證明文件（所有版本）；選了既有會員時，判斷「證件未查核」是否要列入待補。 */
+  identityDocumentsOf(memberId: string): IdentityDocument[];
+  /** 會員已存的駕駛資格（所有版本）；選了既有會員時預填第 2 步的駕駛資格，並判斷是否已查核。 */
+  driverCredentialsOf(memberId: string): DriverCredential[];
 }
 
 export const ORDER_FORM_DATA = new InjectionToken<OrderFormData>('ORDER_FORM_DATA');

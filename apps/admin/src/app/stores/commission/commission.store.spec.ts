@@ -151,3 +151,43 @@ describe('CommissionStore', () => {
     });
   });
 });
+
+describe('CommissionStore 沒有報價快照的訂單（前批驗收：看起來像「退佣是 0」）', () => {
+  const unquoted: RentalBooking = { ...bookingInMonth, id: 'b-old', priceBreakdown: undefined };
+
+  function storeWith(rule: Partner['commission']) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([bookingInMonth, unquoted]) },
+        { provide: PARTNER_REPO, useValue: createInMemoryRepo<Partner>([{ ...partner, commission: rule }]) },
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
+        { provide: PAYOUT_REPO, useValue: createInMemoryRepo<MonthlyPayout>([]) },
+      ],
+    });
+    return TestBed.inject(CommissionStore);
+  }
+
+  it('租金小計與退佣是「未報價」（null）而不是 0，不計入合計，並回報筆數；有報價的照舊', () => {
+    const report = storeWith({ type: 'percent', value: 10 }).monthlyReport('pt1', '2026-07');
+    const old = report.rows.find((r) => r.bookingId === 'b-old');
+    expect(old).toMatchObject({ rentalSubtotal: null, commission: null });
+    expect(report.rows.find((r) => r.bookingId === 'b1')).toMatchObject({ rentalSubtotal: 3000, commission: 300 });
+    expect(report.total).toBe(300);
+    expect(report.unquotedCount).toBe(1);
+  });
+
+  it('每車每日固定額的民宿也一樣不計入（報表上方的提示寫的是「未計入退佣」）', () => {
+    const report = storeWith({ type: 'per_vehicle_day', value: 100 }).monthlyReport('pt1', '2026-07');
+    expect(report.rows.find((r) => r.bookingId === 'b-old')?.commission).toBeNull();
+    expect(report.unquotedCount).toBe(1);
+    expect(report.total).toBe(report.rows.find((r) => r.bookingId === 'b1')?.commission);
+  });
+
+  it('匯出 CSV 寫「未報價」，不寫 0', () => {
+    const store = storeWith({ type: 'percent', value: 10 });
+    const csv = store.toCsv(store.monthlyReport('pt1', '2026-07').rows);
+    const line = csv.split('\n').find((l) => l.includes('b-old'));
+    expect(line).toContain('"未報價","未報價"');
+  });
+});

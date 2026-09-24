@@ -166,6 +166,31 @@ describe('OperatorRecoveryPanelComponent', () => {
     expect(el.textContent).toContain(ZH_TW.operatorRecoveryPanel.noCases);
   });
 
+  it('不能開立新案件（4.6：訂單不是已預訂）且沒有既有案件：整塊不顯示', () => {
+    const fixture = TestBed.createComponent(OperatorRecoveryPanelComponent);
+    fixture.componentRef.setInput('bookingId', 'b1');
+    fixture.componentRef.setInput('allowNewCase', false);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.operator-recovery-panel')).toBeNull();
+  });
+
+  it('不能開立新案件但有既有案件：照樣列出案件，只是沒有「開立復原案件」表單', () => {
+    TestBed.inject(OperatorRecoveryStore).createCase({
+      bookingId: 'b1',
+      reason: 'oversell',
+      discoveredAt: '2026-07-01T00:00:00.000Z',
+      notifiedAt: '2026-07-01T00:00:00.000Z',
+      actor: { actorId: 'staff', actorName: 'staff' },
+    });
+    const fixture = TestBed.createComponent(OperatorRecoveryPanelComponent);
+    fixture.componentRef.setInput('bookingId', 'b1');
+    fixture.componentRef.setInput('allowNewCase', false);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain(ZH_TW.operatorRecoveryPanel.reasonLabels['oversell']);
+    expect(el.textContent).not.toContain(ZH_TW.operatorRecoveryPanel.newCaseTitle);
+  });
+
   it('開立案件後自動選取，狀態為處理中，可看到下一個待嘗試方案', () => {
     const fixture = createFixture();
     const component = fixture.componentInstance;

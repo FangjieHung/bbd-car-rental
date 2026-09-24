@@ -18,6 +18,7 @@ import { BookingStore } from '../booking/booking.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { PaymentStore } from '../payment/payment.store';
 import { ReminderStore } from '../reminder/reminder.store';
+import { PrepStore } from '../prep/prep.store';
 
 /**
  * 一般主管覆核不得放行的阻擋類別：設計文件第 7 節「法律資格不符及車輛安全不可交付
@@ -47,6 +48,8 @@ export type HandoverOrchestrationStep =
   | 'vehicle_transition'
   | 'booking_transition'
   | 'confirm_adjustments'
+  | 'vehicle_location_update'
+  | 'prep_task_create'
   | 'audit_entry';
 
 /** 仍有未解除的阻擋項目、且未提供（或不適用）主管覆核時擲出。 */
@@ -128,6 +131,8 @@ export interface PerformReturnResult {
  *
  * 取車：重算就緒 → 存取車紀錄 → 車輛轉為 rented → 訂單轉為 in_progress → 附加稽核紀錄。
  * 還車：存還車紀錄 → 確認費用調整 → 車輛轉為 available → 訂單轉為 completed →
+ *       車輛所在據點更新為這筆訂單的還車據點（3.7，見 docs/owner-questions.md 第 1 條） →
+ *       列入待整備（4.3，見 docs/owner-questions.md 第 11 條） →
  *       附加稽核紀錄 → 任何餘額留作應收，不阻擋完成。
  *
  * 車輛與訂單的狀態轉換本身仍由 VehicleStore／BookingStore 把關（見兩者既有的狀態機），
@@ -141,6 +146,7 @@ export class HandoverStore {
   private readonly vehicleStore = inject(VehicleStore);
   private readonly paymentStore = inject(PaymentStore);
   private readonly reminderStore = inject(ReminderStore);
+  private readonly prepStore = inject(PrepStore);
 
   private readonly _records = signal<HandoverRecord[]>(this.repo.getAll());
   readonly records: Signal<HandoverRecord[]> = this._records.asReadonly();
@@ -262,7 +268,8 @@ export class HandoverStore {
   /**
    * 還車完整協調流程：存還車紀錄 → 確認費用調整（依 charges 建立並直接確認 ChargeAdjustment，
    * 不是先前試算階段就自動建立——見 calculateCharges，試算與確認是刻意分開的兩步）→
-   * 車輛轉 available → 訂單轉 completed → 附加稽核紀錄。
+   * 車輛轉 available → 訂單轉 completed → 車輛所在據點更新為這筆訂單的還車據點（3.7）→
+   * 列入待整備（4.3）→ 附加稽核紀錄。
    *
    * 刻意不檢查付款分類帳是否結清：任何未收餘額留作應收（PaymentStore.summaryFor 會反映
    * balanceDue），不阻擋這裡的完成——設計文件與本任務 brief 都明確要求「不得因未收餘額阻擋完成」。
@@ -301,6 +308,40 @@ export class HandoverStore {
         vehicleTransitionedNow ? 'booking_transition' : 'vehicle_transition',
         cause,
       );
+    }
+
+    // 3.7：還車完成後，車輛所在據點改為這筆訂單的還車據點——業主問題 #1 的暫定決定
+    // （docs/owner-questions.md 第 1 條：「改算還車據點的車」）。車輛狀態的轉換已經在上面
+    // 透過 bookingStore.complete() → vehicleStore.transition() 完成；所在據點只是一般欄位、
+    // 不經 transition()，這裡用 VehicleStore.update() 直接寫入。刻意放在狀態轉換成功之後：
+    // 上面那段若已經擲出部分失敗錯誤，代表車輛還沒真的轉成 available，這裡就不該再動它的據點。
+    try {
+      const booking = this.bookingStore.bookings().find((b) => b.id === input.bookingId);
+      if (booking) {
+        this.vehicleStore.update(booking.vehicleId, { location: booking.returnLocation });
+      }
+      completed.push('vehicle_location_update');
+    } catch (cause) {
+      throw new HandoverOrchestrationPartialFailureError('return', completed, 'vehicle_location_update', cause);
+    }
+
+    // 4.3：還車完成的車自動列入「待整備」（還車之後、下一次交車之前的清潔與檢查）。它只是待辦清單，
+    // 不經 VehicleStore：車輛狀態維持剛轉好的 available、不影響可用數、不擋下一次取車
+    // （docs/owner-questions.md 第 11 條的暫定決定）。同樣放在狀態轉換成功之後——上面擲出部分失敗時
+    // 車還沒真的還回來，不該出現在待整備清單上。
+    try {
+      const booking = this.bookingStore.bookings().find((b) => b.id === input.bookingId);
+      if (booking) {
+        this.prepStore.openForReturn({
+          vehicleId: booking.vehicleId,
+          bookingId: booking.id,
+          returnedAt: record.actualAt,
+          returnLocation: booking.returnLocation,
+        });
+      }
+      completed.push('prep_task_create');
+    } catch (cause) {
+      throw new HandoverOrchestrationPartialFailureError('return', completed, 'prep_task_create', cause);
     }
 
     // 訂單完成後不寄還車提醒（設計文件第 8 節）。這是刻意的 fire-and-forget 呼叫，不是

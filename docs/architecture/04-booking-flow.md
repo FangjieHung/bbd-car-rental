@@ -59,7 +59,7 @@ libs/booking-flow/src/lib/
     order-summary-card.*        # 金額摘要卡（下單頁右側／手機底部）
     search-criteria-bar.*       # 租期摘要條 +「修改」
   steps/                        # 被頁面組合的展示元件，本身不含流程知識
-    date-step / vehicle-step / dual-month-range-picker
+    date-step / vehicle-step      # 雙月日期區間選擇器在 libs/ui（lib-dual-month-range-picker）
     addon-step / coupon-step / confirm-step
     done.component.*            # 完成頁（歷史因素放在 steps/，實際是路由頁）
   booking-context.ts            # BOOKING_CONTEXT：夥伴身分與導頁前綴
@@ -154,6 +154,9 @@ interface BookingContext {
 **`date-step` / `vehicle-step` / `dual-month-range-picker` 有其他工作線在維護。**
 `admin` 的 dashboard 與選車 dialog 也直接使用 `DateStepComponent`、`VehicleStepComponent`、
 `DateRange`，所以改它們的 input/output 會同時影響 admin 與預約流程。
+雙月日期區間選擇器已搬到 `libs/ui`（`lib-dual-month-range-picker`，admin 建單第 1 步也用它），
+畫面文字由 `DUAL_MONTH_RANGE_PICKER_LABELS` 提供；官網的文字放在 `BOOKING_FLOW_LABELS.dateRangePicker`，
+由 `date-step` 帶給選擇器。
 
 **`confirm-step` 仍宣告 `vehicle`/`startDate`/`endDate`/`selectedAddOnLines` 四個 input，
 但元件內部已經不讀它們**（摘要移到 `order-summary-card` 之後只剩 `priceBreakdown` 給

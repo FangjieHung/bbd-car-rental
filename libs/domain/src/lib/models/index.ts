@@ -17,6 +17,7 @@ export * from './payment-record';
 export * from './cancellation-case';
 export * from './customer-credit';
 export * from './handover-record';
+export * from './prep-task';
 export * from './identity-document';
 export * from './contract-version';
 export * from './reminder-status';

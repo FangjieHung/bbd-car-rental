@@ -2,11 +2,19 @@ import { optionLabelMap, PAYMENT_METHOD_OPTIONS } from '@car-rental/domain';
 
 export const ZH_TW = {
   app: { title: '澎湖租車後台' },
+  // /login 頁首標題（找不到選單對應時的頁面覆寫，見 2.1）。
+  loginPage: {
+    title: '登入',
+  },
   nav: {
     dashboard: '總覽',
-    productGroup: '商品管理',
+    // 4.5：「商品管理」是電商用語，改叫它實際管的東西。
+    productGroup: '車輛與配件',
     vehicles: '車輛清單',
+    // 4.5：「訂單管理」改成側欄群組（訂單列表、會員）；新增訂單、訂單詳情、會員頁的麵包屑也用這個字。
     bookings: '訂單管理',
+    orderList: '訂單列表',
+    members: '會員',
     maintenance: '保養管理',
     pricingGroup: '定價管理',
     pricing: '定價規則',
@@ -56,10 +64,11 @@ export const ZH_TW = {
     brand: '廠牌',
     year: '年分',
     displacement: '排氣量',
-    nextServiceMileage: '定保里程',
+    nextServiceMileage: '定保里程（km）',
     insuranceExpiry: '保險到期',
     status: '狀態',
-    mileage: '里程 (km)',
+    // 1.8：單位寫在欄名，不重複印在每一列的值上（全形括號，與站內其他單位標示一致）。
+    mileage: '里程（km）',
     typeLabels: { scooter: '機車', car: '汽車', ev: '電動車' } as Record<string, string>,
     statusLabels: {
       available: '可租借',
@@ -71,11 +80,17 @@ export const ZH_TW = {
     mileageDecrease: '里程不可小於現有值',
     deleteBlocked: '此車輛尚有未完成訂單或保養紀錄，無法刪除',
     invalidTransition: '車輛狀態不允許此操作',
-    tableView: '表格',
-    timelineView: '時間軸',
     backToList: '返回車輛清單',
     location: '所在據點',
     locationUnspecified: '未指定',
+    // 3.6：車輛清單「據點」篩選裡「尚未設定所在據點」那個選項的顯示文字。
+    locationFilterUnset: '未設定',
+    maintenanceOnlyFilter: '只看待保養',
+    removeMaintenanceOnlyFilter: '移除「只看待保養」篩選',
+  },
+  // /bookings/members 頁首標題（2.1：頁首大標題不再誤顯示「訂單管理」）。
+  membersPage: {
+    title: '會員',
   },
   member: {
     name: '姓名',
@@ -173,12 +188,50 @@ export const ZH_TW = {
     conflict: '時段衝突，與下列訂單重疊：',
     endBeforeStart: '結束時間必須晚於開始時間',
     invalidTransition: '訂單狀態不允許此操作',
-    goMembers: '會員管理',
-    pickVehicle: '選擇車輛',
-    noVehicleAvailable: '此租期沒有可租車輛',
     pickedResult: '已選車輛',
     clearPick: '清除選擇',
     openDetail: '訂單詳情',
+    // 4.1：訂單列表的「待補」欄與篩選（已取消、已完成的訂單不計）。
+    incomplete: '待補',
+    incompleteOnly: '只看有待補',
+    /** 待補徽章的無障礙名稱，`{count}` 代入項數。 */
+    incompleteCount: '待補 {count} 項',
+    // 4.4：取車日期篩選（本週＝週日起算，與總覽月曆、時間軸同一個慣例）。
+    pickupDate: '取車日期',
+    pickupDateLabels: { today: '今天', week: '本週', custom: '自訂區間' } as Record<string, string>,
+    pickupRange: '取車日期區間',
+    pickupRangePlaceholder: '選擇取車日期',
+  },
+  // 2.3：建單第 1 步「先選租期，再列可租的車」的搜尋列與可租清單；可租清單元件在總覽「可用」分頁也會用。
+  // 帶 {…} 的字串由使用處代入（同 common.selectedCount 的寫法）。
+  rentalSearch: {
+    category: '車型',
+    allCategories: '全部',
+    /** 「可租 N 台{車型}」在「全部」時的車型字樣。 */
+    anyCategory: '車',
+    period: '租期',
+    periodPlaceholder: '選擇日期範圍',
+    prevMonth: '上個月',
+    nextMonth: '下個月',
+    monthTitle: '{year}年{month}月',
+    startTime: '取車時間',
+    endTime: '還車時間',
+    pickupLocation: '取車據點',
+    returnLocation: '還車據點',
+    choosePeriodFirst: '選好租期後，這裡會列出這段期間可以租的車',
+    listTitle: '這段期間可租 {count} 台{category}',
+    pickupFirstHint: '已在取車據點的排前面',
+    empty: '這段期間沒有可租的{category}',
+    atBranch: '在 {branch}',
+    noDispatch: '免調度',
+    needsDispatch: '需調度 {from}→{to}',
+    locationUnset: '所在據點未設定',
+    days: '{days} 天',
+    blockedToggle: '另有 {count} 台這段期間不能租',
+    booked: '已預訂 {start}–{end}',
+    maintenance: '保養中',
+    reasonSeparator: '、',
+    originalUnavailable: '原本選的 {plate} 這段期間不能租',
   },
   bookingForm: {
     title: '新增訂單',
@@ -187,7 +240,6 @@ export const ZH_TW = {
       renter: '承租人與駕駛資格',
       payment: '費用與付款',
       contract: '合約',
-      review: '確認建立',
     } as Record<string, string>,
     next: '下一步',
     prev: '上一步',
@@ -196,8 +248,7 @@ export const ZH_TW = {
     vehicleConflict: '此車輛在所選時段已有其他訂單，請調整時段或改選其他車輛',
     quoteUnavailable: '此車型目前沒有可用的定價方案，無法試算報價',
     insuranceUnreconciled: '原本的保險方案無法自動辨識（可能已異動或被移除），請重新選擇保險方案後再儲存，避免保險金額被悄悄清空',
-    deposit: '訂金',
-    depositCap: '訂金上限',
+    deposit: '應收訂金',
     depositExceedsCap: '訂金不可超過上限',
     addOns: '加購配件',
     insurance: '保險方案',
@@ -206,9 +257,6 @@ export const ZH_TW = {
     rentalSubtotal: '租金小計',
     insuranceSubtotal: '保險小計',
     addOnSubtotal: '配件小計',
-    payments: '本次排入的款項',
-    addPayment: '＋ 新增款項',
-    removePayment: '移除',
     paymentMethodLabels: optionLabelMap(PAYMENT_METHOD_OPTIONS) as Record<string, string>,
     paymentPurposeLabels: {
       deposit: '訂金',
@@ -216,18 +264,88 @@ export const ZH_TW = {
       adjustment: '其他調整',
     } as Record<string, string>,
     internalNote: '內部備註',
-    reviewTitle: '確認建立前檢查',
-    allComplete: '目前沒有待辦事項',
+    // 待補項目（建立訂單摘要欄、訂單詳情、訂單列表共用同一套規則，見 features/orders/incomplete）。
     incomplete: {
-      missingEmail: '會員未提供 Email，還車提醒無法排程',
+      missingEmail: '承租人未提供 Email，還車提醒無法排程',
       depositNotCollected: '訂金尚未收款',
       contractNotSigned: '合約尚未簽署',
+      identityNotVerified: '證件未查核',
+      driverNotVerified: '駕駛資格未查核',
       balanceNotCollected: '租金尚未收足',
+    },
+  },
+  // 2.2／2.4 建立訂單頁：左側訂單摘要欄、底部操作列，以及第 3 步的保險方案／加購配件表格。
+  orderSummary: {
+    title: '訂單摘要',
+    expand: '展開訂單摘要',
+    collapse: '收合訂單摘要',
+    noVehicle: '未選車輛',
+    noPeriod: '未填租期',
+    notFilled: '未填',
+    separator: ' · ',
+    periodArrow: ' → ',
+    pickupAt: '取車',
+    returnAt: '還車',
+    days: '天數',
+    daysSuffix: ' 天',
+    pickupBranch: '取車據點',
+    returnBranch: '還車據點',
+    dispatchPrefix: '需調度 ',
+    dispatchArrow: '→',
+    renter: '承租人',
+    phone: '電話',
+    insurance: '保險方案',
+    insuranceUnresolved: '未選',
+    amountsTitle: '金額',
+    rental: '租金',
+    insuranceAmount: '保險',
+    addOns: '配件',
+    quoteTotal: '報價合計',
+    depositRequired: '應收訂金',
+    collected: '本次收款',
+    dueAfterCreate: '建立後待收',
+    overpaid: '溢收',
+    requirementsTitle: '建立訂單需要',
+    requirementLabels: {
+      vehicle: '車輛',
+      period: '租期',
+      branches: '據點',
+      renter: '承租人',
+    } as Record<string, string>,
+    requirementMet: '已完成',
+    requirementUnmet: '未完成',
+    incompleteTitle: '建立後待補',
+    // 「建立訂單需要」還沒全部打勾前，待補清單還沒有意義（車、租期、承租人都還沒定，補 Email／簽約都言之過早）。
+    incompleteNotReady: '完成建立條件後，這裡會列出建立後還要補的事',
+    noIncomplete: '沒有待補項目',
+    // 底部操作列
+    missingPrefix: '還缺：',
+    listSeparator: '、',
+    problemsPrefix: '還有 ',
+    problemsSuffix: ' 項待修正',
+    // 第 3 步：保險方案（表格式單選）
+    insuranceTable: {
+      select: '選擇',
+      plan: '方案',
+      deductible: '事故自負額',
+      daily: '每日',
+      subtotal: '小計',
+      subtotalDaysSuffix: ' 天小計',
+    },
+    // 第 3 步：加購配件（數量步進器）
+    addOnTable: {
+      item: '項目',
+      unitPrice: '單價',
+      qty: '數量',
+      subtotal: '小計',
+      total: '配件小計',
+      unitSuffix: { per_rental: '／次', per_day: '／日' } as Record<string, string>,
+      decreasePrefix: '減少數量：',
+      increasePrefix: '增加數量：',
     },
   },
   // /orders/new 建立訂單頁與可重用的訂單表單區塊；步驟名稱、報價與待補項目等字串沿用 bookingForm。
   orderForm: {
-    stepErrorsNotice: '尚有項目需要修正，已標示在步驟上',
     required: '必填',
     problems: {
       rentalBaseline: '請選擇車輛並填寫租期',
@@ -235,6 +353,15 @@ export const ZH_TW = {
       endBeforeStart: '還車時間必須晚於取車時間',
       renterBaseline: '請填寫承租人姓名與電話',
       depositInvalid: '訂金金額無效',
+      paymentDraftAmountInvalid: '本次收款有金額未填或不大於 0',
+      driverClassRequired: '填了駕照號碼，請一併選擇標準化車種',
+    },
+    // 4.2：第 2 步「駕駛資格」區塊；欄位名稱沿用會員視窗（member.license*）。
+    driver: {
+      optionalHint: '可以留空，建立後再到會員資料補上；留空時會列入待補「駕駛資格未查核」。',
+      prefilledHint: '已帶入這位會員既有的駕駛資格，有更新再修改。',
+      classMismatchPrefix: '標準化車種與本次車輛（',
+      classMismatchSuffix: '）不符，取車時會被擋下',
     },
     contract: {
       summaryTitle: '合約摘要',
@@ -251,7 +378,18 @@ export const ZH_TW = {
     paymentAmount: '金額',
     paymentPurpose: '款項用途',
     paymentMethod: '付款方式',
-    noPaymentDrafts: '尚未排入款項，可在建立訂單後再收款',
+    paymentAmountInvalid: '金額必須大於 0',
+    noPaymentDrafts: '尚未收款。建立訂單後，也可以在訂單的款項分頁收款。',
+    paymentsSectionTitle: '本次收款',
+    addPaymentDraft: '＋ 新增一筆收款',
+    removePaymentDraft: '刪除這筆收款',
+    paymentsCollectedPrefix: '本次收款 ',
+    paymentsFooterSeparator: ' · ',
+    balanceAfterCreatePrefix: '建立後待收 ',
+    overpaidPrefix: '溢收 ',
+    depositCapPrefix: '上限 ',
+    depositCapCarSuffix: '（報價合計的 30%）',
+    depositCapNoRulePrefix: '機車／電動車目前沒有訂金上限規則，預設 ',
     addOnQty: '數量',
     discardConfirm: '尚未建立的訂單內容將會遺失，確定要離開嗎？',
     stepperLabel: '建立訂單步驟',
@@ -266,6 +404,8 @@ export const ZH_TW = {
     paymentMethodSummary: '付款方式',
     mixedPayment: '混合付款',
     noPaymentsYet: '尚無付款紀錄',
+    // 沒有報價快照的舊訂單：與訂單總覽費用卡的「尚無報價，無法計算待收」同一種說法
+    noQuoteStatus: '尚無報價，無法判斷收款狀態',
     statusLabels: {
       deposit_due: '待收訂金',
       deposit_paid: '訂金已收，尾款待收',
@@ -315,7 +455,28 @@ export const ZH_TW = {
     },
     rentalPeriod: '租期',
     depositRequired: '應收訂金',
+    netPaid: '已收',
+    balanceDue: '待收',
+    // 待收為負＝收超過應收：改寫「溢收」並用警示色（與建單頁收款區塊、摘要欄同一種說法）。
+    overpaid: '溢收',
     noQuote: '尚無報價快照',
+    // 沒有報價快照的舊訂單算不出應收，待收顯示「—」加這行小字，不假裝應收是 0（否則已收多少就「溢收」多少）。
+    noQuoteBalance: '尚無報價，無法計算待收',
+    // 4.1：總覽最上方的待補卡（已取消、已完成的訂單不顯示）；每一項可點到能處理它的地方。
+    incomplete: {
+      title: '待補',
+      actions: {
+        payments: '前往款項',
+        contract: '前往合約',
+        renter: '編輯承租人資料',
+      } as Record<string, string>,
+    },
+    // 4.6：「取消/退款」分頁依流程分三段，各段只放目前訂單狀態能做的動作。
+    cancellationStages: {
+      cancel: '取消',
+      refund: '退款',
+      credit: '保留金',
+    },
     sections: {
       overview: '總覽',
       documents: '文件',
@@ -357,8 +518,12 @@ export const ZH_TW = {
     overrideActorName: '主管姓名',
     overrideReason: '覆核理由',
     actualAt: '實際時間',
-    mileage: '里程',
+    mileage: '里程（km）',
     energyLevel: '能源讀數',
+    pickupMileageHintPrefix: '取車時 ',
+    pickupMileageHintSuffix: ' km',
+    pickupEnergyHintPrefix: '取車時讀數 ',
+    mileageBelowPickup: '不可小於取車時的里程',
     photosTitle: '儀表／車況照片',
     addPhoto: '＋ 新增照片',
     removePhoto: '移除',
@@ -441,7 +606,7 @@ export const ZH_TW = {
     reminderMockSuffix: '開發模擬，非真實寄送結果',
   },
   cancellationPanel: {
-    notApplicableNotice: '此訂單狀態不適用取消流程，只有「保留」中的訂單可以取消。',
+    notApplicableNotice: '只有已預訂的訂單可以取消。',
     operatorRecoveryHint:
       '若取消原因是業者過失（車輛故障、超賣、人員調度失誤等），請先於下方「業者復原」嘗試同級調車、免費升等或合作同業轉單；三者皆失敗或顧客不同意，才在這裡建立業者責任取消案件。',
     newCaseTitle: '建立取消案件',
@@ -586,6 +751,9 @@ export const ZH_TW = {
   customerCreditPanel: {
     title: '退款與保留金撥付',
     noDisposableCases: '目前沒有待撥付的取消案件。',
+    // 4.6：退款段列出這筆訂單的退款紀錄（「退款待處理」的急迫徽章點進來要看得到那一筆）。
+    refundsTitle: '退款紀錄',
+    noCreditToExtend: '目前沒有保留金，不需要展延。',
     caseLabel: '取消案件',
     disposableAmount: '應退總額',
     disposition: '撥付方式',
@@ -625,11 +793,22 @@ export const ZH_TW = {
     submitExtend: '確認展延',
     extendReasonRequired: '展延保留金必須填寫理由。',
   },
+  // 3.5：總覽時間軸元件專用字串（時間軸切換本身沿用下面 dispatch.timeline／dispatch.calendar）。
+  timeline: {
+    // 車輛列首所在據點留白時的完整說法；車輛清單欄位留白時改顯示「—」（branchName() 的既有 fallback），
+    // 這裡刻意用更完整的句子，因為時間軸列首沒有其他上下文能表明這是哪個欄位。
+    locationUnset: '所在據點未設定',
+    // 逾時未還色塊延伸段的標示文字（與 features/bookings/booking-urgency.ts 的 isOverdueReturn 同一個判斷）。
+    overdue: '逾時',
+  },
   dispatch: {
     timeline: '時間軸',
-    calendar: '日曆',
-    prevRange: '前 14 天',
-    nextRange: '後 14 天',
+    calendar: '月曆',
+    /** 3.5：總覽月曆卡片「月曆｜時間軸」切換的無障礙名稱。 */
+    viewSwitch: '檢視方式',
+    // 3.5：時間軸範圍固定 14 天，左右切換改成 ±7 天（不是整段 14 天跳頁，兩週範圍才會重疊移動）。
+    prevRange: '前 7 天',
+    nextRange: '後 7 天',
     prevMonth: '上月',
     nextMonth: '下月',
     today: '今天',
@@ -638,6 +817,20 @@ export const ZH_TW = {
     available: '可用',
     maintenanceBlock: '保養中',
     weekdays: ['日', '一', '二', '三', '四', '五', '六'],
+    // 3.4：右側面板分頁標籤——大字「取車 2」＋細字「已完成 0」（還車另加「逾時 1」）；可用只有數字。
+    panelTabs: {
+      pickup: '取車',
+      return: '還車',
+      available: '可用',
+      done: '已完成 {count}',
+      overdue: '逾時 {count}',
+    },
+    // 3.2：右側「可用」分頁的查詢列；清單本身沿用 rentalSearch 的字串。
+    availablePanel: {
+      startsOn: '{date} 起租',
+      returnDate: '還車日',
+      pastDate: '無法查詢過去日期的可租車輛',
+    },
     workList: {
       payment: '付款',
       balanceDue: '待收餘額',
@@ -671,6 +864,9 @@ export const ZH_TW = {
       estimatedLateFee: '預估逾時費',
       currentBalance: '目前待收餘額',
       returnedUnsettled: '已還車／應收未結',
+      notPickedUpYet: '尚未取車',
+      /** 取車分頁裡已取車（出租中／已完成）的列，取代就緒判斷的 chip。 */
+      pickedUp: '已取車',
       pay: '收款',
       viewContract: '檢視合約',
       view: '檢視',
@@ -696,8 +892,8 @@ export const ZH_TW = {
       other: '其他',
     } as Record<string, string>,
     performedAt: '保養日期',
-    mileageAtService: '保養時里程',
-    nextDueMileage: '下次保養里程',
+    mileageAtService: '保養時里程（km）',
+    nextDueMileage: '下次保養里程（km）',
     nextDueDate: '下次保養日期',
     cost: '費用',
     notes: '備註',
@@ -745,13 +941,37 @@ export const ZH_TW = {
     validFrom: '生效日',
     validTo: '到期日',
   },
+  // /settings 頁首標題（2.1：不再誤退回「總覽」）。
+  settingsPage: {
+    title: '設定',
+  },
+  // 總覽頁首按鈕（1.4：原本寫死在樣板裡的中文，改從這裡讀）。
   dashboard: {
-    todayPickups: '今日取車',
-    todayReturns: '今日還車',
-    tomorrowPickups: '明日取車',
-    tomorrowReturns: '明日還車',
-    statusCounts: '車輛狀態',
-    none: '無',
+    newOrder: '新增訂單',
+    maintenanceDue: '待保養',
+    pendingPrep: '待整備',
+    searchPlaceholder: '搜尋訂單：姓名、電話、車牌',
+  },
+  // 4.3：待整備——還車之後、下一次交車之前的清潔與檢查（CONTEXT.md「整備」）。
+  // 只是待辦清單：不改車輛狀態、不影響可用數、不擋交車（docs/owner-questions.md 第 11 條，暫定）。
+  prep: {
+    title: '待整備',
+    hint: '還車後自動列入，按「整備完成」後移除；不影響車輛能否出租，也不擋交車。',
+    columns: {
+      plate: '車牌',
+      model: '車款',
+      returnedAt: '還車時間',
+      returnLocation: '還車據點',
+      nextPickupAt: '下次取車',
+    },
+    noNextPickup: '尚未排定',
+    complete: '整備完成',
+    // 每列按鈕的無障礙名稱要帶車牌，否則螢幕閱讀器只聽到一排「整備完成」。
+    completeAriaLabel: '{plate} 整備完成',
+    empty: '目前沒有待整備的車',
+    close: '關閉',
+    // 取車清單的提醒 chip：不是阻擋原因，不影響「可取車」。
+    notPrepped: '尚未整備',
   },
   partner: {
     name: '民宿名稱',
@@ -763,6 +983,8 @@ export const ZH_TW = {
       string
     >,
     commissionValue: '退佣值',
+    // 1.8：「退佣方式」欄補單位——百分比寫「10%」、固定額寫「每車每日 NT$100」，不能只顯示裸數字。
+    commissionPerVehicleDayPrefix: '每車每日 ',
     copyLink: '複製代訂連結',
     linkCopied: '已複製代訂連結',
     slugDuplicate: '此連結代碼已被使用',
@@ -781,6 +1003,9 @@ export const ZH_TW = {
     payoutStatusLabels: { pending: '待撥款', paid: '已撥款' } as Record<string, string>,
     markPaid: '標記已撥款',
     selectPartnerFirst: '請先選擇民宿與月份',
+    // 沒有報價快照的訂單算不出租金小計，不能當成 NT$0（看起來像「這個月退佣是 0」）：標「未報價」、不計入合計。
+    unquoted: '未報價',
+    unquotedNotice: '{count} 筆訂單沒有報價紀錄，未計入退佣',
   },
   layout: {
     subtitle: '管理中心',
@@ -788,5 +1013,8 @@ export const ZH_TW = {
     adminUser: '管理員',
     loggedIn: '已登入',
     copyright: '版權所有',
+    // 2.1：頁首麵包屑／返回（各頁的標題文字仍各自放在對應頁面的 i18n 區塊）。
+    breadcrumbAriaLabel: '麵包屑',
+    back: '返回',
   },
 } as const;

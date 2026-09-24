@@ -1,25 +1,38 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subscription, distinctUntilChanged, map, skip } from 'rxjs';
 import { branchName, contractSigningState, needsDispatch } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
+import { provideHeaderTitle } from '../../../layout/header/header-title';
+import { HeaderTitleExtraDirective } from '../../../layout/header/header-title-extra-slot';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
+import { PaymentStore } from '../../../stores/payment/payment.store';
+import { OperatorRecoveryStore } from '../../../stores/operator-recovery/operator-recovery.store';
 import { StatusChipComponent } from '../../../shared/chips/status-chip.component';
 import { BOOKING_STATUS_KEY } from '../../../shared/chips/booking-status-key';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
+import {
+  hasRefundPending,
+  hasUrgentOperatorRecovery,
+  isOverdueReturn,
+} from '../../bookings/booking-urgency';
 import { PaymentPanelComponent } from '../../bookings/components/payment-panel.component';
 import { ContractPanelComponent } from '../../bookings/components/contract-panel.component';
 import { HandoverPanelComponent } from '../../bookings/components/handover-panel.component';
-import { CancellationPanelComponent } from '../../bookings/components/cancellation-panel.component';
-import { CustomerCreditPanelComponent } from '../../bookings/components/customer-credit-panel.component';
-import { OperatorRecoveryPanelComponent } from '../../bookings/components/operator-recovery-panel.component';
 import { ActivityTimelineComponent } from '../../bookings/components/activity-timeline.component';
+import { MemberFormDialogComponent } from '../../bookings/dialogs/member-form-dialog.component';
+import { OrderIncompleteCardComponent } from '../detail/order-incomplete-card.component';
+import { OrderCancellationTabComponent } from '../detail/order-cancellation-tab.component';
+import { OrderIncompleteItem } from '../incomplete/order-incomplete';
+import { OrderIncompleteService } from '../incomplete/order-incomplete.service';
 import {
   OrderForm,
   connectOrderFormBehaviors,
@@ -36,8 +49,8 @@ import { OrderPricingSectionComponent } from '../sections/order-pricing-section.
 import { LeaveConfirmable } from '../navigation/confirm-leave.guard';
 import {
   DEFAULT_ORDER_DETAIL_SECTION,
-  ORDER_DETAIL_SECTIONS,
   OrderDetailSection,
+  VISIBLE_ORDER_DETAIL_SECTIONS,
   parseOrderDetailSection,
 } from '../navigation/order-detail-sections';
 import { ORDER_DETAIL_EDIT_PARAM, ORDER_DETAIL_SECTION_PARAM } from '../navigation/order-detail-navigation';
@@ -46,7 +59,8 @@ import { ORDER_DETAIL_EDIT_PARAM, ORDER_DETAIL_SECTION_PARAM } from '../navigati
 const FALLBACK_RETURN_URL = '/bookings';
 
 /**
- * `/orders/:id` 訂單詳情：頁首是訂單識別資訊，下方七個分頁，目前分頁以 `?section=` 表示（可分享、重新整理後回到同一分頁）。
+ * `/orders/:id` 訂單詳情：頁首是訂單識別資訊，下方分頁（「文件」尚未實作、先隱藏），目前分頁以 `?section=` 表示
+ * （可分享、重新整理後回到同一分頁）。
  *
  * 「編輯訂單」只作用在總覽：預設唯讀，按「編輯」後總覽在同一頁切換成表單（租期與車輛／承租人／費用三個可重用區塊），
  * 明確按「儲存」才送出，「取消」丟棄所有改動。編輯中其他分頁停用，讓儲存範圍清楚；
@@ -55,19 +69,19 @@ const FALLBACK_RETURN_URL = '/bookings';
 @Component({
   selector: 'app-order-detail-page',
   imports: [
-    RouterLink,
     MatButtonModule,
     StatusChipComponent,
+    HeaderTitleExtraDirective,
     OrderRentalSectionComponent,
     OrderRenterSectionComponent,
     OrderPricingSectionComponent,
     PaymentPanelComponent,
     ContractPanelComponent,
     HandoverPanelComponent,
-    CancellationPanelComponent,
-    CustomerCreditPanelComponent,
-    OperatorRecoveryPanelComponent,
+    OrderCancellationTabComponent,
     ActivityTimelineComponent,
+    OrderIncompleteCardComponent,
+    TwdPipe,
   ],
   templateUrl: './order-detail-page.component.html',
   styleUrls: ['../../../app.scss', './order-detail-page.component.scss'],
@@ -75,7 +89,8 @@ const FALLBACK_RETURN_URL = '/bookings';
 })
 export class OrderDetailPageComponent implements LeaveConfirmable {
   protected readonly t = ZH_TW;
-  protected readonly sections = ORDER_DETAIL_SECTIONS;
+  /** 分頁列：「文件」實作前先隱藏（4.6），網址帶 section=documents 時落回總覽（parseOrderDetailSection）。 */
+  protected readonly sections = VISIBLE_ORDER_DETAIL_SECTIONS;
   protected readonly fmt = fmtDateTime;
   protected readonly branchName = branchName;
 
@@ -85,9 +100,13 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   private readonly vehicleStore = inject(VehicleStore);
   private readonly memberStore = inject(MemberStore);
   private readonly contractStore = inject(ContractStore);
+  private readonly paymentStore = inject(PaymentStore);
+  private readonly operatorRecoveryStore = inject(OperatorRecoveryStore);
   private readonly data = inject(ORDER_FORM_DATA);
   private readonly gateway = inject(ORDER_SUBMIT_GATEWAY);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+  private readonly incomplete = inject(OrderIncompleteService);
 
   /** 來源頁：建構時導覽仍在進行中，取它的上一個導覽；沒有、或來自訂單頁本身時回訂單列表。 */
   protected readonly returnUrl = (() => {
@@ -125,6 +144,47 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
     const b = this.booking();
     return b ? BOOKING_STATUS_KEY[b.status] : 'archived';
   });
+  // 急迫狀態：與訂單列表同一套判斷（booking-urgency.ts），標題旁顯示、點了跳到對應分頁。
+  protected readonly isOverdueReturn = computed(() => {
+    const b = this.booking();
+    return !!b && isOverdueReturn(b);
+  });
+  protected readonly hasRefundPending = computed(() => {
+    const b = this.booking();
+    return !!b && hasRefundPending(b, this.paymentStore);
+  });
+  protected readonly hasUrgentOperatorRecovery = computed(() => {
+    const b = this.booking();
+    return !!b && hasUrgentOperatorRecovery(b, this.operatorRecoveryStore);
+  });
+  /** 費用卡「已收」「待收」：與款項分頁同一套計算（PaymentStore.summaryFor）；沒有報價快照時仍算得出已收。 */
+  protected readonly paymentSummary = computed(() => {
+    const b = this.booking();
+    return b ? this.paymentStore.summaryFor(b.id) : undefined;
+  });
+  /**
+   * 費用卡的「待收」：
+   * - 沒有報價快照（舊訂單，例如種子 b9）：應收算不出來，顯示「—」加說明——summaryFor 會把應收當 0，
+   *   已收 700 就變成「待收 −NT$700」，看起來像溢收，其實只是沒有報價。
+   * - 待收為負：改寫「溢收 NT$X」並用警示色（與建單頁收款區塊、摘要欄同一種說法）。
+   */
+  protected readonly balance = computed<{ kind: 'due' | 'overpaid' | 'unquoted'; amount: number } | undefined>(() => {
+    const b = this.booking();
+    const summary = this.paymentSummary();
+    if (!b || !summary) return undefined;
+    if (!b.priceBreakdown) return { kind: 'unquoted', amount: 0 };
+    return summary.balanceDue < 0
+      ? { kind: 'overpaid', amount: -summary.balanceDue }
+      : { kind: 'due', amount: summary.balanceDue };
+  });
+  /**
+   * 4.1：總覽最上方的待補卡——與建立訂單摘要欄的「建立後待補」同一套規則，改吃這筆訂單的實際紀錄
+   * （款項、合約版本、承租人的證件）。已取消、已完成的訂單沒有待補（空陣列，卡片不出現）。
+   */
+  protected readonly incompleteItems = computed(() => {
+    const b = this.booking();
+    return b ? this.incomplete.itemsFor(b) : [];
+  });
   /** 沿用既有編輯入口的條件：只有尚未取車（已預訂）的訂單可以編輯。 */
   readonly canEdit = computed(() => this.booking()?.status === 'reserved');
   /** 需調度：取車據點與車輛所在據點不同；只有尚未取車的訂單才有意義（與行事曆一致）。 */
@@ -155,6 +215,15 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
   constructor() {
     const destroyRef = inject(DestroyRef);
     destroyRef.onDestroy(() => this.behaviors?.unsubscribe());
+
+    // 2.1：頁首麵包屑「訂單管理」› 大標題＝承租人姓名；「← 返回」交給頁首（回 returnUrl，
+    // 可能是來源頁而非固定回列表，跟麵包屑的上一層不一定相同，所以另外帶 backTo）。
+    // 狀態 chip／急迫徽章改在 template 用 appHeaderTitleExtra 登記，渲染在頁首標題旁。
+    provideHeaderTitle(() => ({
+      title: this.member()?.name ?? '—',
+      breadcrumbs: [{ label: this.t.nav.bookings, route: '/bookings' }],
+      backTo: this.returnUrl,
+    }));
 
     // 同一個元件換到另一筆訂單（/orders/a → /orders/b）時，離開編輯狀態。
     this.route.paramMap
@@ -189,6 +258,22 @@ export class OrderDetailPageComponent implements LeaveConfirmable {
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+  }
+
+  /** 點了待補卡的某一項：款項、合約切到那個分頁；Email、證件、駕駛資格存在會員層，開承租人的會員資料。 */
+  protected onIncompleteSelected(item: OrderIncompleteItem): void {
+    if (item.target === 'renter') {
+      this.openRenterDialog();
+      return;
+    }
+    this.selectSection(item.target);
+  }
+
+  /** 承租人的會員資料（與會員頁同一個視窗：基本資料、證件、駕駛資格）；存檔後待補卡會跟著更新。 */
+  protected openRenterDialog(): void {
+    const member = this.member();
+    if (!member) return;
+    this.dialog.open(MemberFormDialogComponent, { data: member, width: '640px', maxWidth: '92vw' });
   }
 
   isSectionDisabled(section: OrderDetailSection): boolean {

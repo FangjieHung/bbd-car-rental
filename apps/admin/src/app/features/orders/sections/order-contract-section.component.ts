@@ -7,6 +7,7 @@ import { CONTRACT_SIGNING_LABELS } from '@car-rental/contract-signing';
 import { ContractSnapshot } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { OrderForm } from '../order-form/order-form';
 import { OrderContractSigning } from '../order-form/order-form-derived';
 
@@ -16,7 +17,7 @@ import { OrderContractSigning } from '../order-form/order-form-derived';
  */
 @Component({
   selector: 'app-order-contract-section',
-  imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, TwdPipe],
   templateUrl: './order-contract-section.component.html',
   styleUrls: ['./order-section.scss', './order-contract-section.component.scss'],
 })

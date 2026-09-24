@@ -21,8 +21,10 @@ import {
   ReminderStatus,
   OperatorRecoveryCase,
   AuditEntry,
+  PrepTask,
 } from '../models';
 import { Repository } from './repository';
+import { createInMemoryRepo } from './testing';
 
 export const VEHICLE_REPO = new InjectionToken<Repository<Vehicle>>('VEHICLE_REPO');
 export const MEMBER_REPO = new InjectionToken<Repository<Member>>('MEMBER_REPO');
@@ -71,3 +73,15 @@ export const OPERATOR_RECOVERY_CASE_REPO = new InjectionToken<Repository<Operato
   'OPERATOR_RECOVERY_CASE_REPO',
 );
 export const AUDIT_ENTRY_REPO = new InjectionToken<Repository<AuditEntry>>('AUDIT_ENTRY_REPO');
+
+/**
+ * 4.3 整備待辦（見 PrepTask）。與上面的 token 不同，這裡帶一個「空的記憶體 repo」預設值：
+ * 還車流程（admin 的 HandoverStore.performReturn）現在會寫入整備待辦，而既有測試各自手動列舉
+ * provider（含其他批次負責的訂單詳情／交還車元件測試），不會知道這個新 token——沒有預設值的話，
+ * 只要測試裡建得出 HandoverStore 就會整串 DI 失敗。正式環境由 admin 的 app.config.ts 明確提供
+ * localStorage 版本（cr.prepTasks），這個預設值只有在沒人提供時才會用到，也不會跨測試留下資料。
+ */
+export const PREP_TASK_REPO = new InjectionToken<Repository<PrepTask>>('PREP_TASK_REPO', {
+  providedIn: 'root',
+  factory: () => createInMemoryRepo<PrepTask>(),
+});

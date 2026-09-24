@@ -2,11 +2,17 @@
 import { Provider } from '@angular/core';
 import {
   ADDON_REPO,
+  AUDIT_ENTRY_REPO,
   BOOKING_REPO,
+  CANCELLATION_CASE_REPO,
   CHARGE_ADJUSTMENT_REPO,
   CONTRACT_VERSION_REPO,
+  CUSTOMER_CREDIT_LEDGER_REPO,
+  DRIVER_CREDENTIAL_REPO,
+  IDENTITY_DOCUMENT_REPO,
   MAINTENANCE_REPO,
   MEMBER_REPO,
+  OPERATOR_RECOVERY_CASE_REPO,
   PAYMENT_REPO,
   PRICING_PLAN_REPO,
   REFUND_REPO,
@@ -17,10 +23,16 @@ import {
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import {
   AddOn,
+  AuditEntry,
+  CancellationCase,
   ChargeAdjustment,
   ContractVersion,
+  CustomerCreditLedgerEntry,
+  DriverCredential,
+  IdentityDocument,
   MaintenanceRecord,
   Member,
+  OperatorRecoveryCase,
   PaymentRecord,
   PricingPlan,
   RefundRecord,
@@ -30,6 +42,10 @@ import {
   Vehicle,
 } from '../../core/models';
 import { ReminderGateway } from '../../core/services/reminder.gateway';
+import { OcrGateway } from '../../core/services/ocr.gateway';
+import { MockOcrGateway } from '../../core/services/mock-ocr.gateway';
+import { DriverEligibilityGateway } from '../../core/services/driver-eligibility.gateway';
+import { MockDriverEligibilityGateway } from '../../core/services/mock-driver-eligibility.gateway';
 
 export function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
   return {
@@ -64,6 +80,13 @@ export interface OrderRepoOptions {
   bookings?: RentalBooking[];
   addOns?: AddOn[];
   contracts?: ContractVersion[];
+  /** 訂單詳情標題旁的急迫狀態：退款待處理。 */
+  refunds?: RefundRecord[];
+  /** 訂單詳情標題旁的急迫狀態：業者復原處理中。 */
+  operatorRecoveryCases?: OperatorRecoveryCase[];
+  /** 會員的證件紀錄（待補「證件未查核」「駕駛資格未查核」、第 2 步預填駕駛資格）。 */
+  identityDocuments?: IdentityDocument[];
+  driverCredentials?: DriverCredential[];
 }
 
 export function createOrderRepos(options: OrderRepoOptions = {}) {
@@ -72,8 +95,14 @@ export function createOrderRepos(options: OrderRepoOptions = {}) {
     memberRepo: createInMemoryRepo<Member>(options.members ?? []),
     bookingRepo: createInMemoryRepo<RentalBooking>(options.bookings ?? []),
     paymentRepo: createInMemoryRepo<PaymentRecord>([]),
+    refundRepo: createInMemoryRepo<RefundRecord>(options.refunds ?? []),
     contractRepo: createInMemoryRepo<ContractVersion>(options.contracts ?? []),
     reminderStatusRepo: createInMemoryRepo<ReminderStatus>([]),
+    operatorRecoveryCaseRepo: createInMemoryRepo<OperatorRecoveryCase>(options.operatorRecoveryCases ?? []),
+    identityDocumentRepo: createInMemoryRepo<IdentityDocument>(options.identityDocuments ?? []),
+    driverCredentialRepo: createInMemoryRepo<DriverCredential>(options.driverCredentials ?? []),
+    /** 互惠資格查核的開發期 mock；測試可用 setFixture 讓某國家查核為「符合」。 */
+    eligibilityGateway: new MockDriverEligibilityGateway(),
     reminderGateway: {
       schedule: async () => ({ state: 'scheduled' as const }),
       cancel: async () => undefined,
@@ -91,11 +120,24 @@ export function createOrderRepos(options: OrderRepoOptions = {}) {
     },
     { provide: ADDON_REPO, useValue: createInMemoryRepo<AddOn>(options.addOns ?? []) },
     { provide: PAYMENT_REPO, useValue: repos.paymentRepo },
-    { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>([]) },
+    { provide: REFUND_REPO, useValue: repos.refundRepo },
     { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>([]) },
     { provide: CONTRACT_VERSION_REPO, useValue: repos.contractRepo },
     { provide: REMINDER_STATUS_REPO, useValue: repos.reminderStatusRepo },
     { provide: ReminderGateway, useValue: repos.reminderGateway },
+    // 訂單詳情標題旁的急迫狀態會注入 OperatorRecoveryStore，牽出 CancellationStore／CreditStore
+    // 整串 DI 圖；即使測試不呼叫相關方法，元件建構時仍會整串解析，缺一個 provider 就整個炸掉
+    // （沿用 bookings-page.component.spec.ts 的 provideOrderDetailRepos 教訓）。
+    { provide: CANCELLATION_CASE_REPO, useValue: createInMemoryRepo<CancellationCase>([]) },
+    { provide: CUSTOMER_CREDIT_LEDGER_REPO, useValue: createInMemoryRepo<CustomerCreditLedgerEntry>([]) },
+    { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>([]) },
+    { provide: OPERATOR_RECOVERY_CASE_REPO, useValue: repos.operatorRecoveryCaseRepo },
+    // 4.1／4.2：待補判斷與建立訂單會讀寫會員的證件紀錄（DocumentStore）。
+    { provide: IDENTITY_DOCUMENT_REPO, useValue: repos.identityDocumentRepo },
+    { provide: DRIVER_CREDENTIAL_REPO, useValue: repos.driverCredentialRepo },
+    MockOcrGateway,
+    { provide: OcrGateway, useExisting: MockOcrGateway },
+    { provide: DriverEligibilityGateway, useValue: repos.eligibilityGateway },
   ];
   return { ...repos, providers };
 }

@@ -4,14 +4,17 @@ import { InsurancePlan, PaymentRecord, RentalBooking } from '../../../core/model
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { ContractStore } from '../../../stores/contract/contract.store';
 import { BookingStore } from '../../../stores/booking/booking.store';
+import { DocumentStore } from '../../../stores/document/document.store';
 import { ORDER_FORM_DATA } from '../order-form/order-form-data';
 import { ORDER_SUBMIT_GATEWAY } from '../order-form/order-submit-gateway';
 import {
   NO_INSURANCE_VALUE,
   OrderForm,
   OrderFormInitial,
+  addPaymentDraft,
   createOrderForm,
   orderFormInitialFromBooking,
+  setPaymentDrafts,
 } from '../order-form/order-form';
 import { buildContractSnapshot } from '../order-form/contract-snapshot';
 import { computeOrderQuote, selectedVehicleOf } from '../order-form/order-form';
@@ -49,7 +52,7 @@ describe('AdminOrderSubmitGateway.create（搬自舊建單 dialog 的原子寫�
     const { gateway, memberRepo, bookingRepo, paymentRepo, contractRepo, reminderStatusRepo } = setup();
     const form = baselineForm();
     form.controls.pricing.controls.depositRequired.setValue(600);
-    form.controls.payments.controls.drafts.setValue([{ purpose: 'deposit', method: 'cash', amount: 600 }]);
+    setPaymentDrafts(form, [{ purpose: 'deposit', method: 'cash', amount: 600 }]);
 
     const id = await gateway.create({ value: form.getRawValue() });
 
@@ -63,6 +66,20 @@ describe('AdminOrderSubmitGateway.create（搬自舊建單 dialog 的原子寫�
     expect(contractRepo.getAll()).toHaveLength(1);
     expect(contractRepo.getAll()[0]).toMatchObject({ bookingId: id, version: 1, status: 'draft' });
     expect(reminderStatusRepo.getAll().length).toBeGreaterThan(0);
+  });
+
+  it('BUG 重現／修復：新增一列款項後直接改列上的金額欄位（不呼叫任何「新增」以外的提交動作），送出仍會寫入款項紀錄', async () => {
+    const { gateway, paymentRepo } = setup();
+    const form = baselineForm();
+    // 對應畫面上按一次「＋ 新增一筆收款」：新增一列，此時金額欄位還是預設值。
+    addPaymentDraft(form, { method: 'cash', purpose: 'deposit', amount: 0 });
+    // 「列表就是紀錄」：直接改列上的金額欄位本身，不透過任何獨立於列表之外的輸入列或
+    // 「新增」以外的提交動作——這正是舊版「打了金額沒按＋新增款項，這筆錢被默默丟掉」的情境。
+    form.controls.payments.controls.drafts.at(0)?.controls.amount.setValue(500);
+
+    const id = await gateway.create({ value: form.getRawValue() });
+
+    expect(paymentRepo.getAll().map((p) => [p.bookingId, p.amount])).toEqual([[id, 500]]);
   });
 
   it('鎖定既有會員時沿用該會員、不新建', async () => {
@@ -136,7 +153,7 @@ describe('AdminOrderSubmitGateway.create（搬自舊建單 dialog 的原子寫�
       return originalCreate(item);
     });
     const form = baselineForm();
-    form.controls.payments.controls.drafts.setValue([
+    setPaymentDrafts(form, [
       { purpose: 'deposit', method: 'cash', amount: 100 },
       { purpose: 'balance', method: 'cash', amount: 200 },
     ]);
@@ -254,5 +271,139 @@ describe('AdminOrderSubmitGateway.update（沿用舊 dialog 編輯模式）', ()
 
     expect(cancel).toHaveBeenCalledTimes(2);
     expect(reminderStatusRepo.getAll()).toHaveLength(2);
+  });
+});
+
+describe('AdminOrderSubmitGateway 證件紀錄（4.2：第 2 步的駕駛資格與證件號碼）', () => {
+  it('新承租人：證件號碼→建立並確認身分證明文件；駕照→建立並確認駕駛資格（會員層、可跨訂單重用）', async () => {
+    const { gateway, memberRepo, identityDocumentRepo, driverCredentialRepo } = setup();
+    const form = baselineForm();
+    form.controls.renter.patchValue({ idNumber: 'A123456789' });
+    form.controls.driver.patchValue({
+      licenseNumber: 'TL-9001',
+      licenseExpiryDate: '2030-05-31',
+      originalVehicleClassText: '普通小型車',
+      standardizedVehicleClass: 'car',
+    });
+
+    await gateway.create({ value: form.getRawValue() });
+
+    const memberId = memberRepo.getAll()[0].id;
+    expect(identityDocumentRepo.getAll()).toEqual([
+      expect.objectContaining({
+        memberId,
+        type: 'taiwan_id',
+        documentNumber: 'A123456789',
+        issuingCountry: 'TW',
+        version: 1,
+        verification: expect.objectContaining({ state: 'verified', verifiedBy: ZH_TW.layout.adminUser }),
+      }),
+    ]);
+    expect(driverCredentialRepo.getAll()).toEqual([
+      expect.objectContaining({
+        memberId,
+        type: 'taiwan_license',
+        documentNumber: 'TL-9001',
+        issuingCountry: 'TW',
+        expiryDate: '2030-05-31',
+        originalVehicleClassText: '普通小型車',
+        standardizedVehicleClass: 'car',
+        version: 1,
+        verification: expect.objectContaining({ state: 'verified' }),
+      }),
+    ]);
+  });
+
+  it('駕駛資格留空：不建立任何駕駛資格紀錄（之後在會員資料補，列入待補）', async () => {
+    const { gateway, identityDocumentRepo, driverCredentialRepo } = setup();
+    await gateway.create({ value: baselineForm().getRawValue() });
+    expect(identityDocumentRepo.getAll()).toHaveLength(0);
+    expect(driverCredentialRepo.getAll()).toHaveLength(0);
+  });
+
+  it('外國旅客：駕照走外國駕照、建立後立即查核互惠資格（同會員視窗）', async () => {
+    const { gateway, driverCredentialRepo, identityDocumentRepo, eligibilityGateway } = setup();
+    eligibilityGateway.setFixture('JP', 'foreign_license', { reciprocityStatus: 'eligible', legalUseThroughDate: '2026-12-31' });
+    const form = baselineForm();
+    form.controls.renter.patchValue({ kind: 'foreign_visitor', nationality: 'JP', idNumber: 'TR1234567' });
+    form.controls.driver.patchValue({ licenseNumber: 'JP-1', standardizedVehicleClass: 'car' });
+
+    await gateway.create({ value: form.getRawValue() });
+
+    expect(identityDocumentRepo.getAll()[0]).toMatchObject({ type: 'passport', issuingCountry: 'JP' });
+    expect(driverCredentialRepo.getAll()[0]).toMatchObject({
+      type: 'foreign_license',
+      issuingCountry: 'JP',
+      reciprocityStatus: 'eligible',
+      legalUseThroughDate: '2026-12-31',
+    });
+  });
+
+  it('既有會員：駕照沒改就沿用既有紀錄（不重複建立）；改了才追加新版本（version 遞增、指回前一版）', async () => {
+    const member = { id: 'm1', name: '王小明', phone: '0912345678', kind: 'local' as const };
+    const existing = {
+      id: 'dc-old',
+      memberId: 'm1',
+      type: 'taiwan_license' as const,
+      documentNumber: 'TL-1',
+      issuingCountry: 'TW',
+      originalVehicleClassText: '普通小型車',
+      standardizedVehicleClass: 'car' as const,
+      verification: { state: 'ocr_extracted' as const },
+      reciprocityStatus: 'pending' as const,
+      version: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const { gateway, driverCredentialRepo, identityDocumentRepo } = setup({
+      vehicles: [makeVehicle(), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999' })],
+      members: [member],
+      driverCredentials: [existing],
+    });
+
+    const unchanged = baselineForm({ member });
+    unchanged.controls.driver.patchValue({
+      licenseNumber: 'TL-1',
+      originalVehicleClassText: '普通小型車',
+      standardizedVehicleClass: 'car',
+    });
+    await gateway.create({ value: unchanged.getRawValue() });
+    expect(driverCredentialRepo.getAll()).toEqual([existing]);
+    // 既有會員的證件號碼欄位是鎖定的（沒有人重新核對），不建立身分證明文件。
+    expect(identityDocumentRepo.getAll()).toHaveLength(0);
+
+    const changed = baselineForm({ member, vehicleId: 'v2' });
+    changed.controls.driver.patchValue({ licenseNumber: 'TL-2', standardizedVehicleClass: 'car' });
+    await gateway.create({ value: changed.getRawValue() });
+    const [, renewed] = driverCredentialRepo.getAll();
+    expect(renewed).toMatchObject({ documentNumber: 'TL-2', version: 2, supersededId: 'dc-old' });
+    expect(renewed.verification.state).toBe('verified');
+  });
+
+  it('填了駕照號碼卻沒有車種：整筆拒絕（不默默丟掉已填的駕照，也不存一筆沒有車種的紀錄）', async () => {
+    const { gateway, bookingRepo, driverCredentialRepo } = setup();
+    const form = baselineForm();
+    form.controls.driver.patchValue({ licenseNumber: 'TL-9001' });
+    await expect(gateway.create({ value: form.getRawValue() })).rejects.toThrow(
+      ZH_TW.orderForm.problems.driverClassRequired,
+    );
+    expect(bookingRepo.getAll()).toHaveLength(0);
+    expect(driverCredentialRepo.getAll()).toHaveLength(0);
+  });
+
+  it('證件寫到一半失敗：這次新建的證件、訂單與會員都補償清除', async () => {
+    const { gateway, bookingRepo, memberRepo, identityDocumentRepo, driverCredentialRepo } = setup();
+    vi.spyOn(TestBed.inject(DocumentStore), 'confirmDriverCredential').mockImplementation(() => {
+      throw new Error('模擬駕駛資格確認失敗');
+    });
+    const form = baselineForm();
+    form.controls.renter.patchValue({ idNumber: 'A123456789' });
+    form.controls.driver.patchValue({ licenseNumber: 'TL-9001', standardizedVehicleClass: 'car' });
+
+    await expect(gateway.create({ value: form.getRawValue() })).rejects.toThrow('模擬駕駛資格確認失敗');
+    expect(identityDocumentRepo.getAll()).toHaveLength(0);
+    expect(driverCredentialRepo.getAll()).toHaveLength(0);
+    expect(bookingRepo.getAll()).toHaveLength(0);
+    expect(memberRepo.getAll()).toHaveLength(0);
   });
 });

@@ -1,5 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
+import { formatTwd } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
 import { AUDIT_ENTRY_REPO } from '../../../core/repositories/tokens';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { PaymentStore } from '../../../stores/payment/payment.store';
@@ -105,9 +107,12 @@ export class ActivityTimelineComponent {
     return events.sort((a, b) => a.at.localeCompare(b.at));
   });
 
-  /** 顯示用的簡短時間字串（YYYY-MM-DD HH:mm），`<time>` 的 datetime 屬性另外保留完整 ISO。 */
+  /**
+   * 顯示用的簡短時間字串（1.8：改用全站共用格式，不可再用字串切片——iso 是 UTC，
+   * 切片會露出跟本地時間差 8 小時的錯誤日期／時間）。`<time>` 的 datetime 屬性另外保留完整 ISO。
+   */
   protected formatAt(iso: string): string {
-    return iso.length >= 16 ? `${iso.slice(0, 10)} ${iso.slice(11, 16)}` : iso;
+    return fmtDateTime(iso);
   }
 
   private paymentEvents(bookingId: string): ActivityEvent[] {
@@ -115,7 +120,7 @@ export class ActivityTimelineComponent {
       id: `payment-${p.id}`,
       at: p.receivedAt,
       kind: 'payment' as const,
-      title: `${this.t.activityTimeline.kindLabels['payment']}：${p.amount} 元（${this.t.bookingForm.paymentMethodLabels[p.method] ?? p.method}）`,
+      title: `${this.t.activityTimeline.kindLabels['payment']}：${formatTwd(p.amount)}（${this.t.bookingForm.paymentMethodLabels[p.method] ?? p.method}）`,
       detail: `${this.t.bookingForm.paymentPurposeLabels[p.purpose] ?? p.purpose} · ${this.t.paymentPanel.recordStatusLabels[p.status] ?? p.status}`,
       actor: p.handledBy,
     }));
@@ -126,7 +131,7 @@ export class ActivityTimelineComponent {
       id: `adjustment-${a.id}`,
       at: a.createdAt,
       kind: 'adjustment' as const,
-      title: `${this.t.activityTimeline.kindLabels['adjustment']}：${a.amount} 元（${a.kind}）`,
+      title: `${this.t.activityTimeline.kindLabels['adjustment']}：${formatTwd(a.amount)}（${a.kind}）`,
       ...(a.reason ? { detail: a.reason } : {}),
       actor: a.handledBy,
     }));
@@ -203,7 +208,7 @@ export class ActivityTimelineComponent {
         kind: 'cancellation',
         title: `${this.t.activityTimeline.kindLabels['cancellation']}：${
           this.t.cancellationPanel.responsibilityLabels[c.responsibility] ?? c.responsibility
-        }（應退 ${c.totalCashDue} 元）`,
+        }（應退 ${formatTwd(c.totalCashDue)}）`,
         detail: c.reason,
       });
       if (c.approvedAt) {
@@ -237,7 +242,7 @@ export class ActivityTimelineComponent {
         id: `refund-${r.id}`,
         at,
         kind: 'refund',
-        title: `${this.t.activityTimeline.kindLabels['refund']}：${r.amount} 元（${this.t.bookingForm.paymentMethodLabels[r.method] ?? r.method}）`,
+        title: `${this.t.activityTimeline.kindLabels['refund']}：${formatTwd(r.amount)}（${this.t.bookingForm.paymentMethodLabels[r.method] ?? r.method}）`,
         detail: this.t.activityTimeline.refundStatusLabels[r.status] ?? r.status,
         actor: r.handledBy,
       });
@@ -252,7 +257,7 @@ export class ActivityTimelineComponent {
           id: `credit-${entry.id}`,
           at: entry.occurredAt,
           kind: 'credit',
-          title: `${this.t.activityTimeline.kindLabels['credit']}：${entry.amount} 元（${this.t.customerCreditPanel.typeLabels[entry.type] ?? entry.type}）`,
+          title: `${this.t.activityTimeline.kindLabels['credit']}：${formatTwd(entry.amount)}（${this.t.customerCreditPanel.typeLabels[entry.type] ?? entry.type}）`,
           ...(entry.reason ? { detail: entry.reason } : {}),
           actor: entry.handledBy,
         });
@@ -288,7 +293,7 @@ export class ActivityTimelineComponent {
           id: `operator-recovery-taxi-${taxi.id}`,
           at: taxi.occurredAt,
           kind: 'operator_recovery',
-          title: `${this.t.activityTimeline.kindLabels['operator_recovery']}：計程車車資補貼 ${taxi.amount} 元`,
+          title: `${this.t.activityTimeline.kindLabels['operator_recovery']}：計程車車資補貼 ${formatTwd(taxi.amount)}`,
           actor: taxi.notedBy,
         });
       }
@@ -297,7 +302,7 @@ export class ActivityTimelineComponent {
           id: `operator-recovery-goodwill-${goodwill.id}`,
           at: goodwill.occurredAt,
           kind: 'operator_recovery',
-          title: `${this.t.activityTimeline.kindLabels['operator_recovery']}：善意補償 ${goodwill.amount} 元（${
+          title: `${this.t.activityTimeline.kindLabels['operator_recovery']}：善意補償 ${formatTwd(goodwill.amount)}（${
             this.t.operatorRecoveryPanel.goodwillTypeLabels[goodwill.type] ?? goodwill.type
           }）`,
           actor: goodwill.notedBy,

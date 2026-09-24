@@ -5,6 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { DataTableCellDirective, DataTableColumn, DataTableComponent } from '@car-rental/ui';
+import { formatTwd } from '@car-rental/domain';
 import { Partner } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { PartnerStore } from '../../../stores/partner/partner.store';
@@ -56,6 +57,16 @@ export class PartnersPageComponent {
   onExportFailed(e: Error): void {
     console.error('DataTable 匯出失敗', e);
     this.snackBar.open(this.labels.exportFailedText, undefined, { duration: 3000 });
+  }
+
+  /**
+   * 1.8：「退佣方式」欄補單位——百分比類型寫「10%」，固定額類型寫「每車每日 NT$100」，
+   * 不能只顯示裸數字（畫面上完全看不出 10 是百分比還是固定金額）。
+   */
+  protected commissionValueLabel(p: Partner): string {
+    return p.commission.type === 'percent'
+      ? `${p.commission.value}%`
+      : `${this.t.partner.commissionPerVehicleDayPrefix}${formatTwd(p.commission.value)}`;
   }
 
   async openForm(partner: Partner | null): Promise<void> {

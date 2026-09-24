@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
-import { VehiclesPageComponent } from './vehicles-page.component';
+import { LOCATION_FILTER_UNSET, VehiclesPageComponent } from './vehicles-page.component';
 import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { Vehicle, RentalBooking, MaintenanceRecord } from '../../../core/models';
@@ -115,12 +115,6 @@ describe('VehiclesPageComponent filtering', () => {
 
   it('vehicles 頁面提供批次選取狀態，預設沒有已選車輛', () => {
     expect(component.selectedVehicles()).toEqual([]);
-  });
-
-  it('viewMode 預設為 table，可切換為 timeline', () => {
-    expect(component.viewMode()).toBe('table');
-    component.viewMode.set('timeline');
-    expect(component.viewMode()).toBe('timeline');
   });
 });
 
@@ -324,5 +318,194 @@ describe('VehiclesPageComponent 保養提醒釘選與徽章', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.mtn-badge--danger')).toBeTruthy();
     expect(el.querySelector('.mtn-badge--warning')).toBeTruthy();
+  });
+});
+
+/**
+ * 1.4：總覽「待保養 N」帶 ?maintenance=due 進來，車輛清單只顯示有保養警示（逾期或即將
+ * 到期）的車，並顯示可移除的篩選標籤「只看待保養」。
+ */
+describe('VehiclesPageComponent 待保養篩選（?maintenance=due）', () => {
+  function createComponent(vehicles: Vehicle[], records: MaintenanceRecord[], maintenanceParam: string | null) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap(maintenanceParam ? { maintenance: maintenanceParam } : {}),
+            },
+          },
+        },
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
+      ],
+    });
+    return TestBed.createComponent(VehiclesPageComponent);
+  }
+
+  it('網址帶 ?maintenance=due 時，只顯示有保養警示（逾期或即將到期）的車', () => {
+    const vehicles = [
+      makeVehicle({ id: 'none', mileage: 100 }),
+      makeVehicle({ id: 'overdue', mileage: 1000 }),
+      makeVehicle({ id: 'upcoming', mileage: 800 }),
+    ];
+    const records = [
+      makeMaintenanceRecord({ id: 'r-overdue', vehicleId: 'overdue', nextDueMileage: 900 }),
+      makeMaintenanceRecord({ id: 'r-upcoming', vehicleId: 'upcoming', nextDueMileage: 900 }),
+    ];
+    const fixture = createComponent(vehicles, records, 'due');
+
+    expect(fixture.componentInstance.maintenanceOnlyFilter()).toBe(true);
+    expect(fixture.componentInstance.filteredVehicles().map((v) => v.id).sort()).toEqual([
+      'overdue',
+      'upcoming',
+    ]);
+  });
+
+  it('沒有帶參數時不套用這個篩選，顯示全部車輛', () => {
+    const vehicles = [makeVehicle({ id: 'none' }), makeVehicle({ id: 'overdue', mileage: 1000 })];
+    const records = [makeMaintenanceRecord({ vehicleId: 'overdue', nextDueMileage: 900 })];
+    const fixture = createComponent(vehicles, records, null);
+
+    expect(fixture.componentInstance.maintenanceOnlyFilter()).toBe(false);
+    expect(fixture.componentInstance.filteredVehicles()).toHaveLength(2);
+  });
+
+  // 畫面上的「只看待保養」標籤（.maintenance-only-filter-chip，樣板 vehicles-page.component.html）
+  // 是透過 HeaderToolbarSlot 登記到 HeaderComponent 渲染（見 header-toolbar-slot.ts），
+  // 不在這個頁面元件自己的 fixture DOM 裡，所以這裡驗證 clearMaintenanceOnlyFilter() 本身
+  // 的行為——按鈕點擊只是呼叫它，樣板已用 @if (maintenanceOnlyFilter()) 控制顯示。
+  it('clearMaintenanceOnlyFilter 清除篩選狀態，車輛清單恢復顯示全部', () => {
+    const vehicles = [makeVehicle({ id: 'none' }), makeVehicle({ id: 'overdue', mileage: 1000 })];
+    const records = [makeMaintenanceRecord({ vehicleId: 'overdue', nextDueMileage: 900 })];
+    const fixture = createComponent(vehicles, records, 'due');
+    const component = fixture.componentInstance;
+    expect(component.maintenanceOnlyFilter()).toBe(true);
+    expect(component.filteredVehicles()).toHaveLength(1);
+
+    component.clearMaintenanceOnlyFilter();
+
+    expect(component.maintenanceOnlyFilter()).toBe(false);
+    expect(component.filteredVehicles()).toHaveLength(2);
+  });
+
+  it('保養警示以外的一般篩選（車種／狀態／搜尋）可以跟待保養篩選同時套用', () => {
+    const vehicles = [
+      makeVehicle({ id: 'overdue-car', category: 'car', mileage: 1000 }),
+      makeVehicle({ id: 'overdue-scooter', category: 'scooter', mileage: 1000 }),
+    ];
+    const records = [
+      makeMaintenanceRecord({ id: 'r1', vehicleId: 'overdue-car', nextDueMileage: 900 }),
+      makeMaintenanceRecord({ id: 'r2', vehicleId: 'overdue-scooter', nextDueMileage: 900 }),
+    ];
+    const fixture = createComponent(vehicles, records, 'due');
+
+    fixture.componentInstance.typeFilter.set('car');
+
+    expect(fixture.componentInstance.filteredVehicles().map((v) => v.id)).toEqual(['overdue-car']);
+  });
+});
+
+/** 3.6：車輛清單加「所在據點」欄與據點篩選（全部／各據點／未設定）。 */
+describe('VehiclesPageComponent 所在據點欄與篩選', () => {
+  function createComponent(vehicles: Vehicle[]) {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    return TestBed.createComponent(VehiclesPageComponent);
+  }
+
+  const vehicles = [
+    makeVehicle({ id: 'v-airport', plateNumber: 'AAA-111', location: 'mzg-airport' }),
+    makeVehicle({ id: 'v-store', plateNumber: 'BBB-222', location: 'mzg-store' }),
+    makeVehicle({ id: 'v-unset', plateNumber: 'CCC-333' }), // location 未設定
+  ];
+
+  it('沒有套用據點篩選時顯示全部', () => {
+    const fixture = createComponent(vehicles);
+    expect(fixture.componentInstance.filteredVehicles()).toHaveLength(3);
+  });
+
+  it('依所在據點篩選：只留該據點的車', () => {
+    const fixture = createComponent(vehicles);
+    fixture.componentInstance.locationFilter.set('mzg-airport');
+    expect(fixture.componentInstance.filteredVehicles().map((v) => v.id)).toEqual(['v-airport']);
+  });
+
+  it('據點篩選「未設定」：只留所在據點未設定的車', () => {
+    const fixture = createComponent(vehicles);
+    fixture.componentInstance.locationFilter.set(LOCATION_FILTER_UNSET);
+    expect(fixture.componentInstance.filteredVehicles().map((v) => v.id)).toEqual(['v-unset']);
+  });
+
+  it('activeFilterCount 納入據點篩選', () => {
+    const fixture = createComponent(vehicles);
+    expect(fixture.componentInstance.activeFilterCount()).toBe(0);
+    fixture.componentInstance.locationFilter.set('mzg-store');
+    expect(fixture.componentInstance.activeFilterCount()).toBe(1);
+  });
+
+  it('clearFilters 一併清除據點篩選', () => {
+    const fixture = createComponent(vehicles);
+    fixture.componentInstance.locationFilter.set('mzg-store');
+
+    fixture.componentInstance.clearFilters();
+
+    expect(fixture.componentInstance.locationFilter()).toBeNull();
+    expect(fixture.componentInstance.filteredVehicles()).toHaveLength(3);
+  });
+
+  it('據點篩選可與車種／狀態／搜尋等既有篩選同時套用（AND，不是 OR）', () => {
+    const mixed = [
+      makeVehicle({ id: 'airport-scooter', category: 'scooter', location: 'mzg-airport' }),
+      makeVehicle({ id: 'airport-car', category: 'car', location: 'mzg-airport' }),
+      makeVehicle({ id: 'store-scooter', category: 'scooter', location: 'mzg-store' }),
+    ];
+    const fixture = createComponent(mixed);
+    fixture.componentInstance.locationFilter.set('mzg-airport');
+    fixture.componentInstance.typeFilter.set('scooter');
+
+    // 同時符合「所在據點＝機場」與「車種＝機車」的只有 airport-scooter 一台；
+    // 若兩個篩選被誤實作成 OR，store-scooter／airport-car 也會被算進來。
+    expect(fixture.componentInstance.filteredVehicles().map((v) => v.id)).toEqual(['airport-scooter']);
+  });
+
+  it('資料表顯示所在據點欄：已設定顯示據點名稱、未設定顯示「—」', async () => {
+    const fixture = createComponent(vehicles);
+    await fixture.whenStable();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('馬公機場櫃檯');
+    expect(el.textContent).toContain('馬公中正門市');
+    expect(fixture.componentInstance.branchName(undefined)).toBe('—');
+  });
+});
+
+/** 3.5：時間軸搬到總覽，車輛清單頁移除「表格／時間軸」切換，只留表格。 */
+describe('VehiclesPageComponent 時間軸切換已移除', () => {
+  it('頁面上不再有表格／時間軸切換，也不會渲染時間軸元件', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle({ id: 'v1' })]) },
+        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
+      ],
+    });
+    const fixture = TestBed.createComponent(VehiclesPageComponent);
+    await fixture.whenStable();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-timeline-view')).toBeNull();
+    expect(el.querySelector('.ui-card-titleNav')).toBeNull();
+    expect(el.textContent).not.toContain('時間軸');
   });
 });

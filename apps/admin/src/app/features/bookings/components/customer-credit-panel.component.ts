@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { SlicePipe } from '@angular/common';
 import { map } from 'rxjs';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,9 +9,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { CancellationDisposition, PaymentMethod } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { CreditStore } from '../../../stores/credit/credit.store';
+import { PaymentStore } from '../../../stores/payment/payment.store';
 import {
   CancellationDispositionPartialFailureError,
   CancellationStore,
@@ -22,6 +24,12 @@ import {
 } from '../../../stores/cancellation/cancellation.store';
 
 const DISPOSITIONS: CancellationDisposition[] = ['refund', 'credit', 'split'];
+
+/**
+ * 4.6：「取消/退款」分頁把這個 panel 拆成兩段擺——`refund`＝撥付與退款紀錄（「退款」段），
+ * `credit`＝保留金餘額、異動紀錄與展延（「保留金」段）；`all`（預設）兩段都顯示。
+ */
+export type CustomerCreditPanelPart = 'refund' | 'credit' | 'all';
 const REFUND_METHODS: Exclude<PaymentMethod, 'customer_credit'>[] = [
   'cash',
   'credit_card',
@@ -30,7 +38,7 @@ const REFUND_METHODS: Exclude<PaymentMethod, 'customer_credit'>[] = [
 ];
 
 /**
- * 訂單詳情「取消／退款」分頁的撥付區塊。設計文件第 9.3 節：
+ * 訂單詳情「取消／退款」分頁的撥付區塊（4.6 起分成「退款」「保留金」兩段擺，見 part）。設計文件第 9.3 節：
  * - 顧客可選原方式退款、全部轉保留金、或兩者拆分；轉保留金前必須取得顧客明確同意。
  * - 保留金預設 12 個月效期、到期前 30 天提醒；主管可展延且必須留存理由。
  * - 撥付本身（金額試算、退款／保留金紀錄建立、訂單轉 cancelled、稽核紀錄）全部委派給
@@ -41,7 +49,7 @@ const REFUND_METHODS: Exclude<PaymentMethod, 'customer_credit'>[] = [
   selector: 'app-customer-credit-panel',
   imports: [
     ReactiveFormsModule,
-    SlicePipe,
+    TwdPipe,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,
@@ -49,19 +57,29 @@ const REFUND_METHODS: Exclude<PaymentMethod, 'customer_credit'>[] = [
     MatSelectModule,
   ],
   templateUrl: './customer-credit-panel.component.html',
+  styleUrl: './customer-credit-panel.component.scss',
 })
 export class CustomerCreditPanelComponent {
   protected readonly t = ZH_TW;
   protected readonly dispositions = DISPOSITIONS;
+  /** 購物金到期日一律用共用日期時間格式，不可再用 slice pipe 切 ISO 字串。 */
+  protected readonly fmt = fmtDateTime;
   protected readonly refundMethods = REFUND_METHODS;
 
   private readonly cancellationStore = inject(CancellationStore);
   private readonly bookingStore = inject(BookingStore);
   private readonly memberStore = inject(MemberStore);
   private readonly creditStore = inject(CreditStore);
+  private readonly paymentStore = inject(PaymentStore);
   private readonly fb = inject(NonNullableFormBuilder);
 
   readonly bookingId = input.required<string>();
+  readonly part = input<CustomerCreditPanelPart>('all');
+  protected readonly showRefundPart = computed(() => this.part() !== 'credit');
+  protected readonly showCreditPart = computed(() => this.part() !== 'refund');
+
+  /** 這筆訂單的退款紀錄（唯讀）：「退款待處理」的急迫徽章點進這個分頁時，要看得到是哪一筆。 */
+  protected readonly refunds = computed(() => this.paymentStore.refundsFor(this.bookingId()));
 
   protected readonly booking = computed(() => this.bookingStore.bookings().find((b) => b.id === this.bookingId()));
   protected readonly member = computed(() => {
@@ -196,6 +214,8 @@ export class CustomerCreditPanelComponent {
     const member = this.member();
     return member ? this.creditStore.balanceFor(member.id) : 0;
   });
+  /** 有保留金才能展延（4.6：沒有的時候收成一行說明，不給一張用不到的表單）。 */
+  protected readonly canExtend = computed(() => this.balance() > 0);
 
   protected readonly expiringReminders = computed(() => {
     const member = this.member();

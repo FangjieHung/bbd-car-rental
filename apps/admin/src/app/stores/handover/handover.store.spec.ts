@@ -3,12 +3,15 @@ import { TestBed } from '@angular/core/testing';
 import {
   AuditEntry,
   HandoverRecord,
+  needsDispatch,
   PickupReadinessInput,
+  PrepTask,
   RentalBooking,
   ReminderStatus,
   Repository,
   ReturnChargeInput,
   Vehicle,
+  vehicleAvailability,
 } from '@car-rental/domain';
 import {
   AUDIT_ENTRY_REPO,
@@ -17,6 +20,7 @@ import {
   HANDOVER_RECORD_REPO,
   MAINTENANCE_REPO,
   PAYMENT_REPO,
+  PREP_TASK_REPO,
   REFUND_REPO,
   REMINDER_STATUS_REPO,
   VEHICLE_REPO,
@@ -34,6 +38,7 @@ import { BookingStore } from '../booking/booking.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { PaymentStore } from '../payment/payment.store';
 import { ReminderStore } from '../reminder/reminder.store';
+import { PrepStore } from '../prep/prep.store';
 
 /** 可觀測的 fake gateway：讓迴歸測試能斷言 suppressForBooking() 真的透過 cancel() 取消了排程。 */
 class FakeReminderGateway implements ReminderGateway {
@@ -139,12 +144,14 @@ describe('HandoverStore', () => {
   let reminderGateway: FakeReminderGateway;
   let reminderStatusRepo: Repository<ReminderStatus>;
   let auditRepo: Repository<AuditEntry>;
+  let prepStore: PrepStore;
 
   function configure(options: {
     vehicle?: Partial<Vehicle>;
     booking?: Partial<RentalBooking>;
     handoverRepo?: Repository<HandoverRecord>;
     reminderStatuses?: ReminderStatus[];
+    prepRepo?: Repository<PrepTask>;
   } = {}) {
     auditRepo = createInMemoryRepo<AuditEntry>();
     reminderGateway = new FakeReminderGateway();
@@ -165,6 +172,7 @@ describe('HandoverStore', () => {
           useValue: options.handoverRepo ?? createInMemoryRepo<HandoverRecord>(),
         },
         { provide: AUDIT_ENTRY_REPO, useValue: auditRepo },
+        { provide: PREP_TASK_REPO, useValue: options.prepRepo ?? createInMemoryRepo<PrepTask>() },
       ],
     });
     handoverStore = TestBed.inject(HandoverStore);
@@ -172,6 +180,7 @@ describe('HandoverStore', () => {
     vehicleStore = TestBed.inject(VehicleStore);
     paymentStore = TestBed.inject(PaymentStore);
     reminderStore = TestBed.inject(ReminderStore);
+    prepStore = TestBed.inject(PrepStore);
   }
 
   beforeEach(() => configure());
@@ -556,6 +565,46 @@ describe('HandoverStore', () => {
       expect(entries.some((e) => e.action === 'create' && e.entityId === result.record.id)).toBe(true);
     });
 
+    it('3.7（業主問題 #1，暫定）：甲地租乙地還，還車完成後車輛所在據點改為還車據點；之後同車從原據點取車的預訂會被判定為需調度', () => {
+      configure({
+        vehicle: { location: 'mzg-airport' },
+        booking: { pickupLocation: 'mzg-airport', returnLocation: 'mzg-store' },
+      });
+      pickUpFirst();
+      const charges = handoverStore.calculateCharges(chargeInput());
+
+      handoverStore.performReturn({
+        bookingId: 'b1',
+        record: baseRecordInput({ actualAt: T_RETURN_DUE }),
+        charges,
+        actor: { actorId: 'staff1', actorName: '櫃檯人員' },
+      });
+
+      const vehicle = vehicleStore.vehicles()[0];
+      expect(vehicle.location).toBe('mzg-store');
+      // 下一筆若仍從原據點（機場）取車，此時應被判定為需調度；改在還車據點（門市）取車則不需要。
+      expect(needsDispatch(vehicle.location, 'mzg-airport')).toBe(true);
+      expect(needsDispatch(vehicle.location, 'mzg-store')).toBe(false);
+    });
+
+    it('還車據點與取車據點相同（原地還車）：車輛所在據點維持同一個據點，不受影響', () => {
+      configure({
+        vehicle: { location: 'mzg-airport' },
+        booking: { pickupLocation: 'mzg-airport', returnLocation: 'mzg-airport' },
+      });
+      pickUpFirst();
+      const charges = handoverStore.calculateCharges(chargeInput());
+
+      handoverStore.performReturn({
+        bookingId: 'b1',
+        record: baseRecordInput({ actualAt: T_RETURN_DUE }),
+        charges,
+        actor: { actorId: 'staff1', actorName: '櫃檯人員' },
+      });
+
+      expect(vehicleStore.vehicles()[0].location).toBe('mzg-airport');
+    });
+
     it('人工調整金額且附理由：ChargeAdjustment 帶有該理由', () => {
       pickUpFirst();
       const charges = handoverStore.calculateCharges(
@@ -619,6 +668,91 @@ describe('HandoverStore', () => {
       expect(err.failedStep).toBe('save_record');
       expect(vehicleStore.vehicles()[0].status).toBe('rented');
       expect(bookingStore.bookings()[0].status).toBe('in_progress');
+    });
+
+    it('4.3：還車完成後列入一筆待整備（車輛、觸發它的訂單、實際還車時間、還車據點），未完成', () => {
+      configure({
+        vehicle: { location: 'mzg-airport' },
+        booking: { pickupLocation: 'mzg-airport', returnLocation: 'mzg-store' },
+      });
+      pickUpFirst();
+      const actualAt = '2026-07-22T18:40:00.000Z';
+
+      const result = handoverStore.performReturn({
+        bookingId: 'b1',
+        record: baseRecordInput({ actualAt }),
+        charges: handoverStore.calculateCharges(chargeInput({ actualReturnAt: actualAt })),
+        actor: { actorId: 'staff1', actorName: '櫃檯人員' },
+      });
+
+      expect(prepStore.openTasks()).toEqual([
+        {
+          id: expect.any(String),
+          vehicleId: 'v1',
+          bookingId: 'b1',
+          returnedAt: result.record.actualAt,
+          returnLocation: 'mzg-store',
+        },
+      ]);
+      expect(prepStore.openCount()).toBe(1);
+      expect(prepStore.hasOpenTaskFor('v1')).toBe(true);
+    });
+
+    it('4.3：待整備不改車輛狀態、不影響可用數——還完的車仍是可租借，下一段期間照樣列在可租清單', () => {
+      pickUpFirst();
+
+      handoverStore.performReturn({
+        bookingId: 'b1',
+        record: baseRecordInput({ actualAt: T_RETURN_DUE }),
+        charges: handoverStore.calculateCharges(chargeInput()),
+        actor: { actorId: 'staff1', actorName: '櫃檯人員' },
+      });
+
+      expect(prepStore.openCount()).toBe(1);
+      expect(vehicleStore.vehicles()[0].status).toBe('available');
+      const nextDay = vehicleAvailability(vehicleStore.vehicles(), {
+        startTime: '2026-07-23T01:00:00.000Z',
+        endTime: '2026-07-24T01:00:00.000Z',
+        bookings: bookingStore.bookings(),
+      });
+      expect(nextDay.available.map((v) => v.id)).toEqual(['v1']);
+    });
+
+    it('4.3：列入待整備這一步失敗：擲出 partial failure（failedStep = prep_task_create），還車本身已完成、不寫稽核紀錄', () => {
+      configure({
+        booking: { status: 'in_progress' },
+        vehicle: { status: 'rented' },
+        prepRepo: createFailingCreateRepo<PrepTask>(),
+      });
+
+      let caught: unknown;
+      try {
+        handoverStore.performReturn({
+          bookingId: 'b1',
+          record: baseRecordInput({ actualAt: T_RETURN_DUE }),
+          charges: handoverStore.calculateCharges(chargeInput()),
+          actor: { actorId: 'staff1', actorName: '櫃檯人員' },
+        });
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught).toBeInstanceOf(HandoverOrchestrationPartialFailureError);
+      const err = caught as HandoverOrchestrationPartialFailureError;
+      expect(err.phase).toBe('return');
+      expect(err.failedStep).toBe('prep_task_create');
+      expect(err.completedSteps).toEqual([
+        'save_record',
+        'confirm_adjustments',
+        'vehicle_transition',
+        'booking_transition',
+        'vehicle_location_update',
+      ]);
+      // 前面的步驟沒有交易保護、不會回滾：車已還、訂單已完成，只是沒列進待整備。
+      expect(bookingStore.bookings()[0].status).toBe('completed');
+      expect(vehicleStore.vehicles()[0].status).toBe('available');
+      expect(prepStore.openCount()).toBe(0);
+      expect(auditRepo.getAll()).toHaveLength(0);
     });
 
     it('（Task 17 迴歸測試）完成還車會透過真正的協調流程抑制這筆訂單尚未寄出的提醒——不是只有 ReminderStore.suppressForBooking() 自己的單元測試才驗證這條規則', async () => {

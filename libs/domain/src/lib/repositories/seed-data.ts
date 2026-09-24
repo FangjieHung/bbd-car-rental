@@ -17,6 +17,7 @@ import {
   ContractVersion,
   ContractSnapshot,
   HandoverRecord,
+  PrepTask,
   CancellationCase,
   CustomerCreditLedgerEntry,
   ReminderStatus,
@@ -890,6 +891,23 @@ export function seedHandoverRecords(): HandoverRecord[] {
       originalDocumentChecked: true,
       operatorConfirmation: { confirmedBy: 'staff1', confirmedAt: isoAt(-3, 9) },
       customerConfirmation: { confirmedBy: '林美惠', confirmedAt: isoAt(-3, 9) },
+    },
+  ];
+}
+
+/**
+ * 4.3 待整備示範：最近一筆已完成的還車（b5，ABC-123 在馬公中正門市還車）還沒整備。
+ * 這台車 2 天後（b3）又要交車，所以總覽「待整備」有 1 筆、那天的取車清單會顯示「尚未整備」提醒。
+ * returnedAt／returnLocation 與 b5 的還車時間、還車據點一致（b5 沒有還車紀錄，以訂單的還車時間為準）。
+ */
+export function seedPrepTasks(): PrepTask[] {
+  return [
+    {
+      id: 'prep-b5',
+      vehicleId: 'v1',
+      bookingId: 'b5',
+      returnedAt: isoAt(-3, 18),
+      returnLocation: 'mzg-store',
     },
   ];
 }

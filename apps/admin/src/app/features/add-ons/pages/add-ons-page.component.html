@@ -21,6 +21,7 @@
       (batchDelete)="removeSelected($event)"
       (exportFailed)="onExportFailed($event)"
     >
+      <ng-template dtCell="unitPrice" let-a>{{ a.unitPrice | twd }}</ng-template>
       <ng-template dtCell="unit" let-a>{{ t.addOn.unitLabels[a.unit] }}</ng-template>
       <ng-template dtCell="actions" let-a>
         <span class="action-cell">

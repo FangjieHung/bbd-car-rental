@@ -73,8 +73,8 @@ describe('ContractDocumentComponent', () => {
     expect(content).toContain('馬公門市');
     expect(content).toContain('機場櫃檯');
     expect(content).toContain('2026/07/20 17:00');
-    expect(content).toContain('4500');
-    expect(content).toContain('1000');
+    expect(content).toContain('4,500');
+    expect(content).toContain('1,000');
     expect(content).toContain('兒童安全座椅');
     expect(content).toContain(L.cancellationContractKindLabels.passenger_car);
     expect(content).toContain(L.energyMeasureLabels.eighths);

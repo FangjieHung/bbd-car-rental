@@ -16,6 +16,8 @@ import {
   OperatorRecoveryRemedyType,
 } from '@car-rental/domain';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { fmtDateTime } from '../../../core/date-utils';
+import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
@@ -69,6 +71,7 @@ function fromDatetimeLocalValue(value: string): string {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    TwdPipe,
   ],
   templateUrl: './operator-recovery-panel.component.html',
 })
@@ -78,6 +81,8 @@ export class OperatorRecoveryPanelComponent {
   protected readonly outcomes = OUTCOMES;
   protected readonly goodwillTypes = GOODWILL_TYPES;
   protected readonly remedyOrder = OPERATOR_RECOVERY_REMEDY_ORDER;
+  /** 案件時間一律用共用日期時間格式（本地時區），不可再直接顯示 ISO 字串。 */
+  protected readonly fmt = fmtDateTime;
 
   private readonly store = inject(OperatorRecoveryStore);
   private readonly bookingStore = inject(BookingStore);
@@ -87,6 +92,11 @@ export class OperatorRecoveryPanelComponent {
   private readonly fb = inject(NonNullableFormBuilder);
 
   readonly bookingId = input.required<string>();
+  /**
+   * 能不能開立新的復原案件（4.6：只有已預訂的訂單可以——復原失敗的結局是業者責任取消，
+   * 而取消只允許已預訂的訂單）。不能開立時仍列出既有案件；兩者都沒有就整塊不顯示。
+   */
+  readonly allowNewCase = input(true);
 
   protected readonly booking = computed(() => this.bookingStore.bookings().find((b) => b.id === this.bookingId()));
   protected readonly vehicle = computed(() => {

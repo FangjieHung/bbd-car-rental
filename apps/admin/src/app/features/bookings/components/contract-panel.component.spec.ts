@@ -115,8 +115,8 @@ describe('ContractPanelComponent 草稿預覽內容', () => {
     expect(content).toContain('ABC-123'); // 車牌
     expect(content).toContain('Yaris'); // 型號
     expect(content).toContain('馬公門市'); // 取還車地點
-    expect(content).toContain('4500'); // 計價合計
-    expect(content).toContain('1000'); // 訂金
+    expect(content).toContain('4,500'); // 計價合計
+    expect(content).toContain('1,000'); // 訂金
     expect(content).toContain('兒童安全座椅'); // 加購配件
     expect(content).toContain('30'); // 逾時寬限分鐘
     expect(content).toContain('禁止攜帶寵物'); // 其他揭露事項

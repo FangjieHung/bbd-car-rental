@@ -22,50 +22,11 @@
   }
 }
 
-.order-detail__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  width: fit-content;
-  color: var(--mat-sys-on-surface-variant);
-  text-decoration: none;
-  font-size: 0.875rem;
-
-  .material-symbols-rounded {
-    font-size: 1.125rem;
-  }
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .order-detail__header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  justify-content: space-between;
   gap: 0.75rem 2rem;
-}
-
-.order-detail__heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.75rem;
-  min-width: 0;
-}
-
-.order-detail__eyebrow {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: 0.8125rem;
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.order-detail__title {
-  margin: 0;
-  overflow-wrap: anywhere;
 }
 
 .order-detail__meta {
@@ -148,6 +109,10 @@
   min-width: 0;
 }
 
+.order-detail__group--wide {
+  grid-column: 1 / -1;
+}
+
 .order-detail__group-title {
   margin: 0 0 0.75rem;
   font-size: 1rem;
@@ -189,6 +154,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+// 溢收：與建單頁收款區塊、摘要欄同一個警示色
+.order-detail__fields .is-overpaid {
+  font-weight: 600;
+  color: var(--mat-sys-error);
+}
+
+// 沒有報價快照時，待收「—」下方的說明小字
+.order-detail__balance-note {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .order-detail__branch {
   display: inline-flex;
   flex-wrap: wrap;
@@ -214,14 +192,4 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem;
-}
-
-.order-detail__placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-  border: 1px dashed var(--mat-sys-outline-variant);
-  border-radius: 12px;
-  color: var(--mat-sys-on-surface-variant);
 }

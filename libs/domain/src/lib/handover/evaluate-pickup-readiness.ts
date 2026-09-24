@@ -56,6 +56,12 @@ export interface PickupVehicleReadiness {
   status: VehicleStatus;
   /** 是否與其他訂單／保養排程衝突，導致本次無法交車。 */
   hasSchedulingConflict: boolean;
+  /**
+   * 這台車目前還在前一位客人手上（另一筆出租中的訂單，含逾時未還）時帶入那筆訂單預定的還車時間（ISO）。
+   * 有值時，阻擋原因的第一項是「前一位客人尚未還車」（已逾時就寫出逾時多久），取代「車輛目前在租」
+   * 這類通用說法——車還沒回來，其他缺口（合約、訂金…）補齊了也交不了車，所以要最先讓人看到。
+   */
+  previousRental?: { scheduledReturnAt: string };
 }
 
 export interface PickupReadinessInput {
@@ -108,6 +114,28 @@ function isNearExpiry(dateIso: string, evaluatedAt: string, thresholdDays: numbe
   return days >= 0 && days <= thresholdDays;
 }
 
+/** 「3 小時 5 分」／「45 分」——與後台還車清單的逾時時間同一種寫法。 */
+function formatDurationMinutes(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours} 小時 ${minutes} 分` : `${minutes} 分`;
+}
+
+/** 前一位客人尚未還車；評估當下已超過他的預定還車時間（至少 1 分鐘）時，寫出逾時多久。 */
+function previousRentalBlocker(scheduledReturnAt: string, evaluatedAt: string): PickupBlocker {
+  const overdueMinutes = Math.floor(
+    (new Date(evaluatedAt).getTime() - new Date(scheduledReturnAt).getTime()) / 60_000,
+  );
+  return {
+    type: 'vehicle_not_deliverable',
+    reason: 'previous_rental_not_returned',
+    message:
+      overdueMinutes > 0
+        ? `前一位客人尚未還車（逾時 ${formatDurationMinutes(overdueMinutes)}）。`
+        : '前一位客人尚未還車。',
+  };
+}
+
 /**
  * 純函式：依當下輸入判斷是否可取車。回傳的是完整的阻擋與警示清單而非單一布林值 ——
  * 現場人員與主管覆核都需要看到「為什麼不能取車」，不能只有一個 ready 旗標。
@@ -131,6 +159,12 @@ export function evaluatePickupReadiness(input: PickupReadinessInput): PickupRead
 
   const blockers: PickupBlocker[] = [];
   const warnings: PickupWarning[] = [];
+
+  // 車還在前一位客人手上：排在第一項（見 PickupVehicleReadiness.previousRental）。
+  const { previousRental } = vehicle;
+  if (previousRental) {
+    blockers.push(previousRentalBlocker(previousRental.scheduledReturnAt, evaluatedAt));
+  }
 
   // 未達訂金門檻
   if (depositPaid < depositRequired) {
@@ -223,21 +257,22 @@ export function evaluatePickupReadiness(input: PickupReadinessInput): PickupRead
     });
   }
 
-  // 車輛衝突、維修中或其他不可交付狀態
+  // 車輛衝突、維修中或其他不可交付狀態。已經用「前一位客人尚未還車」說明車在哪裡時，
+  // 「車輛目前在租」與排程衝突講的是同一件事，不再重複列出。
   if (vehicle.status === 'maintenance') {
     blockers.push({
       type: 'vehicle_not_deliverable',
       reason: 'vehicle_under_maintenance',
       message: '車輛維修中，無法交付。',
     });
-  } else if (vehicle.status === 'rented') {
+  } else if (vehicle.status === 'rented' && !previousRental) {
     blockers.push({
       type: 'vehicle_not_deliverable',
       reason: 'vehicle_time_conflict',
       message: '車輛目前在租，與本次取車衝突。',
     });
   }
-  if (vehicle.hasSchedulingConflict && vehicle.status !== 'rented') {
+  if (vehicle.hasSchedulingConflict && vehicle.status !== 'rented' && !previousRental) {
     blockers.push({
       type: 'vehicle_not_deliverable',
       reason: 'vehicle_time_conflict',

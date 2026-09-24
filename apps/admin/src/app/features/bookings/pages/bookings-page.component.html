@@ -12,10 +12,28 @@
         [options]="statusOptions"
         [(value)]="statusFilter"
       />
-      <a actions mat-button routerLink="/bookings/members">
-        <span class="material-symbols-rounded" aria-hidden="true">group</span>
-        {{ t.booking.goMembers }}
-      </a>
+      <app-filter-select
+        filters
+        [label]="t.booking.pickupDate"
+        [options]="pickupDateOptions"
+        [(value)]="pickupDateFilter"
+      />
+      @if (pickupDateFilter() === 'custom') {
+        <lib-dual-month-range-picker
+          filters
+          class="pickup-range-filter"
+          [start]="pickupRange()?.start ?? null"
+          [end]="pickupRange()?.end ?? null"
+          (rangeSelected)="pickupRange.set($event)"
+        />
+      }
+      <app-filter-select
+        filters
+        [label]="t.booking.incomplete"
+        [options]="incompleteOptions"
+        [(value)]="incompleteFilter"
+      />
+      <!-- 4.4：「會員」入口移到側欄「訂單管理」群組，工具列只留新增訂單 -->
       <a actions mat-flat-button routerLink="/orders/new">
         <span class="material-symbols-rounded" aria-hidden="true">add</span>
         {{ t.common.create }}
@@ -38,10 +56,13 @@
           [showBatchDelete]="false"
           [selection]="selectedBookings()"
           [emptyText]="t.common.empty"
+          [rowClickable]="true"
           exportName="bookings"
           (selectionChange)="selectedBookings.set($event)"
           (exportFailed)="onExportFailed($event)"
+          (rowClick)="openDetail($event)"
         >
+          <!-- 4.4：整列點擊開訂單詳情；列內按鈕各自 stopPropagation，照舊只做自己的事 -->
           <ng-template dtCell="vehicleId" let-b>{{ plateOf(b.vehicleId) }}</ng-template>
           <ng-template dtCell="memberId" let-b>{{ memberStore.nameOf(b.memberId) }}</ng-template>
           <ng-template dtCell="startTime" let-b>{{ fmt(b.startTime) }}</ng-template>
@@ -54,7 +75,7 @@
                   type="button"
                   matButton="text"
                   class="urgent-indicator"
-                  (click)="goUrgent(b, 'handover')"
+                  (click)="$event.stopPropagation(); goUrgent(b, 'handover')"
                 >
                   <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
                   {{ t.dispatch.workList.urgentOverdueReturn }}
@@ -65,7 +86,7 @@
                   type="button"
                   matButton="text"
                   class="urgent-indicator"
-                  (click)="goUrgent(b, 'cancellation')"
+                  (click)="$event.stopPropagation(); goUrgent(b, 'cancellation')"
                 >
                   <span class="material-symbols-rounded" aria-hidden="true">currency_exchange</span>
                   {{ t.dispatch.workList.urgentRefundPending }}
@@ -76,7 +97,7 @@
                   type="button"
                   matButton="text"
                   class="urgent-indicator"
-                  (click)="goUrgent(b, 'cancellation')"
+                  (click)="$event.stopPropagation(); goUrgent(b, 'cancellation')"
                 >
                   <span class="material-symbols-rounded" aria-hidden="true">build</span>
                   {{ t.dispatch.workList.urgentOperatorRecovery }}
@@ -84,24 +105,32 @@
               }
             </div>
           </ng-template>
+          <ng-template dtCell="incomplete" let-b>
+            @if (incompleteOf(b).length > 0) {
+              <span class="ui-chip ui-chip--warning incomplete-badge" [matTooltip]="incompleteSummary(b)">
+                <span aria-hidden="true">{{ incompleteOf(b).length }}</span>
+                <span class="sr-only">{{ incompleteCountLabel(b) }}：{{ incompleteSummary(b) }}</span>
+              </span>
+            }
+          </ng-template>
           <ng-template dtCell="actions" let-b>
             <span class="action-cell">
               <button
                 mat-icon-button
                 [matTooltip]="t.booking.openDetail"
                 [attr.aria-label]="t.booking.openDetail"
-                (click)="openDetail(b)"
+                (click)="$event.stopPropagation(); openDetail(b)"
               >
                 <span class="material-symbols-rounded" aria-hidden="true">open_in_full</span>
               </button>
               @if (b.status === 'reserved') {
-                <button matButton="tonal" (click)="handoverAction(b)">
+                <button matButton="tonal" class="handover-action" (click)="$event.stopPropagation(); handoverAction(b)">
                   <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
                   {{ t.booking.pickUp }}
                 </button>
               }
               @if (b.status === 'in_progress') {
-                <button matButton="tonal" (click)="handoverAction(b)">
+                <button matButton="tonal" class="handover-action" (click)="$event.stopPropagation(); handoverAction(b)">
                   <span class="material-symbols-rounded" aria-hidden="true">assignment_turned_in</span>
                   {{ t.booking.complete }}
                 </button>
@@ -112,6 +141,7 @@
                   [matTooltip]="t.common.moreActions"
                   [attr.aria-label]="t.common.moreActions"
                   [matMenuTriggerFor]="moreMenu"
+                  (click)="$event.stopPropagation()"
                 >
                   <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
                 </button>

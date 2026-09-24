@@ -22,10 +22,10 @@
         (exportFailed)="onExportFailed($event)"
       >
         <ng-template dtCell="appliesToCategory" let-p>{{ t.vehicle.typeLabels[p.appliesToCategory] }}</ng-template>
-        <ng-template dtCell="weekday" let-p>{{ p.dayTypeRates.weekday }}</ng-template>
-        <ng-template dtCell="weekend" let-p>{{ p.dayTypeRates.weekend }}</ng-template>
-        <ng-template dtCell="holiday" let-p>{{ p.dayTypeRates.holiday }}</ng-template>
-        <ng-template dtCell="peak" let-p>{{ p.dayTypeRates.peak }}</ng-template>
+        <ng-template dtCell="weekday" let-p>{{ p.dayTypeRates.weekday | twd }}</ng-template>
+        <ng-template dtCell="weekend" let-p>{{ p.dayTypeRates.weekend | twd }}</ng-template>
+        <ng-template dtCell="holiday" let-p>{{ p.dayTypeRates.holiday | twd }}</ng-template>
+        <ng-template dtCell="peak" let-p>{{ p.dayTypeRates.peak | twd }}</ng-template>
         <ng-template dtCell="tiers" let-p>{{ tiersSummary(p) }}</ng-template>
         <ng-template dtCell="actions" let-p>
           <span class="action-cell">
