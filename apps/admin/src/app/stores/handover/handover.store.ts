@@ -14,7 +14,7 @@ import {
   evaluatePickupReadiness,
 } from '@car-rental/domain';
 import { AUDIT_ENTRY_REPO, HANDOVER_RECORD_REPO } from '../../core/repositories/tokens';
-import { BookingStore } from '../booking/booking.store';
+import { OrderStore } from '../order/order.store';
 import { VehicleStore } from '../vehicle/vehicle.store';
 import { PaymentStore } from '../payment/payment.store';
 import { ReminderStore } from '../reminder/reminder.store';
@@ -126,7 +126,7 @@ export interface PerformReturnResult {
 /**
  * 取還車紀錄的封裝：CRUD 寫入 HANDOVER_RECORD_REPO，取車就緒判斷與還車費用試算
  * 委派給 Task 5 的純函式；performPickup／performReturn 則是 Task 13 新增的橫跨
- * HandoverRecord／Vehicle／RentalBooking／ChargeAdjustment／AuditEntry 多個
+ * HandoverRecord／Vehicle／RentalOrder／ChargeAdjustment／AuditEntry 多個
  * repository 的訂單流程協調，依設計文件第 7 節與本任務 brief 指定的精確順序執行：
  *
  * 取車：重算就緒 → 存取車紀錄 → 車輛轉為 rented → 訂單轉為 in_progress → 附加稽核紀錄。
@@ -135,14 +135,14 @@ export interface PerformReturnResult {
  *       列入待整備（4.3，見 docs/owner-questions.md 第 11 條） →
  *       附加稽核紀錄 → 任何餘額留作應收，不阻擋完成。
  *
- * 車輛與訂單的狀態轉換本身仍由 VehicleStore／BookingStore 把關（見兩者既有的狀態機），
+ * 車輛與訂單的狀態轉換本身仍由 VehicleStore／OrderStore 把關（見兩者既有的狀態機），
  * 這裡不重複驗證轉換合法性，只負責依序呼叫並在失敗時回報「哪一步已經成功」。
  */
 @Injectable({ providedIn: 'root' })
 export class HandoverStore {
   private readonly repo = inject(HANDOVER_RECORD_REPO);
   private readonly auditRepo = inject(AUDIT_ENTRY_REPO);
-  private readonly bookingStore = inject(BookingStore);
+  private readonly orderStore = inject(OrderStore);
   private readonly vehicleStore = inject(VehicleStore);
   private readonly paymentStore = inject(PaymentStore);
   private readonly reminderStore = inject(ReminderStore);
@@ -229,7 +229,7 @@ export class HandoverStore {
 
     const vehicleStatusBeforePickup = this.vehicleStatusFor(input.bookingId);
     try {
-      this.bookingStore.pickUp(input.bookingId);
+      this.orderStore.pickUp(input.bookingId);
       completed.push('vehicle_transition', 'booking_transition');
     } catch (cause) {
       // 只有「這次呼叫」真的把車輛從非 rented 轉成 rented，才算 vehicle_transition 已完成——
@@ -295,7 +295,7 @@ export class HandoverStore {
 
     const vehicleStatusBeforeComplete = this.vehicleStatusFor(input.bookingId);
     try {
-      this.bookingStore.complete(input.bookingId);
+      this.orderStore.complete(input.bookingId);
       completed.push('vehicle_transition', 'booking_transition');
     } catch (cause) {
       // 理由同 performPickup：只有這次呼叫真的讓車輛從非 available 轉成 available，才算完成。
@@ -312,13 +312,13 @@ export class HandoverStore {
 
     // 3.7：還車完成後，車輛所在據點改為這筆訂單的還車據點——業主問題 #1 的暫定決定
     // （docs/owner-questions.md 第 1 條：「改算還車據點的車」）。車輛狀態的轉換已經在上面
-    // 透過 bookingStore.complete() → vehicleStore.transition() 完成；所在據點只是一般欄位、
+    // 透過 orderStore.complete() → vehicleStore.transition() 完成；所在據點只是一般欄位、
     // 不經 transition()，這裡用 VehicleStore.update() 直接寫入。刻意放在狀態轉換成功之後：
     // 上面那段若已經擲出部分失敗錯誤，代表車輛還沒真的轉成 available，這裡就不該再動它的據點。
     try {
-      const booking = this.bookingStore.bookings().find((b) => b.id === input.bookingId);
-      if (booking) {
-        this.vehicleStore.update(booking.vehicleId, { location: booking.returnLocation });
+      const order = this.orderStore.orders().find((b) => b.id === input.bookingId);
+      if (order) {
+        this.vehicleStore.update(order.vehicleId, { branchId: order.returnBranchId });
       }
       completed.push('vehicle_location_update');
     } catch (cause) {
@@ -330,13 +330,13 @@ export class HandoverStore {
     // （docs/owner-questions.md 第 11 條的暫定決定）。同樣放在狀態轉換成功之後——上面擲出部分失敗時
     // 車還沒真的還回來，不該出現在待整備清單上。
     try {
-      const booking = this.bookingStore.bookings().find((b) => b.id === input.bookingId);
-      if (booking) {
+      const order = this.orderStore.orders().find((b) => b.id === input.bookingId);
+      if (order) {
         this.prepStore.openForReturn({
-          vehicleId: booking.vehicleId,
-          bookingId: booking.id,
+          vehicleId: order.vehicleId,
+          bookingId: order.id,
           returnedAt: record.actualAt,
-          returnLocation: booking.returnLocation,
+          returnBranchId: order.returnBranchId,
         });
       }
       completed.push('prep_task_create');
@@ -350,7 +350,7 @@ export class HandoverStore {
     // 提醒抑制是次要、盡力而為的清理動作，即使它失敗（例如 gateway.cancel 拋錯），也不該
     // 讓「訂單已經完成」這個已經發生的事實回頭被回報成失敗——因此不併入上面 try/catch 的
     // 部分失敗回報，只在真的出錯時吞掉例外（不讓 Promise rejection 冒出去干擾呼叫端）。
-    void this.reminderStore.suppressForBooking(input.bookingId).catch(() => undefined);
+    void this.reminderStore.suppressForOrder(input.bookingId).catch(() => undefined);
 
     try {
       this.appendAuditEntry({
@@ -415,9 +415,9 @@ export class HandoverStore {
   }
 
   private vehicleStatusFor(bookingId: string): VehicleStatus | undefined {
-    const booking = this.bookingStore.bookings().find((b) => b.id === bookingId);
-    if (!booking) return undefined;
-    return this.vehicleStore.vehicles().find((v) => v.id === booking.vehicleId)?.status;
+    const order = this.orderStore.orders().find((b) => b.id === bookingId);
+    if (!order) return undefined;
+    return this.vehicleStore.vehicles().find((v) => v.id === order.vehicleId)?.status;
   }
 
   private appendAuditEntry(input: Omit<AuditEntry, 'id' | 'createdAt'>): AuditEntry {

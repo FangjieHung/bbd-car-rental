@@ -13,6 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { PricingPlan } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
+import { VEHICLE_CATEGORY_OPTIONS } from '@car-rental/domain';
 
 export type PricingPlanFormResult = Omit<PricingPlan, 'id'>;
 
@@ -31,6 +32,7 @@ export type PricingPlanFormResult = Omit<PricingPlan, 'id'>;
 })
 export class PricingPlanDialogComponent {
   protected readonly t = ZH_TW;
+  protected readonly vehicleCategoryOptions = VEHICLE_CATEGORY_OPTIONS;
   readonly ref = inject(MatDialogRef<PricingPlanDialogComponent>);
   readonly data = inject<PricingPlan | null>(MAT_DIALOG_DATA);
   private fb = inject(NonNullableFormBuilder);

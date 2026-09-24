@@ -1,8 +1,8 @@
 <div class="date-step">
   <mat-form-field appearance="fill" class="md:max-w-42">
-    <mat-label>車輛類型</mat-label>
+    <mat-label>{{ i18n.t().dateStep.vehicleType }}</mat-label>
     <mat-select [ngModel]="vehicleGroup" (ngModelChange)="onVehicleGroupChange($event)">
-      @for (group of vehicleGroups; track group.value) {
+      @for (group of vehicleGroups(); track group.value) {
         <mat-option [value]="group.value">{{ group.label }}</mat-option>
       }
     </mat-select>
@@ -19,7 +19,7 @@
     <button
       matButton="filled"
       class="min-h-14 w-full xl:w-auto"
-      aria-label="搜尋可用車輛"
+      [attr.aria-label]="i18n.t().dateStep.searchAria"
       [disabled]="!isValid"
       (click)="search()"
     >

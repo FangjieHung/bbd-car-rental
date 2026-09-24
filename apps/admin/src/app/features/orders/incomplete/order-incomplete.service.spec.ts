@@ -2,12 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { DriverCredential, IdentityDocument, Member } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { ORDER_SUBMIT_GATEWAY, OrderPresignature } from '../order-form/order-submit-gateway';
-import { OrderForm, OrderFormInitial, computeOrderQuote, createOrderForm, selectedVehicleOf, setPaymentDrafts } from '../order-form/order-form';
-import { buildContractSnapshot } from '../order-form/contract-snapshot';
+import {
+  ORDER_FORM_DATA,
+  ORDER_SUBMIT_GATEWAY,
+  OrderPresignature,
+  OrderForm,
+  OrderFormInitial,
+  computeOrderQuote,
+  createOrderForm,
+  selectedVehicleOf,
+  setPaymentDrafts,
+  buildContractSnapshot,
+} from '@car-rental/order-form';
 import { provideAdminOrderForm } from '../data/provide-admin-order-form';
 import { OrderRepoOptions, createOrderRepos } from '../testing';
 import { incompleteFactsFromForm, orderIncompleteItems } from './order-incomplete';
@@ -23,7 +31,7 @@ function setup(options: OrderRepoOptions = {}) {
     gateway: TestBed.inject(ORDER_SUBMIT_GATEWAY),
     data: TestBed.inject(ORDER_FORM_DATA),
     service: TestBed.inject(OrderIncompleteService),
-    bookingStore: TestBed.inject(BookingStore),
+    orderStore: TestBed.inject(OrderStore),
   };
 }
 
@@ -33,8 +41,8 @@ function form(initial: OrderFormInitial = {}): OrderForm {
     vehicleId: 'v1',
     startTime: new Date('2026-01-05T09:00').toISOString(),
     endTime: new Date('2026-01-07T09:00').toISOString(),
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
     depositRequired: 600,
     ...initial,
   });
@@ -77,9 +85,9 @@ async function compare(
   ).map((i) => i.label);
 
   const id = await ctx.gateway.create({ value, ...(presignature ? { presignature } : {}) });
-  const booking = ctx.bookingStore.bookings().find((b) => b.id === id);
-  if (!booking) throw new Error('booking not created');
-  const afterCreate = ctx.service.itemsFor(booking).map((i) => i.label);
+  const order = ctx.orderStore.orders().find((b) => b.id === id);
+  if (!order) throw new Error('order not created');
+  const afterCreate = ctx.service.itemsFor(order).map((i) => i.label);
   return { beforeCreate, afterCreate };
 }
 
@@ -88,12 +96,12 @@ describe('待補：建立訂單摘要欄與訂單詳情用同一套規則（同�
     const ctx = setup();
     const { beforeCreate, afterCreate } = await compare(ctx, form());
     expect(beforeCreate).toEqual([
-      t.bookingForm.incomplete.missingEmail,
-      t.bookingForm.incomplete.depositNotCollected,
-      t.bookingForm.incomplete.contractNotSigned,
-      t.bookingForm.incomplete.identityNotVerified,
-      t.bookingForm.incomplete.driverNotVerified,
-      t.bookingForm.incomplete.balanceNotCollected,
+      t.orderForm.incomplete.missingEmail,
+      t.orderForm.incomplete.depositNotCollected,
+      t.orderForm.incomplete.contractNotSigned,
+      t.orderForm.incomplete.identityNotVerified,
+      t.orderForm.incomplete.driverNotVerified,
+      t.orderForm.incomplete.balanceNotCollected,
     ]);
     expect(afterCreate).toEqual(beforeCreate);
   });
@@ -110,7 +118,7 @@ describe('待補：建立訂單摘要欄與訂單詳情用同一套規則（同�
     const { beforeCreate, afterCreate } = await compare(ctx, f, { presign: true });
     expect(beforeCreate).toEqual([]);
     expect(afterCreate).toEqual([]);
-    expect(TestBed.inject(ContractStore).versionsFor(ctx.bookingStore.bookings()[0].id)[0].status).toBe('signed');
+    expect(TestBed.inject(ContractStore).versionsFor(ctx.orderStore.orders()[0].id)[0].status).toBe('signed');
   });
 
   it('既有會員：證件看他已有的紀錄，駕照沒改就沿用那筆（OCR 辨識完但沒人核對＝未查核）', async () => {
@@ -131,7 +139,7 @@ describe('待補：建立訂單摘要欄與訂單詳情用同一套規則（同�
     setPaymentDrafts(f, [{ purpose: 'deposit', method: 'cash', amount: 2000 }]);
 
     const { beforeCreate, afterCreate } = await compare(ctx, f, { presign: true });
-    expect(beforeCreate).toEqual([t.bookingForm.incomplete.driverNotVerified]);
+    expect(beforeCreate).toEqual([t.orderForm.incomplete.driverNotVerified]);
     expect(afterCreate).toEqual(beforeCreate);
   });
 
@@ -143,7 +151,7 @@ describe('待補：建立訂單摘要欄與訂單詳情用同一套規則（同�
     setPaymentDrafts(f, [{ purpose: 'deposit', method: 'cash', amount: 2000 }]);
     // 開發期 mock 沒有互惠規則時一律「需人工審查」：摘要欄（這一步沒按查核）與建立後（自動查核）都列。
     const first = await compare(pending, f, { presign: true });
-    expect(first.beforeCreate).toEqual([t.bookingForm.incomplete.driverNotVerified]);
+    expect(first.beforeCreate).toEqual([t.orderForm.incomplete.driverNotVerified]);
     expect(first.afterCreate).toEqual(first.beforeCreate);
 
     TestBed.resetTestingModule();
@@ -160,11 +168,11 @@ describe('OrderIncompleteService', () => {
   it('已取消、已完成的訂單沒有待補', async () => {
     const ctx = setup();
     const id = await ctx.gateway.create({ value: form().getRawValue() });
-    expect(ctx.service.itemsFor(ctx.bookingStore.bookings()[0]).length).toBeGreaterThan(0);
+    expect(ctx.service.itemsFor(ctx.orderStore.orders()[0]).length).toBeGreaterThan(0);
 
-    ctx.bookingStore.cancel(id);
-    expect(ctx.service.itemsFor(ctx.bookingStore.bookings()[0])).toEqual([]);
-    const completed = { ...ctx.bookingStore.bookings()[0], status: 'completed' as const };
+    ctx.orderStore.cancel(id);
+    expect(ctx.service.itemsFor(ctx.orderStore.orders()[0])).toEqual([]);
+    const completed = { ...ctx.orderStore.orders()[0], status: 'completed' as const };
     expect(ctx.service.itemsFor(completed)).toEqual([]);
   });
 });

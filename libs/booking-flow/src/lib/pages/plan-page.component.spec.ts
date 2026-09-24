@@ -10,11 +10,11 @@ import {
   Partner,
   PaymentRecord,
   PricingPlan,
-  RentalBooking,
+  RentalOrder,
   SeasonCalendar,
   Vehicle,
   VEHICLE_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   MEMBER_REPO,
   PAYMENT_REPO,
   PRICING_PLAN_REPO,
@@ -37,7 +37,7 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
     status: 'available',
     mileage: 100,
     createdAt: new Date().toISOString(),
-    location: '機場',
+    branchId: '機場',
     ...partial,
   };
 }
@@ -68,7 +68,7 @@ function setup(
   TestBed.configureTestingModule({
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
       { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
       { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([plan]) },

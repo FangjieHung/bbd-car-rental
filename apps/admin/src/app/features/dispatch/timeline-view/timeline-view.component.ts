@@ -1,14 +1,14 @@
 import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import {
-  RentalBooking,
+  RentalOrder,
   Vehicle,
   branchName,
   needsDispatch as computeNeedsDispatch,
 } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, diffDays, fmtDate, startOfDay, startOfWeek } from '../../../core/date-utils';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { OrderDetailNavigation } from '../../orders/navigation/order-detail-navigation';
@@ -19,7 +19,7 @@ export interface TimelineBlock {
   kind: 'reserved' | 'in_progress';
   bookingId: string;
   memberId: string;
-  pickupLocation: string;
+  pickupBranchId: string;
   /** 出租中且預定還車時間已過（色塊已延伸到今天）。 */
   overdue: boolean;
   /** 只對 reserved 有意義：取車據點與車輛所在據點不同。 */
@@ -35,17 +35,17 @@ export interface TimelineBlock {
 }
 
 /**
- * 出租中且預定還車時間已過——與 features/bookings/booking-urgency.ts 的 isOverdueReturn()
+ * 出租中且預定還車時間已過——與 features/orders/order-urgency.ts 的 isOverdueReturn()
  * 同一個判斷，這裡刻意內聯一份並多接受 `now` 參數：那個檔案固定讀 Date.now()、不在本批次
  * 可改動的檔案清單內，而純函式要能在測試裡指定固定的「現在」時間（同 core/date-utils.ts
  * 的 fmtDateTime(iso, now) 一樣的理由），不能依賴執行當下的實際時間。
  */
-function isOverdue(booking: RentalBooking, now: Date): boolean {
-  return booking.status === 'in_progress' && new Date(booking.endTime).getTime() < now.getTime();
+function isOverdue(order: RentalOrder, now: Date): boolean {
+  return order.status === 'in_progress' && new Date(order.endTime).getTime() < now.getTime();
 }
 
 export function computeBlocks(
-  bookings: RentalBooking[],
+  orders: RentalOrder[],
   vehicleId: string,
   vehicleLocation: string | null | undefined,
   rangeStart: Date,
@@ -55,7 +55,7 @@ export function computeBlocks(
   const todayIdx = diffDays(startOfDay(now), rangeStart);
   const blocks: TimelineBlock[] = [];
 
-  for (const b of bookings) {
+  for (const b of orders) {
     if (b.vehicleId !== vehicleId) continue;
     if (b.status !== 'reserved' && b.status !== 'in_progress') continue;
 
@@ -74,9 +74,9 @@ export function computeBlocks(
       kind: b.status as 'reserved' | 'in_progress',
       bookingId: b.id,
       memberId: b.memberId,
-      pickupLocation: b.pickupLocation,
+      pickupBranchId: b.pickupBranchId,
       overdue,
-      needsDispatch: b.status === 'reserved' && computeNeedsDispatch(vehicleLocation, b.pickupLocation),
+      needsDispatch: b.status === 'reserved' && computeNeedsDispatch(vehicleLocation, b.pickupBranchId),
       conflict: false,
       lane: 0,
     });
@@ -141,7 +141,7 @@ const DAYS = 14;
 export class TimelineViewComponent {
   protected readonly t = ZH_TW;
   readonly vehicleStore = inject(VehicleStore);
-  private bookingStore = inject(BookingStore);
+  private orderStore = inject(OrderStore);
   private memberStore = inject(MemberStore);
   private orderDetail = inject(OrderDetailNavigation);
   readonly fmtDate = fmtDate;
@@ -190,12 +190,12 @@ export class TimelineViewComponent {
   }
 
   blocksOf(v: Vehicle): TimelineBlock[] {
-    return computeBlocks(this.bookingStore.bookings(), v.id, v.location, this.rangeStart(), DAYS);
+    return computeBlocks(this.orderStore.orders(), v.id, v.branchId, this.rangeStart(), DAYS);
   }
 
   /** 列首所在據點：淡色小字，未設定時顯示完整說法（不是車輛清單用的「—」，見 zh-tw.ts 註解）。 */
   locationLabel(v: Vehicle): string {
-    return v.location ? branchName(v.location) : this.t.timeline.locationUnset;
+    return v.branchId ? branchName(v.branchId) : this.t.timeline.locationUnset;
   }
 
   /** 日期欄標題下行的星期字（單一個字，例如「三」）。 */
@@ -208,7 +208,7 @@ export class TimelineViewComponent {
   }
 
   pickupBranchName(block: TimelineBlock): string {
-    return branchName(block.pickupLocation);
+    return branchName(block.pickupBranchId);
   }
 
   /** 色塊上顯示的文字：承租人姓名與取車據點；空間不夠時樣板用 CSS truncate 截斷。 */
@@ -218,7 +218,7 @@ export class TimelineViewComponent {
 
   /** title／aria-label 用的完整資訊：狀態＋色塊文字＋逾時／需調度標示。 */
   blockTitle(block: TimelineBlock): string {
-    const parts = [this.t.booking.statusLabels[block.kind], this.blockLabel(block)];
+    const parts = [this.t.order.statusLabels[block.kind], this.blockLabel(block)];
     if (block.overdue) parts.push(this.t.timeline.overdue);
     if (block.needsDispatch) parts.push(this.t.dispatch.workList.needsDispatch);
     return parts.join('・');
@@ -229,7 +229,7 @@ export class TimelineViewComponent {
    * （見設計文件第 6 節），這裡直接前往訂單詳情，不再維護第二套簡化版本。
    */
   openDetail(bookingId: string): void {
-    const booking = this.bookingStore.bookings().find((b) => b.id === bookingId);
-    if (booking) void this.orderDetail.open(booking.id);
+    const order = this.orderStore.orders().find((b) => b.id === bookingId);
+    if (order) void this.orderDetail.open(order.id);
   }
 }

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { InsurancePlan, PriceBreakdown, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { createOrderForm, setPaymentDrafts } from '../order-form/order-form';
-import { OrderRequirement } from '../order-form/order-form-derived';
+import {
+  createOrderForm,
+  setPaymentDrafts,
+  OrderRequirement,
+} from '@car-rental/order-form';
 import { buildOrderSummary } from './order-summary';
 
 const t = ZH_TW;
@@ -20,7 +23,7 @@ const vehicle: Vehicle = {
   status: 'available',
   mileage: 100,
   createdAt: '2026-01-01T00:00:00.000Z',
-  location: 'mzg-port',
+  branchId: 'mzg-port',
   insurancePlans: [standard],
 };
 
@@ -33,13 +36,13 @@ const allMet: OrderRequirement[] = (['vehicle', 'period', 'branches', 'renter'] 
   issues: [],
 }));
 
-function filledValue(pickupLocation = 'mzg-port') {
+function filledValue(pickupBranchId = 'mzg-port') {
   const form = createOrderForm({
     vehicleId: 'v1',
     startTime: new Date('2026-10-01T09:00').toISOString(),
     endTime: new Date('2026-10-03T09:00').toISOString(),
-    pickupLocation,
-    returnLocation: 'mzg-airport',
+    pickupBranchId,
+    returnBranchId: 'mzg-airport',
     insurancePlanId: 'standard',
     depositRequired: 885,
   });
@@ -67,7 +70,7 @@ describe('buildOrderSummary（訂單摘要欄的內容）', () => {
       dispatchRoute: null,
       renterName: '',
       renterPhone: '',
-      insurance: t.bookingForm.insuranceNone,
+      insurance: t.orderForm.insuranceNone,
       quote: null,
       depositRequired: 0,
       collected: 0,
@@ -138,7 +141,7 @@ describe('buildOrderSummary（訂單摘要欄的內容）', () => {
 
   it('「還缺」只列還沒填的項目；待補清單原樣帶入', () => {
     const requirements: OrderRequirement[] = [
-      { group: 'vehicle', met: false, missing: false, issues: [t.bookingForm.vehicleConflict] },
+      { group: 'vehicle', met: false, missing: false, issues: [t.orderForm.vehicleConflict] },
       { group: 'period', met: true, missing: false, issues: [] },
       { group: 'branches', met: true, missing: false, issues: [] },
       { group: 'renter', met: false, missing: true, issues: [] },
@@ -148,12 +151,12 @@ describe('buildOrderSummary（訂單摘要欄的內容）', () => {
       vehicle,
       quote,
       requirements,
-      incompleteItems: [t.bookingForm.incomplete.contractNotSigned],
+      incompleteItems: [t.orderForm.incomplete.contractNotSigned],
       now: NOW,
     });
     expect(summary.missing).toEqual(['renter']);
     expect(summary.requirements).toBe(requirements);
-    expect(summary.incompleteItems).toEqual([t.bookingForm.incomplete.contractNotSigned]);
+    expect(summary.incompleteItems).toEqual([t.orderForm.incomplete.contractNotSigned]);
   });
 
   it('選的保險方案不屬於這台車（例如換了車型）：顯示「未選」', () => {

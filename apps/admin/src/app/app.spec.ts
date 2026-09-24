@@ -20,7 +20,7 @@ describe('App', () => {
           { path: 'vehicles/:id', component: BlankComponent },
           { path: 'settings', component: BlankComponent },
           { path: 'no-nav-match', component: BlankComponent },
-          { path: 'bookings/members', component: BlankComponent },
+          { path: 'orders/members', component: BlankComponent },
           { path: 'bookings', component: BlankComponent },
           {
             path: 'orders',
@@ -130,18 +130,18 @@ describe('App', () => {
       expect(navItems.map((entry) => entry.label)).toEqual(['總覽', '車輛與配件', '訂單管理', '定價管理', '合作通路']);
       expect(groupOf(navItems, '車輛與配件')?.children.map((c) => c.label)).toEqual(['車輛清單', '配件清單']);
       expect(groupOf(navItems, '訂單管理')?.children).toEqual([
-        { route: '/bookings', label: '訂單列表', icon: 'calendar_month', matchPrefixes: ['/orders/'] },
-        { route: '/bookings/members', label: '會員', icon: 'group' },
+        { route: '/orders', label: '訂單列表', icon: 'calendar_month', matchPrefixes: ['/orders/'] },
+        { route: '/orders/members', label: '會員', icon: 'group' },
       ]);
     });
 
-    it('/bookings：頁首「訂單管理 › 訂單列表」，側欄群組展開、「訂單列表」亮起', async () => {
+    it('/orders：頁首「訂單管理 › 訂單列表」，側欄群組展開、「訂單列表」亮起', async () => {
       const fixture = TestBed.createComponent(App);
       const app = fixture.componentInstance;
       const router = TestBed.inject(Router);
       await fixture.whenStable();
 
-      await router.navigateByUrl('/bookings?q=林美惠');
+      await router.navigateByUrl('/orders?q=林美惠');
       fixture.detectChanges();
 
       expect(app['defaultTitle']).toEqual({ title: '訂單列表', breadcrumbs: [{ label: '訂單管理' }] });
@@ -154,13 +154,13 @@ describe('App', () => {
       expect(el.querySelector('.nav-sublink.active')?.getAttribute('aria-current')).toBe('page');
     });
 
-    it('/bookings/members：頁首「訂單管理 › 會員」，側欄亮「會員」（不是訂單列表）', async () => {
+    it('/orders/members：頁首「訂單管理 › 會員」，側欄亮「會員」（不是訂單列表）', async () => {
       const fixture = TestBed.createComponent(App);
       const app = fixture.componentInstance;
       const router = TestBed.inject(Router);
       await fixture.whenStable();
 
-      await router.navigateByUrl('/bookings/members');
+      await router.navigateByUrl('/orders/members');
       fixture.detectChanges();
 
       expect(app['defaultTitle']).toEqual({ title: '會員', breadcrumbs: [{ label: '訂單管理' }] });
@@ -184,14 +184,14 @@ describe('App', () => {
       expect(activeSublinks()).toEqual(['訂單列表']);
     });
 
-    it('頁面自己登記的麵包屑（新增訂單、訂單詳情、會員頁都寫 nav.bookings 並連回 /bookings）與側欄群組同名', () => {
+    it('頁面自己登記的麵包屑（新增訂單、訂單詳情、會員頁都寫 nav.orders 並連回 /orders）與側欄群組同名', () => {
       const app = TestBed.createComponent(App).componentInstance;
       const orderGroup = (app['navItems'] as NavEntry[]).find(
-        (entry): entry is NavGroup => isNavGroup(entry) && entry.children.some((c) => c.route === '/bookings'),
+        (entry): entry is NavGroup => isNavGroup(entry) && entry.children.some((c) => c.route === '/orders'),
       );
 
-      expect(orderGroup?.label).toBe(ZH_TW.nav.bookings);
-      expect(ZH_TW.nav.bookings).toBe('訂單管理');
+      expect(orderGroup?.label).toBe(ZH_TW.nav.orders);
+      expect(ZH_TW.nav.orders).toBe('訂單管理');
       // 車輛詳情的麵包屑「車輛與配件 › 車輛清單 › {車牌}」同理。
       expect(ZH_TW.nav.productGroup).toBe('車輛與配件');
     });

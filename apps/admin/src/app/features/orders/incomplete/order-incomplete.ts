@@ -8,12 +8,15 @@ import {
   MemberKind,
   PaymentRecord,
   PaymentSummary,
-  RentalBooking,
+  RentalOrder,
   contractSigningState,
 } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import type { OrderFormValue } from '../order-form/order-form';
-import { driverCredentialDraftOf, sameDriverCredential } from '../order-form/order-driver';
+import type { OrderFormValue } from '@car-rental/order-form';
+import {
+  driverCredentialDraftOf,
+  sameDriverCredential,
+} from '@car-rental/order-form';
 import type { OrderDetailSection } from '../navigation/order-detail-sections';
 
 /**
@@ -95,13 +98,13 @@ export const ORDER_INCOMPLETE_TARGET: Record<OrderIncompleteKind, OrderIncomplet
 };
 
 const LABELS: Record<OrderIncompleteKind, string> = {
-  missingEmail: t.bookingForm.incomplete.missingEmail,
-  depositNotCollected: t.bookingForm.incomplete.depositNotCollected,
-  contractNotSigned: t.bookingForm.incomplete.contractNotSigned,
+  missingEmail: t.orderForm.incomplete.missingEmail,
+  depositNotCollected: t.orderForm.incomplete.depositNotCollected,
+  contractNotSigned: t.orderForm.incomplete.contractNotSigned,
   contractNeedsResign: t.orderForm.incomplete.contractNeedsResign,
-  identityNotVerified: t.bookingForm.incomplete.identityNotVerified,
-  driverNotVerified: t.bookingForm.incomplete.driverNotVerified,
-  balanceNotCollected: t.bookingForm.incomplete.balanceNotCollected,
+  identityNotVerified: t.orderForm.incomplete.identityNotVerified,
+  driverNotVerified: t.orderForm.incomplete.driverNotVerified,
+  balanceNotCollected: t.orderForm.incomplete.balanceNotCollected,
 };
 
 export interface OrderIncompleteItem {
@@ -151,7 +154,7 @@ export function driverCheckOf(credential: DriverCredential | undefined, kind: Me
 
 /** 已成立訂單的實際紀錄。 */
 export interface OrderRecords {
-  booking: RentalBooking;
+  order: RentalOrder;
   member: Member | undefined;
   payments: readonly PaymentRecord[];
   paymentSummary: Pick<PaymentSummary, 'requiredTotal' | 'netPaid'>;
@@ -161,14 +164,14 @@ export interface OrderRecords {
 }
 
 export function incompleteFactsFromOrder(records: OrderRecords): OrderIncompleteFacts {
-  const { booking, member } = records;
+  const { order, member } = records;
   return {
     renterEmail: member?.email ?? '',
-    depositRequired: booking.depositRequired,
+    depositRequired: order.depositRequired,
     depositCollected: records.payments
       .filter((p) => p.purpose === 'deposit' && p.status === 'confirmed')
       .reduce((sum, p) => sum + p.amount, 0),
-    amountDue: booking.priceBreakdown ? records.paymentSummary.requiredTotal : undefined,
+    amountDue: order.priceBreakdown ? records.paymentSummary.requiredTotal : undefined,
     collected: records.paymentSummary.netPaid,
     contract: contractSigningState(records.contractVersions),
     identity: identityCheckOf(records.identityDocuments, member?.kind),

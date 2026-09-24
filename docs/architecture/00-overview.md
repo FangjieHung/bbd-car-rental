@@ -12,8 +12,8 @@
 
 澎湖租車行的管理系統。核心概念：車行有自己的車隊，透過**三個管道**把車租出去——
 車行員工在後台直接操作、消費者自己上網訂、合作民宿幫住客代訂。三個管道最終都變成
-同一種資料（`RentalBooking` 訂單），只是「誰下的單」不同，這個差異用
-`RentalBooking.sourcePartnerId` 這個欄位標記（見 `libs/domain/src/lib/models/rental-booking.ts`）。
+同一種資料（`RentalOrder` 訂單），只是「誰下的單」不同，這個差異用
+`RentalOrder.sourcePartnerId` 這個欄位標記（見 `libs/domain/src/lib/models/rental-order.ts`）。
 
 ## Nx Monorepo 結構
 
@@ -29,6 +29,7 @@ libs/
   ui/                # 無業務邏輯的通用 UI 元件（表格、雙月日期區間選擇器…），三個 app 共用
   booking-flow/      # 預約流程四個路由頁 + CatalogStore/QuoteService，booking 和 affiliate 都用它
   contract-signing/  # 合約檢視與簽署共用元件，目前 admin 用、設計上供官網共用
+  order-form/        # 建單／編輯訂單的積木層（表單定義、區塊元件、送出介面），目前 admin 用、設計上供官網共用
   theme-pack/        # 雙軸主題系統（質地 × 配色），目前只有 admin 套用
 ```
 
@@ -53,7 +54,7 @@ flowchart LR
         B["affiliate /p/:slug 民宿代訂"]
         C[admin 員工手動建單]
     end
-    A -->|sourcePartnerId 空| D[(RentalBooking\nstatus: reserved)]
+    A -->|sourcePartnerId 空| D[(RentalOrder\nstatus: reserved)]
     B -->|"sourcePartnerId = partner.id"| D
     C --> D
     D --> E[付款分類帳追加一筆\nconfirmed 的 balance 款項]

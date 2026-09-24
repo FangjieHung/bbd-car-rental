@@ -1,7 +1,7 @@
 import { InjectionToken, inject } from '@angular/core';
 import { PriceBreakdown, Vehicle, VehicleAvailabilityResult, calculatePrice, vehicleAvailability } from '../../../core/models';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
 
 /**
@@ -24,14 +24,14 @@ export const RENTAL_AVAILABILITY = new InjectionToken<RentalAvailabilitySource>(
   providedIn: 'root',
   factory: (): RentalAvailabilitySource => {
     const vehicleStore = inject(VehicleStore);
-    const bookingStore = inject(BookingStore);
+    const orderStore = inject(OrderStore);
     const pricingStore = inject(PricingStore);
     return {
       forPeriod: (startIso, endIso, excludeBookingId) =>
         vehicleAvailability(vehicleStore.vehicles(), {
           startTime: startIso,
           endTime: endIso,
-          bookings: bookingStore.bookings(),
+          orders: orderStore.orders(),
           ...(excludeBookingId ? { excludeBookingId } : {}),
         }),
       // 與建單報價（AdminOrderFormData.quote）同一套定價引擎與方案選法，只是不帶保險與配件。

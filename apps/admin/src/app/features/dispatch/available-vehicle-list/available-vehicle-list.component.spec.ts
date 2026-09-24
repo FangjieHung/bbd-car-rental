@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { RentalBooking, Vehicle } from '../../../core/models';
+import { RentalOrder, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { fmtDateTime } from '../../../core/date-utils';
 import { createOrderRepos, makeVehicle } from '../../orders/testing';
@@ -13,15 +13,15 @@ const iso = (local: string) => new Date(local).toISOString();
 const START = '2026-10-05T09:00';
 const END = '2026-10-07T09:00';
 
-function booking(partial: Partial<RentalBooking>): RentalBooking {
+function order(partial: Partial<RentalOrder>): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v3',
     memberId: 'm1',
     startTime: iso('2026-10-06T09:00'),
     endTime: iso('2026-10-08T18:00'),
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
     status: 'reserved',
     depositRequired: 0,
     ...partial,
@@ -29,25 +29,25 @@ function booking(partial: Partial<RentalBooking>): RentalBooking {
 }
 
 const VEHICLES: Vehicle[] = [
-  makeVehicle({ id: 'v1', plateNumber: 'ABC-123', model: 'Altis', location: 'mzg-airport' }),
-  makeVehicle({ id: 'v2', plateNumber: 'BCD-234', model: 'Yaris', location: 'mzg-port' }),
-  makeVehicle({ id: 'v3', plateNumber: 'CDE-345', model: 'Vios', location: 'mzg-airport' }),
-  makeVehicle({ id: 'v4', plateNumber: 'DEF-456', model: 'Sienta', status: 'maintenance', location: 'mzg-store' }),
-  makeVehicle({ id: 'v5', plateNumber: 'EFG-567', category: 'scooter', model: '勁戰', location: 'mzg-store' }),
-  makeVehicle({ id: 'v6', plateNumber: 'FGH-678', model: 'Wish', location: undefined }),
-  makeVehicle({ id: 'v7', plateNumber: 'AAA-111', model: 'Corolla', location: 'mzg-airport' }),
+  makeVehicle({ id: 'v1', plateNumber: 'ABC-123', model: 'Altis', branchId: 'mzg-airport' }),
+  makeVehicle({ id: 'v2', plateNumber: 'BCD-234', model: 'Yaris', branchId: 'mzg-port' }),
+  makeVehicle({ id: 'v3', plateNumber: 'CDE-345', model: 'Vios', branchId: 'mzg-airport' }),
+  makeVehicle({ id: 'v4', plateNumber: 'DEF-456', model: 'Sienta', status: 'maintenance', branchId: 'mzg-store' }),
+  makeVehicle({ id: 'v5', plateNumber: 'EFG-567', category: 'scooter', model: '勁戰', branchId: 'mzg-store' }),
+  makeVehicle({ id: 'v6', plateNumber: 'FGH-678', model: 'Wish', branchId: undefined }),
+  makeVehicle({ id: 'v7', plateNumber: 'AAA-111', model: 'Corolla', branchId: 'mzg-airport' }),
 ];
 
 interface SetupOptions {
   vehicles?: Vehicle[];
-  bookings?: RentalBooking[];
+  orders?: RentalOrder[];
   inputs?: Partial<Record<keyof AvailableVehicleListComponent, unknown>>;
 }
 
 function setup(options: SetupOptions = {}) {
   const repos = createOrderRepos({
     vehicles: options.vehicles ?? VEHICLES,
-    bookings: options.bookings ?? [booking({})],
+    orders: options.orders ?? [order({})],
   });
   TestBed.configureTestingModule({ providers: [...repos.providers] });
   const fixture = TestBed.createComponent(AvailableVehicleListComponent);
@@ -90,7 +90,7 @@ describe('AvailableVehicleListComponent 可租判斷', () => {
 
   it('已完成、已取消的訂單不佔用車輛', () => {
     const { component } = setup({
-      bookings: [booking({ id: 'x', status: 'completed' }), booking({ id: 'y', status: 'cancelled' })],
+      orders: [order({ id: 'x', status: 'completed' }), order({ id: 'y', status: 'cancelled' })],
     });
     expect(component.rows().map((r) => r.vehicle.id)).toContain('v3');
   });
@@ -98,7 +98,7 @@ describe('AvailableVehicleListComponent 可租判斷', () => {
 
 describe('AvailableVehicleListComponent 排序與需調度', () => {
   it('有取車據點：已在取車據點的排前面，其餘依據點順序、車牌；小字說明排序', () => {
-    const { el } = setup({ inputs: { pickupLocation: 'mzg-port' } });
+    const { el } = setup({ inputs: { pickupBranchId: 'mzg-port' } });
     // 馬公港（取車據點）→ 馬公機場（AAA、ABC）→ 馬公中正門市 → 所在據點未設定
     expect(plates(el)).toEqual(['BCD-234', 'AAA-111', 'ABC-123', 'EFG-567', 'FGH-678']);
     expect(text(el.querySelector('.avl__hint'))).toBe(t.pickupFirstHint);
@@ -111,7 +111,7 @@ describe('AvailableVehicleListComponent 排序與需調度', () => {
   });
 
   it('在取車據點的車顯示「免調度」、其他寫出路線「需調度 {所在據點}→{取車據點}」', () => {
-    const { component, el } = setup({ inputs: { pickupLocation: 'mzg-port' } });
+    const { component, el } = setup({ inputs: { pickupBranchId: 'mzg-port' } });
     const byId = (id: string) => component.rows().find((r) => r.vehicle.id === id);
     expect(byId('v2')?.dispatch).toEqual({ status: 'success', label: t.noDispatch });
     expect(byId('v1')?.dispatch).toEqual({ status: 'warning', label: '需調度 馬公機場櫃檯→馬公港櫃檯' });
@@ -124,7 +124,7 @@ describe('AvailableVehicleListComponent 排序與需調度', () => {
   });
 
   it('所在據點未設定：淡色寫「所在據點未設定」，不猜需不需要調度', () => {
-    const { component, el } = setup({ inputs: { pickupLocation: 'mzg-port' } });
+    const { component, el } = setup({ inputs: { pickupBranchId: 'mzg-port' } });
     expect(component.rows().find((r) => r.vehicle.id === 'v6')?.dispatch).toBeUndefined();
     const row = rowWith(el.querySelectorAll('.avl__rows .avl__row'), 'FGH-678');
     expect(text(row.querySelector('.avl__muted'))).toBe(t.locationUnset);
@@ -167,7 +167,7 @@ describe('AvailableVehicleListComponent 標題、租金、不能租', () => {
       text(r.querySelector('.avl__model')),
       text(r.querySelector('.avl__reason')),
     ]);
-    const b = booking({});
+    const b = order({});
     expect(rows).toEqual([
       ['CDE-345', 'Vios', `已預訂 ${fmtDateTime(b.startTime)}–${fmtDateTime(b.endTime)}`],
       ['DEF-456', 'Sienta', t.maintenance],

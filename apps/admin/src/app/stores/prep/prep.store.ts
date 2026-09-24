@@ -1,15 +1,15 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { PrepQueueItem, PrepTask, isPrepTaskOpen, prepQueue } from '@car-rental/domain';
 import { PREP_TASK_REPO } from '../../core/repositories/tokens';
-import { BookingStore } from '../booking/booking.store';
+import { OrderStore } from '../order/order.store';
 
 export interface OpenPrepTaskInput {
   vehicleId: string;
   bookingId: string;
   /** 實際還車時間（還車紀錄的 actualAt）。 */
   returnedAt: string;
-  /** 還車據點 id（訂單的 returnLocation）。 */
-  returnLocation: string;
+  /** 還車據點 id（訂單的 returnBranchId）。 */
+  returnBranchId: string;
 }
 
 /**
@@ -22,7 +22,7 @@ export interface OpenPrepTaskInput {
 @Injectable({ providedIn: 'root' })
 export class PrepStore {
   private readonly repo = inject(PREP_TASK_REPO);
-  private readonly bookingStore = inject(BookingStore);
+  private readonly orderStore = inject(OrderStore);
 
   private readonly _tasks = signal<PrepTask[]>(this.repo.getAll());
   readonly tasks: Signal<PrepTask[]> = this._tasks.asReadonly();
@@ -35,7 +35,7 @@ export class PrepStore {
 
   /** 待整備清單：依該車下一次取車時間排序，最急的在上面、沒有下一筆取車的排最後（見 prepQueue）。 */
   readonly queue: Signal<PrepQueueItem[]> = computed(() =>
-    prepQueue(this._tasks(), this.bookingStore.bookings()),
+    prepQueue(this._tasks(), this.orderStore.orders()),
   );
 
   private readonly openVehicleIds = computed(() => new Set(this.openTasks().map((t) => t.vehicleId)));

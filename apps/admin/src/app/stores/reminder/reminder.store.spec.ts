@@ -64,10 +64,10 @@ describe('ReminderStore', () => {
     });
   });
 
-  describe('scheduleForBooking：初次排程', () => {
+  describe('scheduleForOrder：初次排程', () => {
     it('有 Email：24 小時前與 2 小時前兩則都寫入 scheduled 狀態，scheduledFor 正確反推，且真的持久化到 REMINDER_STATUS_REPO', async () => {
       const store = configure();
-      const results = await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
+      const results = await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
 
       expect(results).toHaveLength(2);
       expect(results.every((r) => r.state === 'scheduled')).toBe(true);
@@ -96,7 +96,7 @@ describe('ReminderStore', () => {
 
     it('沒有 Email：兩則都回報 missing_email，不帶 scheduledFor 欄位，但仍然持久化（不能因為沒有 Email 就什麼都不寫）', async () => {
       const store = configure();
-      const results = await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END });
+      const results = await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END });
 
       expect(results).toHaveLength(2);
       for (const r of results) {
@@ -107,13 +107,13 @@ describe('ReminderStore', () => {
     });
   });
 
-  describe('scheduleForBooking：修改還車時間後重新排程', () => {
+  describe('scheduleForOrder：修改還車時間後重新排程', () => {
     it('取消舊排程、依新時間重排，且不會產生重複紀錄（同一 offset 沿用同一筆紀錄的 id）', async () => {
       const store = configure();
-      const first = await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
+      const first = await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
       const firstIds = Object.fromEntries(first.map((s) => [s.offset, s.id]));
 
-      const second = await store.scheduleForBooking({
+      const second = await store.scheduleForOrder({
         bookingId: 'b1',
         endTime: T_END_MOVED,
         email: 'a@b.com',
@@ -151,7 +151,7 @@ describe('ReminderStore', () => {
         },
       ]);
 
-      await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END_MOVED, email: 'a@b.com' });
+      await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END_MOVED, email: 'a@b.com' });
 
       // 24h 這則已經 sent，不該出現在 cancel 呼叫裡，內容也完全不變。
       expect(gateway.cancelCalls.some((c) => c.offset === '24h_before_return')).toBe(false);
@@ -165,13 +165,13 @@ describe('ReminderStore', () => {
     });
   });
 
-  describe('suppressForBooking：訂單取消或完成後不寄', () => {
+  describe('suppressForOrder：訂單取消或完成後不寄', () => {
     it('取消所有尚未 sent 的排程並移除紀錄，已 sent 的紀錄保留作為歷程', async () => {
       const store = configure();
-      await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
+      await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
       store.recordMockDispatchOutcome({ bookingId: 'b1', offset: '24h_before_return', outcome: 'sent' });
 
-      await store.suppressForBooking('b1');
+      await store.suppressForOrder('b1');
 
       // 只有還沒 sent 的 2h 排程需要真的取消；已經 sent 的 24h 不需要（也不應該）被取消。
       expect(gateway.cancelCalls).toEqual([{ bookingId: 'b1', offset: '2h_before_return' }]);
@@ -184,22 +184,22 @@ describe('ReminderStore', () => {
 
     it('對沒有任何提醒紀錄的訂單是安全的 no-op', async () => {
       const store = configure();
-      await expect(store.suppressForBooking('no-such-booking')).resolves.toBeUndefined();
+      await expect(store.suppressForOrder('no-such-order')).resolves.toBeUndefined();
       expect(gateway.cancelCalls).toHaveLength(0);
     });
   });
 
   describe('recordMockDispatchOutcome：誠實保證——只有這個明確標示的模擬掛勾能寫入 sent／failed', () => {
-    it('scheduleForBooking 本身永遠不會寫入 sent：排程流程的結果只會是 scheduled 或 missing_email', async () => {
+    it('scheduleForOrder 本身永遠不會寫入 sent：排程流程的結果只會是 scheduled 或 missing_email', async () => {
       const store = configure();
-      const results = await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
+      const results = await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
       expect(results.some((r) => r.state === 'sent')).toBe(false);
       expect(repo.getAll().some((r) => r.state === 'sent')).toBe(false);
     });
 
     it('標記已寄送：state 轉為 sent、寫入 sentAt，且不影響另一個 offset', async () => {
       const store = configure();
-      await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
+      await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
 
       const updated = store.recordMockDispatchOutcome({
         bookingId: 'b1',
@@ -216,7 +216,7 @@ describe('ReminderStore', () => {
 
     it('標記寄送失敗：state 轉為 failed、寫入 failureReason，並保留原本的 scheduledFor 供事後判斷是否可重試', async () => {
       const store = configure();
-      await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
+      await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
 
       const updated = store.recordMockDispatchOutcome({
         bookingId: 'b1',
@@ -238,7 +238,7 @@ describe('ReminderStore', () => {
       ).toThrow(ReminderNotScheduledError);
 
       // missing_email 狀態也不該能標記寄送結果——根本沒有寄送對象。
-      await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END });
+      await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END });
       expect(() =>
         store.recordMockDispatchOutcome({ bookingId: 'b1', offset: '24h_before_return', outcome: 'sent' }),
       ).toThrow(ReminderNotScheduledError);
@@ -288,8 +288,8 @@ describe('ReminderStore', () => {
   describe('statusesFor', () => {
     it('依 24h／2h 固定順序回傳，且只回傳該訂單自己的紀錄', async () => {
       const store = configure();
-      await store.scheduleForBooking({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
-      await store.scheduleForBooking({ bookingId: 'b2', endTime: T_END, email: 'c@d.com' });
+      await store.scheduleForOrder({ bookingId: 'b1', endTime: T_END, email: 'a@b.com' });
+      await store.scheduleForOrder({ bookingId: 'b2', endTime: T_END, email: 'c@d.com' });
 
       const forB1 = store.statusesFor('b1');
       expect(forB1.map((s) => s.offset)).toEqual(['24h_before_return', '2h_before_return']);

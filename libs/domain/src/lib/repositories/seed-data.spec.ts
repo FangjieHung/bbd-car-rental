@@ -1,4 +1,4 @@
-import { seedPricingPlans, seedVehicles, seedPartners, seedBookings, seedPrepTasks } from './seed-data';
+import { seedPricingPlans, seedVehicles, seedPartners, seedOrders, seedPrepTasks } from './seed-data';
 import { isPrepTaskOpen, prepQueue } from '../prep';
 
 describe('seed-data', () => {
@@ -21,7 +21,7 @@ describe('seed-data', () => {
 
   it('每個帶 sourcePartnerId 的 seed 訂單，其 partner 存在於 seedPartners', () => {
     const ids = new Set(seedPartners().map((p) => p.id));
-    for (const b of seedBookings()) if (b.sourcePartnerId) expect(ids.has(b.sourcePartnerId)).toBe(true);
+    for (const b of seedOrders()) if (b.sourcePartnerId) expect(ids.has(b.sourcePartnerId)).toBe(true);
   });
 
   it('seedPartners slug 唯一', () => {
@@ -30,9 +30,9 @@ describe('seed-data', () => {
   });
 
   it('4.3：示範的待整備掛在最近一筆已完成的還車上，車輛與還車據點一致；該車還有下一次取車', () => {
-    const bookings = seedBookings();
+    const orders = seedOrders();
     const tasks = seedPrepTasks();
-    const latestCompleted = bookings
+    const latestCompleted = orders
       .filter((b) => b.status === 'completed')
       .sort((a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime())[0];
 
@@ -41,10 +41,10 @@ describe('seed-data', () => {
     expect(isPrepTaskOpen(task)).toBe(true);
     expect(task.bookingId).toBe(latestCompleted.id);
     expect(task.vehicleId).toBe(latestCompleted.vehicleId);
-    expect(task.returnLocation).toBe(latestCompleted.returnLocation);
+    expect(task.returnBranchId).toBe(latestCompleted.returnBranchId);
     expect(task.returnedAt).toBe(latestCompleted.endTime);
     expect(seedVehicles().some((v) => v.id === task.vehicleId)).toBe(true);
     // 清單示範時「下一次取車」欄不是空的。
-    expect(prepQueue(tasks, bookings)[0].nextPickup).toBeDefined();
+    expect(prepQueue(tasks, orders)[0].nextPickup).toBeDefined();
   });
 });

@@ -73,7 +73,7 @@ export class AvailableVehicleListComponent {
   /** 只列這個車種；空字串＝全部。 */
   readonly category = input<VehicleCategory | ''>('');
   /** 取車據點 id；有值時已在這個據點的車排前面，並標出免調度／需調度。 */
-  readonly pickupLocation = input('');
+  readonly pickupBranchId = input('');
   /** true：單選清單（每列有單選圈、選中的列加框線）；false：每列是一顆按鈕。 */
   readonly selectable = input(false);
   /** 單選時目前選中的車輛 id。 */
@@ -108,21 +108,21 @@ export class AvailableVehicleListComponent {
     const period = this.period();
     if (!availability || !period) return [];
     const category = this.category();
-    const pickup = findBranch(this.pickupLocation());
+    const pickup = findBranch(this.pickupBranchId());
     const startDate = toDateKey(period.start);
     const endDate = toDateKey(period.end);
-    const atPickup = (v: Vehicle) => !!pickup && findBranch(v.location)?.id === pickup.id;
+    const atPickup = (v: Vehicle) => !!pickup && findBranch(v.branchId)?.id === pickup.id;
 
     return availability.available
       .filter((v) => !category || v.category === category)
       .sort(
         (a, b) =>
           Number(atPickup(b)) - Number(atPickup(a)) ||
-          branchOrder(findBranch(a.location)?.id) - branchOrder(findBranch(b.location)?.id) ||
+          branchOrder(findBranch(a.branchId)?.id) - branchOrder(findBranch(b.branchId)?.id) ||
           a.plateNumber.localeCompare(b.plateNumber),
       )
       .map((vehicle) => {
-        const branch = findBranch(vehicle.location);
+        const branch = findBranch(vehicle.branchId);
         const row: AvailableVehicleRow = { vehicle, quote: this.source.quote(vehicle, startDate, endDate) };
         if (branch) row.branchText = fill(t.rentalSearch.atBranch, { branch: branch.name });
         if (branch && pickup) {
@@ -174,8 +174,8 @@ export class AvailableVehicleListComponent {
   private reasonText(reason: VehicleUnavailableReason): string {
     if (reason.kind === 'maintenance') return t.rentalSearch.maintenance;
     return fill(t.rentalSearch.booked, {
-      start: fmtDateTime(reason.booking.startTime),
-      end: fmtDateTime(reason.booking.endTime),
+      start: fmtDateTime(reason.order.startTime),
+      end: fmtDateTime(reason.order.endTime),
     });
   }
 }

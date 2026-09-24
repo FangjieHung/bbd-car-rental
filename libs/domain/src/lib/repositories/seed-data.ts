@@ -2,7 +2,7 @@ import {
   Vehicle,
   insurancePlansFor,
   Member,
-  RentalBooking,
+  RentalOrder,
   PricingPlan,
   SeasonCalendar,
   AddOn,
@@ -49,7 +49,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: true,
       supplierCount: 1,
-      location: 'mzg-airport',
+      branchId: 'mzg-airport',
       insurancePlans: insurancePlansFor('ev'),
       fuelPolicy: 'full_to_full',
       mileagePolicy: 'unlimited',
@@ -73,7 +73,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: false,
       supplierCount: 2,
-      location: 'mzg-store',
+      branchId: 'mzg-store',
       insurancePlans: insurancePlansFor('scooter'),
       fuelPolicy: 'full_to_full',
       mileagePolicy: 'unlimited',
@@ -97,7 +97,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: true,
       supplierCount: 1,
-      location: 'mzg-airport',
+      branchId: 'mzg-airport',
       insurancePlans: insurancePlansFor('car'),
       fuelPolicy: 'full_to_full',
       mileagePolicy: 'unlimited',
@@ -121,7 +121,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: false,
       supplierCount: 1,
-      location: 'mzg-port',
+      branchId: 'mzg-port',
       insurancePlans: insurancePlansFor('car'),
       fuelPolicy: 'full_to_full',
       mileagePolicy: 'unlimited',
@@ -148,7 +148,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: true,
       supplierCount: 3,
-      location: 'mzg-airport',
+      branchId: 'mzg-airport',
       insurancePlans: insurancePlansFor('scooter'),
       fuelPolicy: 'full_to_full',
       mileagePolicy: 'unlimited',
@@ -172,7 +172,7 @@ export function seedVehicles(): Vehicle[] {
       transmission: 'auto',
       instantConfirm: true,
       supplierCount: 2,
-      location: 'mzg-port',
+      branchId: 'mzg-port',
       insurancePlans: insurancePlansFor('car'),
       fuelPolicy: 'full_to_full',
       mileagePolicy: 'unlimited',
@@ -189,7 +189,7 @@ export function seedMembers(): Member[] {
   ];
 }
 
-export function seedBookings(): RentalBooking[] {
+export function seedOrders(): RentalOrder[] {
   return [
     {
       id: 'b1',
@@ -197,8 +197,8 @@ export function seedBookings(): RentalBooking[] {
       memberId: 'c1',
       startTime: isoAt(-1, 9),
       endTime: isoAt(1, 18),
-      pickupLocation: 'mzg-store',
-      returnLocation: 'mzg-store',
+      pickupBranchId: 'mzg-store',
+      returnBranchId: 'mzg-store',
       status: 'in_progress',
       depositRequired: 0,
     },
@@ -209,8 +209,8 @@ export function seedBookings(): RentalBooking[] {
       startTime: isoAt(0, 10),
       endTime: isoAt(2, 17),
       // 取車據點與車輛所在據點（mzg-airport）相同，還車據點不同（甲地租、乙地還示範案例）。
-      pickupLocation: 'mzg-airport',
-      returnLocation: 'mzg-store',
+      pickupBranchId: 'mzg-airport',
+      returnBranchId: 'mzg-store',
       status: 'reserved',
       depositRequired: 0,
       sourcePartnerId: 'pt1',
@@ -222,8 +222,8 @@ export function seedBookings(): RentalBooking[] {
       startTime: isoAt(2, 9),
       endTime: isoAt(4, 18),
       // 需調度示範案例：車輛 v1 所在據點是 mzg-airport，取車據點是 mzg-store，兩者不同。
-      pickupLocation: 'mzg-store',
-      returnLocation: 'mzg-store',
+      pickupBranchId: 'mzg-store',
+      returnBranchId: 'mzg-store',
       status: 'reserved',
       depositRequired: 0,
     },
@@ -234,8 +234,8 @@ export function seedBookings(): RentalBooking[] {
       startTime: isoAt(3, 9),
       endTime: isoAt(6, 12),
       // 取車據點與車輛所在據點（mzg-airport）相同（不需調度），還車據點不同（甲地租、乙地還）。
-      pickupLocation: 'mzg-airport',
-      returnLocation: 'mzg-port',
+      pickupBranchId: 'mzg-airport',
+      returnBranchId: 'mzg-port',
       status: 'reserved',
       depositRequired: 1000,
     },
@@ -245,8 +245,8 @@ export function seedBookings(): RentalBooking[] {
       memberId: 'c2',
       startTime: isoAt(-5, 9),
       endTime: isoAt(-3, 18),
-      pickupLocation: 'mzg-store',
-      returnLocation: 'mzg-store',
+      pickupBranchId: 'mzg-store',
+      returnBranchId: 'mzg-store',
       status: 'completed',
       depositRequired: 0,
       sourcePartnerId: 'pt1',
@@ -258,8 +258,8 @@ export function seedBookings(): RentalBooking[] {
       startTime: isoAt(0, 14),
       endTime: isoAt(0, 18),
       // 不需調度示範案例：取車據點與車輛所在據點（mzg-port）相同。
-      pickupLocation: 'mzg-port',
-      returnLocation: 'mzg-port',
+      pickupBranchId: 'mzg-port',
+      returnBranchId: 'mzg-port',
       status: 'reserved',
       depositRequired: 1500,
     },
@@ -269,8 +269,8 @@ export function seedBookings(): RentalBooking[] {
       memberId: 'c3',
       startTime: isoAt(-10, 9),
       endTime: isoAt(-8, 18),
-      pickupLocation: 'mzg-store',
-      returnLocation: 'mzg-store',
+      pickupBranchId: 'mzg-store',
+      returnBranchId: 'mzg-store',
       status: 'cancelled',
       depositRequired: 1000,
     },
@@ -281,8 +281,8 @@ export function seedBookings(): RentalBooking[] {
       startTime: isoAt(7, 9),
       endTime: isoAt(9, 18),
       // 需調度示範案例（第二筆）：車輛 v6 所在據點是 mzg-port，取車據點是 mzg-airport，兩者不同。
-      pickupLocation: 'mzg-airport',
-      returnLocation: 'mzg-airport',
+      pickupBranchId: 'mzg-airport',
+      returnBranchId: 'mzg-airport',
       status: 'reserved',
       depositRequired: 1500,
     },
@@ -295,8 +295,8 @@ export function seedBookings(): RentalBooking[] {
       memberId: 'c2',
       startTime: isoAt(-3, 9),
       endTime: isoAt(-1, 18),
-      pickupLocation: 'mzg-store',
-      returnLocation: 'mzg-store',
+      pickupBranchId: 'mzg-store',
+      returnBranchId: 'mzg-store',
       status: 'in_progress',
       depositRequired: 0,
     },
@@ -645,8 +645,8 @@ function contractSnapshot(input: {
   category: 'car' | 'scooter' | 'ev';
   rentalStartTime: string;
   rentalEndTime: string;
-  pickupLocation: string;
-  returnLocation: string;
+  pickupBranchId: string;
+  returnBranchId: string;
   depositRequired: number;
   total: number;
   cancellationContractKind: 'passenger_car' | 'scooter';
@@ -669,8 +669,8 @@ function contractSnapshot(input: {
     },
     rentalStartTime: input.rentalStartTime,
     rentalEndTime: input.rentalEndTime,
-    pickupLocation: input.pickupLocation,
-    returnLocation: input.returnLocation,
+    pickupBranchId: input.pickupBranchId,
+    returnBranchId: input.returnBranchId,
     depositRequired: input.depositRequired,
     pricing: samplePriceBreakdown(input.total),
     disclosedRules: {
@@ -698,8 +698,8 @@ export function seedContractVersions(): ContractVersion[] {
         category: 'scooter',
         rentalStartTime: isoAt(-1, 9),
         rentalEndTime: isoAt(1, 18),
-        pickupLocation: branchName('mzg-store'),
-        returnLocation: branchName('mzg-store'),
+        pickupBranchId: branchName('mzg-store'),
+        returnBranchId: branchName('mzg-store'),
         depositRequired: 0,
         total: 1200,
         cancellationContractKind: 'scooter',
@@ -724,8 +724,8 @@ export function seedContractVersions(): ContractVersion[] {
         category: 'ev',
         rentalStartTime: isoAt(2, 9),
         rentalEndTime: isoAt(4, 18),
-        pickupLocation: branchName('mzg-store'),
-        returnLocation: branchName('mzg-store'),
+        pickupBranchId: branchName('mzg-store'),
+        returnBranchId: branchName('mzg-store'),
         depositRequired: 0,
         total: 900,
         cancellationContractKind: 'scooter',
@@ -750,8 +750,8 @@ export function seedContractVersions(): ContractVersion[] {
         category: 'car',
         rentalStartTime: isoAt(3, 9),
         rentalEndTime: isoAt(6, 12),
-        pickupLocation: branchName('mzg-airport'),
-        returnLocation: branchName('mzg-port'),
+        pickupBranchId: branchName('mzg-airport'),
+        returnBranchId: branchName('mzg-port'),
         depositRequired: 1000,
         total: 4500,
         cancellationContractKind: 'passenger_car',
@@ -774,8 +774,8 @@ export function seedContractVersions(): ContractVersion[] {
         category: 'car',
         rentalStartTime: isoAt(0, 14),
         rentalEndTime: isoAt(0, 18),
-        pickupLocation: branchName('mzg-port'),
-        returnLocation: branchName('mzg-port'),
+        pickupBranchId: branchName('mzg-port'),
+        returnBranchId: branchName('mzg-port'),
         depositRequired: 1500,
         total: 2200,
         cancellationContractKind: 'passenger_car',
@@ -800,8 +800,8 @@ export function seedContractVersions(): ContractVersion[] {
         category: 'car',
         rentalStartTime: isoAt(-10, 9),
         rentalEndTime: isoAt(-8, 18),
-        pickupLocation: branchName('mzg-store'),
-        returnLocation: branchName('mzg-store'),
+        pickupBranchId: branchName('mzg-store'),
+        returnBranchId: branchName('mzg-store'),
         depositRequired: 1000,
         total: 4200,
         cancellationContractKind: 'passenger_car',
@@ -826,8 +826,8 @@ export function seedContractVersions(): ContractVersion[] {
         category: 'car',
         rentalStartTime: isoAt(7, 9),
         rentalEndTime: isoAt(9, 18),
-        pickupLocation: branchName('mzg-airport'),
-        returnLocation: branchName('mzg-airport'),
+        pickupBranchId: branchName('mzg-airport'),
+        returnBranchId: branchName('mzg-airport'),
         depositRequired: 1500,
         total: 4400,
         cancellationContractKind: 'passenger_car',
@@ -853,8 +853,8 @@ export function seedContractVersions(): ContractVersion[] {
         category: 'scooter',
         rentalStartTime: isoAt(-3, 9),
         rentalEndTime: isoAt(-1, 18),
-        pickupLocation: branchName('mzg-store'),
-        returnLocation: branchName('mzg-store'),
+        pickupBranchId: branchName('mzg-store'),
+        returnBranchId: branchName('mzg-store'),
         depositRequired: 0,
         total: 700,
         cancellationContractKind: 'scooter',
@@ -898,7 +898,7 @@ export function seedHandoverRecords(): HandoverRecord[] {
 /**
  * 4.3 待整備示範：最近一筆已完成的還車（b5，ABC-123 在馬公中正門市還車）還沒整備。
  * 這台車 2 天後（b3）又要交車，所以總覽「待整備」有 1 筆、那天的取車清單會顯示「尚未整備」提醒。
- * returnedAt／returnLocation 與 b5 的還車時間、還車據點一致（b5 沒有還車紀錄，以訂單的還車時間為準）。
+ * returnedAt／returnBranchId 與 b5 的還車時間、還車據點一致（b5 沒有還車紀錄，以訂單的還車時間為準）。
  */
 export function seedPrepTasks(): PrepTask[] {
   return [
@@ -907,7 +907,7 @@ export function seedPrepTasks(): PrepTask[] {
       vehicleId: 'v1',
       bookingId: 'b5',
       returnedAt: isoAt(-3, 18),
-      returnLocation: 'mzg-store',
+      returnBranchId: 'mzg-store',
     },
   ];
 }

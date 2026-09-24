@@ -12,8 +12,8 @@ export interface PrepTask {
   bookingId: string;
   /** 實際還車時間（還車紀錄的 actualAt，不是訂單約定的還車時間）。 */
   returnedAt: string; // ISO
-  /** 還車據點 id（該筆訂單的 returnLocation，見 RENTAL_BRANCHES）。 */
-  returnLocation: string;
+  /** 還車據點 id（該筆訂單的 returnBranchId，見 RENTAL_BRANCHES）。 */
+  returnBranchId: string;
   /** 按下「整備完成」的時間；尚未完成時為 undefined。 */
   completedAt?: string; // ISO
   /** 按下「整備完成」的操作人（與稽核紀錄同一個來源：目前登入的後台使用者名稱）。 */

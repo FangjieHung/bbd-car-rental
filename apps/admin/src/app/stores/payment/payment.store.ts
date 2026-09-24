@@ -1,7 +1,7 @@
 import { Injectable, Signal, inject, signal } from '@angular/core';
 import { ChargeAdjustment, PaymentRecord, PaymentSummary, RefundRecord, calculatePaymentSummary } from '@car-rental/domain';
 import {
-  BOOKING_REPO,
+  ORDER_REPO,
   CHARGE_ADJUSTMENT_REPO,
   PAYMENT_REPO,
   REFUND_REPO,
@@ -16,7 +16,7 @@ export class PaymentStore {
   private readonly paymentRepo = inject(PAYMENT_REPO);
   private readonly refundRepo = inject(REFUND_REPO);
   private readonly adjustmentRepo = inject(CHARGE_ADJUSTMENT_REPO);
-  private readonly bookingRepo = inject(BOOKING_REPO);
+  private readonly orderRepo = inject(ORDER_REPO);
 
   private readonly _payments = signal<PaymentRecord[]>(this.paymentRepo.getAll());
   readonly payments: Signal<PaymentRecord[]> = this._payments.asReadonly();
@@ -83,11 +83,11 @@ export class PaymentStore {
 
   /** 依目前該訂單的付款、調整、退款紀錄，重算最新的付款分類帳摘要。 */
   summaryFor(bookingId: string): PaymentSummary {
-    const booking = this.bookingRepo.getById(bookingId);
-    if (!booking) throw new Error(`not found: ${bookingId}`);
+    const order = this.orderRepo.getById(bookingId);
+    if (!order) throw new Error(`not found: ${bookingId}`);
     return calculatePaymentSummary({
-      baseTotal: booking.priceBreakdown?.total ?? 0,
-      depositRequired: booking.depositRequired,
+      baseTotal: order.priceBreakdown?.total ?? 0,
+      depositRequired: order.depositRequired,
       payments: this.paymentsFor(bookingId),
       adjustments: this.adjustmentsFor(bookingId),
       refunds: this.refundsFor(bookingId),

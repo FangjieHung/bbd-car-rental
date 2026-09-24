@@ -7,9 +7,14 @@ import { MatStep, MatStepper } from '@angular/material/stepper';
 import { of } from 'rxjs';
 import { ContractSigningDialogComponent } from '@car-rental/contract-signing';
 import { ConfirmDialogComponent } from '../../../shared/dialogs/confirm-dialog.component';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
-import { setPaymentDrafts } from '../order-form/order-form';
+import {
+  ORDER_FORM_DATA,
+  ORDER_SUBMIT_GATEWAY,
+  OrderSubmitGateway,
+  OrderSubmitInput,
+  setPaymentDrafts,
+  ORDER_FORM_LABELS,
+} from '@car-rental/order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { createOrderRepos, makeVehicle } from '../testing';
 import { ORDER_CREATE_STEPS, OrderCreatePageComponent } from './order-create-page.component';
@@ -18,6 +23,7 @@ import { confirmLeaveGuard } from '../navigation/confirm-leave.guard';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { HeaderTitleSlot } from '../../../layout/header/header-title';
 import { FILL_PAGE_DATA_KEY } from '../../../layout/fill-page';
+import { ADMIN_ORDER_FORM_LABELS } from '../data/provide-admin-order-form';
 
 interface SetupOptions {
   query?: Record<string, string>;
@@ -28,9 +34,9 @@ interface SetupOptions {
 
 function setup(options: SetupOptions = {}) {
   const repos = createOrderRepos({
-    vehicles: [makeVehicle({ id: 'v1', location: 'mzg-port' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999' })],
+    vehicles: [makeVehicle({ id: 'v1', branchId: 'mzg-port' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999' })],
   });
-  const create = vi.fn<OrderSubmitGateway['create']>(async () => 'new-booking-id');
+  const create = vi.fn<OrderSubmitGateway['create']>(async () => 'new-order-id');
   const gateway: OrderSubmitGateway = { create, update: vi.fn(async (id: string) => id) };
   const dialogOpen = vi.fn((component: unknown) => {
     if (component === ContractSigningDialogComponent) return { afterClosed: () => of(options.signingResult) };
@@ -40,6 +46,7 @@ function setup(options: SetupOptions = {}) {
 
   TestBed.configureTestingModule({
     providers: [
+        { provide: ORDER_FORM_LABELS, useValue: ADMIN_ORDER_FORM_LABELS },
       ...repos.providers,
       provideRouter([]),
       { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData },
@@ -94,10 +101,10 @@ describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
     expect(ORDER_CREATE_STEPS).toEqual(['vehicle', 'renter', 'payment', 'contract']);
     expect(steps(fixture)).toHaveLength(4);
     expect(steps(fixture).map((s) => s.label)).toEqual([
-      ZH_TW.bookingForm.steps['vehicle'],
-      ZH_TW.bookingForm.steps['renter'],
-      ZH_TW.bookingForm.steps['payment'],
-      ZH_TW.bookingForm.steps['contract'],
+      ZH_TW.orderForm.steps['vehicle'],
+      ZH_TW.orderForm.steps['renter'],
+      ZH_TW.orderForm.steps['payment'],
+      ZH_TW.orderForm.steps['contract'],
     ]);
   });
 
@@ -184,7 +191,7 @@ describe('OrderCreatePageComponent 建立訂單按鈕與步驟錯誤', () => {
     expect(input.value.rental.vehicleId).toBe('v1');
     expect(input.value.renter.email).toBe('');
     expect(input.presignature).toBeUndefined();
-    expect(navigate).toHaveBeenCalledWith(['/orders', 'new-booking-id']);
+    expect(navigate).toHaveBeenCalledWith(['/orders', 'new-order-id']);
     expect(component.unsavedChangesMessage()).toBeNull(); // 已建立，導頁不再被離開確認擋下
     expect(component.incompleteItems().length).toBeGreaterThan(0); // 未填的部分成為待補項目
   });
@@ -207,10 +214,10 @@ describe('OrderCreatePageComponent 底部操作列（2.2）', () => {
   it('左「取消」；右依序「上一步」（第一步不顯示）、「下一步」（最後一步不顯示）、「建立訂單」', () => {
     const { fixture, component } = setup();
     const expected = [
-      [t.common.cancel, t.bookingForm.next, t.bookingForm.submit],
-      [t.common.cancel, t.bookingForm.prev, t.bookingForm.next, t.bookingForm.submit],
-      [t.common.cancel, t.bookingForm.prev, t.bookingForm.next, t.bookingForm.submit],
-      [t.common.cancel, t.bookingForm.prev, t.bookingForm.submit],
+      [t.common.cancel, t.orderForm.next, t.orderForm.submit],
+      [t.common.cancel, t.orderForm.prev, t.orderForm.next, t.orderForm.submit],
+      [t.common.cancel, t.orderForm.prev, t.orderForm.next, t.orderForm.submit],
+      [t.common.cancel, t.orderForm.prev, t.orderForm.submit],
     ];
     for (let i = 0; i < ORDER_CREATE_STEPS.length; i++) {
       component.selectedIndex.set(i);
@@ -296,7 +303,7 @@ describe('OrderCreatePageComponent 訂單摘要欄（2.2）', () => {
     expect(text).toContain('馬公港櫃檯');
     expect(text).toContain('新客人');
     expect(text).toContain('0900000000');
-    expect(text).toContain(t.bookingForm.insuranceNone);
+    expect(text).toContain(t.orderForm.insuranceNone);
     expect(summaryEl(fixture).querySelector('.order-summary__total')?.textContent).toContain('NT$2,000');
     // 需要的都齊了：四項都打勾
     expect(summaryEl(fixture).querySelectorAll('.order-summary__check.is-met')).toHaveLength(4);
@@ -308,8 +315,8 @@ describe('OrderCreatePageComponent 訂單摘要欄（2.2）', () => {
     fixture.detectChanges();
     expect(summaryEl(fixture).querySelector('.order-summary__dispatch')).toBeNull();
 
-    component.form.controls.rental.controls.pickupLocation.setValue('mzg-airport');
-    component.form.controls.rental.controls.pickupLocation.markAsDirty();
+    component.form.controls.rental.controls.pickupBranchId.setValue('mzg-airport');
+    component.form.controls.rental.controls.pickupBranchId.markAsDirty();
     fixture.detectChanges();
     expect(summaryEl(fixture).querySelector('.order-summary__dispatch')?.textContent?.trim()).toContain(
       `${t.orderSummary.dispatchPrefix}馬公港櫃檯${t.orderSummary.dispatchArrow}馬公機場櫃檯`,
@@ -340,7 +347,7 @@ describe('OrderCreatePageComponent 訂單摘要欄（2.2）', () => {
       li.textContent?.trim(),
     );
     expect(items).toEqual(component.incompleteItems());
-    expect(items).toContain(t.bookingForm.incomplete.contractNotSigned);
+    expect(items).toContain(t.orderForm.incomplete.contractNotSigned);
   });
 
   it('「建立訂單需要」還沒全部打勾前，「建立後待補」只顯示提示、不列項目（2.2 走查）', () => {
@@ -375,13 +382,13 @@ describe('OrderCreatePageComponent 第 2 步「承租人與駕駛資格」（4.2
     fillBaseline(component);
     component.selectedIndex.set(1);
     fixture.detectChanges();
-    expect(el(fixture).querySelector('app-order-renter-section')).toBeTruthy();
+    expect(el(fixture).querySelector('lib-order-renter-section')).toBeTruthy();
     expect(el(fixture).querySelector('app-order-driver-section')?.textContent).toContain(ZH_TW.member.licenseNumber);
-    expect(component.incompleteItems()).toContain(ZH_TW.bookingForm.incomplete.driverNotVerified);
+    expect(component.incompleteItems()).toContain(ZH_TW.orderForm.incomplete.driverNotVerified);
 
     component.form.controls.driver.patchValue({ licenseNumber: 'TL-1', standardizedVehicleClass: 'car' });
     fixture.detectChanges();
-    expect(component.incompleteItems()).not.toContain(ZH_TW.bookingForm.incomplete.driverNotVerified);
+    expect(component.incompleteItems()).not.toContain(ZH_TW.orderForm.incomplete.driverNotVerified);
   });
 
   it('填了駕照號碼沒選車種：第 2 步亮錯誤，不送出', async () => {
@@ -402,10 +409,10 @@ describe('OrderCreatePageComponent 第 3 步「費用與付款」（2.4）', () 
     fillBaseline(component);
     component.selectedIndex.set(2);
     fixture.detectChanges();
-    const pricing = el(fixture).querySelector('app-order-pricing-section') as HTMLElement;
+    const pricing = el(fixture).querySelector('lib-order-pricing-section') as HTMLElement;
     expect(pricing).toBeTruthy();
     expect(pricing.querySelector('.order-section__dl')).toBeNull();
-    expect(el(fixture).querySelector('app-order-payment-drafts-section')).toBeTruthy();
+    expect(el(fixture).querySelector('lib-order-payment-drafts-section')).toBeTruthy();
   });
 });
 
@@ -474,8 +481,8 @@ describe('OrderCreatePageComponent query params 預填與取消', () => {
       vehicleId: 'v1',
       startLocal: '2026-08-20T10:00',
       endLocal: '2026-08-21T10:00',
-      pickupLocation: 'mzg-port',
-      returnLocation: 'mzg-port',
+      pickupBranchId: 'mzg-port',
+      returnBranchId: 'mzg-port',
     });
     expect(component.form.dirty).toBe(false);
   });
@@ -489,7 +496,7 @@ describe('OrderCreatePageComponent query params 預填與取消', () => {
     const { component, dialogOpen, navigateByUrl } = setup();
     await component.cancel();
     expect(dialogOpen).not.toHaveBeenCalled();
-    expect(navigateByUrl).toHaveBeenCalledWith('/bookings');
+    expect(navigateByUrl).toHaveBeenCalledWith('/orders');
   });
 
   it('表單有改動時取消會先確認；不確認就留在頁面', async () => {
@@ -528,7 +535,7 @@ describe('OrderCreatePageComponent 離開確認（confirmLeaveGuard）', () => {
     const { component, navigateByUrl } = setup({ confirmResult: true });
     component.form.controls.renter.controls.name.markAsDirty();
     await component.cancel();
-    expect(navigateByUrl).toHaveBeenCalledWith('/bookings');
+    expect(navigateByUrl).toHaveBeenCalledWith('/orders');
     expect(component.unsavedChangesMessage()).toBeNull();
   });
 });
@@ -539,8 +546,8 @@ describe('OrderCreatePageComponent 頁首標題（2.1：麵包屑「訂單管理
     const slot = TestBed.inject(HeaderTitleSlot);
 
     expect(slot.entry()?.value).toEqual({
-      title: ZH_TW.bookingForm.title,
-      breadcrumbs: [{ label: ZH_TW.nav.bookings, route: '/bookings' }],
+      title: ZH_TW.orderForm.title,
+      breadcrumbs: [{ label: ZH_TW.nav.orders, route: '/orders' }],
     });
     expect(fixture.nativeElement.querySelectorAll('h1')).toHaveLength(0);
   });

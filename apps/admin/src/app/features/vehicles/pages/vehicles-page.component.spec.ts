@@ -4,9 +4,9 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { LOCATION_FILTER_UNSET, VehiclesPageComponent } from './vehicles-page.component';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord } from '../../../core/models';
+import { Vehicle, RentalOrder, MaintenanceRecord } from '../../../core/models';
 import {
   MaintenanceRecordDialogComponent,
   RecordFormResult,
@@ -60,7 +60,7 @@ describe('VehiclesPageComponent filtering', () => {
             }),
           ]),
         },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -128,7 +128,7 @@ describe('VehiclesPageComponent 保養整合（送修／完修／查看紀錄）
         provideRouter([]),
         { provide: MatDialog, useValue: { open: dialogOpen } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });
@@ -190,7 +190,7 @@ describe('VehiclesPageComponent 整列點擊導航', () => {
         provideRouter([]),
         { provide: MatDialog, useValue: { open: dialogOpen } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -264,7 +264,7 @@ describe('VehiclesPageComponent 保養提醒釘選與徽章', () => {
       providers: [
         provideRouter([]),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });
@@ -339,7 +339,7 @@ describe('VehiclesPageComponent 待保養篩選（?maintenance=due）', () => {
           },
         },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });
@@ -416,7 +416,7 @@ describe('VehiclesPageComponent 所在據點欄與篩選', () => {
       providers: [
         provideRouter([]),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -424,9 +424,9 @@ describe('VehiclesPageComponent 所在據點欄與篩選', () => {
   }
 
   const vehicles = [
-    makeVehicle({ id: 'v-airport', plateNumber: 'AAA-111', location: 'mzg-airport' }),
-    makeVehicle({ id: 'v-store', plateNumber: 'BBB-222', location: 'mzg-store' }),
-    makeVehicle({ id: 'v-unset', plateNumber: 'CCC-333' }), // location 未設定
+    makeVehicle({ id: 'v-airport', plateNumber: 'AAA-111', branchId: 'mzg-airport' }),
+    makeVehicle({ id: 'v-store', plateNumber: 'BBB-222', branchId: 'mzg-store' }),
+    makeVehicle({ id: 'v-unset', plateNumber: 'CCC-333' }), // branchId 未設定
   ];
 
   it('沒有套用據點篩選時顯示全部', () => {
@@ -465,9 +465,9 @@ describe('VehiclesPageComponent 所在據點欄與篩選', () => {
 
   it('據點篩選可與車種／狀態／搜尋等既有篩選同時套用（AND，不是 OR）', () => {
     const mixed = [
-      makeVehicle({ id: 'airport-scooter', category: 'scooter', location: 'mzg-airport' }),
-      makeVehicle({ id: 'airport-car', category: 'car', location: 'mzg-airport' }),
-      makeVehicle({ id: 'store-scooter', category: 'scooter', location: 'mzg-store' }),
+      makeVehicle({ id: 'airport-scooter', category: 'scooter', branchId: 'mzg-airport' }),
+      makeVehicle({ id: 'airport-car', category: 'car', branchId: 'mzg-airport' }),
+      makeVehicle({ id: 'store-scooter', category: 'scooter', branchId: 'mzg-store' }),
     ];
     const fixture = createComponent(mixed);
     fixture.componentInstance.locationFilter.set('mzg-airport');
@@ -496,7 +496,7 @@ describe('VehiclesPageComponent 時間軸切換已移除', () => {
       providers: [
         provideRouter([]),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle({ id: 'v1' })]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });

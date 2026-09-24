@@ -7,10 +7,15 @@ import { merge } from 'rxjs';
 import { VEHICLE_CATEGORIES, VehicleCategory } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { DriverEligibilityResult } from '../../../core/services/driver-eligibility.gateway';
-import { DriverEligibilityPanelComponent } from '../../bookings/components/driver-eligibility-panel.component';
-import { OrderForm, orderFormValue } from '../order-form/order-form';
-import { LICENSE_PATHS, isForeignLicensePath, prefillDriver } from '../order-form/order-driver';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
+import { DriverEligibilityPanelComponent } from '../../members/components/driver-eligibility-panel.component';
+import {
+  OrderForm,
+  orderFormValue,
+  LICENSE_PATHS,
+  isForeignLicensePath,
+  prefillDriver,
+  ORDER_FORM_DATA,
+} from '@car-rental/order-form';
 import { latestByVersion } from '../incomplete/order-incomplete';
 
 /**

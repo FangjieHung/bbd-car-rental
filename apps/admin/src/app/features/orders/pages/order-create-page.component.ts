@@ -17,25 +17,26 @@ import {
   connectOrderFormBehaviors,
   createOrderForm,
   orderFormValue,
-} from '../order-form/order-form';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import {
+  ORDER_FORM_DATA,
   OrderContractSigning,
   createOrderFormDerived,
   orderFormProblems,
   orderRequirements,
-} from '../order-form/order-form-derived';
+  buildContractSnapshot,
+  sameContractTerms,
+  ORDER_SUBMIT_GATEWAY,
+  OrderSubmitInput,
+  OrderRenterSectionComponent,
+  OrderPricingSectionComponent,
+  OrderPaymentDraftsSectionComponent,
+  OrderContractSectionComponent,
+} from '@car-rental/order-form';
 import { incompleteFactsFromForm, orderIncompleteItems } from '../incomplete/order-incomplete';
-import { buildContractSnapshot, sameContractTerms } from '../order-form/contract-snapshot';
-import { ORDER_SUBMIT_GATEWAY, OrderSubmitInput } from '../order-form/order-submit-gateway';
-import { OrderRentalSectionComponent } from '../sections/order-rental-section.component';
-import { OrderRenterSectionComponent } from '../sections/order-renter-section.component';
-import { OrderDriverSectionComponent } from '../sections/order-driver-section.component';
-import { OrderPricingSectionComponent } from '../sections/order-pricing-section.component';
-import { OrderPaymentDraftsSectionComponent } from '../sections/order-payment-drafts-section.component';
-import { OrderContractSectionComponent } from '../sections/order-contract-section.component';
 import { OrderSummaryComponent } from '../order-summary/order-summary.component';
 import { buildOrderSummary } from '../order-summary/order-summary';
+import { OrderRentalSectionComponent } from '../sections/order-rental-section.component';
+import { OrderDriverSectionComponent } from '../sections/order-driver-section.component';
+import { ADMIN_ORDER_FORM_LABELS } from '../data/provide-admin-order-form';
 import { LeaveConfirmable } from '../navigation/confirm-leave.guard';
 
 /**
@@ -46,7 +47,7 @@ export const ORDER_CREATE_STEPS = ['vehicle', 'renter', 'payment', 'contract'] a
 export type OrderCreateStep = (typeof ORDER_CREATE_STEPS)[number];
 
 /** 直接輸入網址進來、沒有站內上一頁時，取消回到這裡。 */
-const FALLBACK_RETURN_URL = '/bookings';
+const FALLBACK_RETURN_URL = '/orders';
 /**
  * 步驟導覽改為直式的斷點。橫式需要約 600px 內容寬才放得下 4 個步驟標籤，
  * 而 900px 以上側欄會常駐佔去約 330px，因此在 1024px 以下就改用直式。
@@ -95,13 +96,13 @@ export function orderInitialFromQuery(params: ParamMap, vehicles: Vehicle[]): Or
     MatButtonModule,
     MatStepperModule,
     ScrollShadowDirective,
-    OrderRentalSectionComponent,
     OrderRenterSectionComponent,
-    OrderDriverSectionComponent,
     OrderPricingSectionComponent,
     OrderPaymentDraftsSectionComponent,
     OrderContractSectionComponent,
     OrderSummaryComponent,
+    OrderRentalSectionComponent,
+    OrderDriverSectionComponent,
   ],
   templateUrl: './order-create-page.component.html',
   styleUrl: './order-create-page.component.scss',
@@ -143,7 +144,7 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
     { initialValue: 'horizontal' as StepperOrientation },
   );
 
-  private readonly problems = computed(() => orderFormProblems(this.value(), this.derived));
+  private readonly problems = computed(() => orderFormProblems(this.value(), this.derived, ADMIN_ORDER_FORM_LABELS));
   readonly stepProblems = computed<Record<OrderCreateStep, string[]>>(() => {
     const p = this.problems();
     return { vehicle: p.rental, renter: p.renter, payment: p.pricing, contract: [] };
@@ -156,7 +157,7 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
   private readonly firstProblemStep = computed(() => this.steps.findIndex((s) => this.stepProblems()[s].length > 0));
 
   /** 「建立訂單需要」：與擋送出的檢查同一套規則（order-form-derived.ts 的 orderRequirements）。 */
-  private readonly requirements = computed(() => orderRequirements(this.value(), this.derived));
+  private readonly requirements = computed(() => orderRequirements(this.value(), this.derived, ADMIN_ORDER_FORM_LABELS));
 
   // ---- 合約預簽 ----
   private readonly pendingSignature = signal<PendingSignature | null>(null);
@@ -225,8 +226,8 @@ export class OrderCreatePageComponent implements LeaveConfirmable {
     connectOrderFormBehaviors(this.form, this.data, { autoDeposit: true, destroyRef: inject(DestroyRef) });
     // 2.1：頁首麵包屑「訂單管理」（可點回列表）› 大標題「新增訂單」，取代頁內原本自己的標題。
     provideHeaderTitle(() => ({
-      title: this.t.bookingForm.title,
-      breadcrumbs: [{ label: this.t.nav.bookings, route: '/bookings' }],
+      title: this.t.orderForm.title,
+      breadcrumbs: [{ label: this.t.nav.orders, route: '/orders' }],
     }));
   }
 

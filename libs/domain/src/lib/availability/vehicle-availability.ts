@@ -1,14 +1,14 @@
-import { BookingStatus, RentalBooking, Vehicle } from '../models';
+import { OrderStatus, RentalOrder, Vehicle } from '../models';
 import { rangesOverlap } from './ranges-overlap';
 
 /** 會佔用車輛的訂單狀態：已預訂、出租中。已完成、已取消的訂單不再佔用車輛。 */
-const OCCUPYING: readonly BookingStatus[] = ['reserved', 'in_progress'];
+const OCCUPYING: readonly OrderStatus[] = ['reserved', 'in_progress'];
 
 /** 一台車在某段期間不能租的原因。 */
 export type VehicleUnavailableReason =
   | { kind: 'maintenance' }
   /** 與這段期間重疊、會佔用車輛的訂單（已預訂／出租中）。 */
-  | { kind: 'booked'; booking: RentalBooking };
+  | { kind: 'booked'; order: RentalOrder };
 
 /**
  * 要查的期間與佔用資料。時間字串必須與訂單的 startTime／endTime 同一種格式（admin 一律是
@@ -17,7 +17,7 @@ export type VehicleUnavailableReason =
 export interface AvailabilityPeriod {
   startTime: string;
   endTime: string;
-  bookings: readonly RentalBooking[];
+  orders: readonly RentalOrder[];
   /** 編輯既有訂單時排除它自己，否則它的車會被自己佔住、顯示成不能租。 */
   excludeBookingId?: string;
 }
@@ -43,7 +43,7 @@ export interface VehicleAvailabilityResult {
 export function vehicleUnavailableReasons(vehicle: Vehicle, period: AvailabilityPeriod): VehicleUnavailableReason[] {
   const reasons: VehicleUnavailableReason[] = [];
   if (vehicle.status === 'maintenance') reasons.push({ kind: 'maintenance' });
-  const overlapping = period.bookings
+  const overlapping = period.orders
     .filter(
       (b) =>
         b.id !== period.excludeBookingId &&
@@ -52,7 +52,7 @@ export function vehicleUnavailableReasons(vehicle: Vehicle, period: Availability
         rangesOverlap(period.startTime, period.endTime, b.startTime, b.endTime),
     )
     .sort((a, b) => (a.startTime < b.startTime ? -1 : a.startTime > b.startTime ? 1 : 0));
-  for (const booking of overlapping) reasons.push({ kind: 'booked', booking });
+  for (const order of overlapping) reasons.push({ kind: 'booked', order });
   return reasons;
 }
 

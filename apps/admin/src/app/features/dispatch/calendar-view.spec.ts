@@ -25,14 +25,14 @@ import {
   PrepTask,
   PricingPlan,
   RefundRecord,
-  RentalBooking,
+  RentalOrder,
   ReminderStatus,
   SeasonCalendar,
   Vehicle,
 } from '../../core/models';
 import {
   AUDIT_ENTRY_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   CHARGE_ADJUSTMENT_REPO,
   CONTRACT_VERSION_REPO,
   DRIVER_CREDENTIAL_REPO,
@@ -56,7 +56,7 @@ import { MockDriverEligibilityGateway } from '../../core/services/mock-driver-el
 import { ReminderGateway } from '../../core/services/reminder.gateway';
 import { OrderDetailNavigation } from '../orders/navigation/order-detail-navigation';
 import { orderInitialFromQuery } from '../orders/pages/order-create-page.component';
-import { toLocalInputValue } from '../orders/order-form/order-form';
+import { toLocalInputValue } from '@car-rental/order-form';
 import { TimelineViewComponent } from './timeline-view/timeline-view.component';
 
 function provideBreakpoint(matches: boolean) {
@@ -109,14 +109,14 @@ function provideOrderDetailRepos() {
   ];
 }
 
-const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
+const mk = (partial: Partial<RentalOrder>): RentalOrder => ({
   id: 'b1',
   vehicleId: 'v1',
   memberId: 'c1',
   startTime: new Date(2026, 6, 21, 9).toISOString(),
   endTime: new Date(2026, 6, 23, 18).toISOString(),
-  pickupLocation: '',
-  returnLocation: '',
+  pickupBranchId: '',
+  returnBranchId: '',
   status: 'reserved',
   depositRequired: 0,
   ...partial,
@@ -137,7 +137,7 @@ const mkVehicle = (id: string, status: Vehicle['status'] = 'available'): Vehicle
 describe('dayStats', () => {
   it('取/還/可用數（1.2：與 pickupProgress／returnProgress 同一份定義）', () => {
     const vehicles = [mkVehicle('v1'), mkVehicle('v2'), mkVehicle('v3')];
-    const bookings = [
+    const orders = [
       mk({}),
       mk({
         id: 'b2',
@@ -147,21 +147,21 @@ describe('dayStats', () => {
       }),
     ];
     // 7/21：b1 取車、v1 佔用
-    expect(dayStats(bookings, vehicles, new Date(2026, 6, 21))).toEqual({
+    expect(dayStats(orders, vehicles, new Date(2026, 6, 21))).toEqual({
       pickups: 1,
       returns: 0,
       available: 2,
       needsDispatch: 0,
     });
     // 7/23：b1 還車、b2 取車，v1 v2 都佔用
-    expect(dayStats(bookings, vehicles, new Date(2026, 6, 23))).toEqual({
+    expect(dayStats(orders, vehicles, new Date(2026, 6, 23))).toEqual({
       pickups: 1,
       returns: 1,
       available: 1,
       needsDispatch: 0,
     });
     // 7/26：無事，全可用
-    expect(dayStats(bookings, vehicles, new Date(2026, 6, 26))).toEqual({
+    expect(dayStats(orders, vehicles, new Date(2026, 6, 26))).toEqual({
       pickups: 0,
       returns: 0,
       available: 3,
@@ -204,12 +204,12 @@ describe('dayStats', () => {
     expect(dayStats([], vehicles, new Date(2026, 6, 21)).available).toBe(2);
   });
 
-  // 1.2：月曆數字＝面板總數——用同一組 bookings／day 直接比對 dayStats 與
+  // 1.2：月曆數字＝面板總數——用同一組 orders／day 直接比對 dayStats 與
   // pickupProgress／returnProgress 的結果，證明兩邊永遠是同一份定義算出來的。
   it('月曆的取／還數字與 pickupProgress／returnProgress 的 total 永遠一致', () => {
     const vehicles = [mkVehicle('v1'), mkVehicle('v2'), mkVehicle('v3', 'maintenance')];
     const day = new Date(2026, 6, 21);
-    const bookings = [
+    const orders = [
       mk({ id: 'b-reserved', status: 'reserved', startTime: new Date(2026, 6, 21, 9).toISOString() }),
       mk({
         id: 'b-return-not-picked-up',
@@ -219,9 +219,9 @@ describe('dayStats', () => {
       }),
       mk({ id: 'b-cancelled', status: 'cancelled', startTime: new Date(2026, 6, 21, 9).toISOString() }),
     ];
-    const stats = dayStats(bookings, vehicles, day);
-    expect(stats.pickups).toBe(pickupProgress(bookings, day).total);
-    expect(stats.returns).toBe(returnProgress(bookings, day).total);
+    const stats = dayStats(orders, vehicles, day);
+    expect(stats.pickups).toBe(pickupProgress(orders, day).total);
+    expect(stats.returns).toBe(returnProgress(orders, day).total);
   });
 
   // 3.3：月曆格「需調度 N」＝當天取車清單中需調度的筆數——只算尚未取車（reserved）、
@@ -230,27 +230,27 @@ describe('dayStats', () => {
     const day = new Date(2026, 6, 21);
     const at9 = new Date(2026, 6, 21, 9).toISOString();
     const vehicles: Vehicle[] = [
-      { ...mkVehicle('at-store'), location: 'mzg-store' },
-      { ...mkVehicle('at-airport'), location: 'mzg-airport' },
+      { ...mkVehicle('at-store'), branchId: 'mzg-store' },
+      { ...mkVehicle('at-airport'), branchId: 'mzg-airport' },
       { ...mkVehicle('unknown') },
     ];
-    const bookings = [
-      mk({ id: 'needs', vehicleId: 'at-store', pickupLocation: 'mzg-airport', startTime: at9 }),
-      mk({ id: 'needs-2', vehicleId: 'at-store', pickupLocation: 'mzg-port', startTime: at9 }),
-      mk({ id: 'same-branch', vehicleId: 'at-airport', pickupLocation: 'mzg-airport', startTime: at9 }),
-      mk({ id: 'no-location', vehicleId: 'unknown', pickupLocation: 'mzg-airport', startTime: at9 }),
-      mk({ id: 'picked-up', vehicleId: 'at-store', pickupLocation: 'mzg-airport', startTime: at9, status: 'in_progress' }),
-      mk({ id: 'cancelled', vehicleId: 'at-store', pickupLocation: 'mzg-airport', startTime: at9, status: 'cancelled' }),
+    const orders = [
+      mk({ id: 'needs', vehicleId: 'at-store', pickupBranchId: 'mzg-airport', startTime: at9 }),
+      mk({ id: 'needs-2', vehicleId: 'at-store', pickupBranchId: 'mzg-port', startTime: at9 }),
+      mk({ id: 'same-branch', vehicleId: 'at-airport', pickupBranchId: 'mzg-airport', startTime: at9 }),
+      mk({ id: 'no-branchId', vehicleId: 'unknown', pickupBranchId: 'mzg-airport', startTime: at9 }),
+      mk({ id: 'picked-up', vehicleId: 'at-store', pickupBranchId: 'mzg-airport', startTime: at9, status: 'in_progress' }),
+      mk({ id: 'cancelled', vehicleId: 'at-store', pickupBranchId: 'mzg-airport', startTime: at9, status: 'cancelled' }),
       mk({
         id: 'other-day',
         vehicleId: 'at-store',
-        pickupLocation: 'mzg-airport',
+        pickupBranchId: 'mzg-airport',
         startTime: new Date(2026, 6, 22, 9).toISOString(),
       }),
     ];
 
-    expect(dayStats(bookings, vehicles, day).needsDispatch).toBe(2);
-    expect(dayStats(bookings, vehicles, new Date(2026, 6, 22)).needsDispatch).toBe(1);
+    expect(dayStats(orders, vehicles, day).needsDispatch).toBe(2);
+    expect(dayStats(orders, vehicles, new Date(2026, 6, 22)).needsDispatch).toBe(1);
   });
 });
 
@@ -263,7 +263,7 @@ describe('CalendarViewComponent supplied date', () => {
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
       ],
@@ -313,7 +313,7 @@ describe('CalendarViewComponent 面板開關（窄螢幕）', () => {
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         provideBreakpoint(true),
@@ -434,7 +434,7 @@ describe('CalendarViewComponent 面板開關（寬螢幕 split view）', () => {
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         provideBreakpoint(false),
@@ -520,7 +520,7 @@ describe('CalendarViewComponent 面板 DOM 行為（窄螢幕）', () => {
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         provideBreakpoint(true),
@@ -586,7 +586,7 @@ describe('CalendarViewComponent 面板 DOM 行為（寬螢幕）', () => {
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         provideBreakpoint(false),
@@ -630,19 +630,19 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
           ]),
         },
         {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([
+          provide: ORDER_REPO,
+          useValue: createInMemoryRepo<RentalOrder>([
             {
               id: 'pickup', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
-              pickupLocation: '機場', returnLocation: '港口', status: 'reserved', depositRequired: 0,
+              pickupBranchId: '機場', returnBranchId: '港口', status: 'reserved', depositRequired: 0,
             },
             // reserved 訂單永遠不計入還車清單（即使 endTime 剛好是這天），
             // 這裡用 in_progress 才符合 returnWorkRows 的新語意。
             {
               id: 'return-only', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 2, 10).toISOString(), endTime: new Date(2026, 7, 4, 15).toISOString(),
-              pickupLocation: '港口', returnLocation: '機場', status: 'in_progress', depositRequired: 0,
+              pickupBranchId: '港口', returnBranchId: '機場', status: 'in_progress', depositRequired: 0,
             },
           ]),
         },
@@ -654,8 +654,8 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
 
     component.selectDate(date);
 
-    expect(component.pickupWorkRows().map((row) => row.booking.id)).toEqual(['pickup']);
-    expect(component.returnWorkRows().map((row) => row.booking.id)).toEqual(['return-only']);
+    expect(component.pickupWorkRows().map((row) => row.order.id)).toEqual(['pickup']);
+    expect(component.returnWorkRows().map((row) => row.order.id)).toEqual(['return-only']);
   });
 
   it('取車清單排除已取消訂單，電話資料提供 tel 連結值', () => {
@@ -666,12 +666,12 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
         {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([
+          provide: ORDER_REPO,
+          useValue: createInMemoryRepo<RentalOrder>([
             {
               id: 'cancelled', vehicleId: 'v1', memberId: 'c1',
               startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
-              pickupLocation: '', returnLocation: '', status: 'cancelled', depositRequired: 0,
+              pickupBranchId: '', returnBranchId: '', status: 'cancelled', depositRequired: 0,
             },
           ]),
         },
@@ -684,19 +684,19 @@ describe('CalendarViewComponent 工作清單（取車／還車）', () => {
     component.selectDate(date);
 
     expect(component.pickupWorkRows()).toEqual([]);
-    expect(component.phoneHref({ memberId: 'c1' } as RentalBooking)).toBe('tel:0911222333');
-    expect(component.phoneHref({ memberId: 'missing' } as RentalBooking)).toBeNull();
+    expect(component.phoneHref({ memberId: 'c1' } as RentalOrder)).toBe('tel:0911222333');
+    expect(component.phoneHref({ memberId: 'missing' } as RentalOrder)).toBeNull();
   });
 });
 
 describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () => {
-  function setup(vehicles: Vehicle[], bookings: RentalBooking[], members: Member[]) {
+  function setup(vehicles: Vehicle[], orders: RentalOrder[], members: Member[]) {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>(members) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         provideBreakpoint(false),
@@ -718,8 +718,8 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
           memberId: 'c1',
           startTime: new Date(2026, 7, 4, 9, 5).toISOString(),
           endTime: new Date(2026, 7, 5, 18, 0).toISOString(),
-          pickupLocation: '',
-          returnLocation: '',
+          pickupBranchId: '',
+          returnBranchId: '',
           status: 'reserved',
           depositRequired: 0,
         },
@@ -777,8 +777,8 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
           // 的新語意不再納入 reserved 訂單。
           startTime: new Date(2026, 7, 4, 9, 5).toISOString(),
           endTime: new Date(2026, 7, 4, 18, 30).toISOString(),
-          pickupLocation: '',
-          returnLocation: '',
+          pickupBranchId: '',
+          returnBranchId: '',
           status: 'in_progress',
           depositRequired: 0,
         },
@@ -790,8 +790,8 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
 
     const pickupRow = fixture.componentInstance.pickupWorkRows()[0];
     const returnRow = fixture.componentInstance.returnWorkRows()[0];
-    expect(fixture.componentInstance.fmtTime(pickupRow.booking.startTime)).toBe('09:05');
-    expect(fixture.componentInstance.fmtTime(returnRow.booking.endTime)).toBe('18:30');
+    expect(fixture.componentInstance.fmtTime(pickupRow.order.startTime)).toBe('09:05');
+    expect(fixture.componentInstance.fmtTime(returnRow.order.endTime)).toBe('18:30');
 
     // 取車 tab 預設就是選取中的（index 0），直接可從樣板讀到 startTime 的顯示結果。
     const pickupTimeEl = fixture.nativeElement.querySelector('.work-list-row__time');
@@ -800,14 +800,14 @@ describe('CalendarViewComponent 取車／還車摘要（以車牌為主）', () 
 });
 
 describe('returnProgress（1.2 修正：尚未取車的預訂到期也列入還車清單）', () => {
-  const mkBooking = (partial: Partial<RentalBooking>): RentalBooking => ({
+  const mkBooking = (partial: Partial<RentalOrder>): RentalOrder => ({
     id: 'b',
     vehicleId: 'v1',
     memberId: 'c1',
     startTime: new Date(2026, 7, 3, 9).toISOString(),
     endTime: new Date(2026, 7, 4, 9).toISOString(),
-    pickupLocation: '',
-    returnLocation: '',
+    pickupBranchId: '',
+    returnBranchId: '',
     status: 'reserved',
     depositRequired: 0,
     ...partial,
@@ -818,14 +818,14 @@ describe('returnProgress（1.2 修正：尚未取車的預訂到期也列入還�
   // 「還 N」與面板的還車總數一致（月曆格先前用的是 reserved／in_progress 都算的口徑）。
   it('reserved（尚未取車）訂單到了還車日也計入還車統計的 total，但不算 done', () => {
     const day = new Date(2026, 7, 4);
-    const bookings = [
+    const orders = [
       mkBooking({ id: 'reserved', status: 'reserved' }),
       mkBooking({ id: 'in_progress', status: 'in_progress' }),
       mkBooking({ id: 'completed', status: 'completed' }),
       mkBooking({ id: 'cancelled', status: 'cancelled' }),
     ];
 
-    expect(returnProgress(bookings, day)).toEqual({ total: 3, done: 1, pending: 2 });
+    expect(returnProgress(orders, day)).toEqual({ total: 3, done: 1, pending: 2 });
   });
 });
 
@@ -847,11 +847,11 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     };
   }
 
-  function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+  function makeBooking(partial: Partial<RentalOrder> = {}): RentalOrder {
     return {
       id: 'b1', vehicleId: 'v1', memberId: 'c1',
       startTime: START, endTime: END,
-      pickupLocation: '機場', returnLocation: '機場',
+      pickupBranchId: '機場', returnBranchId: '機場',
       status: 'reserved', depositRequired: 1000,
       priceBreakdown: {
         dailyLines: [], rentalRaw: 1000, tierDiscountPercent: 0, tierDiscountAmount: 0,
@@ -891,7 +891,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
         driver: { memberId: 'c1', name: '王小明', phone: '0900000000' },
         vehicle: { vehicleId: 'v1', plateNumber: 'ABC-123', brand: 'Gogoro', model: 'Gogoro', category: 'scooter' },
         rentalStartTime: START, rentalEndTime: END,
-        pickupLocation: '機場', returnLocation: '機場', depositRequired: 1000,
+        pickupBranchId: '機場', returnBranchId: '機場', depositRequired: 1000,
         pricing: {
           dailyLines: [], rentalRaw: 1000, tierDiscountPercent: 0, tierDiscountAmount: 0,
           rentalSubtotal: 1000, partnerDiscountPercent: 0, partnerDiscount: 0,
@@ -905,7 +905,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
   }
 
   function setup(options: {
-    booking?: Partial<RentalBooking>;
+    order?: Partial<RentalOrder>;
     member?: Partial<Member>;
     identityDoc?: IdentityDocument | null;
     credential?: DriverCredential | null;
@@ -927,7 +927,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
         ...provideOrderDetailRepos(),
         { provide: OrderDetailNavigation, useValue: { open: workspaceOpen, edit: workspaceEdit } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([makeBooking(options.booking)]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([makeBooking(options.order)]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([makeMember(options.member)]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         {
@@ -1033,7 +1033,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     vehicleId: 'v1',
     bookingId: 'b-prev',
     returnedAt: new Date(2026, 7, 3, 18).toISOString(),
-    returnLocation: '機場',
+    returnBranchId: '機場',
     ...partial,
   });
   const prepChip = (fixture: { nativeElement: HTMLElement }) =>
@@ -1075,7 +1075,7 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
   });
 
   it('4.3：已取車的列不提醒（車已經交出去了）', () => {
-    const { fixture, component, row } = setup({ booking: { status: 'in_progress' }, prepTasks: [openPrep()] });
+    const { fixture, component, row } = setup({ order: { status: 'in_progress' }, prepTasks: [openPrep()] });
 
     expect(component.needsPrep(row)).toBe(false);
     expect(prepChip(fixture)).toBeNull();
@@ -1144,7 +1144,7 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
         renter: { memberId: 'c1', name: '王小明', phone: '0900000000' },
         driver: { memberId: 'c1', name: '王小明', phone: '0900000000' },
         vehicle: { vehicleId: 'v1', plateNumber: 'P-v1', brand: 'Gogoro', model: 'Gogoro', category: 'scooter' },
-        rentalStartTime: '', rentalEndTime: '', pickupLocation: '', returnLocation: '', depositRequired: 0,
+        rentalStartTime: '', rentalEndTime: '', pickupBranchId: '', returnBranchId: '', depositRequired: 0,
         pricing: {
           dailyLines: [], rentalRaw: 0, tierDiscountPercent: 0, tierDiscountAmount: 0, rentalSubtotal: 0,
           partnerDiscountPercent: 0, partnerDiscount: 0, addOnLines: [], addOnSubtotal: 0,
@@ -1169,11 +1169,11 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
     vi.setSystemTime(NOW);
 
     // A：in_progress，還車時間比現在早 3 小時 → 逾時。
-    const overdue: RentalBooking = {
+    const overdue: RentalOrder = {
       id: 'overdue', vehicleId: 'v1', memberId: 'c1',
       startTime: new Date(2026, 7, 8, 9).toISOString(),
       endTime: new Date(2026, 7, 10, 9).toISOString(),
-      pickupLocation: '', returnLocation: '', status: 'in_progress', depositRequired: 0,
+      pickupBranchId: '', returnBranchId: '', status: 'in_progress', depositRequired: 0,
       priceBreakdown: {
         dailyLines: [], rentalRaw: 1000, tierDiscountPercent: 0, tierDiscountAmount: 0, rentalSubtotal: 1000,
         partnerDiscountPercent: 0, partnerDiscount: 0, addOnLines: [], addOnSubtotal: 0,
@@ -1181,18 +1181,18 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
       },
     };
     // B：in_progress，還車時間比現在晚 3 小時 → 未逾時。
-    const onTime: RentalBooking = {
+    const onTime: RentalOrder = {
       id: 'on-time', vehicleId: 'v1', memberId: 'c1',
       startTime: new Date(2026, 7, 8, 9).toISOString(),
       endTime: new Date(2026, 7, 10, 15).toISOString(),
-      pickupLocation: '', returnLocation: '', status: 'in_progress', depositRequired: 0,
+      pickupBranchId: '', returnBranchId: '', status: 'in_progress', depositRequired: 0,
     };
     // C：completed，還車時間比現在早 4 小時，仍有應收餘額 → 已還車／應收未結。
-    const unsettled: RentalBooking = {
+    const unsettled: RentalOrder = {
       id: 'unsettled', vehicleId: 'v1', memberId: 'c1',
       startTime: new Date(2026, 7, 8, 9).toISOString(),
       endTime: new Date(2026, 7, 10, 8).toISOString(),
-      pickupLocation: '', returnLocation: '', status: 'completed', depositRequired: 0,
+      pickupBranchId: '', returnBranchId: '', status: 'completed', depositRequired: 0,
       priceBreakdown: {
         dailyLines: [], rentalRaw: 500, tierDiscountPercent: 0, tierDiscountAmount: 0, rentalSubtotal: 500,
         partnerDiscountPercent: 0, partnerDiscount: 0, addOnLines: [], addOnSubtotal: 0,
@@ -1207,8 +1207,8 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
         { provide: OrderDetailNavigation, useValue: { open: workspaceOpen, edit: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
         {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([overdue, onTime, unsettled]),
+          provide: ORDER_REPO,
+          useValue: createInMemoryRepo<RentalOrder>([overdue, onTime, unsettled]),
         },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([makeMember()]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
@@ -1251,7 +1251,7 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
 
     // 逾時（urgent）排最前，同一急迫層級內維持還車時間先後順序：
     // unsettled（08:00）在 on-time（15:00）之前。
-    expect(rows.map((r) => r.booking.id)).toEqual(['overdue', 'unsettled', 'on-time']);
+    expect(rows.map((r) => r.order.id)).toEqual(['overdue', 'unsettled', 'on-time']);
 
     const overdueRow = rows[0];
     expect(component.isOverdue(overdueRow)).toBe(true);
@@ -1277,7 +1277,7 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
     for (const row of component.returnWorkRows()) {
       const keys = component.workListDetailData(row).actions.map((a) => a.key);
       expect(keys).toContain('view');
-      expect(keys.includes('return')).toBe(row.booking.status === 'in_progress');
+      expect(keys.includes('return')).toBe(row.order.status === 'in_progress');
     }
   });
 
@@ -1291,7 +1291,7 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
     component.returnAction(overdueRow);
     expect(workspaceOpen).toHaveBeenLastCalledWith('overdue', 'handover');
 
-    expect(component.phoneHref(overdueRow.booking)).toBe('tel:0900000000');
+    expect(component.phoneHref(overdueRow.order)).toBe('tel:0900000000');
   });
 });
 
@@ -1312,23 +1312,23 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
     };
   }
 
-  function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+  function makeBooking(partial: Partial<RentalOrder> = {}): RentalOrder {
     return {
       id: 'b1', vehicleId: 'v1', memberId: 'c1',
       startTime: START, endTime: END,
-      pickupLocation: 'mzg-airport', returnLocation: 'mzg-airport',
+      pickupBranchId: 'mzg-airport', returnBranchId: 'mzg-airport',
       status: 'reserved', depositRequired: 0,
       ...partial,
     };
   }
 
-  function setup(vehicles: Vehicle[], bookings: RentalBooking[]) {
+  function setup(vehicles: Vehicle[], orders: RentalOrder[]) {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
         {
           provide: MEMBER_REPO,
           useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '王小明', phone: '', kind: 'local' }]),
@@ -1345,8 +1345,8 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
 
   it('取車據點與車輛所在據點不同、訂單為 reserved → true', () => {
     const { component } = setup(
-      [makeVehicle({ location: 'mzg-store' })],
-      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+      [makeVehicle({ branchId: 'mzg-store' })],
+      [makeBooking({ pickupBranchId: 'mzg-airport', status: 'reserved' })],
     );
     const row = component.pickupWorkRows()[0];
 
@@ -1355,8 +1355,8 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
 
   it('取車據點與車輛所在據點相同 → false', () => {
     const { component } = setup(
-      [makeVehicle({ location: 'mzg-airport' })],
-      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+      [makeVehicle({ branchId: 'mzg-airport' })],
+      [makeBooking({ pickupBranchId: 'mzg-airport', status: 'reserved' })],
     );
     const row = component.pickupWorkRows()[0];
 
@@ -1365,8 +1365,8 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
 
   it('車輛沒有所在據點（不確定）→ false', () => {
     const { component } = setup(
-      [makeVehicle({ location: undefined })],
-      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+      [makeVehicle({ branchId: undefined })],
+      [makeBooking({ pickupBranchId: 'mzg-airport', status: 'reserved' })],
     );
     const row = component.pickupWorkRows()[0];
 
@@ -1375,8 +1375,8 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
 
   it('in_progress（已取車）訂單即使據點不同也不算需調度', () => {
     const { component } = setup(
-      [makeVehicle({ location: 'mzg-store' })],
-      [makeBooking({ pickupLocation: 'mzg-airport', status: 'in_progress' })],
+      [makeVehicle({ branchId: 'mzg-store' })],
+      [makeBooking({ pickupBranchId: 'mzg-airport', status: 'in_progress' })],
     );
     const row = component.pickupWorkRows()[0];
 
@@ -1386,12 +1386,12 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
   it('篩選開啟時，取車清單只剩需調度的列，數量正確，關閉後恢復', () => {
     const { component } = setup(
       [
-        makeVehicle({ id: 'v1', location: 'mzg-store' }),
-        makeVehicle({ id: 'v2', location: 'mzg-airport' }),
+        makeVehicle({ id: 'v1', branchId: 'mzg-store' }),
+        makeVehicle({ id: 'v2', branchId: 'mzg-airport' }),
       ],
       [
-        makeBooking({ id: 'b1', vehicleId: 'v1', pickupLocation: 'mzg-airport', status: 'reserved' }),
-        makeBooking({ id: 'b2', vehicleId: 'v2', pickupLocation: 'mzg-airport', status: 'reserved' }),
+        makeBooking({ id: 'b1', vehicleId: 'v1', pickupBranchId: 'mzg-airport', status: 'reserved' }),
+        makeBooking({ id: 'b2', vehicleId: 'v2', pickupBranchId: 'mzg-airport', status: 'reserved' }),
       ],
     );
 
@@ -1400,7 +1400,7 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
 
     component.showNeedsDispatchOnly.set(true);
     expect(component.pickupWorkRows()).toHaveLength(1);
-    expect(component.pickupWorkRows()[0].booking.id).toBe('b1');
+    expect(component.pickupWorkRows()[0].order.id).toBe('b1');
 
     component.showNeedsDispatchOnly.set(false);
     expect(component.pickupWorkRows()).toHaveLength(2);
@@ -1408,8 +1408,8 @@ describe('CalendarViewComponent 需調度標記與篩選', () => {
 
   it('篩選開啟且當天沒有需調度的取車時，清單清空（畫面顯示空狀態文字）', () => {
     const { fixture, component } = setup(
-      [makeVehicle({ location: 'mzg-airport' })],
-      [makeBooking({ pickupLocation: 'mzg-airport', status: 'reserved' })],
+      [makeVehicle({ branchId: 'mzg-airport' })],
+      [makeBooking({ pickupBranchId: 'mzg-airport', status: 'reserved' })],
     );
 
     component.showNeedsDispatchOnly.set(true);
@@ -1433,7 +1433,7 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
     };
   }
 
-  function setup(bookings: RentalBooking[], now?: Date) {
+  function setup(orders: RentalOrder[], now?: Date) {
     if (now) {
       vi.useFakeTimers();
       vi.setSystemTime(now);
@@ -1443,7 +1443,7 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([{ id: 'c1', name: '林美惠', phone: '0900000000', kind: 'local' }]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         provideBreakpoint(false),
@@ -1459,20 +1459,20 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
 
   it('未來一天有尚未取車的預訂到期時，列入當天還車清單並標「尚未取車」，不提供辦理還車', () => {
     const futureDay = new Date(2026, 8, 25);
-    const booking: RentalBooking = {
+    const order: RentalOrder = {
       id: 'b-future-return', vehicleId: 'v1', memberId: 'c1',
       startTime: new Date(2026, 8, 23, 10).toISOString(),
       endTime: new Date(2026, 8, 25, 17).toISOString(),
-      pickupLocation: '', returnLocation: '', status: 'reserved', depositRequired: 0,
+      pickupBranchId: '', returnBranchId: '', status: 'reserved', depositRequired: 0,
     };
-    const { fixture, component } = setup([booking]);
+    const { fixture, component } = setup([order]);
     // 建構子裡的 effect() 要等第一次 detectChanges() 才會真正 flush，若在那之前呼叫
     // selectDate() 會被這次 effect 的初次執行用 targetDate 預設值（今天）蓋回去。
     fixture.detectChanges();
     component.selectDate(futureDay);
     fixture.detectChanges();
 
-    expect(component.returnWorkRows().map((r) => r.booking.id)).toEqual(['b-future-return']);
+    expect(component.returnWorkRows().map((r) => r.order.id)).toEqual(['b-future-return']);
     // 這天的還車統計 total 也要看得到它（面板 tab 標籤與月曆格共用同一份數字）。
     expect(component.selectedReturnProgress()).toEqual({ total: 1, done: 0, pending: 1 });
     expect(component.statsOf(futureDay).returns).toBe(1);
@@ -1496,11 +1496,11 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
   it('今天的還車清單另外列出逾時未還（即使還車日不是今天），但月曆格的還車數不計逾時', () => {
     const today = new Date(2026, 8, 23, 12, 0, 0);
     // 三天前就該還車、狀態仍是 in_progress（尚未還車）——不是「今天」到期的還車。
-    const overdueFromDaysAgo: RentalBooking = {
+    const overdueFromDaysAgo: RentalOrder = {
       id: 'b-overdue-old', vehicleId: 'v1', memberId: 'c1',
       startTime: new Date(2026, 8, 18, 9).toISOString(),
       endTime: new Date(2026, 8, 20, 9).toISOString(),
-      pickupLocation: '', returnLocation: '', status: 'in_progress', depositRequired: 0,
+      pickupBranchId: '', returnBranchId: '', status: 'in_progress', depositRequired: 0,
     };
     const { fixture, component } = setup([overdueFromDaysAgo], today);
     fixture.detectChanges();
@@ -1508,7 +1508,7 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
     fixture.detectChanges();
 
     // 清單裡看得到它（今天視角另外列出的逾時未還）。
-    expect(component.returnWorkRows().map((r) => r.booking.id)).toEqual(['b-overdue-old']);
+    expect(component.returnWorkRows().map((r) => r.order.id)).toEqual(['b-overdue-old']);
     expect(component.isOverdue(component.returnWorkRows()[0])).toBe(true);
 
     // 但它的還車日是 9/20、不是今天，今天（9/23）的還車統計 total／月曆格「還 N」不計它。
@@ -1529,7 +1529,7 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
         ...providePricing(),
         ...provideOrderDetailRepos(),
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
         provideBreakpoint(false),
@@ -1549,7 +1549,7 @@ describe('CalendarViewComponent 1.2：月曆與面板取還數字統一', () => 
 /** 批次 3 用的共用 fixture：寬螢幕（面板內容直接渲染在元件裡）、可指定「現在」、可攔導頁。 */
 function setupBatch3(options: {
   vehicles: Vehicle[];
-  bookings?: RentalBooking[];
+  orders?: RentalOrder[];
   members?: Member[];
   now?: Date;
   date?: Date;
@@ -1564,7 +1564,7 @@ function setupBatch3(options: {
       ...provideOrderDetailRepos(),
       provideRouter([]),
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(options.vehicles) },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(options.bookings ?? []) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(options.orders ?? []) },
       {
         provide: MEMBER_REPO,
         useValue: createInMemoryRepo<Member>(
@@ -1590,11 +1590,11 @@ function vehicleAt(id: string, partial: Partial<Vehicle> = {}): Vehicle {
   };
 }
 
-function booking(id: string, partial: Partial<RentalBooking>): RentalBooking {
+function order(id: string, partial: Partial<RentalOrder>): RentalOrder {
   return {
     id, vehicleId: 'v1', memberId: 'c1',
     startTime: new Date(2026, 8, 23, 9).toISOString(), endTime: new Date(2026, 8, 24, 9).toISOString(),
-    pickupLocation: 'mzg-airport', returnLocation: 'mzg-airport', status: 'reserved', depositRequired: 0,
+    pickupBranchId: 'mzg-airport', returnBranchId: 'mzg-airport', status: 'reserved', depositRequired: 0,
     ...partial,
   };
 }
@@ -1631,16 +1631,16 @@ describe('CalendarViewComponent 取車清單：已取車、已完成的列（批
         vehicleAt('v2'),
         vehicleAt('v3'),
       ],
-      bookings: [
-        booking('picked-up', {
+      orders: [
+        order('picked-up', {
           vehicleId: 'v1', status: 'in_progress',
           startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 6, 10).toISOString(),
         }),
-        booking('done', {
+        order('done', {
           vehicleId: 'v2', status: 'completed',
           startTime: new Date(2026, 7, 4, 9).toISOString(), endTime: new Date(2026, 7, 4, 18).toISOString(),
         }),
-        booking('waiting', {
+        order('waiting', {
           vehicleId: 'v3', status: 'reserved',
           startTime: new Date(2026, 7, 4, 14).toISOString(), endTime: new Date(2026, 7, 5, 14).toISOString(),
         }),
@@ -1651,7 +1651,7 @@ describe('CalendarViewComponent 取車清單：已取車、已完成的列（批
   it('已完成的取車也列在清單上，列數＝分頁標籤的「取車 N」', () => {
     const { component } = setup();
 
-    expect(component.pickupWorkRows().map((r) => r.booking.id)).toEqual(['done', 'picked-up', 'waiting']);
+    expect(component.pickupWorkRows().map((r) => r.order.id)).toEqual(['done', 'picked-up', 'waiting']);
     expect(component.selectedPickupProgress()).toEqual({ total: 3, done: 2, pending: 1 });
   });
 
@@ -1701,13 +1701,13 @@ describe('CalendarViewComponent 前一位客人尚未還車（批次 1 驗收 b�
       now: NOW,
       date: new Date(2026, 8, 23),
       vehicles: [vehicleAt('v5', { plateNumber: 'MNO-345', status: 'rented' })],
-      bookings: [
-        booking('previous', {
+      orders: [
+        order('previous', {
           vehicleId: 'v5', status: 'in_progress',
           startTime: new Date(2026, 8, 20, 9).toISOString(), endTime: previousEnd.toISOString(),
         }),
         // 今天下午取車、合約還沒簽。
-        booking('next', {
+        order('next', {
           vehicleId: 'v5', status: 'reserved',
           startTime: new Date(2026, 8, 23, 15).toISOString(), endTime: new Date(2026, 8, 25, 17).toISOString(),
         }),
@@ -1720,7 +1720,7 @@ describe('CalendarViewComponent 前一位客人尚未還車（批次 1 驗收 b�
     const row = component.pickupWorkRows()[0];
     const blockers = component.blockersOf(row);
 
-    expect(row.booking.id).toBe('next');
+    expect(row.order.id).toBe('next');
     expect(blockers[0].message).toBe('前一位客人尚未還車（逾時 18 小時 0 分）。');
     expect(blockers.map((b) => b.type)).toContain('latest_contract_unsigned');
     expect(blockers.some((b) => b.message.includes('車輛目前在租'))).toBe(false);
@@ -1762,25 +1762,25 @@ describe('CalendarViewComponent 面板分頁標籤（3.4）', () => {
       now: NOW,
       date: TODAY,
       vehicles: ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'].map((id) => vehicleAt(id)),
-      bookings: [
+      orders: [
         // 今天取車 2 筆，1 筆已取車。
-        booking('p-reserved', {
+        order('p-reserved', {
           vehicleId: 'v1', startTime: new Date(2026, 7, 10, 10).toISOString(), endTime: new Date(2026, 7, 11, 10).toISOString(),
         }),
-        booking('p-picked', {
+        order('p-picked', {
           vehicleId: 'v2', status: 'in_progress',
           startTime: new Date(2026, 7, 10, 9).toISOString(), endTime: new Date(2026, 7, 12, 9).toISOString(),
         }),
         // 今天還車 2 筆（1 筆已還），另有前幾天逾時未還的 1 筆（列在今天的清單，不計入還車數）。
-        booking('r-done', {
+        order('r-done', {
           vehicleId: 'v3', status: 'completed',
           startTime: new Date(2026, 7, 8, 9).toISOString(), endTime: new Date(2026, 7, 10, 8).toISOString(),
         }),
-        booking('r-due', {
+        order('r-due', {
           vehicleId: 'v4', status: 'in_progress',
           startTime: new Date(2026, 7, 8, 9).toISOString(), endTime: new Date(2026, 7, 10, 15).toISOString(),
         }),
-        booking('r-overdue', {
+        order('r-overdue', {
           vehicleId: 'v5', status: 'in_progress',
           startTime: new Date(2026, 7, 6, 9).toISOString(), endTime: new Date(2026, 7, 8, 18).toISOString(),
         }),
@@ -1825,14 +1825,14 @@ describe('CalendarViewComponent 需調度（3.3 月曆格、3.4 路線）', () =
   function setup() {
     return setupBatch3({
       date: DAY,
-      vehicles: [vehicleAt('v1', { location: 'mzg-store' }), vehicleAt('v2', { location: 'mzg-airport' })],
-      bookings: [
-        booking('dispatch', {
-          vehicleId: 'v1', pickupLocation: 'mzg-airport',
+      vehicles: [vehicleAt('v1', { branchId: 'mzg-store' }), vehicleAt('v2', { branchId: 'mzg-airport' })],
+      orders: [
+        order('dispatch', {
+          vehicleId: 'v1', pickupBranchId: 'mzg-airport',
           startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 5, 10).toISOString(),
         }),
-        booking('in-place', {
-          vehicleId: 'v2', pickupLocation: 'mzg-airport',
+        order('in-place', {
+          vehicleId: 'v2', pickupBranchId: 'mzg-airport',
           startTime: new Date(2026, 7, 4, 11).toISOString(), endTime: new Date(2026, 7, 5, 11).toISOString(),
         }),
       ],
@@ -1841,7 +1841,7 @@ describe('CalendarViewComponent 需調度（3.3 月曆格、3.4 路線）', () =
 
   it('取車列的需調度 chip 寫出路線「需調度 {所在據點}→{取車據點}」', () => {
     const { component, el } = setup();
-    const row = component.pickupWorkRows().find((r) => r.booking.id === 'dispatch');
+    const row = component.pickupWorkRows().find((r) => r.order.id === 'dispatch');
 
     expect(row && component.dispatchRouteLabel(row)).toBe('需調度 馬公中正門市→馬公機場櫃檯');
     const chips = Array.from(el.querySelectorAll('.work-list-row__dispatch'));
@@ -1871,15 +1871,15 @@ describe('CalendarViewComponent 月曆格顏色層級（打磨 4：還 N 改中�
   function setup() {
     return setupBatch3({
       date: DAY,
-      vehicles: [vehicleAt('v1', { location: 'mzg-store' }), vehicleAt('v2')],
-      bookings: [
+      vehicles: [vehicleAt('v1', { branchId: 'mzg-store' }), vehicleAt('v2')],
+      orders: [
         // 需調度：取車據點跟車輛所在據點不同。
-        booking('dispatch', {
-          vehicleId: 'v1', pickupLocation: 'mzg-airport',
+        order('dispatch', {
+          vehicleId: 'v1', pickupBranchId: 'mzg-airport',
           startTime: new Date(2026, 7, 4, 10).toISOString(), endTime: new Date(2026, 7, 6, 10).toISOString(),
         }),
         // 同一天還車：讓「還 N」也顯示在同一格，跟「需調度 N」並排比較色調。
-        booking('return', {
+        order('return', {
           vehicleId: 'v2', status: 'in_progress',
           startTime: new Date(2026, 7, 2, 9).toISOString(), endTime: new Date(2026, 7, 4, 12).toISOString(),
         }),
@@ -1908,7 +1908,7 @@ describe('CalendarViewComponent 月曆格顏色層級（打磨 4：還 N 改中�
 describe('CalendarViewComponent 月曆格「可用 N」（3.3）', () => {
   const NOW = new Date(2026, 8, 23, 12, 0, 0);
   const on = (day: number, vehicleId: string, id: string) =>
-    booking(id, {
+    order(id, {
       vehicleId,
       startTime: new Date(2026, 8, day, 9).toISOString(),
       endTime: new Date(2026, 8, day, 18).toISOString(),
@@ -1923,7 +1923,7 @@ describe('CalendarViewComponent 月曆格「可用 N」（3.3）', () => {
       now: NOW,
       date: new Date(2026, 8, 23),
       vehicles: [vehicleAt('v1'), vehicleAt('v2'), vehicleAt('v3')],
-      bookings: [
+      orders: [
         on(24, 'v1', 'b24'),
         on(25, 'v1', 'b25a'),
         on(25, 'v2', 'b25b'),
@@ -1980,14 +1980,14 @@ describe('CalendarViewComponent 可用分頁（3.2）', () => {
       now: NOW,
       date: new Date(2026, 8, 23),
       vehicles: [
-        vehicleAt('car-1', { location: 'mzg-airport' }),
-        vehicleAt('car-2', { location: 'mzg-port' }),
-        vehicleAt('scooter-1', { category: 'scooter', location: 'mzg-store' }),
+        vehicleAt('car-1', { branchId: 'mzg-airport' }),
+        vehicleAt('car-2', { branchId: 'mzg-port' }),
+        vehicleAt('scooter-1', { category: 'scooter', branchId: 'mzg-store' }),
         vehicleAt('car-maint', { status: 'maintenance' }),
       ],
-      bookings: [
+      orders: [
         // 9/24 10:00 起被訂走：只租到 9/24 09:00 時可以租，租到 9/25 就不行。
-        booking('car-2-booked', {
+        order('car-2-booked', {
           vehicleId: 'car-2',
           startTime: new Date(2026, 8, 24, 10).toISOString(), endTime: new Date(2026, 8, 24, 18).toISOString(),
         }),

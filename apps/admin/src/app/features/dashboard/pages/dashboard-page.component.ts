@@ -6,7 +6,7 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatDialog } from '@angular/material/dialog';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { startOfDay } from '../../../core/date-utils';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { MaintenanceStore } from '../../../stores/maintenance/maintenance.store';
 import { PrepStore } from '../../../stores/prep/prep.store';
@@ -42,7 +42,7 @@ import { PrepQueueDialogComponent } from '../dialogs/prep-queue-dialog.component
 })
 export class DashboardPageComponent {
   protected readonly t = ZH_TW;
-  readonly bookingStore = inject(BookingStore);
+  readonly orderStore = inject(OrderStore);
   readonly memberStore = inject(MemberStore);
   readonly maintenanceStore = inject(MaintenanceStore);
   private readonly prepStore = inject(PrepStore);
@@ -80,18 +80,18 @@ export class DashboardPageComponent {
 
   /** 1.4：總覽的放大鏡送出後導到訂單列表，帶入關鍵字讓訂單列表預填搜尋。 */
   onSearchSubmit(query: string): void {
-    void this.router.navigate(['/bookings'], { queryParams: { q: query } });
+    void this.router.navigate(['/orders'], { queryParams: { q: query } });
   }
 
   private readonly todayPickup = computed(() =>
-    pickupProgress(this.bookingStore.bookings(), this.todayDate),
+    pickupProgress(this.orderStore.orders(), this.todayDate),
   );
   readonly todayPickupTotal = computed(() => this.todayPickup().total);
   readonly todayPickupDone = computed(() => this.todayPickup().done);
   readonly todayPickupPending = computed(() => this.todayPickup().pending);
 
   private readonly todayReturn = computed(() =>
-    returnProgress(this.bookingStore.bookings(), this.todayDate),
+    returnProgress(this.orderStore.orders(), this.todayDate),
   );
   readonly todayReturnTotal = computed(() => this.todayReturn().total);
   readonly todayReturnDone = computed(() => this.todayReturn().done);

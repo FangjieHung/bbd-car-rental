@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
-import { BOOKING_REPO, Partner, RentalBooking, createInMemoryRepo } from '@car-rental/domain';
+import { ORDER_REPO, Partner, RentalOrder, createInMemoryRepo } from '@car-rental/domain';
 import { providePartnerBookingContext } from '../booking-context';
 import { DoneComponent } from './done.component';
 
@@ -15,26 +15,26 @@ const partner: Partner = {
   commission: { type: 'percent', value: 5 },
 };
 
-function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+function makeOrder(partial: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'c1',
     startTime: '2026-08-20T10:00:00',
     endTime: '2026-08-23T10:00:00',
-    pickupLocation: '馬公',
-    returnLocation: '馬公',
+    pickupBranchId: '馬公',
+    returnBranchId: '馬公',
     status: 'reserved',
     depositRequired: 0,
     ...partial,
   };
 }
 
-function setup(opts: { partnerContext?: boolean; bookings?: RentalBooking[]; id?: string } = {}) {
+function setup(opts: { partnerContext?: boolean; bookings?: RentalOrder[]; id?: string } = {}) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(opts.bookings ?? []) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(opts.bookings ?? []) },
       {
         provide: ActivatedRoute,
         useValue: { paramMap: of(convertToParamMap({ id: opts.id ?? 'b1' })) },
@@ -59,7 +59,7 @@ describe('DoneComponent', () => {
   });
 
   it('訂單狀態為 reserved 時顯示中性文案（履約狀態不代表已付款）', () => {
-    const component = setup({ bookings: [makeBooking({ status: 'reserved' })] });
+    const component = setup({ bookings: [makeOrder({ status: 'reserved' })] });
     expect(component['statusMessage']()).toBe(
       '您的訂單已成立，我們將盡快為您準備車輛，並確認後續付款事宜。',
     );

@@ -10,7 +10,7 @@
       @if (rows().length > 0) {
         <div class="avl__header">
           <h3 class="avl__title">{{ title() }}</h3>
-          @if (pickupLocation()) {
+          @if (pickupBranchId()) {
             <span class="avl__hint">{{ t.rentalSearch.pickupFirstHint }}</span>
           }
         </div>

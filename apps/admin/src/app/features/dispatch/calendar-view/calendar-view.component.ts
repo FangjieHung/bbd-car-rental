@@ -25,7 +25,7 @@ import {
   PickupWarning,
   PickupWarningType,
   ReciprocityStatus,
-  RentalBooking,
+  RentalOrder,
   ReminderState,
   ReminderStatus,
   VEHICLE_CATEGORIES,
@@ -36,7 +36,7 @@ import {
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, fmtDate, isSameDay, startOfDay } from '../../../core/date-utils';
 import { REMINDER_STATUS_REPO } from '../../../core/repositories/tokens';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
 import { MemberStore } from '../../../stores/member/member.store';
 import { PricingStore } from '../../../stores/pricing/pricing.store';
@@ -122,7 +122,7 @@ function toPickupReciprocityStatus(status: ReciprocityStatus): 'pending' | 'elig
  * ＋已完成（completed），排除已取消（cancelled）。資料模型沒有「尚未成立」的前置階段
  * （CONTEXT.md「訂單」：建立當下就成立），所以「排除尚未成立者」在這裡沒有對應狀態要處理。
  */
-const COUNTED: RentalBooking['status'][] = ['reserved', 'in_progress', 'completed'];
+const COUNTED: RentalOrder['status'][] = ['reserved', 'in_progress', 'completed'];
 
 /** 每種取車阻擋／提醒對應該去訂單詳情哪個分頁處理，供「前往處理」動作使用。 */
 const BLOCKER_SECTION: Record<PickupBlockerType, OrderDetailSection> = {
@@ -152,7 +152,7 @@ const REMINDER_STATE_PRECEDENCE: ReminderState[] = [
 
 interface WorkListRow {
   id: string;
-  booking: RentalBooking;
+  order: RentalOrder;
   kind: 'pickup' | 'return';
 }
 
@@ -165,12 +165,12 @@ export const LOW_AVAILABILITY_THRESHOLD = 1;
 /** 1.3：某一天可租車輛清單——月曆「可用 N」用 libs/domain 的 vehicleAvailability（會扣掉保養中的車），
  *  不是月曆自己另外用「總車數－當天佔用」土法算一次。面板「可用」分頁（3.2）與建單第 1 步（2.3）
  *  的可租清單也是同一個函式，只是期間換成「起租日 09:00 到還車日 09:00」。 */
-function vehiclesAvailableOn(vehicles: Vehicle[], bookings: RentalBooking[], day: Date): Vehicle[] {
+function vehiclesAvailableOn(vehicles: Vehicle[], orders: RentalOrder[], day: Date): Vehicle[] {
   const dayStart = startOfDay(day);
   return vehicleAvailability(vehicles, {
     startTime: dayStart.toISOString(),
     endTime: addDays(dayStart, 1).toISOString(),
-    bookings,
+    orders,
   }).available;
 }
 
@@ -179,9 +179,9 @@ function vehiclesAvailableOn(vehicles: Vehicle[], bookings: RentalBooking[], day
  * 車輛還沒被取走，才可能需要事先調度；已取車／已完成／已取消的訂單這件事已成定局或不再相關。
  * 月曆格「需調度 N」與面板取車分頁的需調度標記、篩選都用這一個判斷。
  */
-export function bookingNeedsDispatch(booking: RentalBooking, vehicle: Vehicle | undefined): boolean {
-  if (booking.status !== 'reserved') return false;
-  return computeNeedsDispatch(vehicle?.location, booking.pickupLocation);
+export function bookingNeedsDispatch(order: RentalOrder, vehicle: Vehicle | undefined): boolean {
+  if (order.status !== 'reserved') return false;
+  return computeNeedsDispatch(vehicle?.branchId, order.pickupBranchId);
 }
 
 export interface DayStats {
@@ -196,13 +196,13 @@ export interface DayStats {
  * 1.2／1.3／3.3：月曆格「取 N／還 N／需調度 N／可用 N」——直接沿用 pickupProgress／
  * returnProgress／bookingNeedsDispatch／vehiclesAvailableOn，確保月曆格與右側面板永遠是同一份數字。
  */
-export function dayStats(bookings: RentalBooking[], vehicles: Vehicle[], day: Date): DayStats {
+export function dayStats(orders: RentalOrder[], vehicles: Vehicle[], day: Date): DayStats {
   const vehicleById = new Map(vehicles.map((v) => [v.id, v]));
   return {
-    pickups: pickupProgress(bookings, day).total,
-    returns: returnProgress(bookings, day).total,
-    available: vehiclesAvailableOn(vehicles, bookings, day).length,
-    needsDispatch: bookings.filter(
+    pickups: pickupProgress(orders, day).total,
+    returns: returnProgress(orders, day).total,
+    available: vehiclesAvailableOn(vehicles, orders, day).length,
+    needsDispatch: orders.filter(
       (b) => isSameDay(new Date(b.startTime), day) && bookingNeedsDispatch(b, vehicleById.get(b.vehicleId)),
     ).length,
   };
@@ -216,8 +216,8 @@ export interface DayProgress {
 
 /** 取車進度：某天取車時間（startTime）落在當天、且訂單有效（COUNTED）的筆數；
  *  done＝已經不是 reserved（in_progress／completed 都代表車已經被取走）。 */
-export function pickupProgress(bookings: RentalBooking[], day: Date): DayProgress {
-  const relevant = bookings.filter(
+export function pickupProgress(orders: RentalOrder[], day: Date): DayProgress {
+  const relevant = orders.filter(
     (b) => isSameDay(new Date(b.startTime), day) && COUNTED.includes(b.status),
   );
   const done = relevant.filter((b) => b.status !== 'reserved').length;
@@ -231,8 +231,8 @@ export function pickupProgress(bookings: RentalBooking[], day: Date): DayProgres
  * done 只計 completed（真正已辦理還車完成）；in_progress 即使已逾期，也還是「未完成」；
  * reserved（尚未取車）自然也算未完成。
  */
-export function returnProgress(bookings: RentalBooking[], day: Date): DayProgress {
-  const relevant = bookings.filter(
+export function returnProgress(orders: RentalOrder[], day: Date): DayProgress {
+  const relevant = orders.filter(
     (b) => isSameDay(new Date(b.endTime), day) && COUNTED.includes(b.status),
   );
   const done = relevant.filter((b) => b.status === 'completed').length;
@@ -257,7 +257,7 @@ export function returnProgress(bookings: RentalBooking[], day: Date): DayProgres
 })
 export class CalendarViewComponent {
   protected readonly t = ZH_TW;
-  private bookingStore = inject(BookingStore);
+  private orderStore = inject(OrderStore);
   private vehicleStore = inject(VehicleStore);
   private pricingStore = inject(PricingStore);
   readonly memberStore = inject(MemberStore);
@@ -401,7 +401,7 @@ export class CalendarViewComponent {
   readonly timelineDate = computed(() => this.selected() ?? this.today);
 
   statsOf(d: Date): DayStats {
-    return dayStats(this.bookingStore.bookings(), this.vehicleStore.vehicles(), d);
+    return dayStats(this.orderStore.orders(), this.vehicleStore.vehicles(), d);
   }
 
   /** 3.3：今天以前的日子（不含今天）。過去的日子不顯示可用數。 */
@@ -414,11 +414,11 @@ export class CalendarViewComponent {
   }
 
   readonly selectedPickupProgress = computed(() =>
-    pickupProgress(this.bookingStore.bookings(), this.selected() ?? this.todayDate),
+    pickupProgress(this.orderStore.orders(), this.selected() ?? this.todayDate),
   );
 
   readonly selectedReturnProgress = computed(() =>
-    returnProgress(this.bookingStore.bookings(), this.selected() ?? this.todayDate),
+    returnProgress(this.orderStore.orders(), this.selected() ?? this.todayDate),
   );
 
   /**
@@ -430,7 +430,7 @@ export class CalendarViewComponent {
    * 與 completed（已還車，可能應收未結）。
    */
   private readonly countedBookings = computed(() =>
-    this.bookingStore.bookings().filter((b) => COUNTED.includes(b.status)),
+    this.orderStore.orders().filter((b) => COUNTED.includes(b.status)),
   );
 
   /** 3.4：取車分頁標籤——大字「取車 N」＋細字「已完成 N」。 */
@@ -469,8 +469,8 @@ export class CalendarViewComponent {
     if (!day) return [];
     return this.countedBookings()
       .filter((b) => isSameDay(new Date(b.startTime), day))
-      .map((booking) => ({ id: `pickup-${booking.id}`, booking, kind: 'pickup' as const }))
-      .sort((a, b) => new Date(a.booking.startTime).getTime() - new Date(b.booking.startTime).getTime());
+      .map((order) => ({ id: `pickup-${order.id}`, order, kind: 'pickup' as const }))
+      .sort((a, b) => new Date(a.order.startTime).getTime() - new Date(b.order.startTime).getTime());
   });
 
   /** 當天取車清單中需調度的筆數，供篩選 toggle 的數量標籤使用（與是否已開啟篩選無關）。 */
@@ -492,7 +492,7 @@ export class CalendarViewComponent {
     if (!day) return [];
     const sameDayRows = this.countedBookings()
       .filter((b) => isSameDay(new Date(b.endTime), day))
-      .map((booking) => ({ id: `return-${booking.id}`, booking, kind: 'return' as const }));
+      .map((order) => ({ id: `return-${order.id}`, order, kind: 'return' as const }));
 
     // 1.2：今天的還車清單另外列出「逾時未還」（in_progress 且還車時間已過）的訂單，即使
     // 它的還車日不是今天（例如兩三天前就該還、至今仍未還）——這是為了讓櫃檯人員在「今天」
@@ -500,23 +500,23 @@ export class CalendarViewComponent {
     // 不計入 returnProgress 的當日總數，月曆格「還 N」也不計逾時（該數字只反映當天到期的還車）。
     let rows = sameDayRows;
     if (isSameDay(day, this.todayDate)) {
-      const alreadyIncluded = new Set(sameDayRows.map((row) => row.booking.id));
-      const overdueFromOtherDays = this.bookingStore
-        .bookings()
+      const alreadyIncluded = new Set(sameDayRows.map((row) => row.order.id));
+      const overdueFromOtherDays = this.orderStore
+        .orders()
         .filter(
           (b) =>
             b.status === 'in_progress' &&
             !alreadyIncluded.has(b.id) &&
             new Date(b.endTime).getTime() < Date.now(),
         )
-        .map((booking) => ({ id: `return-${booking.id}`, booking, kind: 'return' as const }));
+        .map((order) => ({ id: `return-${order.id}`, order, kind: 'return' as const }));
       rows = [...sameDayRows, ...overdueFromOtherDays];
     }
 
     // 穩定排序疊加兩次：先照還車時間排好基礎順序，再照「是否逾時」排一次——
     // Array.prototype.sort 在現代 JS 引擎皆為穩定排序，逾時（急迫）的列會被移到最前面，
     // 但同一急迫層級內仍維持原本的時間先後順序，不必寫一個複合比較器。
-    rows.sort((a, b) => new Date(a.booking.endTime).getTime() - new Date(b.booking.endTime).getTime());
+    rows.sort((a, b) => new Date(a.order.endTime).getTime() - new Date(b.order.endTime).getTime());
     rows.sort((a, b) => Number(this.isOverdue(b)) - Number(this.isOverdue(a)));
     return rows;
   });
@@ -606,11 +606,11 @@ export class CalendarViewComponent {
   }
 
   vehicleOf(row: WorkListRow): Vehicle | undefined {
-    return this.vehicleStore.vehicles().find((v) => v.id === row.booking.vehicleId);
+    return this.vehicleStore.vehicles().find((v) => v.id === row.order.vehicleId);
   }
 
   private memberOf(row: WorkListRow): Member | undefined {
-    return this.memberStore.members().find((m) => m.id === row.booking.memberId);
+    return this.memberStore.members().find((m) => m.id === row.order.memberId);
   }
 
   /**
@@ -624,18 +624,18 @@ export class CalendarViewComponent {
   }
 
   memberName(row: WorkListRow): string {
-    return this.memberStore.nameOf(row.booking.memberId);
+    return this.memberStore.nameOf(row.order.memberId);
   }
 
-  location(row: WorkListRow): string {
+  branchId(row: WorkListRow): string {
     return branchName(
-      row.kind === 'pickup' ? row.booking.pickupLocation : row.booking.returnLocation,
+      row.kind === 'pickup' ? row.order.pickupBranchId : row.order.returnBranchId,
     );
   }
 
   /** 需調度：與月曆格「需調度 N」同一個判斷（bookingNeedsDispatch）。 */
   needsDispatch(row: WorkListRow): boolean {
-    return bookingNeedsDispatch(row.booking, this.vehicleOf(row));
+    return bookingNeedsDispatch(row.order, this.vehicleOf(row));
   }
 
   /**
@@ -644,32 +644,32 @@ export class CalendarViewComponent {
    * 也不動車輛狀態與可用數。只看尚未取車的列——已取車、已完成的列，車早就交出去了。
    */
   needsPrep(row: WorkListRow): boolean {
-    return row.booking.status === 'reserved' && this.prepStore.hasOpenTaskFor(row.booking.vehicleId);
+    return row.order.status === 'reserved' && this.prepStore.hasOpenTaskFor(row.order.vehicleId);
   }
 
   /** 3.4：需調度 chip 寫出路線「需調度 {所在據點}→{取車據點}」（與可租清單同一個字串）。 */
   dispatchRouteLabel(row: WorkListRow): string {
     return fill(this.t.rentalSearch.needsDispatch, {
-      from: branchName(this.vehicleOf(row)?.location),
-      to: branchName(row.booking.pickupLocation),
+      from: branchName(this.vehicleOf(row)?.branchId),
+      to: branchName(row.order.pickupBranchId),
     });
   }
 
   /** 需調度時的說明文字：「需從〔車輛所在據點〕調度至〔取車據點〕」。 */
   dispatchNote(row: WorkListRow): string {
     const vehicle = this.vehicleOf(row);
-    const from = branchName(vehicle?.location);
-    const to = this.location(row);
+    const from = branchName(vehicle?.branchId);
+    const to = this.branchId(row);
     return `${this.t.dispatch.workList.dispatchNeededPrefix}${from}${this.t.dispatch.workList.dispatchNeededMiddle}${to}`;
   }
 
-  phoneHref(booking: RentalBooking): string | null {
-    const phone = this.memberStore.members().find((c) => c.id === booking.memberId)?.phone;
+  phoneHref(order: RentalOrder): string | null {
+    const phone = this.memberStore.members().find((c) => c.id === order.memberId)?.phone;
     return phone ? `tel:${phone}` : null;
   }
 
-  phoneLabel(booking: RentalBooking): string {
-    return this.memberStore.members().find((c) => c.id === booking.memberId)?.phone ?? '—';
+  phoneLabel(order: RentalOrder): string {
+    return this.memberStore.members().find((c) => c.id === order.memberId)?.phone ?? '—';
   }
 
   // ---------------------------------------------------------------------
@@ -678,11 +678,11 @@ export class CalendarViewComponent {
   // ---------------------------------------------------------------------
 
   paymentStatusLabel(row: WorkListRow): string {
-    return this.t.paymentPanel.statusLabels[this.paymentStore.summaryFor(row.booking.id).status];
+    return this.t.paymentPanel.statusLabels[this.paymentStore.summaryFor(row.order.id).status];
   }
 
   balanceDue(row: WorkListRow): number {
-    return this.paymentStore.summaryFor(row.booking.id).balanceDue;
+    return this.paymentStore.summaryFor(row.order.id).balanceDue;
   }
 
   // ---------------------------------------------------------------------
@@ -695,9 +695,9 @@ export class CalendarViewComponent {
     const member = this.memberOf(row);
     const requiredKind = requiredIdentityDocumentKind(member?.kind);
     const identityDoc = latestByVersion(
-      this.documentStore.identityDocumentsFor(row.booking.memberId).filter((d) => d.type === requiredKind),
+      this.documentStore.identityDocumentsFor(row.order.memberId).filter((d) => d.type === requiredKind),
     );
-    const credential = latestByVersion(this.documentStore.driverCredentialsFor(row.booking.memberId));
+    const credential = latestByVersion(this.documentStore.driverCredentialsFor(row.order.memberId));
     if (!identityDoc || !credential) return 'missing';
     const states = [identityDoc.verification.state, credential.verification.state];
     if (states.includes('rejected')) return 'rejected';
@@ -710,7 +710,7 @@ export class CalendarViewComponent {
   }
 
   contractStatusLabel(row: WorkListRow): string {
-    const latest = this.contractStore.latestFor(row.booking.id);
+    const latest = this.contractStore.latestFor(row.order.id);
     return latest ? this.t.contractPanel.statusLabels[latest.status] : this.t.dispatch.workList.noContract;
   }
 
@@ -724,31 +724,31 @@ export class CalendarViewComponent {
    * （訂金、合約、證件、駕駛資格、車輛狀態）。
    */
   private readinessInputFor(row: WorkListRow): PickupReadinessInput | undefined {
-    const booking = row.booking;
+    const order = row.order;
     const vehicle = this.vehicleOf(row);
     if (!vehicle) return undefined;
     const member = this.memberOf(row);
 
     const requiredKind = requiredIdentityDocumentKind(member?.kind);
     const identityDoc = latestByVersion(
-      this.documentStore.identityDocumentsFor(booking.memberId).filter((d) => d.type === requiredKind),
+      this.documentStore.identityDocumentsFor(order.memberId).filter((d) => d.type === requiredKind),
     );
-    const credential = latestByVersion(this.documentStore.driverCredentialsFor(booking.memberId));
+    const credential = latestByVersion(this.documentStore.driverCredentialsFor(order.memberId));
     const depositPaid = this.paymentStore
-      .paymentsFor(booking.id)
+      .paymentsFor(order.id)
       .filter((p) => p.purpose === 'deposit' && p.status === 'confirmed')
       .reduce((sum, p) => sum + p.amount, 0);
     const hasSchedulingConflict =
-      this.bookingStore.findConflicts(vehicle.id, booking.startTime, booking.endTime, booking.id).length > 0;
+      this.orderStore.findConflicts(vehicle.id, order.startTime, order.endTime, order.id).length > 0;
     const isForeignVisitor = member?.kind === 'foreign_visitor';
-    const previousRental = this.previousRentalOf(booking);
+    const previousRental = this.previousRentalOf(order);
 
     return {
       evaluatedAt: new Date().toISOString(),
-      depositRequired: booking.depositRequired,
+      depositRequired: order.depositRequired,
       depositPaid,
       // 需重新簽署（舊版已簽、目前有效版本未簽）對交車等同未簽署，一律由領域規則判定。
-      latestContractSigned: contractSigningState(this.contractStore.versionsFor(booking.id)) === 'signed',
+      latestContractSigned: contractSigningState(this.contractStore.versionsFor(order.id)) === 'signed',
       requiredDocuments: [
         {
           kind: requiredKind,
@@ -790,10 +790,10 @@ export class CalendarViewComponent {
    * 這台車目前在誰手上：同一台車另一筆出租中（含逾時未還）的訂單＝前一位客人還沒還車。
    * 以訂單資料為準，不看車輛狀態欄位，才能寫出那筆訂單預定何時還、逾時多久。
    */
-  private previousRentalOf(booking: RentalBooking): RentalBooking | undefined {
-    return this.bookingStore
-      .bookings()
-      .find((b) => b.vehicleId === booking.vehicleId && b.id !== booking.id && b.status === 'in_progress');
+  private previousRentalOf(order: RentalOrder): RentalOrder | undefined {
+    return this.orderStore
+      .orders()
+      .find((b) => b.vehicleId === order.vehicleId && b.id !== order.id && b.status === 'in_progress');
   }
 
   /**
@@ -802,7 +802,7 @@ export class CalendarViewComponent {
    * 顯示「車輛目前在租，與本次取車衝突」這種錯誤警示。
    */
   readiness(row: WorkListRow): PickupReadiness | undefined {
-    if (row.booking.status !== 'reserved') return undefined;
+    if (row.order.status !== 'reserved') return undefined;
     const input = this.readinessInputFor(row);
     return input ? this.handoverStore.evaluateReadiness(input) : undefined;
   }
@@ -832,16 +832,16 @@ export class CalendarViewComponent {
    * 「前一位客人尚未還車」要處理的是前一筆訂單（聯絡客人、辦理還車），所以開那一筆的交還車分頁。
    */
   goHandleBlocker(row: WorkListRow, blocker: PickupBlocker): void {
-    const previous = blocker.reason === 'previous_rental_not_returned' ? this.previousRentalOf(row.booking) : undefined;
+    const previous = blocker.reason === 'previous_rental_not_returned' ? this.previousRentalOf(row.order) : undefined;
     if (previous) {
       void this.orderDetail.open(previous.id, 'handover');
       return;
     }
-    void this.orderDetail.open(row.booking.id, BLOCKER_SECTION[blocker.type]);
+    void this.orderDetail.open(row.order.id, BLOCKER_SECTION[blocker.type]);
   }
 
   goHandleWarning(row: WorkListRow, warning: PickupWarning): void {
-    void this.orderDetail.open(row.booking.id, WARNING_SECTION[warning.type]);
+    void this.orderDetail.open(row.order.id, WARNING_SECTION[warning.type]);
   }
 
   // ---------------------------------------------------------------------
@@ -849,12 +849,12 @@ export class CalendarViewComponent {
   // ---------------------------------------------------------------------
 
   isOverdue(row: WorkListRow): boolean {
-    return row.booking.status === 'in_progress' && new Date(row.booking.endTime).getTime() < Date.now();
+    return row.order.status === 'in_progress' && new Date(row.order.endTime).getTime() < Date.now();
   }
 
   overdueDurationLabel(row: WorkListRow): string {
     if (!this.isOverdue(row)) return this.t.dispatch.workList.onTime;
-    const minutes = Math.floor((Date.now() - new Date(row.booking.endTime).getTime()) / 60_000);
+    const minutes = Math.floor((Date.now() - new Date(row.order.endTime).getTime()) / 60_000);
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return hours > 0
@@ -864,11 +864,11 @@ export class CalendarViewComponent {
 
   /** 已還車但仍有應收餘額——設計文件 6.3「未付追加費用顯示『已還車／應收未結』」。 */
   isReturnedUnsettled(row: WorkListRow): boolean {
-    return row.booking.status === 'completed' && this.balanceDue(row) > 0;
+    return row.order.status === 'completed' && this.balanceDue(row) > 0;
   }
 
   reminderStateLabel(row: WorkListRow): string {
-    const records = this.reminderStatuses().filter((r) => r.bookingId === row.booking.id);
+    const records = this.reminderStatuses().filter((r) => r.bookingId === row.order.id);
     for (const state of REMINDER_STATE_PRECEDENCE) {
       if (records.some((r) => r.state === state)) {
         return this.t.dispatch.workList.reminderStateLabels[state];
@@ -884,13 +884,13 @@ export class CalendarViewComponent {
    * 的 calculateReturnCharges 純函式試算，不是重新實作費用規則。
    */
   estimatedLateFee(row: WorkListRow): number {
-    const booking = row.booking;
-    if (booking.status !== 'in_progress') return 0;
+    const order = row.order;
+    if (order.status !== 'in_progress') return 0;
     const vehicle = this.vehicleOf(row);
     if (!vehicle) return 0;
-    const policy = this.returnPolicyFor(booking, vehicle);
+    const policy = this.returnPolicyFor(order, vehicle);
     const result = this.handoverStore.calculateCharges({
-      scheduledReturnAt: booking.endTime,
+      scheduledReturnAt: order.endTime,
       actualReturnAt: new Date().toISOString(),
       lateReturnPolicy: policy.lateReturnPolicy,
       energyReturnPolicy: policy.energyReturnPolicy,
@@ -901,8 +901,8 @@ export class CalendarViewComponent {
   }
 
   /** 與 handover-panel.component.ts 的 policyFor 相同優先序：已揭露規則優先，其次目前方案。 */
-  private returnPolicyFor(booking: RentalBooking, vehicle: Vehicle) {
-    const disclosedRules = this.contractStore.latestFor(booking.id)?.snapshot.disclosedRules;
+  private returnPolicyFor(order: RentalOrder, vehicle: Vehicle) {
+    const disclosedRules = this.contractStore.latestFor(order.id)?.snapshot.disclosedRules;
     const plan = this.pricingStore.plans().find((p) => p.appliesToCategory === vehicle.category);
     return {
       lateReturnPolicy:
@@ -968,12 +968,12 @@ export class CalendarViewComponent {
     const vehicle = this.vehicleOf(row);
     const isPickup = row.kind === 'pickup';
     const wl = this.t.dispatch.workList;
-    const href = this.phoneHref(row.booking);
+    const href = this.phoneHref(row.order);
     return {
       title: vehicle?.plateNumber ?? '—',
       subtitle: `${vehicle?.model ?? '—'} · ${this.memberName(row)}`,
       timeTerm: isPickup ? wl.pickupTime : wl.returnTime,
-      time: this.fmtTime(isPickup ? row.booking.startTime : row.booking.endTime),
+      time: this.fmtTime(isPickup ? row.order.startTime : row.order.endTime),
       chips: this.workListChips(row),
       member: {
         name: this.memberName(row),
@@ -981,7 +981,7 @@ export class CalendarViewComponent {
           ? {
               href,
               label: isPickup ? this.t.dispatch.workList.callLabel : wl.contact,
-              ariaLabel: `${this.memberName(row)}，撥打電話 ${this.phoneLabel(row.booking)}`,
+              ariaLabel: `${this.memberName(row)}，撥打電話 ${this.phoneLabel(row.order)}`,
             }
           : null,
       },
@@ -996,7 +996,7 @@ export class CalendarViewComponent {
     const wl = this.t.dispatch.workList;
     const chips: WorkListDetailChip[] = [];
     if (row.kind === 'pickup') {
-      if (row.booking.status === 'reserved') {
+      if (row.order.status === 'reserved') {
         const ready = this.isPickupReady(row);
         chips.push({
           tone: ready ? 'positive' : 'warning',
@@ -1034,14 +1034,14 @@ export class CalendarViewComponent {
 
     if (this.isReturnedUnsettled(row)) {
       chips.push({ tone: 'warning', icon: 'receipt_long', text: wl.returnedUnsettled });
-    } else if (row.booking.status === 'in_progress') {
+    } else if (row.order.status === 'in_progress') {
       const overdue = this.isOverdue(row);
       chips.push({
         tone: overdue ? 'warning' : 'positive',
         icon: overdue ? 'schedule' : 'check_circle',
         text: overdue ? `${wl.overdue} ${this.overdueDurationLabel(row)}` : wl.onTime,
       });
-    } else if (row.booking.status === 'reserved') {
+    } else if (row.order.status === 'reserved') {
       chips.push({ tone: null, icon: 'hourglass_empty', text: wl.notPickedUpYet });
     }
     return chips;
@@ -1049,7 +1049,7 @@ export class CalendarViewComponent {
 
   private pickupDetailFields(row: WorkListRow): WorkListDetailField[] {
     const wl = this.t.dispatch.workList;
-    const fields: WorkListDetailField[] = [{ term: wl.pickupLocation, value: this.location(row) }];
+    const fields: WorkListDetailField[] = [{ term: wl.pickupBranchId, value: this.branchId(row) }];
     if (this.needsDispatch(row)) {
       fields.push({ term: wl.needsDispatch, value: this.dispatchNote(row) });
     }
@@ -1067,7 +1067,7 @@ export class CalendarViewComponent {
   private returnDetailFields(row: WorkListRow): WorkListDetailField[] {
     const wl = this.t.dispatch.workList;
     return [
-      { term: wl.returnLocation, value: this.location(row) },
+      { term: wl.returnBranchId, value: this.branchId(row) },
       { term: wl.reminderStatus, value: this.reminderStateLabel(row) },
       { term: wl.estimatedLateFee, value: formatTwd(this.estimatedLateFee(row)) },
       { term: wl.currentBalance, value: formatTwd(this.balanceDue(row)) },
@@ -1097,7 +1097,7 @@ export class CalendarViewComponent {
   }
 
   private pickupDetailActions(row: WorkListRow): WorkListDetailAction[] {
-    const reserved = row.booking.status === 'reserved';
+    const reserved = row.order.status === 'reserved';
     const actions: WorkListDetailAction[] = [
       { key: 'pay', label: this.t.dispatch.workList.pay, icon: 'payments', variant: 'tonal' },
     ];
@@ -1113,7 +1113,7 @@ export class CalendarViewComponent {
     if (reserved) {
       actions.push(
         { key: 'cancel', label: this.t.common.cancel, icon: 'cancel', variant: 'tonal' },
-        { key: 'pickup', label: this.t.booking.pickUp, icon: 'directions_car', variant: 'filled' },
+        { key: 'pickup', label: this.t.order.pickUp, icon: 'directions_car', variant: 'filled' },
       );
     }
     return actions;
@@ -1124,10 +1124,10 @@ export class CalendarViewComponent {
     const actions: WorkListDetailAction[] = [
       { key: 'view', label: this.t.dispatch.workList.view, icon: 'visibility', variant: 'tonal' },
     ];
-    if (row.booking.status === 'in_progress') {
+    if (row.order.status === 'in_progress') {
       actions.push({
         key: 'return',
-        label: this.t.booking.complete,
+        label: this.t.order.complete,
         icon: 'assignment_turned_in',
         variant: 'filled',
       });
@@ -1140,27 +1140,27 @@ export class CalendarViewComponent {
   // ---------------------------------------------------------------------
 
   payAction(row: WorkListRow): void {
-    void this.orderDetail.open(row.booking.id, 'payments');
+    void this.orderDetail.open(row.order.id, 'payments');
   }
 
   viewContractAction(row: WorkListRow): void {
-    void this.orderDetail.open(row.booking.id, 'contract');
+    void this.orderDetail.open(row.order.id, 'contract');
   }
 
   cancelAction(row: WorkListRow): void {
-    void this.orderDetail.open(row.booking.id, 'cancellation');
+    void this.orderDetail.open(row.order.id, 'cancellation');
   }
 
   pickupAction(row: WorkListRow): void {
-    void this.orderDetail.open(row.booking.id, 'handover');
+    void this.orderDetail.open(row.order.id, 'handover');
   }
 
   returnAction(row: WorkListRow): void {
-    void this.orderDetail.open(row.booking.id, 'handover');
+    void this.orderDetail.open(row.order.id, 'handover');
   }
 
   viewAction(row: WorkListRow): void {
-    void this.orderDetail.open(row.booking.id);
+    void this.orderDetail.open(row.order.id);
   }
 
   /**
@@ -1168,6 +1168,6 @@ export class CalendarViewComponent {
    * 不在清單裡另做一套簡化編輯表單。
    */
   editAction(row: WorkListRow): void {
-    void this.orderDetail.edit(row.booking.id);
+    void this.orderDetail.edit(row.order.id);
   }
 }

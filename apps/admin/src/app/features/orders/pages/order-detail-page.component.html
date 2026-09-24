@@ -2,8 +2,8 @@
   <!-- 2.1：狀態 chip／急迫徽章移到頁首標題旁（appHeaderTitleExtra，見 header-title-extra-slot.ts）。
        承租人姓名、eyebrow 與「← 返回」也搬到頁首（大標題＋麵包屑左側的返回按鈕，見 constructor 的 provideHeaderTitle）。 -->
   <ng-template appHeaderTitleExtra>
-    @if (booking(); as b) {
-      <app-status-chip [label]="t.booking.statusLabels[b.status]" [status]="statusKey()" />
+    @if (order(); as b) {
+      <app-status-chip [label]="t.order.statusLabels[b.status]" [status]="statusKey()" />
       @if (isOverdueReturn()) {
         <button type="button" matButton="text" class="urgent-indicator" (click)="selectSection('handover')">
           <span class="material-symbols-rounded" aria-hidden="true">schedule</span>
@@ -25,11 +25,11 @@
     }
   </ng-template>
 
-  @if (booking(); as b) {
+  @if (order(); as b) {
     <header class="ui-card order-detail__header">
       <dl class="order-detail__meta">
         <div>
-          <dt>{{ t.booking.vehicle }}</dt>
+          <dt>{{ t.order.vehicle }}</dt>
           <dd>{{ vehicle()?.plateNumber ?? '—' }}@if (vehicle(); as v) {／{{ v.model }}}</dd>
         </div>
         <div>
@@ -70,12 +70,12 @@
               </section>
               <section class="ui-card order-detail__group">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.renter }}</h2>
-                <app-order-renter-section [form]="form()" />
+                <lib-order-renter-section [form]="form()" />
               </section>
               <!-- 2.4：費用區塊改成保險方案／加購配件表格，需要整列寬度才放得下，不和另外兩塊並排 -->
               <section class="ui-card order-detail__group order-detail__group--wide">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.pricing }}</h2>
-                <app-order-pricing-section [form]="form()" [context]="editContext()" />
+                <lib-order-pricing-section [form]="form()" [context]="editContext()" />
               </section>
             </div>
 
@@ -115,16 +115,16 @@
               <section class="ui-card order-detail__group">
                 <h2 class="order-detail__group-title">{{ t.orderDetail.groups.rental }}</h2>
                 <dl class="order-detail__fields">
-                  <dt>{{ t.booking.vehicle }}</dt>
+                  <dt>{{ t.order.vehicle }}</dt>
                   <dd>{{ vehicle()?.plateNumber ?? '—' }}@if (vehicle(); as v) {（{{ v.model }}）}</dd>
-                  <dt>{{ t.booking.startTime }}</dt>
+                  <dt>{{ t.order.startTime }}</dt>
                   <dd>{{ fmt(b.startTime) }}</dd>
-                  <dt>{{ t.booking.endTime }}</dt>
+                  <dt>{{ t.order.endTime }}</dt>
                   <dd>{{ fmt(b.endTime) }}</dd>
-                  <dt>{{ t.booking.pickupLocation }}</dt>
+                  <dt>{{ t.order.pickupBranch }}</dt>
                   <dd>
                     <span class="order-detail__branch">
-                      {{ branchName(b.pickupLocation) }}
+                      {{ branchName(b.pickupBranchId) }}
                       @if (needsDispatch()) {
                         <span class="ui-chip ui-chip--info" [attr.title]="dispatchNote()">
                           <span class="material-symbols-rounded" aria-hidden="true">swap_horiz</span>
@@ -136,8 +136,8 @@
                       <span class="order-detail__note">{{ dispatchNote() }}</span>
                     }
                   </dd>
-                  <dt>{{ t.booking.returnLocation }}</dt>
-                  <dd>{{ branchName(b.returnLocation) }}</dd>
+                  <dt>{{ t.order.returnBranch }}</dt>
+                  <dd>{{ branchName(b.returnBranchId) }}</dd>
                 </dl>
               </section>
 
@@ -166,17 +166,17 @@
                 }
                 <dl class="order-detail__fields order-detail__fields--amounts">
                   @if (b.priceBreakdown; as q) {
-                    <dt>{{ t.bookingForm.rentalSubtotal }}</dt>
+                    <dt>{{ t.orderForm.rentalSubtotal }}</dt>
                     <dd>{{ q.rentalSubtotal | twd }}</dd>
-                    <dt>{{ t.bookingForm.insuranceSubtotal }}</dt>
+                    <dt>{{ t.orderForm.insuranceSubtotal }}</dt>
                     <dd>{{ q.insuranceSubtotal | twd }}</dd>
-                    <dt>{{ t.bookingForm.addOnSubtotal }}</dt>
+                    <dt>{{ t.orderForm.addOnSubtotal }}</dt>
                     <dd>{{ q.addOnSubtotal | twd }}</dd>
                     @for (line of q.addOnLines; track line.addOnId) {
                       <dt class="order-detail__sub">{{ line.name }} × {{ line.qty }}</dt>
                       <dd class="order-detail__sub">{{ line.amount | twd }}</dd>
                     }
-                    <dt class="is-total">{{ t.bookingForm.quoteTotal }}</dt>
+                    <dt class="is-total">{{ t.orderForm.quoteTotal }}</dt>
                     <dd class="is-total">{{ q.total | twd }}</dd>
                   }
                   <dt>{{ t.orderDetail.depositRequired }}</dt>

@@ -3,9 +3,14 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { DriverCredential, Member } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { DriverEligibilityPanelComponent } from '../../bookings/components/driver-eligibility-panel.component';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { OrderForm, createOrderForm, lockRenterToMember, unlockRenter } from '../order-form/order-form';
+import { DriverEligibilityPanelComponent } from '../../members/components/driver-eligibility-panel.component';
+import {
+  ORDER_FORM_DATA,
+  OrderForm,
+  createOrderForm,
+  lockRenterToMember,
+  unlockRenter,
+} from '@car-rental/order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { createOrderRepos } from '../testing';
 import { OrderDriverSectionComponent } from './order-driver-section.component';

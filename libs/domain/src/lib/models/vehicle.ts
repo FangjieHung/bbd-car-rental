@@ -1,7 +1,15 @@
+import { SelectOption } from './select-option';
 import { VehicleStatus } from './enums';
 import { InsurancePlan } from './insurance-plan';
 
 export type VehicleCategory = 'car' | 'scooter' | 'ev';
+
+/** 車型分類的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const VEHICLE_CATEGORY_OPTIONS: SelectOption<VehicleCategory>[] = [
+  { value: 'scooter', label: '機車' },
+  { value: 'car', label: '汽車' },
+  { value: 'ev', label: '電動車' },
+];
 
 /** 全部車種，依對客顯示的慣用順序（汽車、機車、電動車）；需要列出車種選項時用這份，不各自手寫。 */
 export const VEHICLE_CATEGORIES: readonly VehicleCategory[] = ['car', 'scooter', 'ev'];
@@ -59,7 +67,7 @@ export interface Vehicle {
   /** 提供此車款的供應商數量 */
   supplierCount?: number;
   /** 車輛所在據點 id（見 RENTAL_BRANCHES）；未填時視為不確定，篩選特定據點時不會出現 */
-  location?: string;
+  branchId?: string;
   /** 可選購的保險方案 */
   insurancePlans?: InsurancePlan[];
   /** 油量政策 */

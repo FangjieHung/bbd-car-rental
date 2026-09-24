@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { Vehicle } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 import { CatalogStore } from '../catalog.store';
 import { DateRange, VEHICLE_GROUP_CATEGORIES, toVehicleGroup } from '../date-range';
 import { QuoteService } from '../quote.service';
@@ -16,7 +17,7 @@ import { VehicleStepComponent } from '../steps/vehicle-step.component';
  * 取車地點不在這裡選——選車時直接吃該車的所屬據點；還車地點留到下單頁的 confirm-step 再選。
  */
 @Component({
-  selector: 'app-search-page',
+  selector: 'lib-search-page',
   imports: [DateStepComponent, VehicleStepComponent],
   templateUrl: './search-page.component.html',
   styleUrl: './search-page.component.scss',
@@ -28,6 +29,7 @@ export class SearchPageComponent {
   private readonly quote = inject(QuoteService);
   private readonly context = inject(BOOKING_CONTEXT);
 
+  protected readonly i18n = injectBookingFlowI18n();
   readonly partner = this.context.partner;
 
   private readonly params = toSignal(

@@ -28,7 +28,7 @@ export function isRetryableReminderFailure(status: ReminderStatus, now: Date = n
   return new Date(status.scheduledFor).getTime() > now.getTime();
 }
 
-export interface ScheduleRemindersForBookingInput {
+export interface ScheduleRemindersForOrderInput {
   bookingId: string;
   /** 還車時間（ISO），兩個 offset 都由此反推排程時間。 */
   endTime: string;
@@ -67,8 +67,8 @@ export class ReminderNotScheduledError extends Error {
  * 實際排程模擬呼叫委派給 ReminderGateway（Task 7 的 mock adapter，型別上保證 schedule() 絕不會
  * 回報 'sent'——見 ReminderScheduleState 的排除設計），這裡只負責「呼叫 gateway 模擬 → 把結果
  * 轉存成一筆持久化的 ReminderStatus 紀錄」。'sent'／'failed' 這兩個只有真正後端才會知道的終態，
- * 只能透過 recordMockDispatchOutcome() 這個明確標示為開發期模擬用途的方法寫入；scheduleForBooking
- * 與 suppressForBooking 這兩個正常流程永遠不會產生、也不會宣稱 'sent'。
+ * 只能透過 recordMockDispatchOutcome() 這個明確標示為開發期模擬用途的方法寫入；scheduleForOrder
+ * 與 suppressForOrder 這兩個正常流程永遠不會產生、也不會宣稱 'sent'。
  */
 @Injectable({ providedIn: 'root' })
 export class ReminderStore {
@@ -96,7 +96,7 @@ export class ReminderStore {
    * 已經 sent 的 offset 不會被動到：信已經寄出去了，無法收回，這裡的判斷是「沒有必要為了
    * 還車時間變動重寄一次」——設計文件未細述這個邊界情況，是本任務的實作判斷。
    */
-  async scheduleForBooking(input: ScheduleRemindersForBookingInput): Promise<ReminderStatus[]> {
+  async scheduleForOrder(input: ScheduleRemindersForOrderInput): Promise<ReminderStatus[]> {
     const results: ReminderStatus[] = [];
 
     for (const offset of REMINDER_OFFSETS) {
@@ -138,7 +138,7 @@ export class ReminderStore {
    * 這裡選擇直接刪除，行為等同「這筆訂單從此不會再有這個 offset 的提醒」）。已經 sent 的紀錄
    * 保留下來，作為活動歷程的一部分——那是真的發生過的事，不因訂單後來取消或完成而消失。
    */
-  async suppressForBooking(bookingId: string): Promise<void> {
+  async suppressForOrder(bookingId: string): Promise<void> {
     for (const offset of REMINDER_OFFSETS) {
       const existing = this.findStatus(bookingId, offset);
       if (!existing || existing.state === 'sent') continue;

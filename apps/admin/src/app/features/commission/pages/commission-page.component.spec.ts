@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { MonthlyPayout, Partner, PriceBreakdown, RentalBooking, Vehicle } from '../../../core/models';
+import { MonthlyPayout, Partner, PriceBreakdown, RentalOrder, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { BOOKING_REPO, PARTNER_REPO, PAYOUT_REPO, VEHICLE_REPO } from '../../../core/repositories/tokens';
+import { ORDER_REPO, PARTNER_REPO, PAYOUT_REPO, VEHICLE_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { CommissionPageComponent } from './commission-page.component';
 
@@ -28,15 +28,15 @@ const vehicle: Vehicle = {
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 
-function booking(id: string, priceBreakdown?: PriceBreakdown): RentalBooking {
+function order(id: string, priceBreakdown?: PriceBreakdown): RentalOrder {
   return {
     id,
     vehicleId: 'v1',
     memberId: 'c1',
     startTime: '2026-07-05T01:00:00.000Z',
     endTime: '2026-07-08T01:00:00.000Z',
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
     status: 'completed',
     depositRequired: 0,
     sourcePartnerId: 'pt1',
@@ -44,10 +44,10 @@ function booking(id: string, priceBreakdown?: PriceBreakdown): RentalBooking {
   };
 }
 
-function setup(bookings: RentalBooking[]) {
+function setup(orders: RentalOrder[]) {
   TestBed.configureTestingModule({
     providers: [
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
       { provide: PARTNER_REPO, useValue: createInMemoryRepo<Partner>([partner]) },
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
       { provide: PAYOUT_REPO, useValue: createInMemoryRepo<MonthlyPayout>([]) },
@@ -70,7 +70,7 @@ describe('CommissionPageComponent 沒有報價紀錄的訂單', () => {
   const quoted = { dailyLines: [], rentalSubtotal: 3000, total: 2760 } as unknown as PriceBreakdown;
 
   it('租金小計與退佣顯示淡色「未報價」，報表上方提示幾筆未計入；有報價的照舊', () => {
-    const { el } = setup([booking('b-quoted', quoted), booking('b-old')]);
+    const { el } = setup([order('b-quoted', quoted), order('b-old')]);
 
     const notice = el.querySelector('.commission-unquoted-notice');
     expect(notice?.textContent?.trim()).toBe(t.commission.unquotedNotice.replace('{count}', '1'));
@@ -87,7 +87,7 @@ describe('CommissionPageComponent 沒有報價紀錄的訂單', () => {
   });
 
   it('全部都有報價時不顯示提示', () => {
-    const { el } = setup([booking('b-quoted', quoted)]);
+    const { el } = setup([order('b-quoted', quoted)]);
     expect(el.querySelector('.commission-unquoted-notice')).toBeNull();
   });
 });

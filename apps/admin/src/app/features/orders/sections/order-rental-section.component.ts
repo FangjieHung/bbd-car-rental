@@ -10,9 +10,13 @@ import {
 } from '@car-rental/ui';
 import { RENTAL_BRANCHES, VEHICLE_CATEGORIES, Vehicle, VehicleCategory } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { OrderForm, orderFormValue } from '../order-form/order-form';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { OrderFormContext, createOrderFormDerived } from '../order-form/order-form-derived';
+import {
+  OrderForm,
+  orderFormValue,
+  ORDER_FORM_DATA,
+  OrderFormContext,
+  createOrderFormDerived,
+} from '@car-rental/order-form';
 import { AvailableVehicleListComponent } from '../../dispatch/available-vehicle-list/available-vehicle-list.component';
 import { RENTAL_AVAILABILITY } from '../../dispatch/available-vehicle-list/rental-availability';
 import {
@@ -43,7 +47,7 @@ function sameDay(a: Date | null, b: Date | null): boolean {
 /**
  * 「租期與車輛」表單區塊（2.3）：先選租期，再從這段期間可以租的車裡挑一台。
  * 搜尋列（車型、日期區間、取／還車時間、取／還車據點）選完即時更新下方的可租清單，沒有搜尋鈕。
- * 表單欄位維持 vehicleId／startLocal／endLocal（datetime-local 字串）／pickupLocation／returnLocation，
+ * 表單欄位維持 vehicleId／startLocal／endLocal（datetime-local 字串）／pickupBranchId／returnBranchId，
  * 這裡只是換一種方式寫進去，預填、送出、訂單詳情都不受影響。
  * 不依賴 stepper，可直接放進任何容器（建立訂單精靈、訂單詳情的編輯訂單）。
  */
@@ -82,7 +86,7 @@ export class OrderRentalSectionComponent {
 
   protected readonly startLocal = computed(() => this.value().rental.startLocal);
   protected readonly endLocal = computed(() => this.value().rental.endLocal);
-  protected readonly pickupLocation = computed(() => this.value().rental.pickupLocation);
+  protected readonly pickupBranchId = computed(() => this.value().rental.pickupBranchId);
   protected readonly vehicleId = computed(() => this.value().rental.vehicleId);
   protected readonly editingBookingId = computed(() => this.context().editingBookingId);
 

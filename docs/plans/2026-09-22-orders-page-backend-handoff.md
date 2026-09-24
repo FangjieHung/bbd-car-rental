@@ -1,6 +1,6 @@
 # 訂單頁面化與據點統一：後端 Hand-off
 
-**日期：** 2026-09-22
+**日期：** 2026-09-22（2026-09-23 補第 8、9 節：更名後的欄位、官網多語系）
 **上游：** `docs/plans/2026-09-18-rental-operations-backend-handoff.md`（通用原則、身分權限、證件、OCR、付款、合約證據等，本文不重複）
 **術語：** 以 repo 根目錄 `CONTEXT.md` 為準
 **待業主確認：** `docs/owner-questions.md`（本文多處依賴其中答案，標示為「待業主 #n」）
@@ -10,7 +10,7 @@
 
 ### 1.1 前端期待的介面
 
-前端把送出寫成一個可替換的 gateway（`apps/admin/src/app/features/orders/order-form/order-submit-gateway.ts`），目前由 admin 的本機 stores 實作。後端接上時實作同一個介面即可：
+前端把送出寫成一個可替換的 gateway（`libs/order-form/src/lib/order-submit-gateway.ts`），目前由 admin 的本機 stores 實作。後端接上時實作同一個介面即可：
 
 ```text
 OrderSubmitGateway
@@ -46,7 +46,7 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 2. 若有 `presignature`，比對其快照與正式快照的**條款內容**（排除 id、時間戳等每次都不同的欄位）；一致才將簽名套用到新版本並標記為已簽署，不一致則忽略簽名、合約維持未簽署。
 3. 比對必須在伺服器端進行，不能接受前端傳來的「條款一致」旗標。
 
-前端比對規則可參考 `order-form/contract-snapshot.ts` 的 `sameContractTerms`，但後端應以自己的正規化方式為準。
+前端比對規則可參考 `libs/order-form/src/lib/contract-snapshot.ts` 的 `sameContractTerms`，但後端應以自己的正規化方式為準。
 
 ### 2.2 需重新簽署
 
@@ -83,7 +83,7 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 
 ### 3.2 引用關係
 
-- `Vehicle.location`（車輛所在據點）、`RentalBooking.pickupLocation` / `returnLocation`（取／還車據點）**現在存的都是據點 id**。欄位名稱是歷史遺留，前端之後會更名（見前端待辦），API 設計時建議直接用 `pickupBranchId` 這類名稱。
+- `Vehicle.branchId`（車輛所在據點）、`RentalOrder.pickupBranchId` / `returnBranchId`（取／還車據點）存的都是據點 id。前端已於 2026-09-23 從舊名 `location`／`pickupLocation`／`returnLocation` 改過來（見第 8 節），API 請直接用這組名稱。
 - **合約快照存據點名稱文字**，不存 id——快照是不可變的人類可讀文件，據點日後改名不應回頭改動已簽的合約。
 
 ### 3.3 舊資料遷移
@@ -97,7 +97,7 @@ input = { value: 表單值, presignature?: { assetId, snapshot } }
 | `店舖` | `mzg-store` |
 | `馬公門市` | `mzg-store` |
 
-查無對應的值原樣保留，不要猜測。
+查無對應的值原樣保留，不要猜測。除了「值」要對照，**欄位名稱**也可能是舊的（見第 8.2 節）。
 
 ### 3.4 保險方案
 

@@ -2,13 +2,14 @@ import { branchName, findBranch, needsDispatch } from '@car-rental/domain';
 import { PriceBreakdown, Vehicle } from '../../../core/models';
 import { fmtDateTime } from '../../../core/date-utils';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { NO_INSURANCE_VALUE, OrderFormValue } from '../order-form/order-form';
 import {
+  NO_INSURANCE_VALUE,
+  OrderFormValue,
   OrderRequirement,
   OrderRequirementGroup,
   orderRentalDays,
   paymentDraftBalance,
-} from '../order-form/order-form-derived';
+} from '@car-rental/order-form';
 
 /** 建立訂單頁左側「訂單摘要」欄要顯示的內容（已整理好、模板只負責排版）。 */
 export interface OrderSummaryView {
@@ -62,11 +63,11 @@ export function buildOrderSummary(input: OrderSummaryInput): OrderSummaryView {
     pickupAt: rental.startLocal ? fmtDateTime(rental.startLocal, now) : null,
     returnAt: rental.endLocal ? fmtDateTime(rental.endLocal, now) : null,
     days: orderRentalDays(rental) ?? null,
-    pickupBranch: rental.pickupLocation ? branchName(rental.pickupLocation) : null,
-    returnBranch: rental.returnLocation ? branchName(rental.returnLocation) : null,
+    pickupBranch: rental.pickupBranchId ? branchName(rental.pickupBranchId) : null,
+    returnBranch: rental.returnBranchId ? branchName(rental.returnBranchId) : null,
     dispatchRoute:
-      vehicle && needsDispatch(vehicle.location, rental.pickupLocation)
-        ? { from: findBranch(vehicle.location)?.name ?? '', to: findBranch(rental.pickupLocation)?.name ?? '' }
+      vehicle && needsDispatch(vehicle.branchId, rental.pickupBranchId)
+        ? { from: findBranch(vehicle.branchId)?.name ?? '', to: findBranch(rental.pickupBranchId)?.name ?? '' }
         : null,
     renterName: renter.name.trim(),
     renterPhone: renter.phone.trim(),
@@ -89,7 +90,7 @@ export function buildOrderSummary(input: OrderSummaryInput): OrderSummaryView {
 }
 
 function insuranceName(planId: string, vehicle: Vehicle | undefined): string {
-  if (planId === NO_INSURANCE_VALUE) return ZH_TW.bookingForm.insuranceNone;
+  if (planId === NO_INSURANCE_VALUE) return ZH_TW.orderForm.insuranceNone;
   const plan = planId ? vehicle?.insurancePlans?.find((p) => p.id === planId) : undefined;
   return plan?.name ?? ZH_TW.orderSummary.insuranceUnresolved;
 }

@@ -40,16 +40,16 @@ export class App implements OnInit {
     // 4.5：「訂單管理」改成群組，會員不再藏在訂單列表的工具列裡。建單（/orders/new）與
     // 訂單詳情（/orders/:id）歸在「訂單列表」底下：側欄亮它、頁首預設標題也算它。
     {
-      label: this.t.nav.bookings,
+      label: this.t.nav.orders,
       icon: 'calendar_month',
       children: [
         {
-          route: '/bookings',
+          route: '/orders',
           label: this.t.nav.orderList,
           icon: 'calendar_month',
           matchPrefixes: ['/orders/'],
         },
-        { route: '/bookings/members', label: this.t.nav.members, icon: 'group' },
+        { route: '/orders/members', label: this.t.nav.members, icon: 'group' },
       ],
     },
     {

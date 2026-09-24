@@ -16,8 +16,8 @@
 | `/dashboard` | 儀表板 | 總覽 + 調度行事曆（`app-calendar-view`）。卡片標題列可切「月曆｜時間軸」兩種檢視（2026-09-23 批次 3.5，狀態存在網址 `?view=`），共用同一個右側面板（取車／還車／可用三分頁）；頁首另有「待整備 N」「待保養 N」徽章與搜尋框 |
 | `/vehicles` | 車籍管理 | 車輛 CRUD、狀態機（available/rented/maintenance/reserved）；表格另有「所在據點」欄與篩選（2026-09-23 後台流程審查批次 3.6）。原本這頁還有「表格／時間軸」切換，時間軸移到 `/dashboard` 後（見下方調度小節）這裡只剩表格 |
 | `/vehicles/:id` | 車輛詳情 | 車輛資料、保養紀錄（`MaintenanceRecord`，經對話框新增） |
-| `/bookings` | 訂單列表 | 列表、篩選（含取車日期今天／本週／自訂區間、只看有待補）、匯出；「建立訂單」導到 `/orders/new`，**整列可點**開 `/orders/:id`（2026-09-23 批次 4.4，之前只有列尾一顆小圖示按鈕） |
-| `/bookings/members` | 會員管理 | `Member` 清單 |
+| `/orders` | 訂單列表 | 列表、篩選（含取車日期今天／本週／自訂區間、只看有待補）、匯出；「建立訂單」導到 `/orders/new`，**整列可點**開 `/orders/:id`（2026-09-23 批次 4.4，之前只有列尾一顆小圖示按鈕；舊網址 `/bookings` 會轉址過來） |
+| `/members` | 會員管理 | `Member` 清單；側欄歸在「訂單管理」下（舊網址 `/bookings/members` 會轉址過來） |
 | `/orders/new` | 建立訂單 | 見下方「訂單頁面化」 |
 | `/orders/:id` | 訂單詳情 | 見下方「訂單頁面化」 |
 | `/pricing` | 定價方案 | `PricingPlan` CRUD（車型定價、日型費率、天數累折級距） |
@@ -81,7 +81,7 @@ Topbar 只有一個 `<h1>`（這一頁自己的名字）＋一排麵包屑（上
   訂單」在每一步都可以按，只有訂單底線（客人、車輛、租期三者齊備）與既有完整性規則會擋
   送出；按下之後才會在步驟標題亮錯誤。原本的第 5 步「確認建立」已拿掉（批次 2.2）：它
   唯一的內容（建立後待補清單）併入下面的左側摘要欄，不再需要獨立一步。
-  - 第 1 步（`features/orders/sections/order-rental-section.component.ts`）是「先選租期、
+  - 第 1 步（`libs/order-form/src/lib/sections/order-rental-section.component.ts`）是「先選租期、
     再列可租的車」：搜尋列（車型、雙月日期區間、取還車時間 30 分鐘一格、取還車據點）即時
     更新、不需按鈕；可租清單是 `app-available-vehicle-list`
     （`features/dispatch/available-vehicle-list/`，內部靠 `RENTAL_AVAILABILITY` token
@@ -160,6 +160,10 @@ query params 的實際內容（只有 `start`／`end`／`group`，沒有取車�
 吃 lib 內建的 consumer 預設值去消費它，並提供八個共用 Repository 的 provider
 （`apps/booking/src/app/app.config.ts`；官網目前不提供合約相關的 repo，這個缺口見
 `04-booking-flow.md`「已知缺口」）。
+
+**多語系**：官網是唯一啟用語言切換的 app（繁中／英文／日文），殼層放語言切換器並呼叫
+`provideBookingFlowI18n()`；頁面經本地的 `booking-pages.ts` lazy load。細節見
+`04-booking-flow.md`「多語系」。
 
 ## affiliate — 民宿代訂＋對帳站（模組二新增）
 

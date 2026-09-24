@@ -32,11 +32,11 @@ describe('HeaderComponent 由選單推得的標題（defaultTitle，沒有頁面
   it('麵包屑節點有 route 時渲染成可點的連結', () => {
     const fixture = setup({
       title: '會員',
-      breadcrumbs: [{ label: '訂單管理', route: '/bookings' }],
+      breadcrumbs: [{ label: '訂單管理', route: '/orders' }],
     });
     const link = fixture.nativeElement.querySelector('.breadcrumb-link') as HTMLAnchorElement;
     expect(link.textContent).toBe('訂單管理');
-    expect(link.getAttribute('href')).toBe('/bookings');
+    expect(link.getAttribute('href')).toBe('/orders');
   });
 
   it('沒有上層路徑時不顯示麵包屑，只有大標題', () => {
@@ -67,7 +67,7 @@ describe('HeaderComponent 頁面覆寫的標題與麵包屑（HeaderTitleSlot）
     const slot = TestBed.inject(HeaderTitleSlot);
     slot.entry.set({
       owner: {},
-      value: { title: '王小明', breadcrumbs: [{ label: '訂單管理', route: '/bookings' }], backTo: '/dashboard' },
+      value: { title: '王小明', breadcrumbs: [{ label: '訂單管理', route: '/orders' }], backTo: '/dashboard' },
     });
     fixture.detectChanges();
 

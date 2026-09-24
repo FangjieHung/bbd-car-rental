@@ -5,10 +5,13 @@ import {
   IdentityDocument,
   PaymentRecord,
   PriceBreakdown,
-  RentalBooking,
+  RentalOrder,
 } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { createOrderForm, setPaymentDrafts } from '../order-form/order-form';
+import {
+  createOrderForm,
+  setPaymentDrafts,
+} from '@car-rental/order-form';
 import {
   OrderIncompleteFacts,
   driverCheckOf,
@@ -120,12 +123,12 @@ describe('orderIncompleteKinds（待補規則本身）', () => {
       completeFacts({ renterEmail: '', depositCollected: 0, contract: 'unsigned', identity: 'missing', driver: 'missing', collected: 0 }),
     );
     expect(items.map((i) => [i.label, i.target])).toEqual([
-      [t.bookingForm.incomplete.missingEmail, 'renter'],
-      [t.bookingForm.incomplete.depositNotCollected, 'payments'],
-      [t.bookingForm.incomplete.contractNotSigned, 'contract'],
-      [t.bookingForm.incomplete.identityNotVerified, 'renter'],
-      [t.bookingForm.incomplete.driverNotVerified, 'renter'],
-      [t.bookingForm.incomplete.balanceNotCollected, 'payments'],
+      [t.orderForm.incomplete.missingEmail, 'renter'],
+      [t.orderForm.incomplete.depositNotCollected, 'payments'],
+      [t.orderForm.incomplete.contractNotSigned, 'contract'],
+      [t.orderForm.incomplete.identityNotVerified, 'renter'],
+      [t.orderForm.incomplete.driverNotVerified, 'renter'],
+      [t.orderForm.incomplete.balanceNotCollected, 'payments'],
     ]);
   });
 });
@@ -161,14 +164,14 @@ describe('證件與駕駛資格的查核狀態', () => {
 
 describe('incompleteFactsFromOrder（已成立訂單的實際紀錄）', () => {
   const quote = { total: 2000 } as PriceBreakdown;
-  const booking: RentalBooking = {
+  const order: RentalOrder = {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'm1',
     startTime: '2026-01-05T01:00:00.000Z',
     endTime: '2026-01-07T01:00:00.000Z',
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
     status: 'reserved',
     depositRequired: 600,
     priceBreakdown: quote,
@@ -187,7 +190,7 @@ describe('incompleteFactsFromOrder（已成立訂單的實際紀錄）', () => {
 
   it('已收訂金只算已確認的訂金款項；應收＝款項分頁的最新應付總額；已收＝淨實收', () => {
     const facts = incompleteFactsFromOrder({
-      booking,
+      order,
       member: { id: 'm1', name: '王小明', phone: '0900', kind: 'local' },
       payments: [
         payment({ id: 'p1', amount: 400 }),
@@ -212,7 +215,7 @@ describe('incompleteFactsFromOrder（已成立訂單的實際紀錄）', () => {
 
   it('沒有報價快照的舊訂單（種子 b9）：應收算不出來，不列「租金尚未收足」', () => {
     const facts = incompleteFactsFromOrder({
-      booking: { ...booking, priceBreakdown: undefined, depositRequired: 0 },
+      order: { ...order, priceBreakdown: undefined, depositRequired: 0 },
       member: { id: 'm1', name: '林美惠', phone: '0900', kind: 'local', email: 'l@m.h' },
       payments: [payment({ amount: 700, purpose: 'balance' })],
       paymentSummary: { requiredTotal: 0, netPaid: 700 },
@@ -231,8 +234,8 @@ describe('incompleteFactsFromForm（建立訂單的表單值）', () => {
       vehicleId: 'v1',
       startTime: new Date('2026-01-05T09:00').toISOString(),
       endTime: new Date('2026-01-07T09:00').toISOString(),
-      pickupLocation: 'mzg-airport',
-      returnLocation: 'mzg-airport',
+      pickupBranchId: 'mzg-airport',
+      returnBranchId: 'mzg-airport',
       depositRequired: 600,
     });
     f.controls.renter.patchValue({ name: '新客人', phone: '0900000000' });

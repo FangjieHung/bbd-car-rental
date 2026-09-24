@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { MaintenanceRecord, PrepTask, RentalBooking, Repository, Vehicle } from '../../core/models';
-import { BOOKING_REPO, MAINTENANCE_REPO, PREP_TASK_REPO, VEHICLE_REPO } from '../../core/repositories/tokens';
+import { MaintenanceRecord, PrepTask, RentalOrder, Repository, Vehicle } from '../../core/models';
+import { ORDER_REPO, MAINTENANCE_REPO, PREP_TASK_REPO, VEHICLE_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import { PrepStore } from './prep.store';
 
@@ -13,26 +13,26 @@ function task(p: Partial<PrepTask> = {}): PrepTask {
     vehicleId: 'v1',
     bookingId: 'b0',
     returnedAt: iso('2026-09-20T18:00'),
-    returnLocation: 'mzg-store',
+    returnBranchId: 'mzg-store',
     ...p,
   };
 }
 
-function booking(p: Partial<RentalBooking> = {}): RentalBooking {
+function order(p: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1', vehicleId: 'v1', memberId: 'c1',
     startTime: iso('2026-09-25T09:00'), endTime: iso('2026-09-27T09:00'),
-    pickupLocation: 'mzg-store', returnLocation: 'mzg-store', status: 'reserved', depositRequired: 0, ...p,
+    pickupBranchId: 'mzg-store', returnBranchId: 'mzg-store', status: 'reserved', depositRequired: 0, ...p,
   };
 }
 
-function setup(options: { tasks?: PrepTask[]; bookings?: RentalBooking[] } = {}) {
+function setup(options: { tasks?: PrepTask[]; orders?: RentalOrder[] } = {}) {
   const repo: Repository<PrepTask> = createInMemoryRepo<PrepTask>(options.tasks ?? []);
   TestBed.configureTestingModule({
     providers: [
       { provide: PREP_TASK_REPO, useValue: repo },
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(options.bookings ?? []) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(options.orders ?? []) },
       { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
     ],
   });
@@ -47,7 +47,7 @@ describe('PrepStore', () => {
       vehicleId: 'v1',
       bookingId: 'b5',
       returnedAt: iso('2026-09-21T18:30'),
-      returnLocation: 'mzg-port',
+      returnBranchId: 'mzg-port',
     });
 
     expect(repo.getAll()).toEqual([created]);
@@ -56,7 +56,7 @@ describe('PrepStore', () => {
       vehicleId: 'v1',
       bookingId: 'b5',
       returnedAt: iso('2026-09-21T18:30'),
-      returnLocation: 'mzg-port',
+      returnBranchId: 'mzg-port',
     });
     expect(store.openCount()).toBe(1);
     expect(store.hasOpenTaskFor('v1')).toBe(true);
@@ -65,7 +65,7 @@ describe('PrepStore', () => {
 
   it('同一筆訂單重複列入（還車流程重試）不會多出第二筆', () => {
     const { store, repo } = setup();
-    const input = { vehicleId: 'v1', bookingId: 'b5', returnedAt: iso('2026-09-21T18:30'), returnLocation: 'mzg-port' };
+    const input = { vehicleId: 'v1', bookingId: 'b5', returnedAt: iso('2026-09-21T18:30'), returnBranchId: 'mzg-port' };
 
     const first = store.openForReturn(input);
     const second = store.openForReturn(input);
@@ -81,7 +81,7 @@ describe('PrepStore', () => {
       vehicleId: 'v1',
       bookingId: 'b-latest',
       returnedAt: iso('2026-09-23T10:00'),
-      returnLocation: 'mzg-airport',
+      returnBranchId: 'mzg-airport',
     });
 
     const old = repo.getById('old');
@@ -130,10 +130,10 @@ describe('PrepStore', () => {
         task({ id: 'p-sooner', vehicleId: 'v1', bookingId: 'b-1' }),
         task({ id: 'p-done', vehicleId: 'v4', bookingId: 'b-4', completedAt: iso('2026-09-21T09:00'), completedBy: '管理員' }),
       ],
-      bookings: [
-        booking({ id: 'next-v2', vehicleId: 'v2', startTime: iso('2026-09-28T09:00') }),
-        booking({ id: 'next-v1', vehicleId: 'v1', startTime: iso('2026-09-24T14:00') }),
-        booking({ id: 'next-v4', vehicleId: 'v4', startTime: iso('2026-09-23T09:00') }),
+      orders: [
+        order({ id: 'next-v2', vehicleId: 'v2', startTime: iso('2026-09-28T09:00') }),
+        order({ id: 'next-v1', vehicleId: 'v1', startTime: iso('2026-09-24T14:00') }),
+        order({ id: 'next-v4', vehicleId: 'v4', startTime: iso('2026-09-23T09:00') }),
       ],
     });
 

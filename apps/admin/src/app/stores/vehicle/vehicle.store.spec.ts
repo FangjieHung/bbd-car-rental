@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { VehicleStore } from './vehicle.store';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord } from '../../core/models';
+import { Vehicle, RentalOrder, MaintenanceRecord } from '../../core/models';
 import { ZH_TW } from '../../core/i18n/zh-tw';
 
 function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
@@ -23,16 +23,16 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
 
 describe('VehicleStore', () => {
   let store: VehicleStore;
-  let bookings: RentalBooking[];
+  let orders: RentalOrder[];
   let records: MaintenanceRecord[];
 
   beforeEach(() => {
-    bookings = [];
+    orders = [];
     records = [];
     TestBed.configureTestingModule({
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
-        { provide: BOOKING_REPO, useFactory: () => createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useFactory: () => createInMemoryRepo<RentalOrder>(orders) },
         {
           provide: MAINTENANCE_REPO,
           useFactory: () => createInMemoryRepo<MaintenanceRecord>(records),
@@ -81,16 +81,16 @@ describe('VehicleStore', () => {
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
         {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([
+          provide: ORDER_REPO,
+          useValue: createInMemoryRepo<RentalOrder>([
             {
               id: 'b1',
               vehicleId: 'v1',
               memberId: 'c1',
               startTime: '2026-07-11T09:00:00Z',
               endTime: '2026-07-12T09:00:00Z',
-              pickupLocation: '',
-              returnLocation: '',
+              pickupBranchId: '',
+              returnBranchId: '',
               status: 'reserved',
               depositRequired: 0,
             },
@@ -109,16 +109,16 @@ describe('VehicleStore', () => {
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([makeVehicle()]) },
         {
-          provide: BOOKING_REPO,
-          useValue: createInMemoryRepo<RentalBooking>([
+          provide: ORDER_REPO,
+          useValue: createInMemoryRepo<RentalOrder>([
             {
               id: 'b1',
               vehicleId: 'v1',
               memberId: 'c1',
               startTime: '2026-07-11T09:00:00Z',
               endTime: '2026-07-12T09:00:00Z',
-              pickupLocation: '',
-              returnLocation: '',
+              pickupBranchId: '',
+              returnBranchId: '',
               status: 'in_progress',
               depositRequired: 0,
             },
@@ -142,7 +142,7 @@ describe('VehicleStore', () => {
   });
 
   // 1.5：已有據點的車改成「未指定」存檔後讀回沒有據點——VehicleFormDialogComponent 清空欄位
-  // 時會明確帶出 location: undefined（key 仍存在，只是值是 undefined），update 的型別要能
+  // 時會明確帶出 branchId: undefined（key 仍存在，只是值是 undefined），update 的型別要能
   // 收下這個 key，repository 的淺合併才會真的把欄位蓋掉，而不是保留舊值。
   it('清空所在據點（改回未指定）存檔後讀回沒有據點', () => {
     TestBed.resetTestingModule();
@@ -150,18 +150,18 @@ describe('VehicleStore', () => {
       providers: [
         {
           provide: VEHICLE_REPO,
-          useValue: createInMemoryRepo<Vehicle>([makeVehicle({ location: 'mzg-airport' })]),
+          useValue: createInMemoryRepo<Vehicle>([makeVehicle({ branchId: 'mzg-airport' })]),
         },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
     const s = TestBed.inject(VehicleStore);
-    expect(s.vehicles()[0].location).toBe('mzg-airport');
+    expect(s.vehicles()[0].branchId).toBe('mzg-airport');
 
-    s.update('v1', { location: undefined });
+    s.update('v1', { branchId: undefined });
 
-    expect(s.vehicles()[0].location).toBeUndefined();
+    expect(s.vehicles()[0].branchId).toBeUndefined();
   });
 
   it('建立車輛時可以直接帶入所在據點', () => {
@@ -169,7 +169,7 @@ describe('VehicleStore', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -182,9 +182,9 @@ describe('VehicleStore', () => {
       brand: 'Toyota',
       year: 2023,
       mileage: 0,
-      location: 'mzg-port',
+      branchId: 'mzg-port',
     });
 
-    expect(s.vehicles()[0].location).toBe('mzg-port');
+    expect(s.vehicles()[0].branchId).toBe('mzg-port');
   });
 });

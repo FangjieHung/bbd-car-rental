@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { CancellationQuote, Member, RefundRecord, RentalBooking } from '../../../core/models';
+import { CancellationQuote, Member, RefundRecord, RentalOrder } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { DocumentAssetGateway, StoredDocumentAsset } from '../../../core/services/document-asset.gateway';
 import { CancellationStore } from '../../../stores/cancellation/cancellation.store';
@@ -24,15 +24,15 @@ class FakeDocumentAssetGateway implements DocumentAssetGateway {
 
 const member: Member = { id: 'm1', name: '王小明', phone: '0912', kind: 'local' };
 
-function booking(status: RentalBooking['status']): RentalBooking {
+function order(status: RentalOrder['status']): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'm1',
     startTime: '2026-10-20T01:00:00.000Z',
     endTime: '2026-10-22T01:00:00.000Z',
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
     status,
     depositRequired: 500,
   };
@@ -52,11 +52,11 @@ const quotedCase: CancellationQuote = {
   reason: 'customer_cancellation_tier_100pct',
 };
 
-function setup(status: RentalBooking['status'], options: { refunds?: RefundRecord[]; before?: () => void } = {}) {
+function setup(status: RentalOrder['status'], options: { refunds?: RefundRecord[]; before?: () => void } = {}) {
   const repos = createOrderRepos({
     vehicles: [makeVehicle()],
     members: [member],
-    bookings: [booking(status)],
+    orders: [order(status)],
     refunds: options.refunds,
   });
   TestBed.configureTestingModule({

@@ -16,7 +16,7 @@ import {
   quoteCancellation,
 } from '@car-rental/domain';
 import { AUDIT_ENTRY_REPO, CANCELLATION_CASE_REPO } from '../../core/repositories/tokens';
-import { BookingStore } from '../booking/booking.store';
+import { OrderStore } from '../order/order.store';
 import { PaymentStore } from '../payment/payment.store';
 import { CreditStore, addMonths } from '../credit/credit.store';
 import { ReminderStore } from '../reminder/reminder.store';
@@ -176,10 +176,10 @@ function refundLinesFromQuote(quote: CancellationQuote): CancellationRefundLine[
 
 /**
  * 取消案件的封裝：試算金額委派給 Task 4 的 quoteCancellation 純函式，這裡負責把試算結果
- * 轉存成 CancellationCase 紀錄、後續狀態推進，以及（Task 14）橫跨 BookingStore／PaymentStore／
+ * 轉存成 CancellationCase 紀錄、後續狀態推進，以及（Task 14）橫跨 OrderStore／PaymentStore／
  * CreditStore／AuditEntry 的退款與保留金撥付協調——disposeCase() 依設計文件第 9.3 節指定的
  * 順序執行：appendCase（Step 3 已由 createCase 完成）→ 附加退款／保留金紀錄 →
- * 訂單轉為 cancelled（只允許從 reserved，見 BookingStore.cancel 既有規則，這裡不重複驗證）→
+ * 訂單轉為 cancelled（只允許從 reserved，見 OrderStore.cancel 既有規則，這裡不重複驗證）→
  * 案件轉為 settled → 附加稽核紀錄。全程不呼叫任何 repository 的 remove()，付款與合約紀錄
  * 永遠保留（設計原則「保留歷史」）。disposeCase() 在建立退款／保留金紀錄前會先查詢是否已有
  * 綁定同一案件的既有紀錄（冪等防護），失敗後重試不會造成重複退款或重複核發保留金；若重試
@@ -190,7 +190,7 @@ function refundLinesFromQuote(quote: CancellationQuote): CancellationRefundLine[
 export class CancellationStore {
   private readonly repo = inject(CANCELLATION_CASE_REPO);
   private readonly auditRepo = inject(AUDIT_ENTRY_REPO);
-  private readonly bookingStore = inject(BookingStore);
+  private readonly orderStore = inject(OrderStore);
   private readonly paymentStore = inject(PaymentStore);
   private readonly creditStore = inject(CreditStore);
   private readonly reminderStore = inject(ReminderStore);
@@ -336,8 +336,8 @@ export class CancellationStore {
       throw new CreditConsentRequiredError();
     }
 
-    const booking = this.bookingStore.bookings().find((b) => b.id === kase.bookingId);
-    if (!booking) throw new Error(`not found: ${kase.bookingId}`);
+    const order = this.orderStore.orders().find((b) => b.id === kase.bookingId);
+    if (!order) throw new Error(`not found: ${kase.bookingId}`);
 
     const completed: CancellationDispositionStep[] = [];
 
@@ -358,7 +358,7 @@ export class CancellationStore {
     }
 
     const existingCredit = this.creditStore
-      .entriesFor(booking.memberId)
+      .entriesFor(order.memberId)
       .find((e) => e.type === 'issued' && e.sourceCancellationCaseId === kase.id);
     if (existingCredit && existingCredit.amount !== input.creditAmount) {
       throw new DispositionRetryMismatchError('credit', existingCredit.amount, input.creditAmount);
@@ -389,7 +389,7 @@ export class CancellationStore {
     } else if (input.creditAmount > 0) {
       try {
         credit = this.creditStore.issue({
-          memberId: booking.memberId,
+          memberId: order.memberId,
           amount: input.creditAmount,
           occurredAt: input.occurredAt,
           handledBy: input.actor.actorName,
@@ -406,7 +406,7 @@ export class CancellationStore {
     }
 
     try {
-      this.bookingStore.cancel(kase.bookingId);
+      this.orderStore.cancel(kase.bookingId);
       completed.push('booking_transition');
     } catch (cause) {
       throw new CancellationDispositionPartialFailureError(completed, 'booking_transition', cause);
@@ -416,7 +416,7 @@ export class CancellationStore {
     // fire-and-forget，不併入上面的 CancellationDispositionStep 序列——disposeCase() 維持同步、
     // 不改變回傳型別，提醒抑制是次要、盡力而為的清理動作，失敗也不該讓「訂單已經取消」這個
     // 已經發生的事實回頭被回報成失敗。
-    void this.reminderStore.suppressForBooking(kase.bookingId).catch(() => undefined);
+    void this.reminderStore.suppressForOrder(kase.bookingId).catch(() => undefined);
 
     let updated: CancellationCase;
     try {

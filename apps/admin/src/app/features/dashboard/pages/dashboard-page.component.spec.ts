@@ -9,7 +9,7 @@ import { DashboardPageComponent } from './dashboard-page.component';
 import { CalendarViewComponent } from '../../dispatch/calendar-view/calendar-view.component';
 import {
   AUDIT_ENTRY_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   CHARGE_ADJUSTMENT_REPO,
   CONTRACT_VERSION_REPO,
   DRIVER_CREDENTIAL_REPO,
@@ -39,7 +39,7 @@ import {
   PrepTask,
   PricingPlan,
   RefundRecord,
-  RentalBooking,
+  RentalOrder,
   ReminderStatus,
   SeasonCalendar,
   Vehicle,
@@ -95,7 +95,7 @@ function provideOrderDetailRepos() {
 }
 
 describe('DashboardPageComponent child date contract', () => {
-  function createFixture(bookings: RentalBooking[] = []) {
+  function createFixture(orders: RentalOrder[] = []) {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
@@ -104,7 +104,7 @@ describe('DashboardPageComponent child date contract', () => {
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
@@ -167,20 +167,20 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
   const at = (day: Date, hour: number) =>
     new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour).toISOString();
 
-  const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
+  const mk = (partial: Partial<RentalOrder>): RentalOrder => ({
     id: 'b',
     vehicleId: 'v1',
     memberId: 'c1',
     startTime: at(today, 9),
     endTime: at(tomorrow, 9),
-    pickupLocation: '',
-    returnLocation: '',
+    pickupBranchId: '',
+    returnBranchId: '',
     status: 'reserved',
     depositRequired: 0,
     ...partial,
   });
 
-  function createFixture(bookings: RentalBooking[]) {
+  function createFixture(orders: RentalOrder[]) {
     TestBed.configureTestingModule({
       providers: [
         ...providePricing(),
@@ -189,7 +189,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
         provideRouter([]),
         { provide: MatDialog, useValue: { open: () => undefined } },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
         { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
@@ -229,7 +229,7 @@ describe('DashboardPageComponent 今日出車／還車／待整備統計', () =>
 
 
 /** 共用 providers：總覽內嵌的月曆／時間軸需要的 store 與 repo 全部備齊；路由由各測試自己給。 */
-function dashboardProviders(bookings: RentalBooking[] = [], prepTasks: PrepTask[] = []) {
+function dashboardProviders(orders: RentalOrder[] = [], prepTasks: PrepTask[] = []) {
   return [
     ...providePricing(),
     ...provideOrderDetailRepos(),
@@ -237,7 +237,7 @@ function dashboardProviders(bookings: RentalBooking[] = [], prepTasks: PrepTask[
     { provide: MatDialog, useValue: { open: vi.fn() } },
     { provide: PREP_TASK_REPO, useValue: createInMemoryRepo<PrepTask>(prepTasks) },
     { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([]) },
-    { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(bookings) },
+    { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(orders) },
     { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
     { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
   ];
@@ -261,13 +261,13 @@ describe('DashboardPageComponent 頁首', () => {
     vehicleId: 'v1',
     bookingId: 'b-returned',
     returnedAt: at(10),
-    returnLocation: 'mzg-store',
+    returnBranchId: 'mzg-store',
     ...partial,
   });
   const prepButton = (el: HTMLElement) => el.querySelector<HTMLButtonElement>('.dashboard-queue--prep');
 
-  function renderToolbar(bookings: RentalBooking[] = [], prepTasks: PrepTask[] = []) {
-    TestBed.configureTestingModule({ providers: [...dashboardProviders(bookings, prepTasks), provideRouter([])] });
+  function renderToolbar(orders: RentalOrder[] = [], prepTasks: PrepTask[] = []) {
+    TestBed.configureTestingModule({ providers: [...dashboardProviders(orders, prepTasks), provideRouter([])] });
     const page = TestBed.createComponent(DashboardPageComponent);
     page.detectChanges();
     const host = TestBed.createComponent(HeaderToolbarHostComponent);
@@ -303,11 +303,11 @@ describe('DashboardPageComponent 頁首', () => {
       [
         {
           id: 'r1', vehicleId: 'v1', memberId: 'c1', startTime: at(8), endTime: at(10),
-          pickupLocation: '', returnLocation: '', status: 'completed', depositRequired: 0,
+          pickupBranchId: '', returnBranchId: '', status: 'completed', depositRequired: 0,
         },
         {
           id: 'r2', vehicleId: 'v2', memberId: 'c1', startTime: at(8), endTime: at(11),
-          pickupLocation: '', returnLocation: '', status: 'completed', depositRequired: 0,
+          pickupBranchId: '', returnBranchId: '', status: 'completed', depositRequired: 0,
         },
       ],
       [
@@ -360,13 +360,13 @@ describe('DashboardPageComponent 頁首', () => {
   });
 
   // 1.4：總覽頁首放大鏡送出後導到訂單列表，帶入關鍵字讓訂單列表預填搜尋。
-  it('onSearchSubmit 導向 /bookings，query params 帶入關鍵字', () => {
+  it('onSearchSubmit 導向 /orders，query params 帶入關鍵字', () => {
     const { page } = renderToolbar();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     page.componentInstance.onSearchSubmit('林美惠');
 
-    expect(navigate).toHaveBeenCalledWith(['/bookings'], { queryParams: { q: '林美惠' } });
+    expect(navigate).toHaveBeenCalledWith(['/orders'], { queryParams: { q: '林美惠' } });
   });
 
   // 3.1：上方的建單搜尋卡（車型＋租期＋選車小窗）拿掉了，月曆卡片直接接在頁首下面。
@@ -374,7 +374,7 @@ describe('DashboardPageComponent 頁首', () => {
     const { page } = renderToolbar();
     const container = (page.nativeElement as HTMLElement).querySelector('.shell-container');
 
-    expect(container?.querySelector('app-date-step')).toBeNull();
+    expect(container?.querySelector('lib-date-step')).toBeNull();
     expect(container?.firstElementChild?.tagName.toLowerCase()).toBe('app-calendar-view');
   });
 });

@@ -1,16 +1,16 @@
 <div class="coupon-step ui-card">
   <div class="ui-card-header">
-    <h2 class="ui-card-title ui-text-title">優惠券</h2>
+    <h2 class="ui-card-title ui-text-title">{{ i18n.t().couponStep.title }}</h2>
   </div>
 
   <div class="coupon-step__banner">
     <mat-form-field appearance="outline" class="coupon-step__field">
-      <mat-label>優惠碼</mat-label>
+      <mat-label>{{ i18n.t().couponStep.code }}</mat-label>
       <input
         matInput
         [ngModel]="couponCode"
         (ngModelChange)="onCodeInput($event)"
-        placeholder="輸入優惠碼"
+        [placeholder]="i18n.t().couponStep.placeholder"
       />
     </mat-form-field>
 
@@ -18,12 +18,14 @@
       @if (couponResult.ok) {
         <span class="ui-chip ui-chip--positive">
           <span class="ui-chip__dot"></span>
-          優惠碼可用：{{ couponResult.coupon?.code }}
+          {{ i18n.t().couponStep.valid(couponResult.coupon?.code ?? '') }}
         </span>
       } @else {
         <span class="ui-chip ui-chip--danger">
           <span class="ui-chip__dot"></span>
-          {{ couponResult.reason }}
+          @if (couponResult.reason) {
+            {{ i18n.t().couponStep.reasons[couponResult.reason] }}
+          }
         </span>
       }
     }
@@ -31,20 +33,20 @@
 
   @if (priceBreakdown) {
     <div class="summary">
-      <h3 class="ui-text-caption">試算明細</h3>
-      <div class="line"><span class="ui-text-caption">租金小計</span><span>NT$ {{ priceBreakdown.rentalSubtotal }}</span></div>
+      <h3 class="ui-text-caption">{{ i18n.t().common.priceBreakdown }}</h3>
+      <div class="line"><span class="ui-text-caption">{{ i18n.t().common.rentalSubtotal }}</span><span>{{ i18n.money(priceBreakdown.rentalSubtotal) }}</span></div>
       @if (priceBreakdown.addOnSubtotal > 0) {
-        <div class="line"><span class="ui-text-caption">配件費用</span><span>NT$ {{ priceBreakdown.addOnSubtotal }}</span></div>
+        <div class="line"><span class="ui-text-caption">{{ i18n.t().couponStep.addOnFee }}</span><span>{{ i18n.money(priceBreakdown.addOnSubtotal) }}</span></div>
       }
       @if (priceBreakdown.couponDiscount > 0) {
         <div class="line discount">
-          <span class="ui-text-caption">優惠折抵（{{ priceBreakdown.couponCode }}）</span>
-          <span>-NT$ {{ priceBreakdown.couponDiscount }}</span>
+          <span class="ui-text-caption">{{ i18n.t().common.couponDiscount(priceBreakdown.couponCode ?? '') }}</span>
+          <span>{{ i18n.money(-priceBreakdown.couponDiscount) }}</span>
         </div>
       }
-      <div class="line total"><span class="ui-text-title">總計</span><span class="ui-text-title">NT$ {{ priceBreakdown.total }}</span></div>
+      <div class="line total"><span class="ui-text-title">{{ i18n.t().couponStep.total }}</span><span class="ui-text-title">{{ i18n.money(priceBreakdown.total) }}</span></div>
     </div>
   } @else {
-    <p class="ui-text-caption">請先完成前面步驟以查看試算。</p>
+    <p class="ui-text-caption">{{ i18n.t().couponStep.completePreviousSteps }}</p>
   }
 </div>

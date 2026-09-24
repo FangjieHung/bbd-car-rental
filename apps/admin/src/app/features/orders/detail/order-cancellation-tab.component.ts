@@ -1,9 +1,9 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { BookingStore } from '../../../stores/booking/booking.store';
-import { CancellationPanelComponent } from '../../bookings/components/cancellation-panel.component';
-import { CustomerCreditPanelComponent } from '../../bookings/components/customer-credit-panel.component';
-import { OperatorRecoveryPanelComponent } from '../../bookings/components/operator-recovery-panel.component';
+import { OrderStore } from '../../../stores/order/order.store';
+import { CancellationPanelComponent } from '../../orders/components/cancellation-panel.component';
+import { CustomerCreditPanelComponent } from '../../orders/components/customer-credit-panel.component';
+import { OperatorRecoveryPanelComponent } from '../../orders/components/operator-recovery-panel.component';
 
 let nextId = 0;
 
@@ -25,12 +25,12 @@ let nextId = 0;
 })
 export class OrderCancellationTabComponent {
   protected readonly t = ZH_TW;
-  private readonly bookingStore = inject(BookingStore);
+  private readonly orderStore = inject(OrderStore);
 
   readonly bookingId = input.required<string>();
 
   protected readonly canCancel = computed(
-    () => this.bookingStore.bookings().find((b) => b.id === this.bookingId())?.status === 'reserved',
+    () => this.orderStore.orders().find((b) => b.id === this.bookingId())?.status === 'reserved',
   );
 
   private readonly id = nextId++;

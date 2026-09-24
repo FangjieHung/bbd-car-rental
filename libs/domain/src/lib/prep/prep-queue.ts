@@ -1,4 +1,4 @@
-import { PrepTask, RentalBooking } from '../models';
+import { PrepTask, RentalOrder } from '../models';
 
 /** 尚未結案：沒有按「整備完成」，也沒有被同一台車之後的還車取代（見 PrepTask.supersededBy）。 */
 export function isPrepTaskOpen(task: PrepTask): boolean {
@@ -12,12 +12,12 @@ export function isPrepTaskOpen(task: PrepTask): boolean {
  */
 export function nextPickupOf(
   vehicleId: string,
-  bookings: readonly RentalBooking[],
-): RentalBooking | undefined {
-  let next: RentalBooking | undefined;
-  for (const booking of bookings) {
-    if (booking.vehicleId !== vehicleId || booking.status !== 'reserved') continue;
-    if (!next || timeOf(booking.startTime) < timeOf(next.startTime)) next = booking;
+  orders: readonly RentalOrder[],
+): RentalOrder | undefined {
+  let next: RentalOrder | undefined;
+  for (const order of orders) {
+    if (order.vehicleId !== vehicleId || order.status !== 'reserved') continue;
+    if (!next || timeOf(order.startTime) < timeOf(next.startTime)) next = order;
   }
   return next;
 }
@@ -25,7 +25,7 @@ export function nextPickupOf(
 export interface PrepQueueItem {
   task: PrepTask;
   /** 該車下一次取車（見 nextPickupOf）；沒有排定就是 undefined。 */
-  nextPickup: RentalBooking | undefined;
+  nextPickup: RentalOrder | undefined;
 }
 
 /**
@@ -34,11 +34,11 @@ export interface PrepQueueItem {
  */
 export function prepQueue(
   tasks: readonly PrepTask[],
-  bookings: readonly RentalBooking[],
+  orders: readonly RentalOrder[],
 ): PrepQueueItem[] {
   return tasks
     .filter(isPrepTaskOpen)
-    .map((task) => ({ task, nextPickup: nextPickupOf(task.vehicleId, bookings) }))
+    .map((task) => ({ task, nextPickup: nextPickupOf(task.vehicleId, orders) }))
     .sort(comparePrepQueueItems);
 }
 

@@ -20,7 +20,7 @@
       </ng-template>
       @for (step of steps; track step) {
         <mat-step
-          [label]="t.bookingForm.steps[step]"
+          [label]="t.orderForm.steps[step]"
           [completed]="false"
           [hasError]="stepHasError(step)"
           [errorMessage]="stepErrorMessage(step)"
@@ -31,17 +31,17 @@
                 <app-order-rental-section [form]="form" />
               }
               @case ('renter') {
-                <app-order-renter-section [form]="form" />
+                <lib-order-renter-section [form]="form" />
                 <!-- 4.2：駕駛資格（可留空，留空時列入待補「駕駛資格未查核」） -->
                 <app-order-driver-section [form]="form" [vehicleCategory]="derived.vehicle()?.category" />
               }
               @case ('payment') {
                 <!-- 報價明細已在摘要欄，這裡不再列一次（訂單詳情的編輯沒有摘要欄，維持顯示） -->
-                <app-order-pricing-section [form]="form" [showQuote]="false" />
-                <app-order-payment-drafts-section [form]="form" />
+                <lib-order-pricing-section [form]="form" [showQuote]="false" />
+                <lib-order-payment-drafts-section [form]="form" />
               }
               @case ('contract') {
-                <app-order-contract-section
+                <lib-order-contract-section
                   [form]="form"
                   [preview]="previewSnapshot()"
                   [signing]="contractSigning()"
@@ -81,16 +81,16 @@
       }
       @if (selectedIndex() > 0) {
         <button mat-button type="button" class="order-create__prev" (click)="prev()">
-          {{ t.bookingForm.prev }}
+          {{ t.orderForm.prev }}
         </button>
       }
       @if (selectedIndex() < steps.length - 1) {
         <button mat-stroked-button type="button" class="order-create__next" (click)="next()">
-          {{ t.bookingForm.next }}
+          {{ t.orderForm.next }}
         </button>
       }
       <button mat-flat-button type="button" class="order-create__submit" [disabled]="submitting()" (click)="submit()">
-        {{ submitting() ? t.bookingForm.saving : t.bookingForm.submit }}
+        {{ submitting() ? t.orderForm.saving : t.orderForm.submit }}
       </button>
     </div>
   </div>

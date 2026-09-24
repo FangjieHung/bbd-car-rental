@@ -6,8 +6,8 @@ import {
   shortDateLabel,
   TimelineViewComponent,
 } from './timeline-view/timeline-view.component';
-import { Member, RENTAL_BRANCHES, RentalBooking, Vehicle } from '../../core/models';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO, MEMBER_REPO } from '../../core/repositories/tokens';
+import { Member, RENTAL_BRANCHES, RentalOrder, Vehicle } from '../../core/models';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO, MEMBER_REPO } from '../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import { fmtDate, startOfDay } from '../../core/date-utils';
 import { OrderDetailNavigation } from '../orders/navigation/order-detail-navigation';
@@ -44,14 +44,14 @@ const mkMember = (partial: Partial<Member>): Member => ({
 });
 
 const rangeStart = new Date(2026, 6, 20); // 2026-07-20 local
-const mk = (partial: Partial<RentalBooking>): RentalBooking => ({
+const mk = (partial: Partial<RentalOrder>): RentalOrder => ({
   id: 'b1',
   vehicleId: 'v1',
   memberId: 'c1',
   startTime: new Date(2026, 6, 21, 9).toISOString(),
   endTime: new Date(2026, 6, 23, 18).toISOString(),
-  pickupLocation: '',
-  returnLocation: '',
+  pickupBranchId: '',
+  returnBranchId: '',
   status: 'reserved',
   depositRequired: 0,
   ...partial,
@@ -67,7 +67,7 @@ describe('computeBlocks：範圍裁切（既有行為）', () => {
         kind: 'reserved',
         bookingId: 'b1',
         memberId: 'c1',
-        pickupLocation: '',
+        pickupBranchId: '',
         overdue: false,
         needsDispatch: false,
         conflict: false,
@@ -116,7 +116,7 @@ describe('computeBlocks：範圍裁切（既有行為）', () => {
 describe('computeBlocks：需調度標記', () => {
   it('reserved 且取車據點與車輛所在據點不同：needsDispatch 為 true', () => {
     const blocks = computeBlocks(
-      [mk({ status: 'reserved', pickupLocation: airport.id })],
+      [mk({ status: 'reserved', pickupBranchId: airport.id })],
       'v1',
       store.id,
       rangeStart,
@@ -127,7 +127,7 @@ describe('computeBlocks：需調度標記', () => {
 
   it('reserved 且取車據點與車輛所在據點相同：needsDispatch 為 false', () => {
     const blocks = computeBlocks(
-      [mk({ status: 'reserved', pickupLocation: store.id })],
+      [mk({ status: 'reserved', pickupBranchId: store.id })],
       'v1',
       store.id,
       rangeStart,
@@ -138,7 +138,7 @@ describe('computeBlocks：需調度標記', () => {
 
   it('in_progress（已取車）不標需調度，即使取車據點與車輛目前所在據點不同', () => {
     const blocks = computeBlocks(
-      [mk({ status: 'in_progress', pickupLocation: airport.id, endTime: new Date(2026, 6, 30).toISOString() })],
+      [mk({ status: 'in_progress', pickupBranchId: airport.id, endTime: new Date(2026, 6, 30).toISOString() })],
       'v1',
       store.id,
       rangeStart,
@@ -247,7 +247,7 @@ describe('computeBlocks：逾時延伸與衝突（MNO-345 情境：出租中逾�
       startTime: new Date(2026, 8, 20, 9).toISOString(),
       endTime: new Date(2026, 8, 22, 18).toISOString(),
     });
-    // 呼叫端只會用同一台車的訂單呼叫 computeBlocks（見 blocksOf 只傳 bookingStore 全部訂單但用 vehicleId 篩選），
+    // 呼叫端只會用同一台車的訂單呼叫 computeBlocks（見 blocksOf 只傳 orderStore 全部訂單但用 vehicleId 篩選），
     // 這裡直接驗證 v2 的訂單即使日期重疊，也因為 vehicleId 篩選而完全不會出現在 v1 的 blocks 裡。
     const otherVehicleBooking = mk({
       id: 'b-other',
@@ -303,7 +303,7 @@ describe('computeBlocks／laneCountOf：lane 分配（打磨 3，同一列重疊
 function createFixture(
   options: {
     vehicles?: Vehicle[];
-    bookings?: RentalBooking[];
+    orders?: RentalOrder[];
     members?: Member[];
     orderDetailOpen?: (id: string) => void;
   } = {},
@@ -311,7 +311,7 @@ function createFixture(
   TestBed.configureTestingModule({
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo(options.vehicles ?? []) },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo(options.bookings ?? []) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo(options.orders ?? []) },
       { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo([]) },
       { provide: MEMBER_REPO, useValue: createInMemoryRepo(options.members ?? []) },
       { provide: OrderDetailNavigation, useValue: { open: options.orderDetailOpen ?? (() => undefined) } },
@@ -470,14 +470,14 @@ describe('TimelineViewComponent vehicles input', () => {
 
 describe('TimelineViewComponent 列首所在據點', () => {
   it('locationLabel：有設定據點時顯示據點名稱', () => {
-    const fixture = createFixture({ vehicles: [mkVehicle({ id: 'v1', location: airport.id })] });
+    const fixture = createFixture({ vehicles: [mkVehicle({ id: 'v1', branchId: airport.id })] });
     fixture.detectChanges();
 
     expect(fixture.componentInstance.locationLabel(fixture.componentInstance.rows()[0])).toBe(airport.name);
   });
 
   it('locationLabel：未設定據點時顯示「所在據點未設定」', () => {
-    const fixture = createFixture({ vehicles: [mkVehicle({ id: 'v1', location: undefined })] });
+    const fixture = createFixture({ vehicles: [mkVehicle({ id: 'v1', branchId: undefined })] });
     fixture.detectChanges();
 
     expect(fixture.componentInstance.locationLabel(fixture.componentInstance.rows()[0])).toBe('所在據點未設定');
@@ -485,7 +485,7 @@ describe('TimelineViewComponent 列首所在據點', () => {
 
   it('DOM 上的列首會顯示車牌、車款與所在據點', () => {
     const fixture = createFixture({
-      vehicles: [mkVehicle({ id: 'v1', plateNumber: 'MNO-345', model: 'Ai-1', location: airport.id })],
+      vehicles: [mkVehicle({ id: 'v1', plateNumber: 'MNO-345', model: 'Ai-1', branchId: airport.id })],
     });
     fixture.detectChanges();
 
@@ -520,7 +520,7 @@ describe('TimelineViewComponent 色塊文字與需調度標記', () => {
   it('色塊文字為「承租人姓名・取車據點」', () => {
     const fixture = createFixture({
       vehicles: [mkVehicle({ id: 'v1' })],
-      bookings: [mk({ id: 'b1', memberId: 'c1', pickupLocation: airport.id })],
+      orders: [mk({ id: 'b1', memberId: 'c1', pickupBranchId: airport.id })],
       members: [mkMember({ id: 'c1', name: '林美惠' })],
     });
     fixture.componentRef.setInput('targetDate', new Date(2026, 6, 21));
@@ -536,8 +536,8 @@ describe('TimelineViewComponent 色塊文字與需調度標記', () => {
 
   it('需調度時色塊標示調度圖示與 aria-label／title 含完整資訊', () => {
     const fixture = createFixture({
-      vehicles: [mkVehicle({ id: 'v1', location: store.id })],
-      bookings: [mk({ id: 'b1', status: 'reserved', pickupLocation: airport.id })],
+      vehicles: [mkVehicle({ id: 'v1', branchId: store.id })],
+      orders: [mk({ id: 'b1', status: 'reserved', pickupBranchId: airport.id })],
       members: [mkMember({ id: 'c1', name: '林美惠' })],
     });
     fixture.componentRef.setInput('targetDate', new Date(2026, 6, 21));
@@ -554,8 +554,8 @@ describe('TimelineViewComponent 色塊文字與需調度標記', () => {
 
   it('取車據點與車輛所在據點相同時不標示調度圖示', () => {
     const fixture = createFixture({
-      vehicles: [mkVehicle({ id: 'v1', location: store.id })],
-      bookings: [mk({ id: 'b1', status: 'reserved', pickupLocation: store.id })],
+      vehicles: [mkVehicle({ id: 'v1', branchId: store.id })],
+      orders: [mk({ id: 'b1', status: 'reserved', pickupBranchId: store.id })],
       members: [mkMember({ id: 'c1' })],
     });
     fixture.componentRef.setInput('targetDate', new Date(2026, 6, 21));
@@ -570,7 +570,7 @@ describe('TimelineViewComponent 逾時延伸（透過真正的元件，相對「
     const today = startOfDay(new Date());
     const fixture = createFixture({
       vehicles: [mkVehicle({ id: 'v1' })],
-      bookings: [
+      orders: [
         mk({
           id: 'b-overdue',
           status: 'in_progress',
@@ -626,11 +626,11 @@ describe('TimelineViewComponent 逾時延伸（透過真正的元件，相對「
 });
 
 describe('TimelineViewComponent openDetail', () => {
-  it('點擊區塊前往訂單詳情，不再開簡化版的 booking-detail dialog', () => {
+  it('點擊區塊前往訂單詳情，不再開簡化版的 order-detail dialog', () => {
     const workspaceOpen = vi.fn();
     const fixture = createFixture({
       vehicles: [mkVehicle({ id: 'v1' })],
-      bookings: [mk({ id: 'b1' })],
+      orders: [mk({ id: 'b1' })],
       orderDetailOpen: workspaceOpen,
     });
     fixture.componentInstance.openDetail('b1');

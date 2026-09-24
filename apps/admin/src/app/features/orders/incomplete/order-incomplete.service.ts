@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { RentalBooking } from '../../../core/models';
+import { RentalOrder } from '../../../core/models';
 import { MemberStore } from '../../../stores/member/member.store';
 import { PaymentStore } from '../../../stores/payment/payment.store';
 import { ContractStore } from '../../../stores/contract/contract.store';
@@ -19,18 +19,18 @@ export class OrderIncompleteService {
   private readonly documentStore = inject(DocumentStore);
 
   /** 已取消、已完成的訂單沒有待補（事情已經結束，補不補都不會再影響這筆訂單）。 */
-  itemsFor(booking: RentalBooking): OrderIncompleteItem[] {
-    if (booking.status === 'cancelled' || booking.status === 'completed') return [];
-    const member = this.memberStore.members().find((m) => m.id === booking.memberId);
+  itemsFor(order: RentalOrder): OrderIncompleteItem[] {
+    if (order.status === 'cancelled' || order.status === 'completed') return [];
+    const member = this.memberStore.members().find((m) => m.id === order.memberId);
     return orderIncompleteItems(
       incompleteFactsFromOrder({
-        booking,
+        order,
         member,
-        payments: this.paymentStore.paymentsFor(booking.id),
-        paymentSummary: this.paymentStore.summaryFor(booking.id),
-        contractVersions: this.contractStore.versionsFor(booking.id),
-        identityDocuments: this.documentStore.identityDocumentsFor(booking.memberId),
-        driverCredentials: this.documentStore.driverCredentialsFor(booking.memberId),
+        payments: this.paymentStore.paymentsFor(order.id),
+        paymentSummary: this.paymentStore.summaryFor(order.id),
+        contractVersions: this.contractStore.versionsFor(order.id),
+        identityDocuments: this.documentStore.identityDocumentsFor(order.memberId),
+        driverCredentials: this.documentStore.driverCredentialsFor(order.memberId),
       }),
     );
   }

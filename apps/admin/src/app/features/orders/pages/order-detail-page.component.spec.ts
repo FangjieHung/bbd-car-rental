@@ -14,22 +14,28 @@ import {
   OperatorRecoveryCase,
   PaymentRecord,
   RefundRecord,
-  RentalBooking,
+  RentalOrder,
 } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { ContractStore } from '../../../stores/contract/contract.store';
-import { BookingStore } from '../../../stores/booking/booking.store';
+import { OrderStore } from '../../../stores/order/order.store';
 import { PaymentStore } from '../../../stores/payment/payment.store';
 import { ConfirmDialogComponent } from '../../../shared/dialogs/confirm-dialog.component';
-import { PaymentPanelComponent } from '../../bookings/components/payment-panel.component';
-import { ContractPanelComponent } from '../../bookings/components/contract-panel.component';
-import { HandoverPanelComponent } from '../../bookings/components/handover-panel.component';
-import { ActivityTimelineComponent } from '../../bookings/components/activity-timeline.component';
+import { PaymentPanelComponent } from '../../orders/components/payment-panel.component';
+import { ContractPanelComponent } from '../../orders/components/contract-panel.component';
+import { HandoverPanelComponent } from '../../orders/components/handover-panel.component';
+import { ActivityTimelineComponent } from '../../orders/components/activity-timeline.component';
 import { OrderCancellationTabComponent } from '../detail/order-cancellation-tab.component';
-import { MemberFormDialogComponent } from '../../bookings/dialogs/member-form-dialog.component';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { ORDER_SUBMIT_GATEWAY, OrderSubmitGateway, OrderSubmitInput } from '../order-form/order-submit-gateway';
-import { createOrderForm, setPaymentDrafts } from '../order-form/order-form';
+import { MemberFormDialogComponent } from '../../members/dialogs/member-form-dialog.component';
+import {
+  ORDER_FORM_DATA,
+  ORDER_SUBMIT_GATEWAY,
+  OrderSubmitGateway,
+  OrderSubmitInput,
+  createOrderForm,
+  setPaymentDrafts,
+  ORDER_FORM_LABELS,
+} from '@car-rental/order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { AdminOrderSubmitGateway } from '../data/admin-order-submit.gateway';
 import { confirmLeaveGuard } from '../navigation/confirm-leave.guard';
@@ -38,6 +44,7 @@ import { createOrderRepos, makeVehicle } from '../testing';
 import { HeaderTitleSlot } from '../../../layout/header/header-title';
 import { HeaderTitleExtraSlot } from '../../../layout/header/header-title-extra-slot';
 import { OrderDetailPageComponent } from './order-detail-page.component';
+import { ADMIN_ORDER_FORM_LABELS } from '../data/provide-admin-order-form';
 
 // 各分頁的 panel 元件有自己的測試；這裡只驗證詳情頁的殼（分頁、網址、編輯訂單），用同 selector 的替身避開它們的相依。
 @Component({ selector: 'app-payment-panel', template: '' })
@@ -56,15 +63,15 @@ class BlankComponent {}
 
 const member: Member = { id: 'm1', name: '王小明', phone: '0912345678', kind: 'local', email: 'wang@example.com' };
 
-function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
+function makeBooking(partial: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v1',
     memberId: 'm1',
     startTime: new Date('2026-01-05T09:00').toISOString(),
     endTime: new Date('2026-01-07T09:00').toISOString(),
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
     status: 'reserved',
     depositRequired: 500,
     ...partial,
@@ -72,7 +79,7 @@ function makeBooking(partial: Partial<RentalBooking> = {}): RentalBooking {
 }
 
 interface SetupOptions {
-  bookings?: RentalBooking[];
+  orders?: RentalOrder[];
   /** 'real'：用 admin 的送出實作（寫入 in-memory repo）；預設為 spy。 */
   gateway?: 'real' | 'spy';
   confirmResult?: boolean;
@@ -86,9 +93,9 @@ interface SetupOptions {
 
 async function setup(url: string, options: SetupOptions = {}) {
   const repos = createOrderRepos({
-    vehicles: [makeVehicle({ id: 'v1', location: 'mzg-airport' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999', location: 'mzg-port' })],
+    vehicles: [makeVehicle({ id: 'v1', branchId: 'mzg-airport' }), makeVehicle({ id: 'v2', plateNumber: 'XYZ-999', branchId: 'mzg-port' })],
     members: [member],
-    bookings: options.bookings ?? [makeBooking()],
+    orders: options.orders ?? [makeBooking()],
     refunds: options.refunds,
     operatorRecoveryCases: options.operatorRecoveryCases,
     contracts: options.contracts,
@@ -104,10 +111,11 @@ async function setup(url: string, options: SetupOptions = {}) {
 
   TestBed.configureTestingModule({
     providers: [
+        { provide: ORDER_FORM_LABELS, useValue: ADMIN_ORDER_FORM_LABELS },
       ...repos.providers,
       provideRouter([
         { path: 'orders/:id', component: OrderDetailPageComponent, canDeactivate: [confirmLeaveGuard] },
-        { path: 'bookings', component: BlankComponent },
+        { path: 'orders', component: BlankComponent },
       ]),
       { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData },
       options.gateway === 'real'
@@ -213,7 +221,7 @@ describe('OrderDetailPageComponent 分頁與網址', () => {
 describe('OrderDetailPageComponent 標題旁的急迫狀態（與訂單列表同一套判斷）', () => {
   it('逾時未還：出租中且還車時間已過，isOverdueReturn() 成立；selectSection 能跳到交還車分頁', async () => {
     // makeBooking() 預設 endTime 是 2026-01-07（相對「現在」已過去），只要狀態是出租中就成立。
-    const { component, harness } = await setup('/orders/b1', { bookings: [makeBooking({ status: 'in_progress' })] });
+    const { component, harness } = await setup('/orders/b1', { orders: [makeBooking({ status: 'in_progress' })] });
     expect(component['isOverdueReturn']()).toBe(true);
 
     component.selectSection('handover');
@@ -223,7 +231,7 @@ describe('OrderDetailPageComponent 標題旁的急迫狀態（與訂單列表同
 
   it('退款待處理：hasRefundPending() 成立；selectSection 能跳到取消/退款分頁', async () => {
     const { component, harness } = await setup('/orders/b1', {
-      bookings: [makeBooking({ status: 'cancelled' })],
+      orders: [makeBooking({ status: 'cancelled' })],
       refunds: [{ id: 'r1', bookingId: 'b1', amount: 500, method: 'cash', status: 'pending', handledBy: '' }],
     });
     expect(component['hasRefundPending']()).toBe(true);
@@ -270,13 +278,13 @@ describe('OrderDetailPageComponent 頁首標題（2.1：麵包屑「訂單管理
 
     expect(slot.entry()?.value).toEqual({
       title: '王小明',
-      breadcrumbs: [{ label: ZH_TW.nav.bookings, route: '/bookings' }],
+      breadcrumbs: [{ label: ZH_TW.nav.orders, route: '/orders' }],
       backTo: component['returnUrl'],
     });
   });
 
   it('找不到會員時標題退回 em dash，不是空字串或例外', async () => {
-    const { component } = await setup('/orders/b1', { bookings: [makeBooking({ memberId: 'no-such-member' })] });
+    const { component } = await setup('/orders/b1', { orders: [makeBooking({ memberId: 'no-such-member' })] });
     const slot = TestBed.inject(HeaderTitleSlot);
     expect(slot.entry()?.value.title).toBe('—');
     expect(component['member']()).toBeUndefined();
@@ -310,7 +318,7 @@ describe('OrderDetailPageComponent 總覽「費用」卡的已收／待收（與
       total: 1000,
     };
     const { harness } = await setup('/orders/b1', {
-      bookings: [makeBooking({ priceBreakdown })],
+      orders: [makeBooking({ priceBreakdown })],
       payments: [{ id: 'p1', bookingId: 'b1', amount: 700, method: 'cash', purpose: 'deposit', status: 'confirmed', receivedAt: '2026-01-01T00:00:00.000Z', handledBy: 'staff' }],
     });
     const pricingCard = Array.from(el(harness).querySelectorAll('.order-detail__group')).find((g) =>
@@ -325,7 +333,7 @@ describe('OrderDetailPageComponent 總覽「費用」卡的已收／待收（與
   it('沒有報價快照時仍顯示已收（種子訂單 b9 情境：出租中＋逾時未還、已收 700）', async () => {
     const b9 = makeBooking({ id: 'b1', status: 'in_progress', priceBreakdown: undefined });
     const { harness } = await setup('/orders/b1', {
-      bookings: [b9],
+      orders: [b9],
       payments: [{ id: 'p1', bookingId: 'b1', amount: 700, method: 'line_pay', purpose: 'balance', status: 'confirmed', receivedAt: '2026-01-01T00:00:00.000Z', handledBy: 'staff' }],
     });
     const pricingCard = Array.from(el(harness).querySelectorAll('.order-detail__group')).find((g) =>
@@ -366,7 +374,7 @@ describe('OrderDetailPageComponent 費用卡的溢收與沒有報價（前批驗
 
   it('待收為負：改寫「溢收 NT$X」並用警示色，不顯示「−NT$」', async () => {
     const { harness } = await setup('/orders/b1', {
-      bookings: [makeBooking({ priceBreakdown: quote1000 })],
+      orders: [makeBooking({ priceBreakdown: quote1000 })],
       payments: [paid(1200)],
     });
     const card = pricingCard(harness);
@@ -379,7 +387,7 @@ describe('OrderDetailPageComponent 費用卡的溢收與沒有報價（前批驗
 
   it('待收為正：照舊顯示「待收」', async () => {
     const { harness } = await setup('/orders/b1', {
-      bookings: [makeBooking({ priceBreakdown: quote1000 })],
+      orders: [makeBooking({ priceBreakdown: quote1000 })],
       payments: [paid(300)],
     });
     const balance = pricingCard(harness).querySelector('.order-detail__balance') as HTMLElement;
@@ -390,7 +398,7 @@ describe('OrderDetailPageComponent 費用卡的溢收與沒有報價（前批驗
 
   it('沒有報價快照（種子 b9：已收 700）：待收顯示「—」加說明，不再是「−NT$700」', async () => {
     const { harness } = await setup('/orders/b1', {
-      bookings: [makeBooking({ status: 'in_progress', priceBreakdown: undefined })],
+      orders: [makeBooking({ status: 'in_progress', priceBreakdown: undefined })],
       payments: [paid(700)],
     });
     const card = pricingCard(harness);
@@ -433,10 +441,10 @@ describe('OrderDetailPageComponent 總覽的待補卡（4.1：與建單摘要欄
     const labels = Array.from(cardEl?.querySelectorAll('.incomplete-card__label') ?? []).map((l) => l.textContent?.trim());
     // 會員有 Email、沒有報價快照（算不出租金是否收足）；訂金 500 未收、沒有合約、沒有證件紀錄。
     expect(labels).toEqual([
-      ZH_TW.bookingForm.incomplete.depositNotCollected,
-      ZH_TW.bookingForm.incomplete.contractNotSigned,
-      ZH_TW.bookingForm.incomplete.identityNotVerified,
-      ZH_TW.bookingForm.incomplete.driverNotVerified,
+      ZH_TW.orderForm.incomplete.depositNotCollected,
+      ZH_TW.orderForm.incomplete.contractNotSigned,
+      ZH_TW.orderForm.incomplete.identityNotVerified,
+      ZH_TW.orderForm.incomplete.driverNotVerified,
     ]);
     const panel = el(harness).querySelector('.order-detail__panel') as HTMLElement;
     expect(panel.firstElementChild?.tagName.toLowerCase()).toBe('app-order-incomplete-card');
@@ -496,7 +504,7 @@ describe('OrderDetailPageComponent 總覽的待補卡（4.1：與建單摘要欄
   it('已取消、已完成的訂單不顯示待補', async () => {
     for (const status of ['cancelled', 'completed'] as const) {
       TestBed.resetTestingModule();
-      const { harness } = await setup('/orders/b1', { bookings: [makeBooking({ status })] });
+      const { harness } = await setup('/orders/b1', { orders: [makeBooking({ status })] });
       expect(card(harness)).toBeNull();
     }
   });
@@ -530,12 +538,12 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 
     expect(component.editing()).toBe(true);
     expect(el(harness).querySelector('app-order-rental-section')).not.toBeNull();
-    expect(el(harness).querySelector('app-order-renter-section')).not.toBeNull();
-    expect(el(harness).querySelector('app-order-pricing-section')).not.toBeNull();
+    expect(el(harness).querySelector('lib-order-renter-section')).not.toBeNull();
+    expect(el(harness).querySelector('lib-order-pricing-section')).not.toBeNull();
     // 2.4：建單頁把報價明細移到摘要欄；詳情的編輯沒有摘要欄，費用區塊仍列出報價明細
-    const quoteList = el(harness).querySelector('app-order-pricing-section .order-section__dl');
-    expect(quoteList?.textContent).toContain(ZH_TW.bookingForm.quoteTotal);
-    expect(el(harness).querySelector('app-order-payment-drafts-section')).toBeNull();
+    const quoteList = el(harness).querySelector('lib-order-pricing-section .order-section__dl');
+    expect(quoteList?.textContent).toContain(ZH_TW.orderForm.quoteTotal);
+    expect(el(harness).querySelector('lib-order-payment-drafts-section')).toBeNull();
     const value = component.form().getRawValue();
     expect(value.rental.vehicleId).toBe('v1');
     expect(value.renter.memberId).toBe('m1');
@@ -578,7 +586,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 
     expect(component.editing()).toBe(false);
     expect(update).not.toHaveBeenCalled();
-    expect(TestBed.inject(BookingStore).bookings()[0].endTime).toBe(makeBooking().endTime);
+    expect(TestBed.inject(OrderStore).orders()[0].endTime).toBe(makeBooking().endTime);
     component.startEdit();
     expect(component.form().getRawValue().rental.endLocal).toBe(original);
   });
@@ -632,7 +640,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 
   it('不可編輯（已取車）的訂單不顯示「編輯」，?edit=1 也不會進入編輯', async () => {
     const { harness, component, router } = await setup('/orders/b1?edit=1', {
-      bookings: [makeBooking({ status: 'in_progress' })],
+      orders: [makeBooking({ status: 'in_progress' })],
     });
     expect(component.editing()).toBe(false);
     expect(el(harness).querySelector('.order-detail__edit')).toBeNull();
@@ -641,7 +649,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 
   it('需調度（取車據點與車輛所在據點不同、尚未取車）時在取車據點旁標示', async () => {
     const { harness } = await setup('/orders/b1', {
-      bookings: [makeBooking({ vehicleId: 'v2', pickupLocation: 'mzg-airport' })],
+      orders: [makeBooking({ vehicleId: 'v2', pickupBranchId: 'mzg-airport' })],
     });
     const chip = el(harness).querySelector('.order-detail__branch .ui-chip');
     expect(chip?.textContent).toContain(ZH_TW.dispatch.workList.needsDispatch);
@@ -652,7 +660,7 @@ describe('OrderDetailPageComponent 編輯訂單（總覽）', () => {
 describe('OrderDetailPageComponent 合約需重新簽署提醒', () => {
   it('已簽署訂單改租期並儲存：產生新合約版本、snackbar 提醒需重新簽署，動作前往合約分頁', async () => {
     const { component, harness, router, snackOpen, snackAction } = await setup('/orders/b1', {
-      bookings: [],
+      orders: [],
       gateway: 'real',
     });
     // 以真正的送出實作建立一筆訂單並簽署第 1 版合約。
@@ -661,8 +669,8 @@ describe('OrderDetailPageComponent 合約需重新簽署提醒', () => {
       vehicleId: 'v1',
       startTime: new Date('2026-01-05T09:00').toISOString(),
       endTime: new Date('2026-01-07T09:00').toISOString(),
-      pickupLocation: 'mzg-airport',
-      returnLocation: 'mzg-airport',
+      pickupBranchId: 'mzg-airport',
+      returnBranchId: 'mzg-airport',
       member,
     });
     const id = await gateway.create({ value: form.getRawValue() });
@@ -688,15 +696,15 @@ describe('OrderDetailPageComponent 合約需重新簽署提醒', () => {
   });
 
   it('沒有產生新合約版本時只顯示一般的儲存成功', async () => {
-    const { component, harness, snackOpen } = await setup('/orders/b1', { bookings: [], gateway: 'real' });
+    const { component, harness, snackOpen } = await setup('/orders/b1', { orders: [], gateway: 'real' });
     const gateway = TestBed.inject(ORDER_SUBMIT_GATEWAY);
     const id = await gateway.create({
       value: createOrderForm({
         vehicleId: 'v1',
         startTime: new Date('2026-01-05T09:00').toISOString(),
         endTime: new Date('2026-01-07T09:00').toISOString(),
-        pickupLocation: 'mzg-airport',
-        returnLocation: 'mzg-airport',
+        pickupBranchId: 'mzg-airport',
+        returnBranchId: 'mzg-airport',
         member,
       }).getRawValue(),
     });
@@ -717,7 +725,7 @@ describe('OrderDetailPageComponent 離開確認（confirmLeaveGuard）', () => {
   it('編輯中但沒有改動：直接放行，不跳確認', async () => {
     const { component, router, dialogOpen } = await setup('/orders/b1');
     component.startEdit();
-    expect(await router.navigateByUrl('/bookings')).toBe(true);
+    expect(await router.navigateByUrl('/orders')).toBe(true);
     expect(dialogOpen).not.toHaveBeenCalled();
   });
 
@@ -726,7 +734,7 @@ describe('OrderDetailPageComponent 離開確認（confirmLeaveGuard）', () => {
     component.startEdit();
     component.form().controls.rental.controls.endLocal.markAsDirty();
 
-    expect(await router.navigateByUrl('/bookings')).toBe(false);
+    expect(await router.navigateByUrl('/orders')).toBe(false);
     expect(dialogOpen).toHaveBeenCalledWith(ConfirmDialogComponent, expect.objectContaining({
       data: ZH_TW.orderDetail.discardChangesConfirm,
     }));
@@ -738,6 +746,6 @@ describe('OrderDetailPageComponent 離開確認（confirmLeaveGuard）', () => {
     const { component, router } = await setup('/orders/b1', { confirmResult: true });
     component.startEdit();
     component.form().controls.rental.controls.endLocal.markAsDirty();
-    expect(await router.navigateByUrl('/bookings')).toBe(true);
+    expect(await router.navigateByUrl('/orders')).toBe(true);
   });
 });

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { calculateCommission, rentalDaysOf } from '@car-rental/domain';
 import { PayoutStatus } from '../../core/models';
 import { ZH_TW } from '../../core/i18n/zh-tw';
-import { BOOKING_REPO, PARTNER_REPO, PAYOUT_REPO, VEHICLE_REPO } from '../../core/repositories/tokens';
+import { ORDER_REPO, PARTNER_REPO, PAYOUT_REPO, VEHICLE_REPO } from '../../core/repositories/tokens';
 
 export interface CommissionReportRow {
   bookingId: string;
@@ -27,7 +27,7 @@ const CSV_BOM = '﻿';
 
 @Injectable({ providedIn: 'root' })
 export class CommissionStore {
-  private bookingRepo = inject(BOOKING_REPO);
+  private orderRepo = inject(ORDER_REPO);
   private partnerRepo = inject(PARTNER_REPO);
   private vehicleRepo = inject(VEHICLE_REPO);
   private payoutRepo = inject(PAYOUT_REPO);
@@ -40,11 +40,11 @@ export class CommissionStore {
     const partner = this.partnerRepo.getById(partnerId);
     if (!partner) return { rows: [], total: 0, unquotedCount: 0 };
 
-    const bookings = this.bookingRepo
+    const orders = this.orderRepo
       .getAll()
       .filter((b) => b.sourcePartnerId === partnerId && b.startTime.slice(0, 7) === yyyyMm);
 
-    const rows: CommissionReportRow[] = bookings.map((b) => {
+    const rows: CommissionReportRow[] = orders.map((b) => {
       const vehicle = this.vehicleRepo.getById(b.vehicleId);
       const rentalSubtotal = b.priceBreakdown ? b.priceBreakdown.rentalSubtotal : null;
       const commission =

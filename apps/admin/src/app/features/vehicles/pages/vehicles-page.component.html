@@ -20,7 +20,7 @@
       />
       <app-filter-select
         filters
-        [label]="t.vehicle.location"
+        [label]="t.vehicle.branch"
         [options]="locationOptions"
         [(value)]="locationFilter"
       />
@@ -66,7 +66,7 @@
           (rowClick)="onRowClick($event)"
         >
           <ng-template dtCell="category" let-v>{{ t.vehicle.typeLabels[v.category] }}</ng-template>
-          <ng-template dtCell="location" let-v>{{ branchName(v.location) }}</ng-template>
+          <ng-template dtCell="branchId" let-v>{{ branchName(v.branchId) }}</ng-template>
           <ng-template dtCell="mileage" let-v>{{ v.mileage | mileage }}</ng-template>
           <ng-template dtCell="status" let-v>
             <app-status-chip [label]="t.vehicle.statusLabels[v.status]" [status]="statusKeyOf(v)" />

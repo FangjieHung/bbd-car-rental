@@ -26,11 +26,11 @@
 param**——兩個地點都已改成資料庫查得到的據點 id（見 `RENTAL_BRANCHES`，`02-libs.md`），
 不再是使用者手動輸入、適合放進網址的機場／港口／店舖三選一：
 
-- **取車據點不讓使用者選**，直接吃選定那台車的 `vehicle.location`（`order-page.component.ts`
-  的 `pickupLocation`）。這是刻意的產品決定，不是漏做欄位——車輛所在據點就是它能被取走的
+- **取車據點不讓使用者選**，直接吃選定那台車的 `vehicle.branchId`（`order-page.component.ts`
+  的 `pickupBranchId`）。這是刻意的產品決定，不是漏做欄位——車輛所在據點就是它能被取走的
   地方，讓使用者另外選一個不同的取車據點在這個 prototype 沒有意義。
 - **還車據點**在下單頁的 `confirm-step` 表單裡選（`RentalBranch` 下拉），送出訂單時寫進
-  `returnLocation`，同樣不經過網址。
+  `returnBranchId`，同樣不經過網址。
 
 **兩個頁面對缺參數的寬鬆度刻意不同**：
 
@@ -62,6 +62,8 @@ libs/booking-flow/src/lib/
     date-step / vehicle-step      # 雙月日期區間選擇器在 libs/ui（lib-dual-month-range-picker）
     addon-step / coupon-step / confirm-step
     done.component.*            # 完成頁（歷史因素放在 steps/，實際是路由頁）
+  i18n/                         # 官網多語系：語系服務、三語字典、語言切換器（見「多語系」）
+  booking-flow-error.ts         # CatalogStore 丟給畫面的錯誤代碼
   booking-context.ts            # BOOKING_CONTEXT：夥伴身分與導頁前綴
   quote.service.ts              # 所有報價計算
   catalog.store.ts              # 資料存取與訂單寫入
@@ -79,9 +81,9 @@ libs/booking-flow/src/lib/
 |---|---|---|
 | 取還日期、車輛類型（機車/汽車） | query params | 保留 |
 | 選定車輛 | route param | 保留 |
-| 取車地點 | 衍生值，不單獨存（`vehicle.location`） | 保留（隨選定車輛而定） |
+| 取車地點 | 衍生值，不單獨存（`vehicle.branchId`） | 保留（隨選定車輛而定） |
 | 還車地點、配件數量、優惠碼 | 下單頁元件內 signal | 遺失 |
-| 訂單 | `BOOKING_REPO`（localStorage） | 保留 |
+| 訂單 | `ORDER_REPO`（localStorage） | 保留 |
 
 配件與優惠碼刻意不放網址：那一頁不是拿來分享的，重填的成本低於把整個購物車塞進網址的複雜度。
 
@@ -123,7 +125,7 @@ interface BookingContext {
      → markBookingPaid() 在付款分類帳追加一筆 confirmed 的 balance PaymentRecord → 導向 /done/:id
 ```
 
-**`BookingStatus` 不再有 `pending_payment`／`confirmed` 這兩個值**（見
+**`OrderStatus` 不再有 `pending_payment`／`confirmed` 這兩個值**（見
 `libs/domain/src/lib/models/enums.ts`）。履約狀態只剩 `reserved`／`in_progress`／
 `completed`／`cancelled`，只描述車輛交接進度；付款是否完成改由 Task 7 建立的付款分類帳
 （`PaymentRecord` 系列，`libs/domain/src/lib/models/payment-record.ts`）獨立追蹤，`PaymentRecordStatus`
@@ -133,9 +135,33 @@ interface BookingContext {
 `PaymentStore.summaryFor` 之後靠掃這本分類帳算出已付金額，而不是看訂單狀態欄位。
 
 舊資料裡真正還在用 `pending_payment`／`confirmed` 這兩個 legacy booking status 值的，
-由 `libs/domain/src/lib/repositories/normalize-rental-booking.ts` 在讀取時統一遷移為
-`reserved`（`normalize-rental-booking.spec.ts` 有遷移測試），不會在應用程式邏輯裡出現。
+由 `libs/domain/src/lib/repositories/normalize-rental-order.ts` 在讀取時統一遷移為
+`reserved`（`normalize-rental-order.spec.ts` 有遷移測試），不會在應用程式邏輯裡出現。
 `markBookingPaid` 的冪等性怎麼做，見下方「接金流時實際要改什麼」。
+
+## 多語系（2026-09-23）
+
+官網支援繁中、英文、日文（待業主 #8 確認）。不引入套件，用一個 signal 型服務：
+
+- **`BookingFlowI18n`**（`i18n/booking-flow-i18n.ts`，root 提供）：`locale()`、`setLocale()`、
+  `t()`（目前語言的全部文案），以及 `money()`／`date()`／`month()` 格式化與 `errorMessage()`。
+  元件用 `injectBookingFlowI18n()` 取得，模板寫 `i18n.t().xxx`，切換語言不必重新整理。
+- **字典**：`BookingFlowMessages` 介面＋`ZH_TW_MESSAGES`／`EN_MESSAGES`／`JA_MESSAGES`。
+  三個語言都要實作完整介面，漏翻會編譯失敗。需要帶數值的文案寫成函式，讓各語言決定語序。
+- **預設固定繁中、不偵測**：admin（儀表板、調度月曆也用了 date-step／vehicle-step）與 affiliate
+  沒有呼叫 `provideBookingFlowI18n()`，畫面維持繁中。只有 `apps/booking` 呼叫它：初始語言依
+  「上次選的（localStorage `cr.bookingLocale`）→ 瀏覽器偏好語言 → 繁中」決定，並同步
+  `<html lang>` 與 Material `DateAdapter`（月曆星期標題、時間選擇器格式）。語言切換器
+  `lib-language-switcher` 放在官網殼層。
+- **界線**：會隨資料庫變動的是資料、不翻——據點名稱、車款型號、`classLabel`、保險方案與配件
+  名稱。寫死在程式裡的是文案、要翻——按鈕、欄位名、選項分類標籤（車種、排檔、付款偏好、
+  燃油／里程政策）、提示與錯誤訊息。
+- **金額**一律 `NT$1,200`（不用 Intl 的 currency 樣式：zh-TW 會印成易與美元混淆的 `$`）；
+  **日期**依語言（繁中／日文 `2026/09/22`、英文 `09/22/2026`）。`YYYY-MM-DD` 當當地日期解讀。
+- **錯誤**：`CatalogStore` 丟 `BookingFlowError(code)`、優惠碼回傳 `reason` 代碼
+  （`not_found`／`not_applicable`），畫面依代碼查文案；未預期的例外不把技術訊息顯示給客人。
+- 路由改為 lazy load 本地的 `booking-pages.ts`（affiliate 為 `partner-pages.ts`），因為殼層已靜態
+  引用 booking-flow，直接 `import('@car-rental/booking-flow')` 會違反 `@nx/enforce-module-boundaries`。
 
 ## 動它之前要知道的事
 
@@ -172,7 +198,7 @@ interface BookingContext {
 3. **`apps/affiliate/src/app/app.routes.ts`** — 同一條回調路由要在 `p/:slug` 的
    children 底下再加一次，否則夥伴客人付完款會掉回首頁。
 4. **`CatalogStore.markBookingPaid()`** — 目前只收 `bookingId`。真實金流需要記錄
-   交易編號、實付金額等，簽章很可能要擴充，`RentalBooking` 可能要加欄位。
+   交易編號、實付金額等，簽章很可能要擴充，`RentalOrder` 可能要加欄位。
 
 `markBookingPaid` 目前的冪等性只靠「該訂單是否已有 confirmed 的 balance 付款紀錄」判斷，
 不再檢查 `booking.status`（因為履約狀態已經不代表付款進度）。真實金流回調會遲到、重送、

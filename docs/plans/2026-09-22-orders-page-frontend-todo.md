@@ -1,7 +1,7 @@
 # 訂單頁面化：前端與設計接續待辦
 
-**日期：** 2026-09-22 起草，2026-09-23 更新
-**狀態：** 已合併 `main`（merge commit `cecda36`）並推送到 origin；工作分支與工作樹已清除，直接在 `main` 上接續即可
+**日期：** 2026-09-22 起草，2026-09-23 更新（同日：第 1、2、4、5 節完成）
+**狀態：** 訂單頁面化已合併 `main`（merge commit `cecda36`）。第 1 節（更名）與第 2 節（官網多語系）也已合併 `main`（merge commit `1bb110c`）；第 4、5 節隨後合併
 **給誰：** 設計＋前端接手的人（也就是下一次的自己）
 **相關文件：** 術語 `CONTEXT.md`、決策 `docs/adr/0001-order-creation-not-shared-with-booking-site.md`、後端 `docs/plans/2026-09-22-orders-page-backend-handoff.md`、業主 `docs/owner-questions.md`
 
@@ -25,10 +25,11 @@ admin-flow-review` 合併後會再往上動，屆時請以該分支「完成紀�
 
 **建議的接手順序：**
 
-1. **先看 `docs/owner-questions.md`**——10 條已填入我方暫定決定，等業主會議確認。其中第 1、3 條一旦確認就要開發（見下方第 6 節與第 3 節），**在確認之前不要動那兩塊**。
-2. **`bookings → orders` 全面更名**（第 1 節）：純機械改動，獨立分支做，順便清掉那 14 個 lint error。
-3. **官網多語系**（第 2 節）：規模已實測 415 處，接縫已留好，但基礎設施要從零建。
-4. 其餘依各節的建議順序。
+1. **先看 `docs/owner-questions.md`**——10 條已填入我方暫定決定，等業主會議確認。其中第 1、3 條一旦確認就要開發（見下方第 6 節與第 3 節），**在確認之前不要動那兩塊**。截至 2026-09-23 下午仍是「暫定，待業主會議確認」，所以這兩塊還沒動。
+2. ~~`bookings → orders` 全面更名~~（第 1 節）：**已完成**，含 lint 清零。
+3. ~~官網多語系~~（第 2 節）：**已完成**；剩下的是業主確認與翻譯校對（見第 2 節「還沒做的」）。
+4. ~~建單積木搬到 lib~~（第 4 節）、~~mock 資料彙整~~（第 5 節）：**已完成**。
+5. 接下來不必等業主的只剩第 6 節（調度畫面改進）與第 7 節的零星問題。
 
 **動工前請先確認工作區乾淨**——這個 repo 常有多個 session 並行（`.worktrees/` 下有數個），未提交的改動容易被別的 session 一起 commit 走。
 
@@ -47,38 +48,46 @@ admin-flow-review` 合併後會再往上動，屆時請以該分支「完成紀�
 
 以下是**刻意沒做**、留給之後的事，依建議順序排列。
 
-## 1. `bookings → orders` 全面更名
+## 1. `bookings → orders` 全面更名（2026-09-23 完成）
 
-程式碼叫「booking（預約）」、畫面叫「訂單」，術語表已定案統一叫「訂單」。這次只新增了 `/orders/*` 路由，其餘沿用舊名。
+commit `407c3cc`，純機械改名，除網址外沒有行為變更。
 
-- 路由：列表頁 `/bookings`、會員 `/bookings/members` → `/orders`、`/members`（或 `/orders/members`，看資訊架構）
-- 資料夾：`apps/admin/src/app/features/bookings/` 併入 `features/orders/`
-- 型別與 token：`RentalBooking`、`BookingStatus`、`BOOKING_REPO`、`stores/booking/`
-- 欄位：`pickupLocation` / `returnLocation` / `Vehicle.location` 現在存的是據點 id，改名為 `pickupBranchId` / `returnBranchId` / `branchId` 才名副其實。**localStorage 已有舊欄位名的資料，改名要附遷移**（照 `libs/domain/src/lib/repositories/normalize-rental-booking.ts` 的模式）。
-- `zh-tw.ts` 內 `booking`、`bookingForm` 等 key
-- 側欄選單目前用 `matchPrefixes: ['/orders/']` 讓 `/orders/*` 亮「訂單管理」，更名後可拿掉
-- **順便處理剩下的 14 個 lint error**：`libs/booking-flow` 13 個、`libs/theme-pack` 1 個，都是 `@angular-eslint/component-selector` 要求 lib 的元件 selector 以 `lib-` 開頭（實際是 `app-`）。要改就是十幾個元件連同所有使用處一起改名，跟這次更名是同一種動作，一起做才不會製造兩輪雜訊。（若判斷這些 lib 的元件其實不該用 `lib-` 前綴，那要改的是規則設定而不是程式碼。）
+**做了什麼：**
+- 路由：`/bookings` → `/orders`（列表併進 `ORDER_ROUTES` 的空路徑）、`/bookings/members` → `/members`。**舊網址會轉址**，書籤不會壞。
+- 側欄：`/orders/*` 本來就會被「訂單管理」的前綴比對涵蓋，不再需要特例；`matchPrefixes` 改成 `['/members']`，讓會員管理頁的頁首仍顯示「訂單管理」（會員頁從訂單列表進入，不另開選單項目）。
+- 資料夾：`features/bookings/` 拆開——訂單相關併入 `features/orders/`（`components/`、`dialogs/vehicle-picker-dialog`、`pages/orders-page`），只給會員用的（會員頁、會員表單、證件擷取、駕駛資格面板）搬到 `features/members/`。`stores/booking/` → `stores/order/`。
+- 型別與 token：`RentalBooking` → `RentalOrder`、`BookingStatus` → `OrderStatus`、`BOOKING_REPO` → `ORDER_REPO`、`BookingStore` → `OrderStore`、`normalizeRentalBooking` → `normalizeRentalOrder`、`seedBookings` → `seedOrders`、`BOOKING_STATUS_KEY` → `ORDER_STATUS_KEY`，以及 admin／domain 內的一般變數名。
+- 欄位：`pickupLocation`／`returnLocation` → `pickupBranchId`／`returnBranchId`、`Vehicle.location` → `Vehicle.branchId`。`normalizeRentalOrder`／`normalizeVehicle` 讀取時會把 localStorage 裡的舊欄位名轉成新的（新舊並存時以新欄位為準），有測試。
+- `zh-tw.ts`：`booking` → `order`、`bookingForm` 併入 `orderForm`、`nav.bookings` → `nav.orders`。
+- lint：booking-flow 13 個與 theme-pack 1 個元件改用 `lib-` 前綴（其他 lib 本來就是 `lib-`，所以改程式碼而不是改規則）；affiliate 的路由改為 lazy load 本地的 `partner-pages.ts` 再轉出 booking-flow 頁面，解掉「同一個 lib 同時被靜態與動態引用」。
+- `docs/architecture/` 內的舊名稱已同步。
 
-建議獨立一個分支做，純機械改名，不夾帶行為變更。
+**刻意沒改的（改了就需要資料遷移或會打破外部網址）：**
+- `bookingId`：付款、合約、交車、取消、提醒等每一種紀錄上的外鍵，都已寫進 localStorage。改名要對每個集合做遷移，應該跟接後端一起處理（後端 API 直接用 `orderId`，見 backend handoff 第 8 節）。
+- localStorage key `cr.bookings`、稽核紀錄的 `entityType: 'booking'`：持久化值，已加註解說明它就是「訂單」。
+- `libs/booking-flow` 內部命名（`markBookingPaid`、`submitBooking`、`BookingContext`、官網路由參數 `pay/:bookingId`）：這個 lib 的名字本身就是「官網訂車流程」，改它牽動官網與 affiliate 的公開網址，不在這次範圍。
+- 畫面文字「取車地點／還車地點」：術語表說應叫「據點」，但改畫面文字屬行為變更，留給之後文案一起調整（key 已改名為 `pickupBranch`／`returnBranch`）。
 
-## 2. 官網多語系（i18n）
+## 2. 官網多語系（i18n）（2026-09-23 完成）
 
-**規模（2026-09-22 實測）：** `libs/booking-flow` 正式碼 149 處硬編中文、spec 斷言 177 處、`libs/domain` 種子資料中會顯示在官網的 89 處，**共約 415 處**；基礎設施為零（無 i18n 套件、無 `LOCALE_ID`、無翻譯檔）。`apps/booking` 本身 0 處——它只是路由殼。
+commit `ef62889`。設計與使用方式寫在 `docs/architecture/04-booking-flow.md`「多語系」一節，這裡只記重點與剩下的事。
 
-**已定案：**
-- 語言：繁中、英文、日文（待業主 #8 確認）
-- 只做官網；admin 維持靜態 `ZH_TW`，**兩邊機制刻意分岔**
-- 界線：**會隨資料庫變動的是資料、不翻**（據點名稱、車款型號、客人姓名）；固定寫在程式裡的是文案、要翻（按鈕、欄位名、選項的分類標籤）
+**做了什麼：**
+- 不引入套件，做了 signal 型的 `BookingFlowI18n`（`libs/booking-flow/src/lib/i18n/`）＋型別化的繁中／英文／日文字典；漏翻會編譯失敗，切換語言不必重新整理。
+- booking-flow 正式碼內所有文案（約 150 處）都已抽出；`NT$` 字面量、`.slice(0, 10)` 直接顯示的日期、自寫的 `formatDate()`、「2026年9月」月份標籤、`plan-page` 的 JPY 三元判斷、內嵌在三元式裡的文案，全部改走 `money()`／`date()`／`month()` 與字典。
+- 預設固定繁中且不偵測：admin 與 affiliate 不呼叫 `provideBookingFlowI18n()`，畫面不變；只有官網啟用偵測、記住選擇、同步 `<html lang>` 與月曆地區設定，殼層放語言切換器。
+- 錯誤改用代碼（`BookingFlowError`、優惠碼 `reason: 'not_found' | 'not_applicable'`），未預期例外不再把技術訊息丟給客人。
+- `BOOKING_FLOW_LABELS` 併入字典（`t().labels`）。
+- spec 斷言沒有改成多語——它們仍以繁中（預設語言）驗證行為；另外新增 26 個多語系測試。
 
-**已留好的接縫：**
-- `libs/domain` 的 `SelectOption.label` 是「預設繁中標籤」，翻譯層以 `value` 為 key 查表、查不到落回 label
-- `BOOKING_FLOW_LABELS`（`libs/booking-flow/src/lib/booking-flow-labels.ts`）
-- `CONTRACT_SIGNING_LABELS`（`libs/contract-signing`）
-
-**要從零做的：**
-- 日期與金額目前全是手刻：`NT$` 字面量約 9 處、`.slice(0, 10)` 切 ISO 字串 3 處、自寫 `formatDate()` 與「2026年9月」月份標籤（`dual-month-range-picker.component.ts`）。要改用 locale-aware 的格式化。
-- `plan-page.component.html` 已有 `currency === 'JPY' ? '¥' : 'NT$'` 的三元判斷，是多幣別的苗頭，一併處理。
-- 三元式裡內嵌的文案最難抽（`plan-page.component.html:117,123,46`、`confirm-step.component.html:51`）。
+**還沒做的：**
+- **業主 #8 確認語言清單**。若要加韓文或簡中：在 `booking-flow-locale.ts` 加一筆、補一份字典，型別會指出所有要翻的地方。
+- **翻譯校對**：英文、日文是工程師初稿，上線前請母語者校對（尤其法律意味的句子：延遲取車服務費提醒、付款失敗訊息）。
+- **資料不翻造成的混語**：切到英文／日文時，車型分類（`classLabel`，如「小型轎車」）、保險方案名稱與保障項目、配件名稱、據點名稱仍是繁中。這符合已定案的界線，但實際看起來很突兀；若業主要翻，這些是**主檔資料**，需要後端提供多語欄位（見 backend handoff 第 9 節），前端不該自己維護對照表。
+- **affiliate 沒有語言切換**：民宿代訂站的使用者是民宿業者，照「只做官網」的決定維持繁中。要開放只需在 affiliate 殼層呼叫 `provideBookingFlowI18n()` 並放上切換器。
+- **日文字型**：`index.html` 只載入 Noto Sans TC，日文假名目前靠系統字型；若視覺上不一致，再加 Noto Sans JP（注意字型檔大小）。
+- **訂單沒有記錄客人的語言**：後續通知與手機簽約連結需要知道客人用哪個語言下單（見 backend handoff 第 9.2 節），接 API 時送出流程要帶上 `i18n.locale()`。
+- 車卡標題裡的 `{{ year }} edition` 是既有的英文字面量，三種語言都一樣顯示，沒有動。
 
 ## 3. 官網接上合約簽署
 
@@ -90,26 +99,33 @@ admin-flow-review` 合併後會再往上動，屆時請以該分支「完成紀�
 - 官網目前**沒有載入 `libs/theme-pack` 樣式**，但簽署 lib 用到 `--app-warning-*` 等 token，要先補上主題樣式，否則「需重新簽署」提示會沒有顏色
 - 簽署元件在手機上已是全螢幕，但未在官網實機驗證過
 
-## 4. 建單流程共用給官網
+## 4. 建單流程共用給官網（2026-09-23 完成積木搬遷）
 
-依 ADR 0001，**不共用外層流程容器**，只共用積木層。admin 端已經寫成可搬移的形狀：
+依 ADR 0001，**不共用外層流程容器**，只共用積木層。積木已搬到新的共用 lib **`libs/order-form`**（`@car-rental/order-form`）：
 
-- 表單定義 `createOrderForm()`、區塊元件 `app-order-rental-section` 等、`ORDER_FORM_DATA`、`ORDER_SUBMIT_GATEWAY`，都在 `apps/admin/src/app/features/orders/order-form/`
-- 搬到 lib 時注意：區塊元件目前引用 admin 的 `ZH_TW`，要改成 token 注入（同 `BOOKING_FLOW_LABELS` 的做法）
-- 官網需要的欄位只有約 6/20 重疊，別硬把 admin 專屬欄位（身分別、國籍、訂金、款項、內部備註）塞進官網
+- 表單定義 `createOrderForm()`、衍生狀態與送出前檢查、合約快照、`ORDER_FORM_DATA`、`ORDER_SUBMIT_GATEWAY`，以及五個區塊元件（selector 改為 `lib-order-rental-section` 等）。
+- 區塊元件原本直接引用 admin 的 `ZH_TW`；現在改注入新的 `ORDER_FORM_LABELS`（文案＋日期格式），**lib 本身不帶任何文案**。admin 在 `provideAdminOrderForm()` 以 `ZH_TW` 對應的分組提供；`orderFormProblems()`／`orderIncompleteItems()` 改為接收 labels 參數。
+- lib 自己的 spec 用「值等於 key 路徑」的測試用 labels 斷言，不依賴任何語言。
+- admin 行為不變（原 456 個測試拆成 admin 446＋lib 10）。
 
-## 5. mock 資料彙整的剩餘項目
+**還沒做的（等真的要給官網用時）：**
+- 官網沒有接上：要在官網提供三個 token，`ORDER_FORM_LABELS` 的文案要進 booking-flow 的三語字典（目前 labels 形狀沿用 admin `ZH_TW` 的分組）。
+- 官網需要的欄位只有約 6/20 重疊，別硬把 admin 專屬區塊（承租人身分別／國籍、訂金、款項、內部備註）塞進官網；可能需要把 `createOrderForm()` 拆出官網用的較小版本。
 
-這次只收了據點與付款方式。還剩：
+## 5. mock 資料彙整（2026-09-23 完成）
 
-| 重複項目 | 位置 |
+照付款方式的模式——值＋預設繁中標籤放 `libs/domain`，admin 用 `optionLabelMap()` 塞回 `ZH_TW` 原位：
+
+| 原本重複的項目 | 現在 |
 |---|---|
-| 車型中文標籤（三份） | `zh-tw.ts` 的 `vehicle.typeLabels`、`booking-flow-labels.ts` 的車型標籤、`date-step` 的車輛類型 |
-| 佔用車位的訂單狀態（三份） | `libs/domain` 的 `OCCUPYING`、`calendar-view.component.ts` 的 `ACTIVE`、`stores/booking/booking.store.ts` 的 `ACTIVE` |
-| 各種 statusLabels | `zh-tw.ts` 內十幾組，只有 admin 有；官網需要時各自在元件裡長出 Record |
-| 寫死在模板的選項值 | `member-form-dialog`、`vehicle-form-dialog`、`pricing-plan-dialog`、`coupon-dialog`、`add-on-dialog` 的 HTML |
+| 車型中文標籤（三份） | `VEHICLE_CATEGORY_OPTIONS`；admin `vehicle.typeLabels` 與官網繁中字典的 `vehicleCategory`／`vehicleGroups` 都取自它 |
+| 佔用車位的訂單狀態（三份） | `OCCUPYING_ORDER_STATUSES`／`isOccupyingStatus()`（`libs/domain` 的 `enums.ts`），可用性、`OrderStore` 衝突檢查、調度月曆共用 |
+| `zh-tw.ts` 的各種 statusLabels | 22 組列舉標籤搬到 domain 的 `*_OPTIONS`（與型別放在同一檔）。`ZH_TW` 經比對與搬移前**逐字、逐 key 順序相同**，消費端零改動 |
+| 寫死在模板的選項值 | 會員、車輛、定價方案、優惠券、配件五個 dialog 改用選項清單產生 |
 
-做法照這次的模式：值＋預設標籤放 `libs/domain`，admin 用 `optionLabelMap()` 塞回 `ZH_TW` 原位，49 個消費端零改動。
+- 新增 domain spec 檢查所有 `*_OPTIONS` 值不重複、標籤非空。
+- 唯一可見差異：dialog 裡的車型選單順序改成與車輛列表篩選一致（機車、汽車、電動車），原本是汽車排第一。
+- 刻意留在 admin 的：活動紀錄的事件種類、取消試算的原因代碼、駕照路徑、保養類型、提醒時點——這些是後台畫面或 admin 專屬 model 的概念，官網用不到。
 
 ## 6. 調度相關
 

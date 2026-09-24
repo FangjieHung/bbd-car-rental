@@ -1,17 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import {
-  BOOKING_REPO,
+  ORDER_REPO,
   PARTNER_REPO,
   PAYOUT_REPO,
   Partner,
   PayoutStatus,
-  RentalBooking,
+  RentalOrder,
   calculateCommission,
   rentalDaysOf,
 } from '@car-rental/domain';
 
 export interface CommissionLine {
-  booking: RentalBooking;
+  booking: RentalOrder;
   days: number;
   commission: number;
   month: string; // 'YYYY-MM'
@@ -36,7 +36,7 @@ function monthOf(iso: string): string {
 @Injectable({ providedIn: 'root' })
 export class PartnerAccountStore {
   private readonly partnerRepo = inject(PARTNER_REPO);
-  private readonly bookingRepo = inject(BOOKING_REPO);
+  private readonly orderRepo = inject(ORDER_REPO);
   private readonly payoutRepo = inject(PAYOUT_REPO);
 
   findPartnerBySlug(slug: string): Partner | null {
@@ -47,7 +47,7 @@ export class PartnerAccountStore {
     const partner = this.findPartnerBySlug(slug);
     if (!partner) return null;
 
-    const commissionLines: CommissionLine[] = this.bookingRepo
+    const commissionLines: CommissionLine[] = this.orderRepo
       .getAll()
       .filter((b) => b.sourcePartnerId === partner.id && b.priceBreakdown)
       .map((booking) => {

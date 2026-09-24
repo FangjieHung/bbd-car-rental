@@ -16,7 +16,7 @@ export interface PrepQueueRow {
   plate: string;
   model: string;
   returnedAt: string;
-  returnLocation: string;
+  returnBranchId: string;
   nextPickupAt: string;
   hasNextPickup: boolean;
 }
@@ -42,7 +42,7 @@ export class PrepQueueDialogComponent {
     { key: 'plate', label: this.t.prep.columns.plate, primary: true },
     { key: 'model', label: this.t.prep.columns.model },
     { key: 'returnedAt', label: this.t.prep.columns.returnedAt },
-    { key: 'returnLocation', label: this.t.prep.columns.returnLocation },
+    { key: 'returnBranchId', label: this.t.prep.columns.returnBranchId },
     { key: 'nextPickupAt', label: this.t.prep.columns.nextPickupAt, primary: true },
     { key: 'actions', label: this.t.common.actions, primary: true, exportSkip: true },
   ];
@@ -56,7 +56,7 @@ export class PrepQueueDialogComponent {
         plate: vehicle?.plateNumber ?? '—',
         model: vehicle?.model ?? '—',
         returnedAt: fmtDateTime(task.returnedAt),
-        returnLocation: branchName(task.returnLocation),
+        returnBranchId: branchName(task.returnBranchId),
         nextPickupAt: nextPickup ? fmtDateTime(nextPickup.startTime) : this.t.prep.noNextPickup,
         hasNextPickup: !!nextPickup,
       };

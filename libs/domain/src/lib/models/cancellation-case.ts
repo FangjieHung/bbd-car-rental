@@ -1,3 +1,4 @@
+import { SelectOption } from './select-option';
 /**
  * 取消案件適用的合約類型。目前只有 passenger_car 訂有完整的日期級距退費表；
  * scooter 尚未訂出退費表，customer 責任的取消一律落 manual_review（見 quoteCancellation）。
@@ -18,11 +19,35 @@ export type CancellationResponsibility =
   | 'operator_fault'
   | 'operator_intentional';
 
+/** 取消責任歸屬的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const CANCELLATION_RESPONSIBILITY_OPTIONS: SelectOption<CancellationResponsibility>[] = [
+  { value: 'customer', label: '顧客自行取消' },
+  { value: 'force_majeure', label: '不可抗力（天災等）' },
+  { value: 'operator_fault', label: '業者過失' },
+  { value: 'operator_intentional', label: '業者故意違約' },
+];
+
 /** 案件最終如何了結：退現金、轉會員購物金、或兩者拆分。 */
 export type CancellationDisposition = 'refund' | 'credit' | 'split';
 
+/** 取消款項處置方式的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const CANCELLATION_DISPOSITION_OPTIONS: SelectOption<CancellationDisposition>[] = [
+  { value: 'refund', label: '原方式退款' },
+  { value: 'credit', label: '全部轉保留金' },
+  { value: 'split', label: '部分退款＋部分保留金' },
+];
+
 /** 案件目前的處理階段。manual_review 代表金額無法自動試算，需要人工判斷。 */
 export type CancellationCaseStatus = 'manual_review' | 'quoted' | 'approved' | 'settled' | 'voided';
+
+/** 取消案件狀態的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const CANCELLATION_CASE_STATUS_OPTIONS: SelectOption<CancellationCaseStatus>[] = [
+  { value: 'manual_review', label: '人工審核中' },
+  { value: 'quoted', label: '待撥款' },
+  { value: 'approved', label: '已核准，待撥款' },
+  { value: 'settled', label: '已完成' },
+  { value: 'voided', label: '已作廢' },
+];
 
 export type CancellationRefundLineLabel =
   | 'deposit'

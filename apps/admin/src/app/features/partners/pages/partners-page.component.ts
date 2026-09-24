@@ -91,7 +91,7 @@ export class PartnersPageComponent {
   }
 
   async copyLink(partner: Partner): Promise<void> {
-    const link = this.store.bookingLink(partner);
+    const link = this.store.orderLink(partner);
     try {
       await navigator.clipboard.writeText(link);
     } catch {

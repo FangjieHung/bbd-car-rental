@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { MatDialogRef } from '@angular/material/dialog';
-import { MaintenanceRecord, PrepTask, RentalBooking, Repository, Vehicle } from '../../../core/models';
-import { BOOKING_REPO, MAINTENANCE_REPO, PREP_TASK_REPO, VEHICLE_REPO } from '../../../core/repositories/tokens';
+import { MaintenanceRecord, PrepTask, RentalOrder, Repository, Vehicle } from '../../../core/models';
+import { ORDER_REPO, MAINTENANCE_REPO, PREP_TASK_REPO, VEHICLE_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
 import { fmtDateTime } from '../../../core/date-utils';
 import { PrepQueueDialogComponent } from './prep-queue-dialog.component';
@@ -24,21 +24,21 @@ function prepTask(partial: Partial<PrepTask>): PrepTask {
     vehicleId: 'v1',
     bookingId: 'b0',
     returnedAt: at(-1, 18),
-    returnLocation: 'mzg-store',
+    returnBranchId: 'mzg-store',
     ...partial,
   };
 }
 
-function reserved(partial: Partial<RentalBooking>): RentalBooking {
+function reserved(partial: Partial<RentalOrder>): RentalOrder {
   return {
     id: 'b1', vehicleId: 'v1', memberId: 'c1',
     startTime: at(2, 9), endTime: at(4, 9),
-    pickupLocation: 'mzg-store', returnLocation: 'mzg-store', status: 'reserved', depositRequired: 0,
+    pickupBranchId: 'mzg-store', returnBranchId: 'mzg-store', status: 'reserved', depositRequired: 0,
     ...partial,
   };
 }
 
-function setup(options: { tasks?: PrepTask[]; bookings?: RentalBooking[] } = {}) {
+function setup(options: { tasks?: PrepTask[]; orders?: RentalOrder[] } = {}) {
   const prepRepo: Repository<PrepTask> = createInMemoryRepo<PrepTask>(options.tasks ?? []);
   TestBed.configureTestingModule({
     providers: [
@@ -52,7 +52,7 @@ function setup(options: { tasks?: PrepTask[]; bookings?: RentalBooking[] } = {})
           vehicle('v3', 'PQR-678', 'Corolla Cross'),
         ]),
       },
-      { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>(options.bookings ?? []) },
+      { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>(options.orders ?? []) },
       { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
     ],
   });
@@ -69,11 +69,11 @@ describe('PrepQueueDialogComponent（4.3 待整備清單）', () => {
   it('每列：車牌、車款、還車時間、還車據點、下次取車；依該車下一次取車排序，沒有下一筆的排最後', () => {
     const { bodyRows, cellTexts } = setup({
       tasks: [
-        prepTask({ id: 'p-none', vehicleId: 'v3', bookingId: 'b-3', returnedAt: at(-2, 10), returnLocation: 'mzg-port' }),
-        prepTask({ id: 'p-later', vehicleId: 'v2', bookingId: 'b-2', returnedAt: at(-1, 17), returnLocation: 'mzg-airport' }),
+        prepTask({ id: 'p-none', vehicleId: 'v3', bookingId: 'b-3', returnedAt: at(-2, 10), returnBranchId: 'mzg-port' }),
+        prepTask({ id: 'p-later', vehicleId: 'v2', bookingId: 'b-2', returnedAt: at(-1, 17), returnBranchId: 'mzg-airport' }),
         prepTask({ id: 'p-sooner', vehicleId: 'v1', bookingId: 'b-1', returnedAt: at(-1, 18) }),
       ],
-      bookings: [
+      orders: [
         reserved({ id: 'next-v2', vehicleId: 'v2', startTime: at(5, 9) }),
         reserved({ id: 'next-v1', vehicleId: 'v1', startTime: at(0, 14) }),
       ],

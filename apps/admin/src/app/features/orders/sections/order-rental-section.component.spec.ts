@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { convertToParamMap } from '@angular/router';
-import { RentalBooking, Vehicle } from '../../../core/models';
+import { RentalOrder, Vehicle } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import {
@@ -9,10 +9,10 @@ import {
   OrderFormInitial,
   connectOrderFormBehaviors,
   createOrderForm,
-  orderFormInitialFromBooking,
-} from '../order-form/order-form';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
-import { OrderFormContext } from '../order-form/order-form-derived';
+  orderFormInitialFromOrder,
+  ORDER_FORM_DATA,
+  OrderFormContext,
+} from '@car-rental/order-form';
 import { orderInitialFromQuery } from '../pages/order-create-page.component';
 import { createOrderRepos, makeVehicle } from '../testing';
 import { OrderRentalSectionComponent } from './order-rental-section.component';
@@ -21,21 +21,21 @@ const t = ZH_TW.rentalSearch;
 const iso = (local: string) => new Date(local).toISOString();
 
 const VEHICLES: Vehicle[] = [
-  makeVehicle({ id: 'v1', plateNumber: 'ABC-123', model: 'Altis', location: 'mzg-airport' }),
-  makeVehicle({ id: 'v2', plateNumber: 'BCD-234', model: 'Yaris', location: 'mzg-port' }),
-  makeVehicle({ id: 'v3', plateNumber: 'CDE-345', model: 'Sienta', location: 'mzg-store', status: 'maintenance' }),
-  makeVehicle({ id: 'v4', plateNumber: 'DEF-456', model: '勁戰', category: 'scooter', location: 'mzg-airport' }),
+  makeVehicle({ id: 'v1', plateNumber: 'ABC-123', model: 'Altis', branchId: 'mzg-airport' }),
+  makeVehicle({ id: 'v2', plateNumber: 'BCD-234', model: 'Yaris', branchId: 'mzg-port' }),
+  makeVehicle({ id: 'v3', plateNumber: 'CDE-345', model: 'Sienta', branchId: 'mzg-store', status: 'maintenance' }),
+  makeVehicle({ id: 'v4', plateNumber: 'DEF-456', model: '勁戰', category: 'scooter', branchId: 'mzg-airport' }),
 ];
 
-function booking(partial: Partial<RentalBooking>): RentalBooking {
+function order(partial: Partial<RentalOrder>): RentalOrder {
   return {
     id: 'b1',
     vehicleId: 'v2',
     memberId: 'm1',
     startTime: iso('2026-10-05T09:00'),
     endTime: iso('2026-10-07T09:00'),
-    pickupLocation: 'mzg-port',
-    returnLocation: 'mzg-port',
+    pickupBranchId: 'mzg-port',
+    returnBranchId: 'mzg-port',
     status: 'reserved',
     depositRequired: 0,
     ...partial,
@@ -46,12 +46,12 @@ interface SetupOptions {
   initial?: OrderFormInitial;
   /** 以 /orders/new 的網址參數預填（走建立訂單頁同一個 orderInitialFromQuery）。 */
   query?: Record<string, string>;
-  bookings?: RentalBooking[];
+  orders?: RentalOrder[];
   context?: OrderFormContext;
 }
 
 function setup(options: SetupOptions = {}) {
-  const repos = createOrderRepos({ vehicles: VEHICLES, bookings: options.bookings ?? [] });
+  const repos = createOrderRepos({ vehicles: VEHICLES, orders: options.orders ?? [] });
   TestBed.configureTestingModule({
     providers: [...repos.providers, { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData }],
   });
@@ -154,7 +154,7 @@ describe('OrderRentalSectionComponent 網址帶入 vehicleId／start／end', () 
   });
 
   it('那台車這段期間已被訂走：取消選取，清單上方提示「原本選的 {車牌} 這段期間不能租」', () => {
-    const { el, form, rental } = setup({ query: query('v2'), bookings: [booking({})] });
+    const { el, form, rental } = setup({ query: query('v2'), orders: [order({})] });
     expect(notice(el)).toBe('原本選的 BCD-234 這段期間不能租');
     expect(rental().vehicleId).toBe('');
     expect(checkedPlate(el)).toBeUndefined();
@@ -168,7 +168,7 @@ describe('OrderRentalSectionComponent 網址帶入 vehicleId／start／end', () 
   });
 
   it('改到那台車可以租的日期：自動選回、提示消失', () => {
-    const { component, el, fixture, rental } = setup({ query: query('v2'), bookings: [booking({})] });
+    const { component, el, fixture, rental } = setup({ query: query('v2'), orders: [order({})] });
     component['onRangeSelected']({ start: new Date(2026, 9, 10), end: new Date(2026, 9, 12) });
     fixture.detectChanges();
     expect(rental().vehicleId).toBe('v2');
@@ -186,14 +186,14 @@ describe('OrderRentalSectionComponent 選車', () => {
     row?.click();
     fixture.detectChanges();
 
-    expect(rental()).toMatchObject({ vehicleId: 'v2', pickupLocation: 'mzg-port', returnLocation: 'mzg-port' });
+    expect(rental()).toMatchObject({ vehicleId: 'v2', pickupBranchId: 'mzg-port', returnBranchId: 'mzg-port' });
     expect(form.controls.rental.controls.vehicleId.dirty).toBe(true);
     expect(checkedPlate(el)).toBe('BCD-234');
   });
 
   it('取車據點已經手動選過：選車不覆蓋，清單標出需調度路線', () => {
     const { component, el, fixture, form, rental } = setup({ initial: period });
-    const pickup = form.controls.rental.controls.pickupLocation;
+    const pickup = form.controls.rental.controls.pickupBranchId;
     pickup.setValue('mzg-port');
     pickup.markAsDirty();
     fixture.detectChanges();
@@ -201,7 +201,7 @@ describe('OrderRentalSectionComponent 選車', () => {
     component['pickVehicle'](VEHICLES[0]);
     fixture.detectChanges();
 
-    expect(rental()).toMatchObject({ vehicleId: 'v1', pickupLocation: 'mzg-port' });
+    expect(rental()).toMatchObject({ vehicleId: 'v1', pickupBranchId: 'mzg-port' });
     const selectedRow = el.querySelector('label.avl__row.is-selected');
     expect(text(selectedRow?.querySelector('.ui-chip--warning') ?? null)).toBe('需調度 馬公機場櫃檯→馬公港櫃檯');
   });
@@ -220,13 +220,13 @@ describe('OrderRentalSectionComponent 選車', () => {
 });
 
 describe('OrderRentalSectionComponent 編輯訂單（訂單詳情）', () => {
-  const own = booking({ id: 'own', vehicleId: 'v1', pickupLocation: 'mzg-airport', returnLocation: 'mzg-airport' });
-  const other = booking({ id: 'other', vehicleId: 'v1', startTime: iso('2026-10-10T09:00'), endTime: iso('2026-10-12T09:00') });
+  const own = order({ id: 'own', vehicleId: 'v1', pickupBranchId: 'mzg-airport', returnBranchId: 'mzg-airport' });
+  const other = order({ id: 'other', vehicleId: 'v1', startTime: iso('2026-10-10T09:00'), endTime: iso('2026-10-12T09:00') });
 
   it('排除這筆訂單自己：自己的車照樣列為可租並維持選取，不會顯示成已預訂', () => {
     const { el, rental } = setup({
-      initial: orderFormInitialFromBooking(own),
-      bookings: [own, other],
+      initial: orderFormInitialFromOrder(own),
+      orders: [own, other],
       context: { editingBookingId: 'own' },
     });
     expect(checkedPlate(el)).toBe('ABC-123');
@@ -236,8 +236,8 @@ describe('OrderRentalSectionComponent 編輯訂單（訂單詳情）', () => {
 
   it('改租期撞到別筆訂單：提示原本選的車不能租，但不自動換掉訂單上的車（儲存時由衝突檢查把關）', () => {
     const { component, el, fixture, rental } = setup({
-      initial: orderFormInitialFromBooking(own),
-      bookings: [own, other],
+      initial: orderFormInitialFromOrder(own),
+      orders: [own, other],
       context: { editingBookingId: 'own' },
     });
     component['onRangeSelected']({ start: new Date(2026, 9, 9), end: new Date(2026, 9, 11) });

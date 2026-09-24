@@ -3,7 +3,7 @@ import { Provider } from '@angular/core';
 import {
   ADDON_REPO,
   AUDIT_ENTRY_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   CANCELLATION_CASE_REPO,
   CHARGE_ADJUSTMENT_REPO,
   CONTRACT_VERSION_REPO,
@@ -37,7 +37,7 @@ import {
   PricingPlan,
   RefundRecord,
   ReminderStatus,
-  RentalBooking,
+  RentalOrder,
   SeasonCalendar,
   Vehicle,
 } from '../../core/models';
@@ -58,7 +58,7 @@ export function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
     status: 'available',
     mileage: 100,
     createdAt: '2026-01-01T00:00:00.000Z',
-    location: 'mzg-airport',
+    branchId: 'mzg-airport',
     ...partial,
   };
 }
@@ -77,7 +77,7 @@ export function makePlan(partial: Partial<PricingPlan> = {}): PricingPlan {
 export interface OrderRepoOptions {
   vehicles?: Vehicle[];
   members?: Member[];
-  bookings?: RentalBooking[];
+  orders?: RentalOrder[];
   addOns?: AddOn[];
   contracts?: ContractVersion[];
   /** 訂單詳情標題旁的急迫狀態：退款待處理。 */
@@ -93,7 +93,7 @@ export function createOrderRepos(options: OrderRepoOptions = {}) {
   const repos = {
     vehicleRepo: createInMemoryRepo<Vehicle>(options.vehicles ?? [makeVehicle()]),
     memberRepo: createInMemoryRepo<Member>(options.members ?? []),
-    bookingRepo: createInMemoryRepo<RentalBooking>(options.bookings ?? []),
+    orderRepo: createInMemoryRepo<RentalOrder>(options.orders ?? []),
     paymentRepo: createInMemoryRepo<PaymentRecord>([]),
     refundRepo: createInMemoryRepo<RefundRecord>(options.refunds ?? []),
     contractRepo: createInMemoryRepo<ContractVersion>(options.contracts ?? []),
@@ -111,7 +111,7 @@ export function createOrderRepos(options: OrderRepoOptions = {}) {
   const providers: Provider[] = [
     { provide: VEHICLE_REPO, useValue: repos.vehicleRepo },
     { provide: MEMBER_REPO, useValue: repos.memberRepo },
-    { provide: BOOKING_REPO, useValue: repos.bookingRepo },
+    { provide: ORDER_REPO, useValue: repos.orderRepo },
     { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
     { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([makePlan(), makePlan({ appliesToCategory: 'scooter' })]) },
     {
@@ -127,7 +127,7 @@ export function createOrderRepos(options: OrderRepoOptions = {}) {
     { provide: ReminderGateway, useValue: repos.reminderGateway },
     // 訂單詳情標題旁的急迫狀態會注入 OperatorRecoveryStore，牽出 CancellationStore／CreditStore
     // 整串 DI 圖；即使測試不呼叫相關方法，元件建構時仍會整串解析，缺一個 provider 就整個炸掉
-    // （沿用 bookings-page.component.spec.ts 的 provideOrderDetailRepos 教訓）。
+    // （沿用 orders-page.component.spec.ts 的 provideOrderDetailRepos 教訓）。
     { provide: CANCELLATION_CASE_REPO, useValue: createInMemoryRepo<CancellationCase>([]) },
     { provide: CUSTOMER_CREDIT_LEDGER_REPO, useValue: createInMemoryRepo<CustomerCreditLedgerEntry>([]) },
     { provide: AUDIT_ENTRY_REPO, useValue: createInMemoryRepo<AuditEntry>([]) },

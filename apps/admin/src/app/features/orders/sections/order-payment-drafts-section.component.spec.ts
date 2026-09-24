@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
+import {
+  OrderFormLabels,
+  ORDER_FORM_DATA,
+  OrderForm,
+  createOrderForm,
+  OrderPaymentDraftsSectionComponent,
+  ORDER_FORM_LABELS,
+} from '@car-rental/order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { createOrderRepos, makeVehicle } from '../testing';
-import { OrderForm, createOrderForm } from '../order-form/order-form';
-import { OrderPaymentDraftsSectionComponent } from './order-payment-drafts-section.component';
+import { ADMIN_ORDER_FORM_LABELS } from '../data/provide-admin-order-form';
 
-const t = ZH_TW;
+const t = ADMIN_ORDER_FORM_LABELS;
+
 
 /** 車 v1、Jan 5 09:00 → Jan 7 09:00（2 天 × 1000/日，無保險無配件）＝報價合計 2000。 */
 function baselineForm(depositRequired = 0): OrderForm {
@@ -15,8 +21,8 @@ function baselineForm(depositRequired = 0): OrderForm {
     vehicleId: 'v1',
     startTime: new Date('2026-01-05T09:00').toISOString(),
     endTime: new Date('2026-01-07T09:00').toISOString(),
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
     depositRequired,
   });
 }
@@ -24,7 +30,7 @@ function baselineForm(depositRequired = 0): OrderForm {
 function setup(depositRequired = 0) {
   const repos = createOrderRepos({ vehicles: [makeVehicle({ id: 'v1' })] });
   TestBed.configureTestingModule({
-    providers: [...repos.providers, { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData }],
+    providers: [...repos.providers, { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData }, { provide: ORDER_FORM_LABELS, useValue: ADMIN_ORDER_FORM_LABELS }],
   });
   const form = baselineForm(depositRequired);
   const fixture = TestBed.createComponent(OrderPaymentDraftsSectionComponent);
@@ -164,7 +170,7 @@ describe('OrderPaymentDraftsSectionComponent（本次收款：列表就是紀錄
   it('還試算不出報價（沒選車）時，建立後待收顯示「—」，不把收款誤報成溢收', () => {
     const repos = createOrderRepos({ vehicles: [makeVehicle({ id: 'v1' })] });
     TestBed.configureTestingModule({
-      providers: [...repos.providers, { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData }],
+      providers: [...repos.providers, { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData }, { provide: ORDER_FORM_LABELS, useValue: ADMIN_ORDER_FORM_LABELS }],
     });
     const form = createOrderForm();
     const fixture = TestBed.createComponent(OrderPaymentDraftsSectionComponent);

@@ -7,9 +7,9 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of } from 'rxjs';
 import { VehicleDetailPageComponent } from './vehicle-detail-page.component';
-import { VEHICLE_REPO, BOOKING_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
+import { VEHICLE_REPO, ORDER_REPO, MAINTENANCE_REPO } from '../../../core/repositories/tokens';
 import { createInMemoryRepo } from '../../../core/repositories/testing';
-import { Vehicle, RentalBooking, MaintenanceRecord } from '../../../core/models';
+import { Vehicle, RentalOrder, MaintenanceRecord } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { HeaderTitleSlot } from '../../../layout/header/header-title';
 import { HeaderToolbarSlot } from '../../../layout/header/header-toolbar-slot';
@@ -67,7 +67,7 @@ describe('VehicleDetailPageComponent', () => {
           },
         },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });
@@ -87,7 +87,7 @@ describe('VehicleDetailPageComponent', () => {
           },
         },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(vehicles) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>(records) },
       ],
     });
@@ -193,7 +193,7 @@ describe('VehicleDetailPageComponent 4.7 頁首「編輯」', () => {
     plateNumber: 'AAA-111',
     model: 'Gogoro 2',
     mileage: 1000,
-    location: 'mzg-airport',
+    branchId: 'mzg-airport',
   });
 
   function formResult(partial: Partial<VehicleFormResult> = {}): VehicleFormResult {
@@ -204,7 +204,7 @@ describe('VehicleDetailPageComponent 4.7 頁首「編輯」', () => {
       brand: 'Gogoro',
       year: 2022,
       mileage: 1000,
-      location: 'mzg-airport',
+      branchId: 'mzg-airport',
       ...partial,
     };
   }
@@ -224,7 +224,7 @@ describe('VehicleDetailPageComponent 4.7 頁首「編輯」', () => {
           },
         },
         { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>(options.vehicles ?? [vehicle]) },
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([]) },
         { provide: MAINTENANCE_REPO, useValue: createInMemoryRepo<MaintenanceRecord>([]) },
       ],
     });
@@ -252,7 +252,7 @@ describe('VehicleDetailPageComponent 4.7 頁首「編輯」', () => {
 
   it('存檔後頁面即時更新：頁首車牌、型號、里程、所在據點都換成新值', async () => {
     const { page, dialogOpen } = setup({
-      dialogResult: formResult({ plateNumber: 'AAA-999', model: 'Gogoro 3', mileage: 1500, location: 'mzg-port' }),
+      dialogResult: formResult({ plateNumber: 'AAA-999', model: 'Gogoro 3', mileage: 1500, branchId: 'mzg-port' }),
     });
 
     await page.componentInstance.edit();
@@ -260,7 +260,7 @@ describe('VehicleDetailPageComponent 4.7 頁首「編輯」', () => {
 
     expect(dialogOpen).toHaveBeenCalledTimes(1);
     expect(page.componentInstance.vehicle()).toEqual(
-      expect.objectContaining({ plateNumber: 'AAA-999', model: 'Gogoro 3', mileage: 1500, location: 'mzg-port' }),
+      expect.objectContaining({ plateNumber: 'AAA-999', model: 'Gogoro 3', mileage: 1500, branchId: 'mzg-port' }),
     );
     expect(TestBed.inject(HeaderTitleSlot).entry()?.value.title).toBe('AAA-999');
     const text = (page.nativeElement as HTMLElement).textContent ?? '';

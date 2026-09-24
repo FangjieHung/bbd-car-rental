@@ -36,8 +36,8 @@
         </mat-select>
       </mat-form-field>
       <mat-form-field>
-        <mat-label>{{ t.rentalSearch.pickupLocation }}</mat-label>
-        <mat-select formControlName="pickupLocation">
+        <mat-label>{{ t.rentalSearch.pickupBranchId }}</mat-label>
+        <mat-select formControlName="pickupBranchId">
           @for (b of branches; track b.id) {
             <mat-option [value]="b.id">{{ b.name }}</mat-option>
           }
@@ -45,8 +45,8 @@
         <mat-error>{{ t.orderForm.required }}</mat-error>
       </mat-form-field>
       <mat-form-field>
-        <mat-label>{{ t.rentalSearch.returnLocation }}</mat-label>
-        <mat-select formControlName="returnLocation">
+        <mat-label>{{ t.rentalSearch.returnBranchId }}</mat-label>
+        <mat-select formControlName="returnBranchId">
           @for (b of branches; track b.id) {
             <mat-option [value]="b.id">{{ b.name }}</mat-option>
           }
@@ -60,7 +60,7 @@
     <p class="order-section__notice rental-search__set-aside" role="alert">{{ setAsideText() }}</p>
   } @else if (derived.conflicts().length > 0) {
     <p class="order-section__notice" role="alert">
-      {{ t.bookingForm.vehicleConflict }}（{{ derived.conflicts().length }}）
+      {{ t.orderForm.vehicleConflict }}（{{ derived.conflicts().length }}）
     </p>
   }
 
@@ -68,7 +68,7 @@
     [start]="startLocal()"
     [end]="endLocal()"
     [category]="category()"
-    [pickupLocation]="pickupLocation()"
+    [pickupBranchId]="pickupBranchId()"
     [selectable]="true"
     [selectedVehicleId]="vehicleId()"
     [excludeBookingId]="editingBookingId()"
@@ -76,6 +76,6 @@
   />
 
   @if (derived.quoteUnavailable()) {
-    <p class="order-section__notice" role="alert">{{ t.bookingForm.quoteUnavailable }}</p>
+    <p class="order-section__notice" role="alert">{{ t.orderForm.quoteUnavailable }}</p>
   }
 </div>

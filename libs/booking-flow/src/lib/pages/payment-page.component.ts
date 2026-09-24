@@ -3,16 +3,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import {
-  BOOKING_REPO,
-  optionLabelMap,
-  PAYMENT_PREFERENCE_OPTIONS,
-  RentalBooking,
-} from '@car-rental/domain';
+import { ORDER_REPO, RentalOrder } from '@car-rental/domain';
 import { BOOKING_CONTEXT } from '../booking-context';
 import { CatalogStore } from '../catalog.store';
-
-const PAYMENT_PREFERENCE_LABEL = optionLabelMap(PAYMENT_PREFERENCE_OPTIONS);
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 
 /**
  * 佔位付款頁。目前用兩顆按鈕模擬金流結果。
@@ -20,7 +14,7 @@ const PAYMENT_PREFERENCE_LABEL = optionLabelMap(PAYMENT_PREFERENCE_OPTIONS);
  * 並新增回調路由 pay/:bookingId/result —— 流程結構不必再動。
  */
 @Component({
-  selector: 'app-payment-page',
+  selector: 'lib-payment-page',
   imports: [MatButtonModule],
   templateUrl: './payment-page.component.html',
   styleUrl: './payment-page.component.scss',
@@ -30,21 +24,23 @@ export class PaymentPageComponent {
   private readonly router = inject(Router);
   private readonly catalog = inject(CatalogStore);
   private readonly context = inject(BOOKING_CONTEXT);
-  private readonly bookingRepo = inject(BOOKING_REPO);
+  private readonly orderRepo = inject(ORDER_REPO);
+  protected readonly i18n = injectBookingFlowI18n();
 
   readonly bookingId = toSignal(
     this.route.paramMap.pipe(map((p) => p.get('bookingId') ?? '')),
     { initialValue: '' },
   );
 
-  readonly booking = computed<RentalBooking | null>(
-    () => this.bookingRepo.getById(this.bookingId()) ?? null,
+  readonly booking = computed<RentalOrder | null>(
+    () => this.orderRepo.getById(this.bookingId()) ?? null,
   );
 
   readonly amount = computed(() => this.booking()?.priceBreakdown?.total ?? 0);
   readonly paymentMethodLabel = computed(() => {
     const method = this.booking()?.paymentPreference;
-    return method ? PAYMENT_PREFERENCE_LABEL[method] : '未指定';
+    const t = this.i18n.t();
+    return method ? t.labels.paymentPreference[method] : t.payment.unspecified;
   });
 
   readonly payError = signal('');
@@ -77,14 +73,14 @@ export class PaymentPageComponent {
       this.catalog.markBookingPaid(this.bookingId());
       this.goToDone();
     } catch (err) {
-      this.payError.set(err instanceof Error ? err.message : '付款失敗，請稍後再試');
+      this.payError.set(this.i18n.errorMessage(err, this.i18n.t().payment.payFailed));
     } finally {
       this.paying.set(false);
     }
   }
 
   onPayFailure(): void {
-    this.payError.set('付款未完成，請重新嘗試或改用其他付款方式。');
+    this.payError.set(this.i18n.t().payment.payIncomplete);
   }
 
   /**

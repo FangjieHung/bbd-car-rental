@@ -1,15 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { AddOn, InsurancePlan } from '../../../core/models';
-import { ZH_TW } from '../../../core/i18n/zh-tw';
-import { ORDER_FORM_DATA } from '../order-form/order-form-data';
+import { AddOn, InsurancePlan } from '@car-rental/domain';
+import {
+  OrderFormLabels,
+  ORDER_FORM_DATA,
+  NO_INSURANCE_VALUE,
+  OrderForm,
+  computeOrderQuote,
+  createOrderForm,
+  OrderPricingSectionComponent,
+  ORDER_FORM_LABELS,
+} from '@car-rental/order-form';
 import { AdminOrderFormData } from '../data/admin-order-form-data';
 import { createOrderRepos, makeVehicle } from '../testing';
-import { NO_INSURANCE_VALUE, OrderForm, computeOrderQuote, createOrderForm } from '../order-form/order-form';
-import { OrderPricingSectionComponent } from './order-pricing-section.component';
+import { ADMIN_ORDER_FORM_LABELS } from '../data/provide-admin-order-form';
 
-const t = ZH_TW;
-const s = ZH_TW.orderSummary;
+const t = ADMIN_ORDER_FORM_LABELS;
+
+const s = t.orderSummary;
 
 const coverage = (min: number, max: number) => [
   { name: '租車自負額', deductibleMin: min, deductibleMax: max, currency: 'TWD' },
@@ -29,14 +37,14 @@ const ADD_ONS: AddOn[] = [
 function setup(options: { showQuote?: boolean; withVehicle?: boolean } = {}) {
   const repos = createOrderRepos({ vehicles: [makeVehicle({ id: 'v1', insurancePlans: PLANS })], addOns: ADD_ONS });
   TestBed.configureTestingModule({
-    providers: [...repos.providers, { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData }],
+    providers: [...repos.providers, { provide: ORDER_FORM_DATA, useClass: AdminOrderFormData }, { provide: ORDER_FORM_LABELS, useValue: ADMIN_ORDER_FORM_LABELS }],
   });
   const form: OrderForm = createOrderForm({
     ...(options.withVehicle === false ? {} : { vehicleId: 'v1' }),
     startTime: new Date('2026-01-05T09:00').toISOString(),
     endTime: new Date('2026-01-07T09:00').toISOString(),
-    pickupLocation: 'mzg-airport',
-    returnLocation: 'mzg-airport',
+    pickupBranchId: 'mzg-airport',
+    returnBranchId: 'mzg-airport',
   });
   const fixture = TestBed.createComponent(OrderPricingSectionComponent);
   fixture.componentRef.setInput('form', form);
@@ -66,7 +74,7 @@ describe('OrderPricingSectionComponent 報價明細的顯示開關（showQuote�
     const { el } = setup();
     const dl = el.querySelector('.order-section__dl');
     expect(dl).not.toBeNull();
-    expect(text(dl)).toContain(t.bookingForm.quoteTotal);
+    expect(text(dl)).toContain(t.orderForm.quoteTotal);
     expect(text(dl)).toContain('NT$2,000');
   });
 
@@ -91,7 +99,7 @@ describe('OrderPricingSectionComponent 保險方案表格（2.4）', () => {
 
     const rows = insuranceRows(el).map((r) => Array.from(r.querySelectorAll('td')).slice(1).map((td) => text(td)));
     expect(rows).toEqual([
-      [t.bookingForm.insuranceNone, '—', 'NT$0', 'NT$0'],
+      [t.orderForm.insuranceNone, '—', 'NT$0', 'NT$0'],
       ['基本保障', 'NT$30,000–NT$60,000', 'NT$200', 'NT$400'],
       ['安心保障', 'NT$10,000', 'NT$400', 'NT$800'],
       ['全額保障', 'NT$0', 'NT$600', 'NT$1,200'],

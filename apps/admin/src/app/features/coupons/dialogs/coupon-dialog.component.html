@@ -7,8 +7,9 @@
   <mat-form-field>
     <mat-label>{{ t.coupon.type }}</mat-label>
     <mat-select formControlName="type">
-      <mat-option value="percent">{{ t.coupon.typeLabels['percent'] }}</mat-option>
-      <mat-option value="amount">{{ t.coupon.typeLabels['amount'] }}</mat-option>
+      @for (opt of couponTypeOptions; track opt.value) {
+        <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+      }
     </mat-select>
   </mat-form-field>
   <mat-form-field>

@@ -17,13 +17,37 @@ export const PAYMENT_METHOD_OPTIONS: SelectOption<PaymentMethod>[] = [
 ];
 
 export type PaymentPurpose = 'deposit' | 'balance' | 'adjustment';
+
+/** 款項用途的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const PAYMENT_PURPOSE_OPTIONS: SelectOption<PaymentPurpose>[] = [
+  { value: 'deposit', label: '訂金' },
+  { value: 'balance', label: '尾款' },
+  { value: 'adjustment', label: '其他調整' },
+];
 export type PaymentRecordStatus = 'pending' | 'confirmed' | 'failed' | 'voided';
+
+/** 單筆款項狀態的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const PAYMENT_RECORD_STATUS_OPTIONS: SelectOption<PaymentRecordStatus>[] = [
+  { value: 'pending', label: '待確認' },
+  { value: 'confirmed', label: '已確認' },
+  { value: 'failed', label: '失敗' },
+  { value: 'voided', label: '已作廢' },
+];
 export type PaymentStatus =
   | 'deposit_due'
   | 'deposit_paid'
   | 'paid_in_full'
   | 'additional_payment_due'
   | 'overpaid';
+
+/** 訂單付款狀態的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const PAYMENT_STATUS_OPTIONS: SelectOption<PaymentStatus>[] = [
+  { value: 'deposit_due', label: '待收訂金' },
+  { value: 'deposit_paid', label: '訂金已收，尾款待收' },
+  { value: 'paid_in_full', label: '已付清' },
+  { value: 'additional_payment_due', label: '有新增應收款' },
+  { value: 'overpaid', label: '溢收，待退款或轉保留金' },
+];
 
 export interface PaymentRecord {
   id: string;

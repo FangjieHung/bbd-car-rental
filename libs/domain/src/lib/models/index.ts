@@ -3,7 +3,7 @@ export * from './select-option';
 export * from './branch';
 export * from './vehicle';
 export * from './member';
-export * from './rental-booking';
+export * from './rental-order';
 export * from './pricing-plan';
 export * from './add-on';
 export * from './coupon';

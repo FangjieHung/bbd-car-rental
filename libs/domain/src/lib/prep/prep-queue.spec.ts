@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isPrepTaskOpen, nextPickupOf, prepQueue } from './prep-queue';
-import { PrepTask, RentalBooking } from '../models';
+import { PrepTask, RentalOrder } from '../models';
 
 const iso = (local: string) => new Date(local).toISOString();
 
@@ -10,16 +10,16 @@ function task(p: Partial<PrepTask> = {}): PrepTask {
     vehicleId: 'v1',
     bookingId: 'b0',
     returnedAt: iso('2026-09-20T18:00'),
-    returnLocation: 'mzg-store',
+    returnBranchId: 'mzg-store',
     ...p,
   };
 }
 
-function booking(p: Partial<RentalBooking> = {}): RentalBooking {
+function order(p: Partial<RentalOrder> = {}): RentalOrder {
   return {
     id: 'b1', vehicleId: 'v1', memberId: 'm1',
     startTime: iso('2026-09-25T09:00'), endTime: iso('2026-09-27T09:00'),
-    pickupLocation: 'mzg-store', returnLocation: 'mzg-store', status: 'reserved', depositRequired: 0, ...p,
+    pickupBranchId: 'mzg-store', returnBranchId: 'mzg-store', status: 'reserved', depositRequired: 0, ...p,
   };
 }
 
@@ -36,26 +36,26 @@ describe('isPrepTaskOpen', () => {
 
 describe('nextPickupOf', () => {
   it('同一台車尚未取車（reserved）的訂單中取車時間最早的那一筆', () => {
-    const bookings = [
-      booking({ id: 'later', startTime: iso('2026-09-28T09:00') }),
-      booking({ id: 'sooner', startTime: iso('2026-09-25T09:00') }),
-      booking({ id: 'other-car', vehicleId: 'v2', startTime: iso('2026-09-22T09:00') }),
+    const orders = [
+      order({ id: 'later', startTime: iso('2026-09-28T09:00') }),
+      order({ id: 'sooner', startTime: iso('2026-09-25T09:00') }),
+      order({ id: 'other-car', vehicleId: 'v2', startTime: iso('2026-09-22T09:00') }),
     ];
-    expect(nextPickupOf('v1', bookings)?.id).toBe('sooner');
+    expect(nextPickupOf('v1', orders)?.id).toBe('sooner');
   });
 
   it('出租中、已完成、已取消的訂單都不是「下一次取車」', () => {
-    const bookings = [
-      booking({ id: 'out', status: 'in_progress', startTime: iso('2026-09-21T09:00') }),
-      booking({ id: 'done', status: 'completed', startTime: iso('2026-09-10T09:00') }),
-      booking({ id: 'gone', status: 'cancelled', startTime: iso('2026-09-22T09:00') }),
+    const orders = [
+      order({ id: 'out', status: 'in_progress', startTime: iso('2026-09-21T09:00') }),
+      order({ id: 'done', status: 'completed', startTime: iso('2026-09-10T09:00') }),
+      order({ id: 'gone', status: 'cancelled', startTime: iso('2026-09-22T09:00') }),
     ];
-    expect(nextPickupOf('v1', bookings)).toBeUndefined();
+    expect(nextPickupOf('v1', orders)).toBeUndefined();
   });
 
   it('取車時間已過、但還沒取車的預訂仍算（客人在等車，是最急的情況）', () => {
-    const late = booking({ id: 'waiting', startTime: iso('2026-09-20T09:00') });
-    expect(nextPickupOf('v1', [late, booking({ id: 'next-week' })])?.id).toBe('waiting');
+    const late = order({ id: 'waiting', startTime: iso('2026-09-20T09:00') });
+    expect(nextPickupOf('v1', [late, order({ id: 'next-week' })])?.id).toBe('waiting');
   });
 });
 
@@ -66,12 +66,12 @@ describe('prepQueue', () => {
       task({ id: 'p-later', vehicleId: 'v2' }),
       task({ id: 'p-sooner', vehicleId: 'v1' }),
     ];
-    const bookings = [
-      booking({ id: 'b-v1', vehicleId: 'v1', startTime: iso('2026-09-24T14:00') }),
-      booking({ id: 'b-v2', vehicleId: 'v2', startTime: iso('2026-09-26T09:00') }),
+    const orders = [
+      order({ id: 'b-v1', vehicleId: 'v1', startTime: iso('2026-09-24T14:00') }),
+      order({ id: 'b-v2', vehicleId: 'v2', startTime: iso('2026-09-26T09:00') }),
     ];
 
-    const queue = prepQueue(tasks, bookings);
+    const queue = prepQueue(tasks, orders);
 
     expect(queue.map((item) => item.task.id)).toEqual(['p-sooner', 'p-later', 'p-none']);
     expect(queue.map((item) => item.nextPickup?.id)).toEqual(['b-v1', 'b-v2', undefined]);

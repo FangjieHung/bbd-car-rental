@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,7 +8,7 @@ import {
   DualMonthRangePickerComponent,
   SelectedDateRange,
 } from '@car-rental/ui';
-import { BOOKING_FLOW_LABELS, injectBookingFlowLabels } from '../booking-flow-labels';
+import { injectBookingFlowI18n } from '../i18n/booking-flow-i18n';
 import { DateRange, VehicleGroup } from '../date-range';
 
 const defaultTime = (hour: number): Date => {
@@ -18,21 +18,26 @@ const defaultTime = (hour: number): Date => {
 };
 
 @Component({
-  selector: 'app-date-step',
+  selector: 'lib-date-step',
   imports: [FormsModule, MatFormFieldModule, MatSelectModule, MatButtonModule, DualMonthRangePickerComponent],
   templateUrl: './date-step.component.html',
   styleUrl: './date-step.component.scss',
+  // 選擇器搬到 libs/ui 之後不內建任何文字（同 DataTableLabels 的作法），這裡把官網字典的
+  // 那一組交給它。取的是建立元件當下的語言；切語言會重建這一步，所以不必另外做成 signal。
   providers: [
-    { provide: DUAL_MONTH_RANGE_PICKER_LABELS, useFactory: () => inject(BOOKING_FLOW_LABELS).dateRangePicker },
+    {
+      provide: DUAL_MONTH_RANGE_PICKER_LABELS,
+      useFactory: () => injectBookingFlowI18n().t().labels.dateRangePicker,
+    },
   ],
 })
 export class DateStepComponent implements OnChanges {
-  private readonly labels = injectBookingFlowLabels();
+  protected readonly i18n = injectBookingFlowI18n();
 
   @Input() dateRange: DateRange | null = null;
   @Output() dateRangeChange = new EventEmitter<DateRange>();
 
-  protected readonly vehicleGroups = this.labels.vehicleGroups;
+  protected readonly vehicleGroups = computed(() => this.i18n.t().labels.vehicleGroups);
 
   protected vehicleGroup: VehicleGroup = 'car';
   protected startDate: Date | null = null;

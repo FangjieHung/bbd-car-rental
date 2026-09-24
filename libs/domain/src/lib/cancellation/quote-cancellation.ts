@@ -110,7 +110,7 @@ function manualReviewQuote(reason: string): CancellationQuote {
 
 /**
  * 純函式：依取消責任歸屬試算應退／應付金額，不寫入、不查詢任何 repository。
- * 是否允許在目前訂單狀態下取消（例如已出車中不可走本流程）由呼叫端（booking.store）把關，
+ * 是否允許在目前訂單狀態下取消（例如已出車中不可走本流程）由呼叫端（order.store）把關，
  * 本函式只負責「金額」計算。
  */
 export function quoteCancellation(input: CancellationQuoteInput): CancellationQuote {

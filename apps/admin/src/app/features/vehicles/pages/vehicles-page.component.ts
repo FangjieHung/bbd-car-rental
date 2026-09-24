@@ -78,9 +78,9 @@ export class VehiclesPageComponent {
     },
     { key: 'model', label: this.t.vehicle.model },
     {
-      key: 'location',
-      label: this.t.vehicle.location,
-      exportValue: (v) => branchName(v.location),
+      key: 'branchId',
+      label: this.t.vehicle.branch,
+      exportValue: (v) => branchName(v.branchId),
     },
     {
       key: 'status',
@@ -124,13 +124,13 @@ export class VehiclesPageComponent {
     const query = this.searchQuery().trim().toLowerCase();
     const type = this.typeFilter();
     const status = this.statusFilter();
-    const location = this.locationFilter();
+    const branchId = this.locationFilter();
     const maintenanceOnly = this.maintenanceOnlyFilter();
     return this.store.vehicles().filter((v) => {
       if (type && v.category !== type) return false;
       if (status && v.status !== status) return false;
-      if (location === LOCATION_FILTER_UNSET && v.location) return false;
-      if (location && location !== LOCATION_FILTER_UNSET && v.location !== location) return false;
+      if (branchId === LOCATION_FILTER_UNSET && v.branchId) return false;
+      if (branchId && branchId !== LOCATION_FILTER_UNSET && v.branchId !== branchId) return false;
       if (maintenanceOnly && !this.hasOverdueAlert(v) && !this.hasUpcomingAlert(v)) return false;
       if (
         query &&

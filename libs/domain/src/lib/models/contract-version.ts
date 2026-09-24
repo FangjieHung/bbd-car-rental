@@ -1,3 +1,4 @@
+import { SelectOption } from './select-option';
 import { CancellationContractKind } from './cancellation-case';
 import { PriceBreakdown } from './price-breakdown';
 import { EnergyReturnPolicy, LateReturnPolicy } from './pricing-plan';
@@ -54,8 +55,8 @@ export interface ContractSnapshot {
   vehicle: ContractVehicleSnapshot;
   rentalStartTime: string; // ISO
   rentalEndTime: string; // ISO
-  pickupLocation: string;
-  returnLocation: string;
+  pickupBranchId: string;
+  returnBranchId: string;
   depositRequired: number;
   /** 建立當下鎖定的報價明細（租金、加購、保險、優惠券等）。 */
   pricing: PriceBreakdown;
@@ -64,6 +65,13 @@ export interface ContractSnapshot {
 }
 
 export type ContractVersionStatus = 'draft' | 'signed' | 'superseded';
+
+/** 合約版本狀態的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const CONTRACT_VERSION_STATUS_OPTIONS: SelectOption<ContractVersionStatus>[] = [
+  { value: 'draft', label: '草稿' },
+  { value: 'signed', label: '已簽署' },
+  { value: 'superseded', label: '已被取代' },
+];
 
 /**
  * 一筆合約版本紀錄。snapshot 是完整、不可變的內容快照，不只是指向活資料的參照——

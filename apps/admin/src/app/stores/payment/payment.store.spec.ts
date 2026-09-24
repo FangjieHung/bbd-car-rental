@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { ChargeAdjustment, PaymentRecord, RefundRecord, RentalBooking } from '@car-rental/domain';
+import { ChargeAdjustment, PaymentRecord, RefundRecord, RentalOrder } from '@car-rental/domain';
 import {
-  BOOKING_REPO,
+  ORDER_REPO,
   CHARGE_ADJUSTMENT_REPO,
   PAYMENT_REPO,
   REFUND_REPO,
@@ -10,14 +10,14 @@ import {
 import { createInMemoryRepo } from '../../core/repositories/testing';
 import { PaymentStore } from './payment.store';
 
-const BOOKING: RentalBooking = {
+const BOOKING: RentalOrder = {
   id: 'b1',
   vehicleId: 'v1',
   memberId: 'c1',
   startTime: '2026-07-20T09:00:00.000Z',
   endTime: '2026-07-22T18:00:00.000Z',
-  pickupLocation: '馬公',
-  returnLocation: '馬公',
+  pickupBranchId: '馬公',
+  returnBranchId: '馬公',
   status: 'reserved',
   depositRequired: 500,
   priceBreakdown: {
@@ -42,7 +42,7 @@ describe('PaymentStore', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        { provide: BOOKING_REPO, useValue: createInMemoryRepo<RentalBooking>([BOOKING]) },
+        { provide: ORDER_REPO, useValue: createInMemoryRepo<RentalOrder>([BOOKING]) },
         { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>() },
         { provide: REFUND_REPO, useValue: createInMemoryRepo<RefundRecord>() },
         { provide: CHARGE_ADJUSTMENT_REPO, useValue: createInMemoryRepo<ChargeAdjustment>() },

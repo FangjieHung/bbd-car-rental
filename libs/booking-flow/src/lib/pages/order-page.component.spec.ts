@@ -8,11 +8,11 @@ import {
   Member,
   PaymentRecord,
   PricingPlan,
-  RentalBooking,
+  RentalOrder,
   SeasonCalendar,
   Vehicle,
   VEHICLE_REPO,
-  BOOKING_REPO,
+  ORDER_REPO,
   MEMBER_REPO,
   PAYMENT_REPO,
   PRICING_PLAN_REPO,
@@ -34,7 +34,7 @@ function makeVehicle(partial: Partial<Vehicle> = {}): Vehicle {
     status: 'available',
     mileage: 100,
     createdAt: new Date().toISOString(),
-    location: '機場',
+    branchId: '機場',
     ...partial,
   };
 }
@@ -63,11 +63,11 @@ function setup(
 ) {
   TestBed.resetTestingModule();
   const navigate = vi.fn().mockResolvedValue(true);
-  const bookingRepo = createInMemoryRepo<RentalBooking>([]);
+  const orderRepo = createInMemoryRepo<RentalOrder>([]);
   TestBed.configureTestingModule({
     providers: [
       { provide: VEHICLE_REPO, useValue: createInMemoryRepo<Vehicle>([vehicle]) },
-      { provide: BOOKING_REPO, useValue: bookingRepo },
+      { provide: ORDER_REPO, useValue: orderRepo },
       { provide: MEMBER_REPO, useValue: createInMemoryRepo<Member>([]) },
       { provide: PAYMENT_REPO, useValue: createInMemoryRepo<PaymentRecord>([]) },
       { provide: PRICING_PLAN_REPO, useValue: createInMemoryRepo<PricingPlan>([plan]) },
@@ -91,7 +91,7 @@ function setup(
     ],
   });
   const component = TestBed.runInInjectionContext(() => new OrderPageComponent());
-  return { component, navigate, bookingRepo };
+  return { component, navigate, orderRepo };
 }
 
 const validParams = {
@@ -105,7 +105,7 @@ const confirmForm = {
   phone: '0912345678',
   email: 'a@b.c',
   paymentMethod: 'credit_card' as const,
-  returnLocation: '港口' as const,
+  returnBranchId: '港口' as const,
 };
 
 describe('OrderPageComponent', () => {
@@ -135,14 +135,14 @@ describe('OrderPageComponent', () => {
     const { component } = setup(validParams);
     const before = component.priceBreakdown()!.total;
     component.onCouponCodeChange('NOPE');
-    expect(component.couponResult()).toEqual({ ok: false, reason: '查無此優惠碼' });
+    expect(component.couponResult()).toEqual({ ok: false, reason: 'not_found' });
     expect(component.priceBreakdown()!.total).toBe(before);
   });
 
   it('送出後建立 reserved 訂單並導向付款頁', () => {
-    const { component, navigate, bookingRepo } = setup(validParams);
+    const { component, navigate, orderRepo } = setup(validParams);
     component.onConfirmSubmit(confirmForm);
-    const created = bookingRepo.getAll();
+    const created = orderRepo.getAll();
     expect(created).toHaveLength(1);
     expect(created[0].status).toBe('reserved');
     expect(navigate).toHaveBeenCalledWith(['/', 'pay', created[0].id]);
@@ -152,40 +152,40 @@ describe('OrderPageComponent', () => {
     const vehicleWithPlan = makeVehicle({
       insurancePlans: [{ id: 'ins1', name: '基本保障', dailyPriceFrom: 100, tags: [], coverageItems: [] }],
     });
-    const { component, bookingRepo } = setup({ ...validParams, planId: 'ins1' }, vehicleWithPlan);
+    const { component, orderRepo } = setup({ ...validParams, planId: 'ins1' }, vehicleWithPlan);
     expect(component.priceBreakdown()?.insuranceSubtotal).toBe(100 * component.days());
     component.onConfirmSubmit(confirmForm);
-    expect(bookingRepo.getAll()[0].insurancePlanId).toBe('ins1');
+    expect(orderRepo.getAll()[0].insurancePlanId).toBe('ins1');
   });
 
   it('沒有 planId 時 priceBreakdown 保費為 0，送出的訂單不記 insurancePlanId', () => {
-    const { component, bookingRepo } = setup(validParams);
+    const { component, orderRepo } = setup(validParams);
     expect(component.priceBreakdown()?.insuranceSubtotal).toBe(0);
     component.onConfirmSubmit(confirmForm);
-    expect(bookingRepo.getAll()[0].insurancePlanId).toBeUndefined();
+    expect(orderRepo.getAll()[0].insurancePlanId).toBeUndefined();
   });
 
   it('送出的訂單取車地點吃車輛所屬據點，還車地點吃使用者在確認頁選的值', () => {
-    const { component, bookingRepo } = setup(validParams);
+    const { component, orderRepo } = setup(validParams);
     component.onConfirmSubmit(confirmForm);
-    const created = bookingRepo.getAll();
-    expect(created[0].pickupLocation).toBe('機場');
-    expect(created[0].returnLocation).toBe('港口');
+    const created = orderRepo.getAll();
+    expect(created[0].pickupBranchId).toBe('機場');
+    expect(created[0].returnBranchId).toBe('港口');
   });
 
   it('選到的車沒有據點資料時，取車地點退回預設值仍可送出', () => {
-    const { component, bookingRepo } = setup(validParams, makeVehicle({ location: undefined }));
+    const { component, orderRepo } = setup(validParams, makeVehicle({ branchId: undefined }));
     component.onConfirmSubmit(confirmForm);
-    const created = bookingRepo.getAll();
+    const created = orderRepo.getAll();
     expect(created).toHaveLength(1);
-    expect(created[0].pickupLocation).toBe('mzg-airport');
+    expect(created[0].pickupBranchId).toBe('mzg-airport');
   });
 
   it('缺日期時導回搜尋頁且不建立訂單', () => {
-    const { component, navigate, bookingRepo } = setup({ vehicleId: 'v1', start: '', end: '' });
+    const { component, navigate, orderRepo } = setup({ vehicleId: 'v1', start: '', end: '' });
     expect(component.priceBreakdown()).toBeNull();
     component.onConfirmSubmit(confirmForm);
-    expect(bookingRepo.getAll()).toHaveLength(0);
+    expect(orderRepo.getAll()).toHaveLength(0);
     expect(navigate).toHaveBeenCalledWith(['/', 'search'], expect.anything());
   });
 

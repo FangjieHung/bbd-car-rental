@@ -1,3 +1,4 @@
+import { SelectOption } from './select-option';
 /**
  * 業者責任原因（設計文件第 10 節）：車輛故障、超賣、人員調度失誤與其他可歸責事由。
  * 涵蓋的都是取車前、車輛無法依約交付的情境——不是行租中車輛故障（那不在本次工作流範圍內）。
@@ -8,6 +9,14 @@ export type OperatorRecoveryReason =
   | 'staff_dispatch_error'
   | 'other_attributable';
 
+/** 業者可歸責原因的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const OPERATOR_RECOVERY_REASON_OPTIONS: SelectOption<OperatorRecoveryReason>[] = [
+  { value: 'vehicle_breakdown', label: '車輛故障' },
+  { value: 'oversell', label: '超賣' },
+  { value: 'staff_dispatch_error', label: '人員調度失誤' },
+  { value: 'other_attributable', label: '其他可歸責事由' },
+];
+
 /**
  * 依序救單的三種補救方案（設計文件第 10 節「流程不是先取消，而是依序救單」）：
  * 1. 同級調車；2. 免費升等；3. 合作同業轉單。
@@ -16,6 +25,13 @@ export type OperatorRecoveryReason =
  * 進行，因此不出現在這個列舉——見 OperatorRecoveryCase.status 的 escalated_to_cancellation。
  */
 export type OperatorRecoveryRemedyType = 'same_class_replacement' | 'free_upgrade' | 'partner_transfer';
+
+/** 救濟方式的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const OPERATOR_RECOVERY_REMEDY_TYPE_OPTIONS: SelectOption<OperatorRecoveryRemedyType>[] = [
+  { value: 'same_class_replacement', label: '同級調車' },
+  { value: 'free_upgrade', label: '免費升等' },
+  { value: 'partner_transfer', label: '合作同業轉單' },
+];
 
 /** 三種補救方案的嘗試順序；OperatorRecoveryStore.attemptRemedy() 依此強制序列。 */
 export const OPERATOR_RECOVERY_REMEDY_ORDER: readonly OperatorRecoveryRemedyType[] = [
@@ -32,6 +48,13 @@ export const OPERATOR_RECOVERY_REMEDY_ORDER: readonly OperatorRecoveryRemedyType
  * declined 與 unavailable 都會走向下一個補救方案，或（若已是最後一個）走向業者責任取消。
  */
 export type OperatorRecoveryRemedyOutcome = 'accepted' | 'declined' | 'unavailable';
+
+/** 救濟結果的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const OPERATOR_RECOVERY_REMEDY_OUTCOME_OPTIONS: SelectOption<OperatorRecoveryRemedyOutcome>[] = [
+  { value: 'accepted', label: '顧客同意採用' },
+  { value: 'declined', label: '顧客不同意' },
+  { value: 'unavailable', label: '無可行方案' },
+];
 
 /**
  * 一次補救方案的完整嘗試紀錄——設計文件第 10 節要求「發現時間、通知時間、各補救方案嘗試記錄
@@ -91,6 +114,12 @@ export interface OperatorRecoveryTaxiReimbursement {
 /** 折價券或額外保留金，標示為善意補償，與法定現金賠償各自獨立。 */
 export type OperatorRecoveryGoodwillCompensationType = 'credit' | 'coupon';
 
+/** 善意補償形式的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const OPERATOR_RECOVERY_GOODWILL_TYPE_OPTIONS: SelectOption<OperatorRecoveryGoodwillCompensationType>[] = [
+  { value: 'credit', label: '額外保留金' },
+  { value: 'coupon', label: '折價券' },
+];
+
 /**
  * 善意補償（折價券／額外保留金）。設計文件第 10 節：「善意補償不得自動抵銷依法應退或應賠
  * 的現金」——本模型與 OperatorRecoveryCase 的統計現金賠償（透過 escalatedCancellationCaseId
@@ -116,6 +145,13 @@ export interface OperatorRecoveryGoodwillCompensation {
  *   （透過既有 CancellationStore，見 cancellationCaseId）。
  */
 export type OperatorRecoveryCaseStatus = 'in_progress' | 'resolved' | 'escalated_to_cancellation';
+
+/** 業者復原案件狀態的選項與預設繁中標籤（admin 以 optionLabelMap 取回 ZH_TW 原位；官網依 value 翻譯）。 */
+export const OPERATOR_RECOVERY_CASE_STATUS_OPTIONS: SelectOption<OperatorRecoveryCaseStatus>[] = [
+  { value: 'in_progress', label: '處理中' },
+  { value: 'resolved', label: '已解決' },
+  { value: 'escalated_to_cancellation', label: '已轉業者責任取消' },
+];
 
 /**
  * 業者過失／意外事件（車輛故障、超賣、派車錯誤等）的復原與補償案件——完整設計（Task 15）。
