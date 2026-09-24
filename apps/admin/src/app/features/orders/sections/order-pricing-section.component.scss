@@ -4,7 +4,7 @@
 // 窄螢幕放不下整張表時，表格在這一層左右捲動（外層卡片會裁掉超出的部分，不能讓表格撐出去）。
 .pricing-table__scroll {
   display: block;
-  margin: 0 0 1rem;
+  margin: 0 0 1.25rem;
   overflow-x: auto;
   overflow-y: hidden;
 }
@@ -13,22 +13,22 @@
   width: 100%;
   margin: 0;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 1rem;
 
   // 列高收緊（2.2 走查）：原本靠 mat-radio-button／mat-icon-button 預設 40px 的觸控尺寸撐出約 52px
   // 一列，1920×1080 下第 3 步得捲動才看得到收款。上下 padding 略收，觸控尺寸另外在下面兩個欄位縮。
   th,
   td {
-    padding: 0.3125rem 0.75rem;
+    padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--mat-sys-outline-variant);
     text-align: left;
     vertical-align: middle;
   }
 
   thead th {
-    padding-top: 0.25rem;
-    padding-bottom: 0.375rem;
-    font-size: 0.8125rem;
+    padding-top: 0.375rem;
+    padding-bottom: 0.5rem;
+    font-size: 1rem;
     font-weight: 500;
     color: var(--mat-sys-on-surface-variant);
     white-space: nowrap;
@@ -115,7 +115,7 @@
 }
 
 .pricing-deposit {
-  margin-top: 0.25rem;
+  margin-top: 0.5rem;
 }
 
 .visually-hidden {

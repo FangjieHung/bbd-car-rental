@@ -17,6 +17,7 @@
   column-gap: 0.75rem;
 }
 
+/* 版本號是標題旁的附註，維持比內文小一階。 */
 .lib-contract-signing-dialog__version {
   font-size: 0.875rem;
   color: var(--mat-sys-on-surface-variant);

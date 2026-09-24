@@ -16,7 +16,7 @@
   padding: 0.75rem 1rem;
   border: 1px dashed var(--mat-sys-outline-variant);
   border-radius: var(--mat-sys-corner-medium);
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--mat-sys-on-surface-variant);
 }
 
@@ -34,7 +34,7 @@
 
 .avl__title {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   color: var(--mat-sys-on-surface);
 }
@@ -115,13 +115,13 @@
 }
 
 .avl__plate {
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .avl__model {
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   color: var(--mat-sys-on-surface-variant);
 }
 
@@ -132,7 +132,7 @@
   align-items: center;
   gap: 0.25rem 0.5rem;
   min-width: 0;
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .avl__muted {
@@ -149,7 +149,7 @@
 }
 
 .avl__amount {
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -169,7 +169,7 @@
   background: transparent;
   color: var(--mat-sys-on-surface-variant);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 1rem;
   cursor: pointer;
 
   &:hover {

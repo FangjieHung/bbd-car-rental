@@ -31,9 +31,10 @@
   cursor: crosshair;
 }
 
+/* 簽名說明與示範提示都是附註，統一在內文下一階（0.875rem）。 */
 .signature-pad__hint {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--mat-sys-on-surface-variant);
 }
 
@@ -43,6 +44,6 @@
 
 .signature-pad__mock-notice {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--app-warning-fg);
 }
