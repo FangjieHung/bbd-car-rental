@@ -297,7 +297,9 @@ export const ZH_TW = {
     phone: '電話',
     insurance: '保險方案',
     insuranceUnresolved: '未選',
-    amountsTitle: '金額',
+    amountsTitle: '報價',
+    /** 收款群組：訂金、本次收款、建立後待收——和上面的報價合計分開看。 */
+    paymentsTitle: '收款',
     rental: '租金',
     insuranceAmount: '保險',
     addOns: '配件',

@@ -74,6 +74,16 @@
       <dd>{{ v.quote ? (v.quote.addOns | twd) : '—' }}</dd>
       <dt class="is-total">{{ s.quoteTotal }}</dt>
       <dd class="is-total order-summary__total">{{ v.quote ? (v.quote.total | twd) : '—' }}</dd>
+    </dl>
+
+    <!-- 收款自成一組：訂金、本次收款、建立後待收講的是「錢收了多少、還差多少」，
+         跟上面「這張單報價多少」是兩件事，中間加一條分隔線分開看。 -->
+    <hr class="order-summary__divider" />
+
+    <dl
+      class="order-summary__fields order-summary__amounts order-summary__payments"
+      [attr.aria-label]="s.paymentsTitle"
+    >
       <dt>{{ s.depositRequired }}</dt>
       <dd>{{ v.depositRequired | twd }}</dd>
       <dt>{{ s.collected }}</dt>
@@ -82,8 +92,8 @@
         <dt class="is-overpaid">{{ s.overpaid }}</dt>
         <dd class="is-overpaid order-summary__due">{{ -v.due | twd }}</dd>
       } @else {
-        <dt>{{ s.dueAfterCreate }}</dt>
-        <dd class="order-summary__due">{{ v.due === null ? '—' : (v.due | twd) }}</dd>
+        <dt class="is-total">{{ s.dueAfterCreate }}</dt>
+        <dd class="is-total order-summary__due">{{ v.due === null ? '—' : (v.due | twd) }}</dd>
       }
     </dl>
 

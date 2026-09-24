@@ -160,6 +160,12 @@ $docked: 1280px;
   }
 }
 
+// 收款群組（應收訂金／本次收款／建立後待收）自成一段：和上面的報價合計是兩件事，
+// 由 .order-summary__divider 分開，群組內的結算列（待收／溢收）用 .is-total 加粗收尾。
+.order-summary__payments {
+  margin-bottom: 0;
+}
+
 .order-summary__dispatch {
   margin: -0.25rem 0 0.75rem;
   white-space: normal;
