@@ -294,4 +294,59 @@ describe('DualMonthRangePickerComponent 鍵盤操作（WCAG combobox/datepicker 
     expect(component['isOpen']).toBe(false);
     expect(document.activeElement).toBe(input);
   });
+  it('用鍵盤（Enter）在月曆選完起訖、面板自動關閉後，焦點回到租期欄位而不是掉到 <body>', async () => {
+    input.focus();
+    pressKey(input, { key: 'Enter' });
+    fixture.detectChanges();
+    await flushFocusActiveCell(fixture);
+
+    const emitted: unknown[] = [];
+    component.rangeSelected.subscribe((r) => emitted.push(r));
+
+    // Material 的月曆格子：Enter 在 keydown 記下、keyup 才真正選取（MatMonthView 內建行為），兩個都要送。
+    const pressKeyUp = (target: EventTarget, keyCode: number, key: string) => {
+      const ev = new KeyboardEvent('keyup', { bubbles: true, cancelable: true, key });
+      Object.defineProperty(ev, 'keyCode', { get: () => keyCode });
+      target.dispatchEvent(ev);
+    };
+
+    // 起日
+    let cell = document.activeElement!;
+    pressKey(cell, { key: 'Enter', keyCode: 13 });
+    pressKeyUp(cell, 13, 'Enter');
+    fixture.detectChanges();
+    await flushFocusActiveCell(fixture);
+    expect(component['isOpen']).toBe(true);
+
+    // 往後三天再 Enter 當迄日
+    for (let i = 0; i < 3; i++) {
+      pressKey(document.activeElement!, { key: 'ArrowRight', keyCode: 39 });
+      await flushFocusActiveCell(fixture);
+    }
+    cell = document.activeElement!;
+    expect(panel()?.contains(cell)).toBe(true);
+    pressKey(cell, { key: 'Enter', keyCode: 13 });
+    pressKeyUp(cell, 13, 'Enter');
+    fixture.detectChanges();
+
+    expect(emitted).toHaveLength(1);
+    expect(component['isOpen']).toBe(false);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('選取完成時焦點不在面板內（例如程式直接選取），不會去搶焦點', () => {
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    component['open']();
+    fixture.detectChanges();
+    outside.focus();
+
+    component['onDateClicked'](new Date(2026, 9, 20));
+    component['onDateClicked'](new Date(2026, 9, 23));
+    fixture.detectChanges();
+
+    expect(component['isOpen']).toBe(false);
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
+  });
 });
