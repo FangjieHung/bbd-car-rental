@@ -1,6 +1,6 @@
 # libs/ 共用了什麼
 
-三個 app（admin/booking/affiliate）不是各自獨立寫一份邏輯，而是共用 `libs/` 底下四個庫。
+三個 app（admin/booking/affiliate）不是各自獨立寫一份邏輯，而是共用 `libs/` 底下五個庫。
 改 `libs/` 的東西會同時影響所有引用它的 app，這是這份文件存在的原因——先搞清楚
 「這段邏輯是誰的」，再決定要改哪裡。
 
@@ -31,6 +31,7 @@
 | `OperatorRecoveryCase` | `operator-recovery-case.ts` | 業者責任救單案件：同級調車／免費升等／同業轉單三種補救方案依序嘗試的紀錄 |
 | `AuditEntry` | `audit-entry.ts` | 操作稽核紀錄：誰、何時、對哪個實體做了什麼 |
 | `ReminderStatus` | `reminder-status.ts` | 還車提醒（前 24 小時／前 2 小時）的排程狀態，實際寄送邏輯在後端 |
+| `PrepTask` | `prep-task.ts` | 整備待辦（後台流程審查 4.3，CONTEXT.md「整備」）；`vehicleId`＋觸發的 `bookingId`、`returnedAt`／`returnLocation`、`completedAt?`／`completedBy?`、`supersededBy?`（還沒整備就被同一台車下一次還車取代時指向新那筆——只是一般 model，不是狀態機） |
 | `Partner` | `partner.ts` | 合作民宿（模組二新增）；`discountPercent` 協議折扣、`commission` 退佣規則 |
 | `CommissionRule` | `commission.ts` | 退佣規則（模組二新增）；`type: 'percent'\|'per_vehicle_day'` |
 | `MonthlyPayout` | `monthly-payout.ts` | 月結撥款記錄（模組二新增）；`partnerId + month + status` |
@@ -81,15 +82,33 @@ key 統一 `cr.` 前綴（如 `cr.vehicles`、`cr.partners`）。**這是換真�
 | `classifyDay()` | `pricing/date-classify.ts` | 某天是 `weekday`/`weekend`/`holiday`/`peak` |
 | `calculateCommission()` | `commission/calculate-commission.ts` | 退佣計算，見 `03-pricing-and-commission.md` |
 | `rentalDaysOf()` | `commission/rental-days.ts` | 租期天數（優先用報價明細的晚數，缺報價才 fallback 算時間差），admin 與 affiliate 對帳共用 |
-| `isVehicleAvailable()` | `availability/is-vehicle-available.ts` | 某車在某時段是否可租（狀態 + 時間重疊） |
+| `vehicleAvailability()` / `vehicleUnavailableReasons()` | `availability/vehicle-availability.ts` | 一整段租期內、一批車各自能不能租的**單一規則來源**（2026-09-23：保養中或與既有 `reserved`/`in_progress` 訂單時段重疊就不能租，可排除指定訂單 id；不能租時附原因，重疊訂單依取車時間排序）。月曆的「可用 N」、建單第 1 步與總覽「可用」分頁共用的可租清單（`available-vehicle-list`）都呼叫這裡，不各自再算一次 |
+| `isVehicleAvailable()` | `availability/is-vehicle-available.ts` | 單一車輛、單一時段是否可租；內部委派給 `vehicleUnavailableReasons()`，語意與上面那組保證一致。**目前只有 `libs/booking-flow`（官網／代訂站的選車清單）呼叫它**，admin 改呼叫上面那組可以一次問一批車、還能附不能租的原因 |
 | `rangesOverlap()` | `availability/ranges-overlap.ts` | 兩個時間區間是否重疊（前單 end === 後單 start 視為不重疊，可無縫接續） |
 | `needsDispatch()` | `models/branch.ts` | 取車據點與車輛所在據點是否不同（任一邊未知時保守回傳 false） |
 | `evaluateContractChange()` | `contracts/contract-versioning.ts` | 比對合約快照前後版本，判斷是否構成重大異動（須產生新版本、使已簽署版本失效） |
 | `contractSigningState()` | `contracts/contract-signing-state.ts` | 一筆訂單的合約簽署狀態：`none`/`unsigned`/`signed`/`needs_resign` |
-| `evaluatePickupReadiness()` | `handover/evaluate-pickup-readiness.ts` | 取車前檢查（訂金門檻、合約簽署、證件、互惠資格、車輛狀態），分類一般人員不得放行的阻擋原因 |
+| `evaluatePickupReadiness()` | `handover/evaluate-pickup-readiness.ts` | 取車前檢查（訂金門檻、合約簽署、證件、互惠資格、車輛狀態），分類一般人員不得放行的阻擋原因。可選傳入 `previousRental: { scheduledReturnAt }`（同一台車另一筆 `in_progress` 訂單）時，「前一位客人尚未還車」永遠排最前面並附逾時時長，取代掉原本排最後、看不出逾時多久的通用「車輛目前在租」阻擋（2026-09-23，後台流程審查批次 1／3 acceptance） |
 | `calculateReturnCharges()` | `handover/calculate-return-charges.ts` | 還車逾時費與能源補繳費試算，可由主管手動調整金額 |
 | `quoteCancellation()` | `cancellation/quote-cancellation.ts` | 依責任歸屬（顧客／不可抗力／業者過失／業者故意）試算取消退費 |
 | `calculatePaymentSummary()` | `payments/calculate-payment-summary.ts` | 掃過付款分類帳＋退款＋加收，算出應收總額、已付淨額、餘額與付款狀態 |
+| `formatTwd()` | `formatting/format-currency.ts` | 金額格式化：「NT$10,545」，負數用正確的負號（U+2212）而非連字號「−NT$700」，非有限值（`NaN`/`Infinity`）顯示「—」。放在 `libs/domain`（而非 admin 本地）是為了讓官網日後也能重用；目前 admin 用 `TwdPipe` 包一層在模板用。**注意日期格式化函式（`fmtDate`/`fmtDateTime`/`fmtIsoDate`）沒有跟著放這裡**，仍是 admin 本地的 `apps/admin/src/app/core/date-utils.ts`，只有金額格式化這一項共用 |
+| `prepQueue()` | `prep/prep-queue.ts` | 待整備清單排序：只列未結案（`!completedAt && !supersededBy`）的 `PrepTask`，依該車「下一次取車」（`reserved` 訂單中取車時間最早的一筆，刻意不排除已過取車時間的）由近到遠排，沒有下一筆的排最後，相同時先還車的排前面 |
+
+## libs/ui — 無業務邏輯的通用 UI 元件
+
+別名 `@car-rental/ui`（見根目錄 `tsconfig.base.json` 的 `paths`）。跟 `libs/domain` 一樣**沒有業務邏輯**，差別是這裡裝的是 UI 元件而不是 model／純函式；元件 selector 一律 `lib-` 前綴（lint 規則）。跟 `libs/contract-signing` 一樣**不內建任何使用者看得到的文字**——需要顯示文字的元件靠 injection token 讓消費端注入，忘記提供會直接壞掉（fail loudly）而不是靜默顯示錯的語言。目前三個 app 都可能用到，實際上 `booking`／`affiliate` 透過 `libs/booking-flow` 間接引用，`admin` 直接引用。
+
+```
+libs/ui/src/lib/
+  data-table/                    # lib-data-table：表格（見 DataTable 共用元件，10 張表格統一）
+  dual-month-range-picker/       # lib-dual-month-range-picker（2026-09-23 從 booking-flow 搬來）
+  responsive-panel/              # 響應式面板容器
+```
+
+- **`lib-data-table`**：全站表格共用元件，完整清單／欄位設定見各消費端。2026-09-23 批次修了一個鍵盤操作的 bug：`rowClickable` 模式下，列內按鈕（狀態 chip、操作圖示、勾選框）按 Enter／Space 原本會被事件冒泡到列本身，同時觸發「打開整列」與該按鈕自己的 `preventDefault()`，導致列內按鈕的鍵盤操作實際上永遠打不到；現在只有 keydown 的 `event.target` 就是列本身（不是冒泡上來的）才當作列點擊（`data-table.component.ts` 的 `onRowKeydown()`，用 `event.target !== event.currentTarget` 判斷）。這連帶修好了訂單列表、車輛列表兩處。
+- **`lib-dual-month-range-picker`**：雙月日期區間選擇器。原本是 `libs/booking-flow` 內的 `app-dual-month-range-picker`，中文文字寫死在模板裡；2026-09-23 批次搬進這裡改名 `lib-dual-month-range-picker`，改由 `DUAL_MONTH_RANGE_PICKER_LABELS` 這個 injection token（無預設值）注入欄位標籤、預留字、月份換頁的 aria label、月份標題。官網／代訂站經 `libs/booking-flow` 的 `date-step` 帶入 `BOOKING_FLOW_LABELS.dateRangePicker`；admin 建單第 1 步（`order-rental-section`）直接注入自己的文字，行為與畫面跟搬移前一致。同批次也補上鍵盤操作：欄位聚焦時按 Enter／Space／Alt+↓ 開啟面板，開啟時焦點移進當月的某一格、方向鍵可直接操作，Escape 關閉面板並把焦點還給欄位；滑鼠操作不受影響。
+- **`responsive-panel`**：既有的響應式面板容器，總覽的行事曆／時間軸共用的右側面板（3.2–3.5）也是用它。
 
 ## libs/booking-flow — 共用的預約流程
 

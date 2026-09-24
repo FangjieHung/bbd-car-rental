@@ -118,6 +118,13 @@ function calculateCommission(input: {
 CSV 欄位（`CommissionStore.toCsv()`）：`訂單編號 / 車款 / 租期起訖 / 租金小計 / 退佣`，
 UTF-8 BOM 開頭，確保用 Excel 開啟繁體中文不亂碼。
 
+**沒有報價快照的訂單不當成 0 元**（2026-09-24 後台流程審查修正）：舊訂單若沒有
+`priceBreakdown`（例如遷移前建立的資料），`CommissionStore` 原本讓「租金小計」「退佣」都
+顯示 0，容易被誤讀成「這個月沒有退佣」而引發對帳爭議。現在這類列改回傳 `null`（未報價），
+不計入合計也不計入筆數統計，頁面顯示淡色「未報價」並在表格上方加一行「N 筆訂單沒有報價
+紀錄，未計入退佣」；`per_vehicle_day` 類型的退佣（原本會算成「單價 × 天數」而非 0）也一併
+改為未報價。CSV／Excel 匯出對應欄位寫「未報價」文字而非 0。
+
 ## 四、撥款狀態怎麼管理
 
 `MonthlyPayout`（`partnerId + month('YYYY-MM') + status('pending'|'paid')`）是獨立於
