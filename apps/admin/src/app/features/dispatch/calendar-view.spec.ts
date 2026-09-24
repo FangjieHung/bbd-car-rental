@@ -1012,17 +1012,18 @@ describe('CalendarViewComponent 取車清單欄位與快捷操作', () => {
     expect(workspaceOpen).toHaveBeenCalledWith('b1', 'documents');
   });
 
-  it('阻擋清單在畫面上以 icon + 文字 + 按鈕呈現，不是只靠顏色', () => {
-    const { fixture } = setup({ deposit: 0, identityDoc: null, credential: null, contract: null });
+  // 阻擋／提醒已經不在列內展開，而是在明細視窗裡（work-list-detail-dialog）。這裡驗「清單交給
+  // 視窗的內容」每一則都有可讀的文字與可辨識的類別；實際的 icon + 文字 + 按鈕排版由
+  // work-list-detail-dialog.component.spec.ts 驗。
+  it('阻擋項目交給明細視窗時帶有類別與文字，不是只靠顏色', () => {
+    const { component } = setup({ deposit: 0, identityDoc: null, credential: null, contract: null });
 
-    const items = Array.from(
-      fixture.nativeElement.querySelectorAll('.work-list-severity__item') as NodeListOf<HTMLElement>,
-    );
-    expect(items.length).toBeGreaterThan(0);
-    for (const item of items) {
-      expect(item.querySelector('.material-symbols-rounded')).not.toBeNull();
-      expect(item.querySelector('.work-list-severity__text')?.textContent?.trim()).not.toBe('');
-      expect(item.querySelector('button')).not.toBeNull();
+    const severities = component.workListDetailData(component.pickupWorkRows()[0]).severities;
+    expect(severities.length).toBeGreaterThan(0);
+    for (const severity of severities) {
+      expect(['blocker', 'warning']).toContain(severity.kind);
+      expect(severity.message.trim()).not.toBe('');
+      expect(severity.key).not.toBe('');
     }
   });
 
@@ -1269,30 +1270,15 @@ describe('CalendarViewComponent 還車清單欄位、快捷操作與逾時排序
   });
 
   it('已還車／應收未結的列不顯示「還車」動作；in_progress 的列才顯示', () => {
-    const { fixture, component } = setup();
-    const rows = component.returnWorkRows();
-    // 面板預設停在「取車」tab，matTabContent 是延遲載入——還車 tab 的內容要先切過去
-    // 才會真的掛進 DOM，否則 querySelectorAll 會撲空。
-    component.onPanelTabIndexChange(1);
-    fixture.detectChanges();
-    // matTabContent 延遲渲染，MatTabGroup 內部切換動畫走的是計時器；已經開了 fake timers，
-    // 要主動推進才會真的把還車 tab 的內容掛進 DOM。
-    vi.advanceTimersByTime(1000);
-    fixture.detectChanges();
-    const panels = Array.from(
-      fixture.nativeElement.querySelectorAll('mat-expansion-panel') as NodeListOf<HTMLElement>,
-    );
+    const { component } = setup();
 
-    rows.forEach((row, i) => {
-      // 用「快捷操作列裡有沒有一顆文字剛好是『還車』的按鈕」判斷，不能只用整個面板
-      // textContent 找子字串——「已還車／應收未結」狀態徽章的文字本身就包含「還車」兩字，
-      // 用子字串比對會對已還車列誤判成有還車按鈕。
-      const actionButtons = Array.from(
-        panels[i]?.querySelectorAll('.work-list-actions button') ?? [],
-      ) as HTMLElement[];
-      const hasReturnButton = actionButtons.some((btn) => btn.textContent?.includes('還車'));
-      expect(hasReturnButton).toBe(row.booking.status === 'in_progress');
-    });
+    // 快捷操作已移到明細視窗：用 action key 判斷，不用按鈕文字——「已還車／應收未結」狀態
+    // 徽章的文字本身就含「還車」兩字，用文字比對會把已還車的列誤判成有還車按鈕。
+    for (const row of component.returnWorkRows()) {
+      const keys = component.workListDetailData(row).actions.map((a) => a.key);
+      expect(keys).toContain('view');
+      expect(keys.includes('return')).toBe(row.booking.status === 'in_progress');
+    }
   });
 
   it('view/contact/return 快捷操作：view 與 return 都開同一個訂單詳情', () => {
@@ -1683,16 +1669,18 @@ describe('CalendarViewComponent 取車清單：已取車、已完成的列（批
   });
 
   it('畫面上：已取車的列顯示「已取車」，不出現「車輛目前在租」這類衝突警示', () => {
-    const { el } = setup();
-    const panels = Array.from(el.querySelectorAll<HTMLElement>('mat-expansion-panel'));
+    const { el, component } = setup();
+    const listRows = Array.from(el.querySelectorAll<HTMLElement>('.work-list-row'));
+    const rows = component.pickupWorkRows();
 
-    expect(panels).toHaveLength(3);
-    for (const panel of panels.slice(0, 2)) {
-      expect(panel.querySelector('.work-list-row__picked-up')?.textContent).toContain('已取車');
-      expect(panel.querySelector('.work-list-row__readiness')).toBeNull();
-      expect(panel.querySelectorAll('.work-list-severity__item')).toHaveLength(0);
+    expect(listRows).toHaveLength(3);
+    for (const [i, listRow] of listRows.slice(0, 2).entries()) {
+      expect(listRow.querySelector('.work-list-row__picked-up')?.textContent).toContain('已取車');
+      expect(listRow.querySelector('.work-list-row__readiness')).toBeNull();
+      // 阻擋／提醒已移到明細視窗，這兩列本來就沒有就緒判斷，視窗裡也該是空的。
+      expect(component.workListDetailData(rows[i]).severities).toHaveLength(0);
     }
-    expect(panels[2].querySelector('.work-list-row__readiness')).not.toBeNull();
+    expect(listRows[2].querySelector('.work-list-row__readiness')).not.toBeNull();
     expect(el.textContent).not.toContain('車輛目前在租');
   });
 });

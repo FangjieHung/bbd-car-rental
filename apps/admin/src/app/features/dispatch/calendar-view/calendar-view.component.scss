@@ -257,152 +257,84 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-// 取車／還車工作清單（accordion + 展開明細）共用樣式。
-// 這兩組樣式原本位於 app.scss，本次移入此檔集中管理；app.scss 仍透過
-// styleUrls 一併載入，故移動不改變套用範圍。
-// 下列新增的 margin/padding 覆寫是 Material 預設的必要調整（見各規則下方詳述）。
-.work-list-accordion {
+// 取車／還車工作清單：一列一筆，點開明細視窗（work-list-detail-dialog）。
+// 明細本身（dl、阻擋提醒、操作列）的樣式在那個視窗的 scss 裡——它已經不在這個元件的 DOM 裡了。
+.work-list {
   display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li + li .work-list-row {
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+// 整列可點：車牌為主、車款/客人與狀態徽章為輔，右側是時間與指向明細的 chevron。
+.work-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.75rem 1rem;
+  border: 0;
   background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 
-  .mat-expansion-panel {
-    background: transparent;
-    box-shadow: none !important;
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
-    border-radius: 0 !important;
-
-    &:last-of-type {
-      border-bottom: none;
-    }
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
   }
 
-  // MatAccordion 預設 displayMode 會在展開的 panel 外加 16px 上下 margin
-  // （卡片式懸浮效果），這份清單走扁平列表 + 分隔線，需要拿掉才不會跳版。
-  .mat-expansion-panel-spacing {
-    margin: 0;
-  }
-
-  .mat-expansion-panel-header {
-    height: auto;
-    min-height: 3.5rem;
-    padding: 0.75rem;
-  }
-
-  mat-panel-title {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  mat-panel-description {
-    min-width: 0;
-    overflow-wrap: anywhere;
-    color: var(--mat-sys-on-surface-variant);
-  }
-
-  // .mat-expansion-panel-body 是 MatExpansionPanel 自己模板內部生出的 div（不是
-  // 我們自己模板裡寫的標籤），emulated encapsulation 屬性選擇器搆不到，需要 ::ng-deep。
-  // 預設 padding 是 `0 24px 16px`，這裡改成左右 16px，與 header 的實際內距（見下方
-  // .work-list-row-header 規則）對齊，底部維持 16px 留白。
-  ::ng-deep .mat-expansion-panel-body {
-    padding: 0 16px 16px;
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: -2px;
   }
 }
 
-// 取車／還車摘要列：以車牌為主視覺，車型/客人次要，時間右側靠齊。
-// 下面這條選擇器比上面 .work-list-accordion .mat-expansion-panel-header 多一個
-// class，特異度較高，用來覆蓋成 12px/16px 的非對稱內距。
-.work-list-accordion .work-list-row-header.mat-expansion-panel-header {
-  padding: 12px 16px;
-}
-
-.work-list-accordion mat-panel-title.work-list-row__title {
+.work-list-row__title {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  flex: 1 1 0;
-  min-width: 0;
-  // 覆寫 Material 的 align-items: center；改成 column 後該屬性轉為控制水平軸，
-  // 不重設會讓車牌/meta 兩行被水平置中，而非靠左對齊。
   align-items: flex-start;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.work-list-accordion mat-panel-description.work-list-row__time {
+.work-list-row__time {
   flex: 0 0 auto;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--mat-sys-on-surface-variant);
 }
 
+.work-list-row__chevron {
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.work-list__empty {
+  padding: 1rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .work-list-row__plate {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--mat-sys-on-surface);
 }
 
 .work-list-row__meta {
-  font-size: 13px;
+  font-size: 0.875rem;
   font-weight: 400;
   color: var(--mat-sys-on-surface-variant);
-}
-
-// 展開明細：dt/dd 以 grid 就近配對、靠左，取代原本 justify-content: space-between
-// 造成的「標籤在左、值飄在最右」。
-.work-list-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 8px;
-  font-size: 0.875rem;
-
-  > div {
-    display: grid;
-    grid-template-columns: 5rem minmax(0, 1fr);
-    column-gap: 12px;
-    align-items: start;
-  }
-
-  dt {
-    color: var(--mat-sys-on-surface-variant);
-  }
-
-  dd {
-    margin: 0;
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  // 「客人」永遠是第一列；其 dd 是內含 44px 高電話連結的 flex 列，
-  // 比其他列高，會被外層 align-items: start 頂到偏上，這裡讓 dt 垂直置中對齊。
-  > div:first-child dt {
-    align-self: center;
-  }
-}
-
-// 「客人」列：姓名與電話連結放一起，空間不足時允許換行。
-.work-list-detail__member {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: 8px;
-  row-gap: 4px;
-}
-
-.work-list-detail__phone-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 44px;
-
-  .material-symbols-rounded {
-    font-size: 18px;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--mat-sys-primary);
-    outline-offset: 2px;
-  }
 }
 
 // 就緒／逾時狀態徽章：永遠帶 icon + 文字（見設計原則「狀態不只靠顏色」），
@@ -423,58 +355,6 @@
 // .ui-chip 本身是 nowrap（theme-pack，特異度 0-2-0），這裡疊兩個 class 才蓋得過。
 .ui-chip.work-list-row__status-chip {
   white-space: normal;
-}
-
-// 阻擋／提醒清單：每一列都是 icon + 文字 + 動作按鈕的組合。
-.work-list-severity {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0 16px 12px;
-  padding: 0;
-  list-style: none;
-}
-
-.work-list-severity__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-
-  .material-symbols-rounded {
-    font-size: 18px;
-    flex: 0 0 auto;
-  }
-
-  button {
-    margin-left: auto;
-    flex: 0 0 auto;
-  }
-}
-
-.work-list-severity__text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.work-list-severity__item--blocker {
-  background: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
-}
-
-.work-list-severity__item--warning {
-  background: var(--mat-sys-tertiary-container);
-  color: var(--mat-sys-on-tertiary-container);
-}
-
-// 快捷操作列：與明細共用同樣的左右內距，貼齊 mat-expansion-panel-body 的內容寬度。
-.work-list-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 16px 16px;
 }
 
 .calendar-view__relative-chip {

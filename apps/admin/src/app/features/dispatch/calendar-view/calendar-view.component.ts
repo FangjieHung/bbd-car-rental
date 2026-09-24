@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, linkedSignal, model, output, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatExpansionModule } from '@angular/material/expansion';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -11,7 +11,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { ResponsivePanelComponent } from '@car-rental/ui';
-import { contractSigningState } from '@car-rental/domain';
+import { contractSigningState, formatTwd } from '@car-rental/domain';
 import {
   branchName,
   IdentityDocumentType,
@@ -35,7 +35,6 @@ import {
 } from '../../../core/models';
 import { ZH_TW } from '../../../core/i18n/zh-tw';
 import { addDays, fmtDate, isSameDay, startOfDay } from '../../../core/date-utils';
-import { TwdPipe } from '../../../shared/pipes/twd.pipe';
 import { REMINDER_STATUS_REPO } from '../../../core/repositories/tokens';
 import { BookingStore } from '../../../stores/booking/booking.store';
 import { VehicleStore } from '../../../stores/vehicle/vehicle.store';
@@ -52,6 +51,15 @@ import { AvailableVehicleListComponent } from '../available-vehicle-list/availab
 import { RENTAL_AVAILABILITY } from '../available-vehicle-list/rental-availability';
 import { DEFAULT_RENTAL_TIME, composeLocal, rentalPeriodOf, toDateKey } from '../available-vehicle-list/rental-period';
 import { TimelineViewComponent } from '../timeline-view/timeline-view.component';
+import { WorkListDetailDialogComponent } from '../work-list-detail-dialog/work-list-detail-dialog.component';
+import {
+  WorkListDetailAction,
+  WorkListDetailChip,
+  WorkListDetailData,
+  WorkListDetailField,
+  WorkListDetailResult,
+  WorkListDetailSeverity,
+} from '../work-list-detail-dialog/work-list-detail-dialog';
 
 const NARROW_QUERY = '(max-width: 1280px)';
 
@@ -235,7 +243,6 @@ export function returnProgress(bookings: RentalBooking[], day: Date): DayProgres
   selector: 'app-calendar-view',
   imports: [
     MatButtonModule,
-    MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -244,7 +251,6 @@ export function returnProgress(bookings: RentalBooking[], day: Date): DayProgres
     ResponsivePanelComponent,
     AvailableVehicleListComponent,
     TimelineViewComponent,
-    TwdPipe,
   ],
   templateUrl: './calendar-view.component.html',
   styleUrls: ['./calendar-view.component.scss', '../../../app.scss'],
@@ -265,6 +271,7 @@ export class CalendarViewComponent {
   private readonly contractStore = inject(ContractStore);
   private readonly handoverStore = inject(HandoverStore);
   private readonly prepStore = inject(PrepStore);
+  private readonly dialog = inject(MatDialog);
   private readonly reminderRepo = inject(REMINDER_STATUS_REPO);
   private readonly reminderStatuses = signal<ReminderStatus[]>(this.reminderRepo.getAll());
 
@@ -905,6 +912,227 @@ export class CalendarViewComponent {
         disclosedRules?.energyReturnPolicy ??
         plan?.energyReturnPolicy ?? { measure: 'eighths' as const, feePerUnit: 0, serviceFee: 0 },
     };
+  }
+
+  // ---------------------------------------------------------------------
+  // 明細視窗（原本是列內 mat-expansion-panel 就地展開）
+  // ---------------------------------------------------------------------
+
+  /**
+   * 點清單上的一列，開明細視窗。內容在這裡一次組好（WorkListDetailData），視窗只負責排版；
+   * 關閉時回傳使用者按了哪一顆，導頁仍由這裡的既有快捷操作方法執行。
+   */
+  openWorkListDetail(row: WorkListRow): void {
+    const ref = this.dialog.open<WorkListDetailDialogComponent, WorkListDetailData, WorkListDetailResult>(
+      WorkListDetailDialogComponent,
+      { data: this.workListDetailData(row), width: '640px', maxWidth: '92vw', autoFocus: 'dialog' },
+    );
+    ref.afterClosed().subscribe((result) => {
+      if (result) this.runWorkListDetailResult(row, result);
+    });
+  }
+
+  /** 清單列的無障礙標籤：「ABC-123 明細」。 */
+  detailAriaLabel(row: WorkListRow): string {
+    return fill(this.t.dispatch.workList.openDetail, { plate: this.vehicleOf(row)?.plateNumber ?? '—' });
+  }
+
+  /** 視窗按鈕與「前往處理」按下後實際要做的事——全部沿用列內展開時的同一組導頁方法。 */
+  private runWorkListDetailResult(row: WorkListRow, result: WorkListDetailResult): void {
+    if (result.kind === 'severity') {
+      const severity = result.severity;
+      if (severity.kind === 'blocker') this.goHandleBlocker(row, severity.blocker);
+      else this.goHandleWarning(row, severity.warning);
+      return;
+    }
+    switch (result.key) {
+      case 'pay':
+        return this.payAction(row);
+      case 'edit':
+        return this.editAction(row);
+      case 'contract':
+        return this.viewContractAction(row);
+      case 'cancel':
+        return this.cancelAction(row);
+      case 'pickup':
+        return this.pickupAction(row);
+      case 'view':
+        return this.viewAction(row);
+      case 'return':
+        return this.returnAction(row);
+    }
+  }
+
+  /** 供視窗與測試共用：把一列組成明細視窗要顯示的完整內容。 */
+  workListDetailData(row: WorkListRow): WorkListDetailData {
+    const vehicle = this.vehicleOf(row);
+    const isPickup = row.kind === 'pickup';
+    const wl = this.t.dispatch.workList;
+    const href = this.phoneHref(row.booking);
+    return {
+      title: vehicle?.plateNumber ?? '—',
+      subtitle: `${vehicle?.model ?? '—'} · ${this.memberName(row)}`,
+      timeTerm: isPickup ? wl.pickupTime : wl.returnTime,
+      time: this.fmtTime(isPickup ? row.booking.startTime : row.booking.endTime),
+      chips: this.workListChips(row),
+      member: {
+        name: this.memberName(row),
+        phone: href
+          ? {
+              href,
+              label: isPickup ? this.t.dispatch.workList.callLabel : wl.contact,
+              ariaLabel: `${this.memberName(row)}，撥打電話 ${this.phoneLabel(row.booking)}`,
+            }
+          : null,
+      },
+      fields: isPickup ? this.pickupDetailFields(row) : this.returnDetailFields(row),
+      severities: isPickup ? this.workListSeverities(row) : [],
+      actions: isPickup ? this.pickupDetailActions(row) : this.returnDetailActions(row),
+    };
+  }
+
+  /** 列與視窗共用的狀態徽章；清單列直接吃同一份，兩邊永遠一致。 */
+  workListChips(row: WorkListRow): WorkListDetailChip[] {
+    const wl = this.t.dispatch.workList;
+    const chips: WorkListDetailChip[] = [];
+    if (row.kind === 'pickup') {
+      if (row.booking.status === 'reserved') {
+        const ready = this.isPickupReady(row);
+        chips.push({
+          tone: ready ? 'positive' : 'warning',
+          icon: ready ? 'check_circle' : 'report',
+          text: this.readinessLabel(row),
+          className: 'work-list-row__readiness',
+        });
+      } else {
+        chips.push({
+          tone: 'neutral',
+          icon: 'check',
+          text: wl.pickedUp,
+          className: 'work-list-row__picked-up',
+        });
+      }
+      if (this.needsDispatch(row)) {
+        chips.push({
+          tone: 'warning',
+          icon: 'swap_horiz',
+          text: this.dispatchRouteLabel(row),
+          className: 'work-list-row__dispatch',
+        });
+      }
+      // 4.3：提醒，不是阻擋——不影響上面的「可取車」判斷。
+      if (this.needsPrep(row)) {
+        chips.push({
+          tone: 'warning',
+          icon: 'cleaning_services',
+          text: this.t.prep.notPrepped,
+          className: 'work-list-row__prep',
+        });
+      }
+      return chips;
+    }
+
+    if (this.isReturnedUnsettled(row)) {
+      chips.push({ tone: 'warning', icon: 'receipt_long', text: wl.returnedUnsettled });
+    } else if (row.booking.status === 'in_progress') {
+      const overdue = this.isOverdue(row);
+      chips.push({
+        tone: overdue ? 'warning' : 'positive',
+        icon: overdue ? 'schedule' : 'check_circle',
+        text: overdue ? `${wl.overdue} ${this.overdueDurationLabel(row)}` : wl.onTime,
+      });
+    } else if (row.booking.status === 'reserved') {
+      chips.push({ tone: null, icon: 'hourglass_empty', text: wl.notPickedUpYet });
+    }
+    return chips;
+  }
+
+  private pickupDetailFields(row: WorkListRow): WorkListDetailField[] {
+    const wl = this.t.dispatch.workList;
+    const fields: WorkListDetailField[] = [{ term: wl.pickupLocation, value: this.location(row) }];
+    if (this.needsDispatch(row)) {
+      fields.push({ term: wl.needsDispatch, value: this.dispatchNote(row) });
+    }
+    fields.push(
+      {
+        term: wl.payment,
+        value: `${this.paymentStatusLabel(row)}・${wl.balanceDue} ${formatTwd(this.balanceDue(row))}`,
+      },
+      { term: wl.documentCheck, value: this.documentCheckLabel(row) },
+      { term: wl.contractStatus, value: this.contractStatusLabel(row) },
+    );
+    return fields;
+  }
+
+  private returnDetailFields(row: WorkListRow): WorkListDetailField[] {
+    const wl = this.t.dispatch.workList;
+    return [
+      { term: wl.returnLocation, value: this.location(row) },
+      { term: wl.reminderStatus, value: this.reminderStateLabel(row) },
+      { term: wl.estimatedLateFee, value: formatTwd(this.estimatedLateFee(row)) },
+      { term: wl.currentBalance, value: formatTwd(this.balanceDue(row)) },
+    ];
+  }
+
+  /** 阻擋（紅）與提醒（黃）；track 用的 key 沿用原本列內展開時的 reason／type。 */
+  private workListSeverities(row: WorkListRow): WorkListDetailSeverity[] {
+    return [
+      ...this.blockersOf(row).map(
+        (blocker): WorkListDetailSeverity => ({
+          kind: 'blocker',
+          key: `blocker-${blocker.reason}`,
+          message: blocker.message,
+          blocker,
+        }),
+      ),
+      ...this.warningsOf(row).map(
+        (warning): WorkListDetailSeverity => ({
+          kind: 'warning',
+          key: `warning-${warning.type}`,
+          message: warning.message,
+          warning,
+        }),
+      ),
+    ];
+  }
+
+  private pickupDetailActions(row: WorkListRow): WorkListDetailAction[] {
+    const reserved = row.booking.status === 'reserved';
+    const actions: WorkListDetailAction[] = [
+      { key: 'pay', label: this.t.dispatch.workList.pay, icon: 'payments', variant: 'tonal' },
+    ];
+    if (reserved) {
+      actions.push({ key: 'edit', label: this.t.common.edit, icon: 'edit', variant: 'tonal' });
+    }
+    actions.push({
+      key: 'contract',
+      label: this.t.dispatch.workList.viewContract,
+      icon: 'description',
+      variant: 'tonal',
+    });
+    if (reserved) {
+      actions.push(
+        { key: 'cancel', label: this.t.common.cancel, icon: 'cancel', variant: 'tonal' },
+        { key: 'pickup', label: this.t.booking.pickUp, icon: 'directions_car', variant: 'filled' },
+      );
+    }
+    return actions;
+  }
+
+  private returnDetailActions(row: WorkListRow): WorkListDetailAction[] {
+    // 「聯絡」不再另給一顆按鈕：明細第一列「客人」本來就有同一組 tel: 連結，視窗裡兩者相鄰會重複。
+    const actions: WorkListDetailAction[] = [
+      { key: 'view', label: this.t.dispatch.workList.view, icon: 'visibility', variant: 'tonal' },
+    ];
+    if (row.booking.status === 'in_progress') {
+      actions.push({
+        key: 'return',
+        label: this.t.booking.complete,
+        icon: 'assignment_turned_in',
+        variant: 'filled',
+      });
+    }
+    return actions;
   }
 
   // ---------------------------------------------------------------------

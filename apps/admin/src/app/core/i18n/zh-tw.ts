@@ -53,6 +53,7 @@ export const ZH_TW = {
     expandRow: '展開詳細資料',
     collapseRow: '收合詳細資料',
     exportFailedText: '匯出失敗，請確認網路連線後再試一次',
+    close: '關閉',
     closePanel: '關閉面板',
     moreActions: '更多操作',
   },
@@ -879,6 +880,16 @@ export const ZH_TW = {
       dispatchNeededPrefix: '需從',
       dispatchNeededMiddle: '調度至',
       noDispatchNeeded: '當天沒有需調度的取車',
+      /** 明細視窗與列表共用的欄位標籤。 */
+      customer: '客人',
+      pickupLocation: '取車地點',
+      returnLocation: '還車地點',
+      pickupTime: '取車時間',
+      returnTime: '還車時間',
+      callLabel: '打電話',
+      /** 清單列的無障礙標籤：「{plate} 明細」。 */
+      openDetail: '{plate} 明細',
+      noReturns: '目前沒有還車資料',
     },
   },
   maintenance: {

@@ -160,154 +160,44 @@
                     {{ t.dispatch.workList.noDispatchNeeded }}
                   </p>
                 } @else {
-                <mat-accordion class="work-list-accordion">
+                <ul class="work-list">
                   @for (row of pickupWorkRows(); track row.id) {
                     @let vehicle = vehicleOf(row);
-                    <mat-expansion-panel>
-                      <mat-expansion-panel-header class="work-list-row-header">
-                        <mat-panel-title class="work-list-row__title">
-                          <span class="work-list-row__plate">{{
-                            vehicle?.plateNumber ?? '—'
-                          }}</span>
+                    <li>
+                      <button
+                        type="button"
+                        class="work-list-row"
+                        [attr.aria-label]="detailAriaLabel(row)"
+                        (click)="openWorkListDetail(row)"
+                      >
+                        <span class="work-list-row__title">
+                          <span class="work-list-row__plate">{{ vehicle?.plateNumber ?? '—' }}</span>
                           <span class="work-list-row__meta"
                             >{{ vehicle?.model ?? '—' }} · {{ memberName(row) }}</span
                           >
-                          <!-- 就緒／阻擋提示只給尚未取車的列；已取車、已完成的列不拿現在的車況去套。 -->
-                          @if (row.booking.status === 'reserved') {
-                            @let ready = isPickupReady(row);
-                            <span
-                              class="ui-chip work-list-row__status-chip work-list-row__readiness"
-                              [class.ui-chip--positive]="ready"
-                              [class.ui-chip--warning]="!ready"
+                          <!-- 徽章與明細視窗同一份來源（workListChips），兩邊不會各寫一套判斷。 -->
+                          @for (chip of workListChips(row); track chip.text) {
+                            <span class="ui-chip work-list-row__status-chip {{ chip.className }}"
+                              [class.ui-chip--positive]="chip.tone === 'positive'"
+                              [class.ui-chip--warning]="chip.tone === 'warning'"
+                              [class.ui-chip--neutral]="chip.tone === 'neutral'"
+                              [class.ui-chip--info]="chip.tone === 'info'"
                             >
-                              <span class="material-symbols-rounded" aria-hidden="true">{{
-                                ready ? 'check_circle' : 'report'
-                              }}</span>
-                              {{ readinessLabel(row) }}
-                            </span>
-                          } @else {
-                            <span class="ui-chip ui-chip--neutral work-list-row__status-chip work-list-row__picked-up">
-                              <span class="material-symbols-rounded" aria-hidden="true">check</span>
-                              {{ t.dispatch.workList.pickedUp }}
+                              <span class="material-symbols-rounded" aria-hidden="true">{{ chip.icon }}</span>
+                              {{ chip.text }}
                             </span>
                           }
-                          @if (needsDispatch(row)) {
-                            <span class="ui-chip ui-chip--warning work-list-row__status-chip work-list-row__dispatch">
-                              <span class="material-symbols-rounded" aria-hidden="true"
-                                >swap_horiz</span
-                              >
-                              {{ dispatchRouteLabel(row) }}
-                            </span>
-                          }
-                          <!-- 4.3：提醒，不是阻擋——不影響上面的「可取車」判斷。 -->
-                          @if (needsPrep(row)) {
-                            <span class="ui-chip ui-chip--warning work-list-row__status-chip work-list-row__prep">
-                              <span class="material-symbols-rounded" aria-hidden="true">cleaning_services</span>
-                              {{ t.prep.notPrepped }}
-                            </span>
-                          }
-                        </mat-panel-title>
-                        <mat-panel-description class="work-list-row__time">{{
-                          fmtTime(row.booking.startTime)
-                        }}</mat-panel-description>
-                      </mat-expansion-panel-header>
-                      <dl class="work-list-detail">
-                        <div>
-                          <dt>客人</dt>
-                          <dd class="work-list-detail__member">
-                            <span>{{ memberName(row) }}</span>
-                            @if (phoneHref(row.booking); as href) {
-                              <a
-                                class="work-list-detail__phone-link underline"
-                                [href]="href"
-                                [attr.aria-label]="
-                                  memberName(row) + '，撥打電話 ' + phoneLabel(row.booking)
-                                "
-                              >
-                                <span class="material-symbols-rounded" aria-hidden="true"
-                                  >call</span
-                                >
-                                打電話
-                              </a>
-                            }
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>取車地點</dt>
-                          <dd>{{ location(row) }}</dd>
-                        </div>
-                        @if (needsDispatch(row)) {
-                          <div>
-                            <dt>{{ t.dispatch.workList.needsDispatch }}</dt>
-                            <dd>{{ dispatchNote(row) }}</dd>
-                          </div>
-                        }
-                        <div>
-                          <dt>{{ t.dispatch.workList.payment }}</dt>
-                          <dd>{{ paymentStatusLabel(row) }}・{{ t.dispatch.workList.balanceDue }} {{ balanceDue(row) | twd }}</dd>
-                        </div>
-                        <div>
-                          <dt>{{ t.dispatch.workList.documentCheck }}</dt>
-                          <dd>{{ documentCheckLabel(row) }}</dd>
-                        </div>
-                        <div>
-                          <dt>{{ t.dispatch.workList.contractStatus }}</dt>
-                          <dd>{{ contractStatusLabel(row) }}</dd>
-                        </div>
-                      </dl>
-                      @if (blockersOf(row).length > 0 || warningsOf(row).length > 0) {
-                        <ul class="work-list-severity">
-                          @for (blocker of blockersOf(row); track blocker.reason) {
-                            <li class="work-list-severity__item work-list-severity__item--blocker">
-                              <span class="material-symbols-rounded" aria-hidden="true">report</span>
-                              <span class="work-list-severity__text">{{ blocker.message }}</span>
-                              <button matButton="text" (click)="goHandleBlocker(row, blocker)">
-                                {{ t.dispatch.workList.goHandle }}
-                              </button>
-                            </li>
-                          }
-                          @for (warning of warningsOf(row); track warning.type) {
-                            <li class="work-list-severity__item work-list-severity__item--warning">
-                              <span class="material-symbols-rounded" aria-hidden="true">warning</span>
-                              <span class="work-list-severity__text">{{ warning.message }}</span>
-                              <button matButton="text" (click)="goHandleWarning(row, warning)">
-                                {{ t.dispatch.workList.goHandle }}
-                              </button>
-                            </li>
-                          }
-                        </ul>
-                      }
-                      <div class="work-list-actions">
-                        <button matButton="tonal" (click)="payAction(row)">
-                          <span class="material-symbols-rounded" aria-hidden="true">payments</span>
-                          {{ t.dispatch.workList.pay }}
-                        </button>
-                        @if (row.booking.status === 'reserved') {
-                          <button matButton="tonal" (click)="editAction(row)">
-                            <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-                            {{ t.common.edit }}
-                          </button>
-                        }
-                        <button matButton="tonal" (click)="viewContractAction(row)">
-                          <span class="material-symbols-rounded" aria-hidden="true">description</span>
-                          {{ t.dispatch.workList.viewContract }}
-                        </button>
-                        @if (row.booking.status === 'reserved') {
-                          <button matButton="tonal" (click)="cancelAction(row)">
-                            <span class="material-symbols-rounded" aria-hidden="true">cancel</span>
-                            {{ t.common.cancel }}
-                          </button>
-                          <button matButton="filled" (click)="pickupAction(row)">
-                            <span class="material-symbols-rounded" aria-hidden="true">directions_car</span>
-                            {{ t.booking.pickUp }}
-                          </button>
-                        }
-                      </div>
-                    </mat-expansion-panel>
+                        </span>
+                        <span class="work-list-row__time">{{ fmtTime(row.booking.startTime) }}</span>
+                        <span class="material-symbols-rounded work-list-row__chevron" aria-hidden="true">
+                          chevron_right
+                        </span>
+                      </button>
+                    </li>
                   } @empty {
-                    <p class="pb-4 pt-4 text-sm calendar-view__muted">{{ t.common.empty }}</p>
+                    <li class="work-list__empty">{{ t.common.empty }}</li>
                   }
-                </mat-accordion>
+                </ul>
                 }
               </ng-template>
             </mat-tab>
@@ -325,107 +215,43 @@
               </ng-template>
               <ng-template matTabContent>
                 @if (returnWorkRows().length > 0) {
-                  <mat-accordion class="work-list-accordion">
+                  <ul class="work-list">
                     @for (row of returnWorkRows(); track row.id) {
                       @let vehicle = vehicleOf(row);
-                      @let overdue = isOverdue(row);
-                      <mat-expansion-panel>
-                        <mat-expansion-panel-header class="work-list-row-header">
-                          <mat-panel-title class="work-list-row__title">
-                            <span class="work-list-row__plate">{{
-                              vehicle?.plateNumber ?? '—'
-                            }}</span>
+                      <li>
+                        <button
+                          type="button"
+                          class="work-list-row"
+                          [attr.aria-label]="detailAriaLabel(row)"
+                          (click)="openWorkListDetail(row)"
+                        >
+                          <span class="work-list-row__title">
+                            <span class="work-list-row__plate">{{ vehicle?.plateNumber ?? '—' }}</span>
                             <span class="work-list-row__meta"
                               >{{ vehicle?.model ?? '—' }} · {{ memberName(row) }}</span
                             >
-                            @if (isReturnedUnsettled(row)) {
-                              <span class="ui-chip ui-chip--warning work-list-row__status-chip">
-                                <span class="material-symbols-rounded" aria-hidden="true">receipt_long</span>
-                                {{ t.dispatch.workList.returnedUnsettled }}
-                              </span>
-                            } @else if (row.booking.status === 'in_progress') {
-                              <span
-                                class="ui-chip work-list-row__status-chip"
-                                [class.ui-chip--warning]="overdue"
-                                [class.ui-chip--positive]="!overdue"
+                            @for (chip of workListChips(row); track chip.text) {
+                              <span class="ui-chip work-list-row__status-chip {{ chip.className }}"
+                                [class.ui-chip--positive]="chip.tone === 'positive'"
+                                [class.ui-chip--warning]="chip.tone === 'warning'"
+                                [class.ui-chip--neutral]="chip.tone === 'neutral'"
+                                [class.ui-chip--info]="chip.tone === 'info'"
                               >
-                                <span class="material-symbols-rounded" aria-hidden="true">{{
-                                  overdue ? 'schedule' : 'check_circle'
-                                }}</span>
-                                {{ overdue ? t.dispatch.workList.overdue + ' ' + overdueDurationLabel(row) : t.dispatch.workList.onTime }}
-                              </span>
-                            } @else if (row.booking.status === 'reserved') {
-                              <span class="ui-chip work-list-row__status-chip">
-                                <span class="material-symbols-rounded" aria-hidden="true">hourglass_empty</span>
-                                {{ t.dispatch.workList.notPickedUpYet }}
+                                <span class="material-symbols-rounded" aria-hidden="true">{{ chip.icon }}</span>
+                                {{ chip.text }}
                               </span>
                             }
-                          </mat-panel-title>
-                          <mat-panel-description class="work-list-row__time">{{
-                            fmtTime(row.booking.endTime)
-                          }}</mat-panel-description>
-                        </mat-expansion-panel-header>
-                        <dl class="work-list-detail">
-                          <div>
-                            <dt>客人</dt>
-                            <dd class="work-list-detail__member">
-                              <span>{{ memberName(row) }}</span>
-                              @if (phoneHref(row.booking); as href) {
-                                <a
-                                  class="work-list-detail__phone-link underline"
-                                  [href]="href"
-                                  [attr.aria-label]="
-                                    memberName(row) + '，撥打電話 ' + phoneLabel(row.booking)
-                                  "
-                                >
-                                  <span class="material-symbols-rounded" aria-hidden="true"
-                                    >call</span
-                                  >
-                                  {{ t.dispatch.workList.contact }}
-                                </a>
-                              }
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>還車地點</dt>
-                            <dd>{{ location(row) }}</dd>
-                          </div>
-                          <div>
-                            <dt>{{ t.dispatch.workList.reminderStatus }}</dt>
-                            <dd>{{ reminderStateLabel(row) }}</dd>
-                          </div>
-                          <div>
-                            <dt>{{ t.dispatch.workList.estimatedLateFee }}</dt>
-                            <dd>{{ estimatedLateFee(row) | twd }}</dd>
-                          </div>
-                          <div>
-                            <dt>{{ t.dispatch.workList.currentBalance }}</dt>
-                            <dd>{{ balanceDue(row) | twd }}</dd>
-                          </div>
-                        </dl>
-                        <div class="work-list-actions">
-                          <button matButton="tonal" (click)="viewAction(row)">
-                            <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
-                            {{ t.dispatch.workList.view }}
-                          </button>
-                          @if (phoneHref(row.booking); as href) {
-                            <a matButton="tonal" [href]="href">
-                              <span class="material-symbols-rounded" aria-hidden="true">call</span>
-                              {{ t.dispatch.workList.contact }}
-                            </a>
-                          }
-                          @if (row.booking.status === 'in_progress') {
-                            <button matButton="filled" (click)="returnAction(row)">
-                              <span class="material-symbols-rounded" aria-hidden="true">assignment_turned_in</span>
-                              {{ t.booking.complete }}
-                            </button>
-                          }
-                        </div>
-                      </mat-expansion-panel>
+                          </span>
+                          <span class="work-list-row__time">{{ fmtTime(row.booking.endTime) }}</span>
+                          <span class="material-symbols-rounded work-list-row__chevron" aria-hidden="true">
+                            chevron_right
+                          </span>
+                        </button>
+                      </li>
                     }
-                  </mat-accordion>
+                  </ul>
                 } @else {
-                  <p class="pb-4 pt-4 text-sm calendar-view__muted">目前沒有還車資料</p>
+                  <p class="pb-4 pt-4 calendar-view__muted">{{ t.dispatch.workList.noReturns }}</p>
                 }
               </ng-template>
             </mat-tab>
