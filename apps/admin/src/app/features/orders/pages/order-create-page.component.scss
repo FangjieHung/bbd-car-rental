@@ -7,6 +7,11 @@
 // - 摘要欄：≥ 1280px 在卡片左側整欄；以下收成卡片頂端一條可展開的摘要列（由摘要元件自己切換）。
 $summary-docked: 1280px;
 $summary-width: 280px;
+// 步驟內容區的內距；捲動陰影要用負 margin 精準抵銷它，所以抽成變數。
+$content-pad-top: 1.25rem;
+$content-pad-inline: 1.5rem;
+$content-pad-bottom: 1.5rem;
+$scroll-shadow-size: 18px;
 
 :host {
   display: flex;
@@ -64,7 +69,7 @@ $summary-width: 280px;
   }
 
   .mat-horizontal-content-container {
-    padding: 1.25rem 1.5rem 1.5rem;
+    padding: $content-pad-top $content-pad-inline $content-pad-bottom;
   }
 }
 
@@ -175,28 +180,56 @@ $summary-width: 280px;
       overflow-x: hidden;
       overflow-y: auto;
 
-      // 捲動陰影（2.2 走查）：macOS 預設不顯示捲軸，內容被裁到看不見時使用者毫無提示
-      // （實測 1920×1080 第 3 步「＋ 新增一筆收款」整個在可視範圍外）。純 CSS、不用 JS／scroll 監聽：
-      // 「蓋」用 background-attachment: local，隨內容一起捲動；「陰影」用 background-attachment: scroll，
-      // 釘在可視區邊緣不動。捲到頂／底（或內容根本沒溢出）時蓋剛好蓋住陰影，自然消失。顏色用系統
-      // token（surface 當蓋、shadow 當陰影），Midnight 深色主題會自動換成對應色值。
-      background-repeat: no-repeat;
-      background-position: top, bottom, top, bottom;
-      background-size: 100% 28px, 100% 28px, 100% 10px, 100% 10px;
-      background-attachment: local, local, scroll, scroll;
-      background-image:
-        linear-gradient(var(--mat-sys-surface) 30%, transparent),
-        linear-gradient(transparent, var(--mat-sys-surface) 70%),
-        radial-gradient(
-          farthest-side at 50% 0,
-          color-mix(in srgb, var(--mat-sys-shadow) 35%, transparent),
-          transparent
-        ),
-        radial-gradient(
-          farthest-side at 50% 100%,
-          color-mix(in srgb, var(--mat-sys-shadow) 35%, transparent),
+      // 捲動陰影（2.2 走查，驗收後重做）：macOS 預設不顯示捲軸，內容被裁到看不見時使用者毫無提示。
+      // 陰影畫在「內容之上」——舊做法用 background-attachment 畫在容器背景，會被不透明的內容蓋掉，
+      // 第 3 步實測完全看不到。現在由 ScrollShadowDirective（shared/ui/scroll-shadow.directive.ts）依實際
+      // 捲動位置切換 has-more-above／has-more-below，這裡只負責畫：
+      // ::before 貼可視區上緣、::after 貼下緣（position: sticky），用負 margin 抵銷自身高度，
+      // 不佔版面、不增加捲動距離；左右負 margin 拉滿容器（抵銷容器左右 padding）。
+      // 顏色用系統 token（shadow），Midnight 深色主題自動換色。
+      &::before,
+      &::after {
+        content: '';
+        position: sticky;
+        z-index: 3;
+        display: block;
+        height: $scroll-shadow-size;
+        margin-inline: calc(-1 * #{$content-pad-inline});
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 180ms ease-out;
+      }
+
+      // 上緣：自然位置拉到容器最頂（抵銷上方 padding），淨佔高 0。
+      // sticky 的貼齊基準是容器扣掉 padding 後的內框（Chrome 實測上下各內縮 padding），
+      // 所以 top／bottom 要給負的 padding，陰影才會貼在可視區真正的邊緣。
+      &::before {
+        top: calc(-1 * #{$content-pad-top});
+        margin-top: calc(-1 * #{$content-pad-top});
+        margin-bottom: calc(#{$content-pad-top} - #{$scroll-shadow-size});
+        background: linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--mat-sys-shadow) 22%, transparent),
           transparent
         );
+      }
+
+      // 下緣：只用 margin-top 抵銷自身高度，淨佔高 0。不要學 ::before 把它推進下方 padding——
+      // Chrome 會把越過內容的部分再加上 padding 算進捲動範圍，實測多出 6px 捲動距離。
+      &::after {
+        bottom: calc(-1 * #{$content-pad-bottom});
+        margin-top: calc(-1 * #{$scroll-shadow-size});
+        background: linear-gradient(
+          to top,
+          color-mix(in srgb, var(--mat-sys-shadow) 22%, transparent),
+          transparent
+        );
+      }
+
+      &.has-more-above::before,
+      &.has-more-below::after {
+        opacity: 1;
+      }
     }
   }
 
