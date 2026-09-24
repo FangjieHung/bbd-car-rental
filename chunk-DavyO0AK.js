@@ -1,0 +1,1 @@
+import {di as sp}from'./main-75DZX6EX.js';var i=class r{transform(e){return e==null||!Number.isFinite(e)?"\u2014":Math.round(e).toLocaleString("en-US")}static \u0275fac=function(t){return new(t||r)};static \u0275pipe=sp({name:"mileage",type:r,pure:true})};export{i};

@@ -1,0 +1,1 @@
+function i(t){if(!Number.isFinite(t))return "\u2014";let n=Math.round(t),e=n<0,r=Math.abs(n).toLocaleString("en-US");return e?`\u2212NT$${r}`:`NT$${r}`}export{i};

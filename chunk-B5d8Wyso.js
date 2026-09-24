@@ -1,0 +1,1 @@
+import {i}from'./chunk-BNi7JZ09.js';import {di as sp}from'./main-75DZX6EX.js';var n=class r{transform(e){return i(e??NaN)}static \u0275fac=function(m){return new(m||r)};static \u0275pipe=sp({name:"twd",type:r,pure:true})};export{n};
